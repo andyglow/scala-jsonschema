@@ -11,8 +11,6 @@ organizationName := "andyglow"
 
 organizationHomepage := Some(url("http://evolutiongaming.com"))
 
-publishArtifact in Test := false
-
 scalaVersion := "2.12.3"
 
 crossScalaVersions := Seq("2.12.3", "2.11.8")
@@ -38,8 +36,6 @@ libraryDependencies ++= Seq(
 )
 
 licenses := Seq(("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0")))
-
-releaseCrossBuild := true
 
 bintrayPackageLabels := Seq("scala", "tools", "websocket", "client")
 
