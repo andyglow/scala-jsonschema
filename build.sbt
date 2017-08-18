@@ -1,3 +1,4 @@
+import ReleaseTransformations._
 
 name := "scala-jsonschema"
 
@@ -58,4 +59,18 @@ pomExtra :=
       </developer>
     </developers>
 
-lazy val root = project in file(".")
+releasePublishArtifactsAction := PgpKeys.publishSigned.value
+releaseProcess := Seq[ReleaseStep](
+  checkSnapshotDependencies,
+  inquireVersions,
+  runClean,
+  runTest,
+  setReleaseVersion,
+  commitReleaseVersion,
+  tagRelease,
+  publishArtifacts,
+  releaseStepTask(bintrayRelease),
+  setNextVersion,
+  commitNextVersion,
+  pushChanges
+)
