@@ -41,6 +41,5 @@ this script will generate you JSON representation of Schema of this form
 
 ## TODO
 - ENUMS (sealed traits, Enumeration)
-- decorations (max, min, etc..)
-- Travis CI build
-- Coveralls integration
+- Maps
+- decorations ("multipleOf", minimum, exclusiveMinimum, maximum, exclusiveMaximum, format, pattern, etc..)
