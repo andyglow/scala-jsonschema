@@ -3,6 +3,7 @@
 [![Maven Central 2.11](https://maven-badges.herokuapp.com/maven-central/com.github.andyglow/scala-jsonschema_2.11/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.github.andyglow/scala-jsonschema_2.11)
 [![Maven Central 2.12](https://maven-badges.herokuapp.com/maven-central/com.github.andyglow/scala-jsonschema_2.12/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.github.andyglow/scala-jsonschema_2.12)
 [![Bintray](https://api.bintray.com/packages/andyglow/scala-tools/scala-jsonschema/images/download.svg) ](https://bintray.com/andyglow/scala-tools/scala-jsonschema/_latestVersion)
+[![Coverage Status](https://coveralls.io/repos/andyglow/scala-jsonschema/badge.svg)](https://coveralls.io/r/andyglow/scala-jsonschema)
 
 The goal of this library is to make JSON Schema generation done the way all popular JSON reading/writing libraries do.
 Inspired by Coursera Autoschema but uses Scala Macros instead of Java Reflection.
