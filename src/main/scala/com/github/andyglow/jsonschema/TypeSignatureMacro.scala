@@ -1,7 +1,5 @@
 package com.github.andyglow.jsonschema
 
-
-import scala.language.postfixOps
 import scala.reflect.macros.blackbox
 
 object TypeSignatureMacro {

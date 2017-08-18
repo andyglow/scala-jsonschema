@@ -55,3 +55,5 @@ pomExtra :=
         <url>https://ua.linkedin.com/in/andyglow</url>
       </developer>
     </developers>
+
+lazy val root = project

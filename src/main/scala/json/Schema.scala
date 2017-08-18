@@ -1,8 +1,8 @@
 package json
 
-import Type._
-import Value._
 import com.github.andyglow.jsonschema.{SchemaMacro, TypeRegistry, TypeSignature}
+import json.Type._
+import json.Value._
 
 import scala.language.experimental.macros
 
