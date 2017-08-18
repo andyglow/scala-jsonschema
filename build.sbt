@@ -11,11 +11,11 @@ organizationName := "andyglow"
 
 organizationHomepage := Some(url("http://evolutiongaming.com"))
 
-bintrayOrganization := Some("andyglow")
+publishArtifact in Test := false
 
-scalaVersion := "2.12.1"
+scalaVersion := "2.12.3"
 
-crossScalaVersions := Seq("2.12.1", "2.11.8")
+crossScalaVersions := Seq("2.12.3", "2.11.8")
 
 scalacOptions ++= Seq(
   "-encoding", "UTF-8",
@@ -40,3 +40,22 @@ libraryDependencies ++= Seq(
 licenses := Seq(("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0")))
 
 releaseCrossBuild := true
+
+bintrayPackageLabels := Seq("scala", "tools", "websocket", "client")
+
+bintrayRepository := "scala-tools"
+
+bintrayOrganization := Some("andyglow")
+
+pomExtra :=
+  <scm>
+    <url>git://github.com/andyglow/scala-jsonschema.git</url>
+    <connection>scm:git://github.com/andyglow/scala-jsonschema.git</connection>
+  </scm>
+    <developers>
+      <developer>
+        <id>andyglow</id>
+        <name>Andrey Onistchuk</name>
+        <url>https://ua.linkedin.com/in/andyglow</url>
+      </developer>
+    </developers>
