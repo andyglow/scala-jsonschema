@@ -41,6 +41,8 @@ licenses := Seq(("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0")
 
 bintrayPackageLabels := Seq("scala", "tools", "websocket", "client")
 
+bintrayRepository := "scala-tools"
+
 bintrayOrganization := Some("andyglow")
 
 resolvers += Resolver.bintrayRepo("andyglow", "scala-tools")
