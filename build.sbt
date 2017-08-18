@@ -26,25 +26,24 @@ scalacOptions ++= Seq(
   "-Yno-adapted-args",
   "-Ywarn-dead-code",
   "-Ywarn-numeric-widen",
-  "-Xfuture"
-)
+  "-Xfuture")
 
-scalacOptions in (Compile,doc) ++= Seq("-groups", "-implicits", "-no-link-warnings")
+scalacOptions in (Compile,doc) ++= Seq(
+  "-groups",
+  "-implicits",
+  "-no-link-warnings")
 
 libraryDependencies ++= Seq(
   (scalaVersion apply ("org.scala-lang" % "scala-reflect" % _ % Compile)).value,
-  "org.scalatest" %% "scalatest" % "3.0.1" % Test
-)
+  "org.scalatest" %% "scalatest" % "3.0.1" % Test)
 
 licenses := Seq(("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0")))
 
-publishMavenStyle := false
-
 bintrayPackageLabels := Seq("scala", "tools", "websocket", "client")
 
-bintrayRepository := "scala-tools"
-
 bintrayOrganization := Some("andyglow")
+
+resolvers += Resolver.bintrayRepo("andyglow", "scala-tools")
 
 pomExtra :=
   <scm>
@@ -58,19 +57,3 @@ pomExtra :=
         <url>https://ua.linkedin.com/in/andyglow</url>
       </developer>
     </developers>
-
-releasePublishArtifactsAction := PgpKeys.publishSigned.value
-releaseProcess := Seq[ReleaseStep](
-  checkSnapshotDependencies,
-  inquireVersions,
-  runClean,
-  runTest,
-  setReleaseVersion,
-  commitReleaseVersion,
-  tagRelease,
-  publishArtifacts,
-  releaseStepTask(bintrayRelease),
-  setNextVersion,
-  commitNextVersion,
-  pushChanges
-)
