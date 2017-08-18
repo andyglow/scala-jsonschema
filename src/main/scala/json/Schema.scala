@@ -2,23 +2,31 @@ package json
 
 import Type._
 import Value._
-import com.github.andyglow.jsonschema.Macro
+import com.github.andyglow.jsonschema.{SchemaMacro, TypeRegistry, TypeSignature}
+
+import scala.language.experimental.macros
 
 sealed trait Schema {
-  def v: obj
+
+  def asJson: obj
+
+  def definition(implicit typeRegistry: TypeRegistry): Schema
 }
 
-
 object Schema {
-  case class Invalid(error: String) extends Schema {
-    def v: obj = obj("error" -> error)
+
+  case class Ref[T](signature: TypeSignature[T]) extends Schema {
+
+    override def asJson: obj = obj("$ref" -> s"#/definitions/${signature.signature}")
+
+    def definition(implicit typeRegistry: TypeRegistry): Schema = typeRegistry.get(signature) getOrElse sys.error(s"Type ${signature.signature} is not defined on provided type registry")
   }
 
-  case class Valid(
+  case class Def(
     `type`: Type,
     description: Option[String] = None) extends Schema {
 
-    def v: obj = {
+    def asJson: obj = {
       val out = obj(
         ("type"        , `type`.productPrefix),
         ("description" , description))
@@ -26,26 +34,21 @@ object Schema {
       val specifics: obj = `type` match {
         case `string`(format, pattern) =>
           obj(
-            ("format", format),
+            ("format", format map { _.productPrefix }),
             ("pattern", pattern))
 
-        case `number`(format) =>
-          obj("format" -> format)
-
         case `object`(fields) =>
-          val props = fields map { field =>
-            field.schema.v ++ obj("name" -> field.name)
-          }
+          val props = fields.map { field => field.name -> field.schema.asJson }.toMap
           val required = fields collect {
             case field if field.required => str(field.name)
           }
 
           obj(
-            ("properties", arr(props.toSeq)),
+            ("properties", obj(props)),
             ("required"  , arr(required.toSeq)))
 
         case `array`(of) =>
-          obj("items" -> of.v)
+          obj("items" -> of.asJson)
 
         case _ =>
           obj()
@@ -53,11 +56,13 @@ object Schema {
 
       out ++ specifics
     }
+
+    def definition(implicit typeRegistry: TypeRegistry): Schema = this
   }
 
-  import scala.language.experimental.macros
+  def apply[T]: Schema = macro SchemaMacro.impl[T]
 
-  def apply[T]: Schema = macro Macro.impl[T]
-
-  def apply(`type`: Type, description: Option[String] = None): Schema = Schema.Valid(`type`, description)
+  def apply(
+    `type`: Type,
+    description: Option[String] = None) = Def(`type`, description)
 }

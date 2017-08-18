@@ -7,7 +7,7 @@ homepage := Some(new URL("http://github.com/andyglow/scala-jsonschema"))
 
 startYear := Some(2017)
 
-organizationName := "AndyGlow"
+organizationName := "andyglow"
 
 organizationHomepage := Some(url("http://evolutiongaming.com"))
 
