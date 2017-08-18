@@ -1,5 +1,3 @@
-import ReleaseTransformations._
-
 name := "scala-jsonschema"
 
 organization := "com.github.andyglow"
@@ -14,7 +12,7 @@ organizationHomepage := Some(url("http://evolutiongaming.com"))
 
 scalaVersion := "2.12.3"
 
-crossScalaVersions := Seq("2.12.3", "2.11.8")
+crossScalaVersions := Seq("2.12.3", "2.11.11")
 
 scalacOptions ++= Seq(
   "-encoding", "UTF-8",
@@ -59,3 +57,5 @@ pomExtra :=
         <url>https://ua.linkedin.com/in/andyglow</url>
       </developer>
     </developers>
+
+releaseCrossBuild := true
