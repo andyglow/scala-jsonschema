@@ -53,7 +53,7 @@ Inspired by Coursera Autoschema but uses `Scala Macros` instead of `Java Reflect
 
 ## Example
 Suppose you have defined this data structures
-```
+```scala
 sealed trait Gender
 
 object Gender {
@@ -82,18 +82,20 @@ Now you have several ways to specify your schema.
 ### In-Lined
 In simple words in-lined mode means you will have no `definitions`. Type you want to use as source for schema will
 be represented in json schema without reusable data blocks.  
-```
+```scala
+import json._
+
 val personSchema: json.Schema[Person] = Json.schema[Person]
 ```
 As result you will receive this:
-```
+```json
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "additionalProperties": false,
   "properties": {
     "middleName": {
-      "type": "string",
+      "type": "string"
     },
     "cars": {
       "type": "array",
@@ -102,56 +104,56 @@ As result you will receive this:
         "additionalProperties": false,
         "properties": {
           "name": {
-            "type": "string",
+            "type": "string"
           },
           "manufacturer": {
             "type": "object",
             "additionalProperties": false,
             "properties": {
               "name": {
-                "type": "string",
-              },
+                "type": "string"
+              }
             },
             "required": [
-              "name",
-            ],
-          },
+              "name"
+            ]
+          }
         },
         "required": [
           "name",
-          "manufacturer",
-        ],
-      },
+          "manufacturer"
+        ]
+      }
     },
     "company": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
         "name": {
-          "type": "string",
-        },
+          "type": "string"
+        }
       },
       "required": [
-        "name",
-      ],
+        "name"
+      ]
     },
     "lastName": {
-      "type": "string",
+      "type": "string"
     },
     "firstName": {
-      "type": "string",
+      "type": "string"
     },
     "birthDay": {
       "type": "string",
-      "format": "date-time",
+      "format": "date-time"
     },
     "gender": {
       "type": "string",
       "enum": [
         "Male",
-        "Female",
-      ],
-    },
+        "Female"
+      ]
+    }
   },
   "required": [
     "company",
@@ -159,8 +161,8 @@ As result you will receive this:
     "birthDay",
     "gender",
     "firstName",
-    "cars",
-  ],
+    "cars"
+  ]
 }
 ```
 
@@ -168,7 +170,9 @@ As result you will receive this:
 Schema generated in Regular mode will contain so many `definitions` so many separated definitions you provide.
 Lets take a look at example code: 
 
-```
+```scala
+import json._
+
 implicit val genderSchema: json.Schema[Gender] = Json.schema[Gender]
 
 implicit val companySchema: json.Schema[Company] = Json.schema[Company]
@@ -179,37 +183,37 @@ implicit val personSchema: json.Schema[Person] = Json.schema[Person]
 ```
 Here we defined, besides Person schema, gender, company and car schemas. 
 The result will be looking this way then.
-```
+```json
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "additionalProperties": false,
   "properties": {
     "middleName": {
-      "type": "string",
+      "type": "string"
     },
     "cars": {
       "type": "array",
       "items": {
-        "$ref": "#/definitions/com.github.andyglow.jsonschema.ExampleMsg.Car",
-      },
+        "$ref": "#/definitions/com.github.andyglow.jsonschema.ExampleMsg.Car"
+      }
     },
     "company": {
-      "$ref": "#/definitions/com.github.andyglow.jsonschema.ExampleMsg.Company",
+      "$ref": "#/definitions/com.github.andyglow.jsonschema.ExampleMsg.Company"
     },
     "lastName": {
-      "type": "string",
+      "type": "string"
     },
     "firstName": {
-      "type": "string",
+      "type": "string"
     },
     "birthDay": {
       "type": "string",
-      "format": "date-time",
+      "format": "date-time"
     },
     "gender": {
-      "$ref": "#/definitions/com.github.andyglow.jsonschema.ExampleMsg.Gender",
-    },
+      "$ref": "#/definitions/com.github.andyglow.jsonschema.ExampleMsg.Gender"
+    }
   },
   "required": [
     "company",
@@ -217,7 +221,7 @@ The result will be looking this way then.
     "birthDay",
     "gender",
     "firstName",
-    "cars",
+    "cars"
   ],
   "definitions": {
     "com.github.andyglow.jsonschema.ExampleMsg.Company": {
@@ -225,37 +229,37 @@ The result will be looking this way then.
       "additionalProperties": false,
       "properties": {
         "name": {
-          "type": "string",
-        },
+          "type": "string"
+        }
       },
       "required": [
-        "name",
-      ],
+        "name"
+      ]
     },
     "com.github.andyglow.jsonschema.ExampleMsg.Car": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
         "name": {
-          "type": "string",
+          "type": "string"
         },
         "manufacturer": {
-          "$ref": "#/definitions/com.github.andyglow.jsonschema.ExampleMsg.Company",
-        },
+          "$ref": "#/definitions/com.github.andyglow.jsonschema.ExampleMsg.Company"
+        }
       },
       "required": [
         "name",
-        "manufacturer",
-      ],
+        "manufacturer"
+      ]
     },
     "com.github.andyglow.jsonschema.ExampleMsg.Gender": {
       "type": "string",
       "enum": [
         "Male",
-        "Female",
-      ],
-    },
-  },
+        "Female"
+      ]
+    }
+  }
 }
 ```
 
@@ -269,7 +273,7 @@ Currently supported:
 - Circe
 
 Example usage: _Play_
-```
+```scala
 import con.github.andyglow.jsonschema.AsPlay._
 import play.api.libs.json._
 
@@ -279,7 +283,7 @@ val feeSchema: JsValue = Json.schema[Foo].asPlay()
 ``` 
 
 Example usage: _Spray_
-```
+```scala
 import con.github.andyglow.jsonschema.AsSpray._
 import spray.json._
 
@@ -289,7 +293,7 @@ val feeSchema: JsValue = Json.schema[Foo].asSpray()
 ``` 
 
 Example usage: _Circe_
-```
+```scala
 import con.github.andyglow.jsonschema.AsCirce._
 import io.circe._
 
