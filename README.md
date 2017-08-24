@@ -84,7 +84,6 @@ In simple words in-lined mode means you will have no `definitions`. Type you wan
 be represented in json schema without reusable data blocks.  
 ```
 val personSchema: json.Schema[Person] = Json.schema[Person]
-
 ```
 As result you will receive this:
 ```
@@ -177,7 +176,6 @@ implicit val companySchema: json.Schema[Company] = Json.schema[Company]
 implicit val carSchema: json.Schema[Car] = Json.schema[Car]
 
 implicit val personSchema: json.Schema[Person] = Json.schema[Person]
-
 ```
 Here we defined, besides Person schema, gender, company and car schemas. 
 The result will be looking this way then.
