@@ -264,7 +264,7 @@ The result will be looking this way then.
 ```
 
 ## Json
-The library uses its own Json model to represent Json Schema as JSON document.
+The library uses its own Json model _com.github.andyglow.json.Value_ to represent Json Schema as JSON document.
 But project contains additionally several modules which could connect it with library of your choice.
 
 Currently supported:
@@ -279,7 +279,7 @@ import play.api.libs.json._
 
 case class Foo(name: String)
 
-val feeSchema: JsValue = Json.schema[Foo].asPlay()
+val fooSchema: JsValue = Json.schema[Foo].asPlay()
 ``` 
 
 Example usage: _Spray_
@@ -289,7 +289,7 @@ import spray.json._
 
 case class Foo(name: String)
 
-val feeSchema: JsValue = Json.schema[Foo].asSpray()
+val fooSchema: JsValue = Json.schema[Foo].asSpray()
 ``` 
 
 Example usage: _Circe_
@@ -299,9 +299,10 @@ import io.circe._
 
 case class Foo(name: String)
 
-val feeSchema: Json = Json.schema[Foo].asCirce()
+val fooSchema: Json = Json.schema[Foo].asCirce()
 ``` 
 
 ## TODO
-- support of self-references
+- support of self-referenced case classes
+- support for case classes defined locally
 - decorations ("multipleOf", minimum, exclusiveMinimum, maximum, exclusiveMaximum, format, pattern, etc..)

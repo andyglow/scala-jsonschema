@@ -18,22 +18,40 @@ class JsonFormatter(step: Int = 2) {
     value match {
       case obj(fields)  =>
         sb append "{\n"
-        for { (name, value) <- fields} {
+        var first = true
+
+        for { (name, value) <- fields } {
+          if (!first) {
+            sb append ",\n"
+          } else {
+            first = false
+          }
+
           sb append i1
           sb append s""""$name": """
           _format(value, sb, indent + step)
-          sb append ",\n"
         }
+
+        sb append "\n"
         sb append i0
         sb append "}"
 
       case arr(items)   =>
         sb append "[\n"
-        for { value <- items} {
+        var first = true
+
+        for { value <- items } {
+          if (!first) {
+            sb append ",\n"
+          } else {
+            first = false
+          }
+
           sb append i1
           _format(value, sb, indent + step)
-          sb append ",\n"
         }
+
+        sb append "\n"
         sb append i0
         sb append "]"
 
@@ -41,7 +59,6 @@ class JsonFormatter(step: Int = 2) {
         sb append value.toString
     }
   }
-
 }
 
 object JsonFormatter extends JsonFormatter(step = 2)

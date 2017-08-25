@@ -23,5 +23,4 @@ object AsPlay {
       title: Option[String] = None,
       description: Option[String] = None): JsValue = AsPlay(AsValue.schema(x, title, description))
   }
-
 }

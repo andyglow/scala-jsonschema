@@ -55,7 +55,13 @@ object Schema {
 
       def canEqual(that: Any): Boolean = that.isInstanceOf[Field[T]]
 
-      override def equals(that: Any): Boolean = canEqual(that) && (this.name == that.asInstanceOf[Field[T]].name)
+      override def equals(that: Any): Boolean = canEqual(that) && {
+        val other = that.asInstanceOf[Field[T]]
+
+        this.name     == other.name &&
+        this.required == other.required &&
+        this.tpe      == other.tpe
+      }
 
       override def hashCode: Int = name.hashCode
     }

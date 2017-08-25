@@ -1,8 +1,6 @@
 package com.github.andyglow.jsonschema
 
-import scala.annotation.StaticAnnotation
-
-case class TypeSignature[+T](signature: String) extends StaticAnnotation
+case class TypeSignature[+T](signature: String)
 
 object TypeSignature {
 

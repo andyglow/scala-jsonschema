@@ -102,14 +102,16 @@ class AsValueSpec extends WordSpec {
 
       AsValue(`object`(
         Field("foo", `string`[String](None, None)),
-        Field("bar", `integer`, required = false)
+        Field("bar", `integer`, required = false),
+        Field("baz", `boolean`, required = false)
       )) shouldEqual obj(
         "type" -> "object",
         "additionalProperties" -> false,
         "required" -> arr("foo"),
         "properties" -> obj(
           "foo" -> obj("type" -> "string"),
-          "bar" -> obj("type" -> "integer")
+          "bar" -> obj("type" -> "integer"),
+          "baz" -> obj("type" -> "boolean")
         ))
     }
   }

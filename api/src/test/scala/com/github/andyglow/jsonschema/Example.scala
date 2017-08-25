@@ -35,7 +35,8 @@ object ExampleMsg {
     gender: Gender,
     birthDay: LocalDateTime,
     company: Company,
-    cars: Seq[Car])
+    cars: Seq[Car],
+    active: Boolean = true)
 
 }
 
@@ -45,12 +46,7 @@ object ExampleJsonSchema {
 
   implicit val genderJsonType: json.Schema[Gender] = Json.schema[Gender]
 
-  implicit val companyJsonType: json.Schema[Company] = {
-    val s = Json.schema[Company].asInstanceOf[`object`[Company]]
-
-
-    s.copy(fields = s.fields map { x => x.copy(tpe = x.tpe.asInstanceOf[`string`[String]].copy(pattern = Some("\\d+"))) })
-  }
+  implicit val companyJsonType: json.Schema[Company] = Json.schema[Company]
 
   implicit val carJsonType: json.Schema[Car] = Json.schema[Car]
 

@@ -78,7 +78,7 @@ object Value {
 
     def -(otherField: String): obj = obj(underlying - otherField)
 
-    def +(otherField: (String, obj)): obj = obj(underlying + otherField)
+    def +(otherField: (String, Value)): obj = obj(underlying + otherField)
 
     def canEqual(other: Any): Boolean = other.isInstanceOf[obj]
 

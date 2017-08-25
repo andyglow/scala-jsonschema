@@ -54,7 +54,9 @@ lazy val commonSettings = Seq(
         </developer>
       </developers>,
 
-  releaseCrossBuild := true
+  releaseCrossBuild := true,
+
+  libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.1" % Test
 )
 
 
@@ -76,10 +78,7 @@ lazy val macros = project in file("macros") dependsOn core settings (
 lazy val api = { project in file("api") }.dependsOn(core, macros).settings(
   commonSettings,
 
-  name := "scala-jsonschema-api",
-
-  libraryDependencies ++= Seq(
-    "org.scalatest" %% "scalatest" % "3.0.1" % Test)
+  name := "scala-jsonschema-api"
 )
 
 lazy val `play-json` = { project in file("play-json") }.dependsOn(core, api).settings(

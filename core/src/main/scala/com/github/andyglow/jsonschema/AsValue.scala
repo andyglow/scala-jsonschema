@@ -11,6 +11,13 @@ object AsValue {
     title: Option[String] = None,
     description: Option[String] = None): obj = {
 
+    def references(tpe: json.Schema[_]): Seq[`$ref`[_]] = tpe match {
+      case x: `$ref`[_]     => references(x.tpe) :+ x
+      case `array`(ref)     => references(ref)
+      case `object`(fields) => fields.toSeq map { _.tpe } flatMap references
+      case _                => Seq.empty
+    }
+
     val out = obj(
       f"$$schema"   -> "http://json-schema.org/draft-04/schema#",
       "description" -> description,
@@ -23,13 +30,6 @@ object AsValue {
     out ++ AsValue(tpe) ++ {
       if (definitions.nonEmpty) obj("definitions" -> obj(definitions)) else obj()
     }
-  }
-
-  def references(tpe: json.Schema[_]): Seq[`$ref`[_]] = tpe match {
-    case x: `$ref`[_]     => references(x.tpe) :+ x
-    case `array`(ref)     => references(ref)
-    case `object`(fields) => fields.toSeq map { _.tpe } flatMap references
-    case _                => Seq.empty
   }
 
   def apply(x: json.Schema[_]): obj = {

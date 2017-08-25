@@ -104,7 +104,45 @@ object SchemaMacro {
 
     object CC {
 
-      case class Field(name: TermName, tpe: Type, annotations: List[Annotation], hasDefault: Boolean)
+      // TODO: add support for case classes defined in method body
+
+      final def lookupCompanionOf(clazz: Symbol): Symbol = clazz.companion
+
+      def possibleApplyMethodsOf(tpe: Type): List[MethodSymbol] = {
+        val subjectCompanionSym = tpe.typeSymbol
+        val subjectCompanion    = lookupCompanionOf(subjectCompanionSym)
+        val subjectCompanionTpe = subjectCompanion.typeSignature
+
+        subjectCompanionTpe.decl(TermName("apply")) match {
+
+          case NoSymbol =>
+            c.abort(c.enclosingPosition, s"No apply function found for ${subjectCompanion.fullName}")
+
+          case x => x.asTerm.alternatives flatMap { apply =>
+            val method = apply.asMethod
+
+            def areAllImplicit(pss: List[List[Symbol]]): Boolean = pss forall {
+              case p :: _ => p.isImplicit
+              case _      => false
+            }
+
+            method.paramLists match {
+              case ps :: pss if ps.nonEmpty && areAllImplicit(pss) => List(method)
+              case _ => List.empty
+            }
+          }
+        }
+      }
+
+      def applyMethod(tpe: Type): Option[MethodSymbol] = possibleApplyMethodsOf(tpe).headOption
+
+      case class Field(
+        name: TermName,
+        tpe: Type,
+        effectiveTpe: Type,
+        annotations: List[Annotation],
+        hasDefault: Boolean,
+        isOption: Boolean)
 
       def fieldMap(tpe: Type): Seq[Field] = {
 
@@ -118,22 +156,29 @@ object SchemaMacro {
             s.name.toString.trim -> s.accessed.annotations
         }.toMap
 
-        object FieldExtraction {
+        def toField(fieldSym: TermSymbol): Field = {
+          val name        = fieldSym.name.toString.trim
+          val fieldTpe    = fieldSym.typeSignature
+          val isOption    = fieldTpe <:< optionTpe
 
-          def unapply(s: TermSymbol): Option[Field] = {
-            val name = s.name.toString.trim
-            if ( s.isVal
-              && s.isCaseAccessor) {
-              Some(Field(
-                name        = TermName(name),
-                tpe         = s.infoIn(tpe),
-                annotations = annotationMap.getOrElse(name, List.empty),
-                hasDefault  = s.isParamWithDefault))
-            } else None
+          Field(
+            name          = TermName(name),
+            tpe           = fieldTpe,
+            effectiveTpe  = if (isOption) fieldTpe.typeArgs.head else fieldTpe,
+            annotations   = annotationMap.getOrElse(name, List.empty),
+            isOption      = isOption,
+            hasDefault    = fieldSym.isParamWithDefault)
+        }
+
+        val fields = applyMethod(tpe) flatMap { method =>
+          method.paramLists.headOption map { params =>
+            val fields = params map { _.asTerm } map toField
+
+            fields.toSeq
           }
         }
 
-        tpe.decls.collect { case FieldExtraction(f) => f }.toSeq
+        fields getOrElse Seq.empty
       }
 
       def unapply(tpe: Type): Option[Seq[CC.Field]] = {
@@ -151,13 +196,10 @@ object SchemaMacro {
 
       def gen(fieldMap: Seq[CC.Field], tpe: Type, stack: List[Type]): Tree = {
         val fields = fieldMap map { f =>
-          val name          = f.name.decodedName.toString
-          val isOption      = f.tpe <:< optionTpe
-          val hasDefault    = f.hasDefault
-          val effectiveTpe  = if (isOption) f.tpe.typeArgs.head else f.tpe
-          val jsonType      = resolve(effectiveTpe, if (isOption) stack else tpe +: stack)
+          val name      = f.name.decodedName.toString
+          val jsonType  = resolve(f.effectiveTpe, if (f.isOption) stack else tpe +: stack)
 
-          q"`object`.Field[$effectiveTpe](name = $name, tpe = $jsonType, required = ${ !isOption && !hasDefault })"
+          q"`object`.Field[${f.effectiveTpe}](name = $name, tpe = $jsonType, required = ${ !f.isOption && !f.hasDefault })"
         }
 
         q"`object`[$tpe](..$fields)"
