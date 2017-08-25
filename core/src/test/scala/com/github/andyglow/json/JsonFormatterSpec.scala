@@ -20,7 +20,7 @@ class JsonFormatterSpec extends PropSpec {
     (`true`               , """true"""),
     (`false`              , """false"""),
     (bool(true)           , """true"""),
-    (bool(false)          , """false"""),
+    (bool(false)          , """false""")
   )
 
   property("JsonFormatter should format primitive types") {
