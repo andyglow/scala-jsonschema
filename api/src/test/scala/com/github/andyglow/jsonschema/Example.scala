@@ -42,7 +42,6 @@ object ExampleMsg {
 
 object ExampleJsonSchema {
   import ExampleMsg._
-  import json.Schema._
 
   implicit val genderJsonType: json.Schema[Gender] = Json.schema[Gender]
 

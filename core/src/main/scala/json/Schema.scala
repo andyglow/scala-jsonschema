@@ -4,7 +4,25 @@ import scala.language.higherKinds
 
 sealed trait Schema[+T] extends Product {
 
-  def name: String = productPrefix
+  private var _refName: Option[String] = None
+
+  private var _validations: Seq[ValidationDef[_]] = Seq.empty
+
+  def jsonType: String = productPrefix
+
+  def withValidation(v: ValidationDef[_], vs: ValidationDef[_]*): Schema[T] = {
+    this._validations = v +: vs
+    this
+  }
+
+  def apply(refName: String): Schema[T] = {
+    this._refName = Some(refName)
+    this
+  }
+
+  def refName: Option[String] = _refName
+
+  def validations: Seq[ValidationDef[_]] = _validations
 }
 
 object Schema {
@@ -41,11 +59,13 @@ object Schema {
     }
   }
 
+  case class `set`[T, C[_]](componentType: Schema[T]) extends Schema[C[T]] { override def jsonType = "array" }
+
   case class `array`[T, C[_]](componentType: Schema[T]) extends Schema[C[T]]
 
-  case class `string-map`[T](valueType: Schema[T]) extends Schema[Map[String, T]] { override def name = "object" }
+  case class `string-map`[T](valueType: Schema[T]) extends Schema[Map[String, T]] { override def jsonType = "object" }
 
-  case class `int-map`[T](valueType: Schema[T]) extends Schema[Map[Int, T]] { override def name = "object" }
+  case class `int-map`[T](valueType: Schema[T]) extends Schema[Map[Int, T]] { override def jsonType = "object" }
 
   case class `object`[T](fields: Set[`object`.Field[_]]) extends Schema[T]
 

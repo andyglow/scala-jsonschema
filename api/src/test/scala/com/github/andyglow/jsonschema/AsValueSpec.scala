@@ -54,6 +54,13 @@ class AsValueSpec extends WordSpec {
       AsValue(`boolean`) shouldEqual obj("type" -> "boolean")
     }
 
+    "emit Set" in {
+      AsValue(`set`(`string`[String](None, None))) shouldEqual obj(
+        "type"        -> "array",
+        "items"       -> obj("type" -> "string"),
+        "uniqueItems" -> true)
+    }
+
     "emit Array" in {
 
       // simple
@@ -113,6 +120,24 @@ class AsValueSpec extends WordSpec {
           "bar" -> obj("type" -> "integer"),
           "baz" -> obj("type" -> "boolean")
         ))
+    }
+
+    "consider Ref if defined" in {
+      AsValue(`$ref`[Boolean]("scala.Boolean", `boolean`("my-bool"))) shouldEqual obj("$ref" -> "#/definitions/my-bool")
+    }
+
+    "emit validations" in {
+      import json.Validation._
+      val schema = `string`[String](None, None) withValidation (
+        `maxLength` := 20,
+        `minLength` := 15
+      )
+
+      AsValue(schema) shouldEqual obj(
+        "type" -> "string",
+        "minLength" -> 15,
+        "maxLength" -> 20)
+
     }
   }
 }

@@ -24,7 +24,8 @@ object AsValue {
       "title"       -> title)
 
     val definitions: Map[String, Value] = references(tpe).map { x =>
-      x.sig -> AsValue(x.tpe)
+      val ref = x.tpe.refName getOrElse x.sig
+      ref -> AsValue(x.tpe)
     }.toMap
 
     out ++ AsValue(tpe) ++ {
@@ -33,7 +34,9 @@ object AsValue {
   }
 
   def apply(x: json.Schema[_]): obj = {
-    val out = if(x.isInstanceOf[`$ref`[_]]) obj() else obj("type" -> x.name)
+    val out = if(x.isInstanceOf[`$ref`[_]]) obj() else obj("type" -> x.jsonType)
+
+    val validations = obj(x.validations.map { d => d.name -> d.json }.toMap)
 
     val specifics = x match {
       case `string`(format, pattern) =>
@@ -66,18 +69,24 @@ object AsValue {
       case `array`(componentType) =>
         obj("items" -> AsValue(componentType))
 
+      case `set`(componentType) =>
+        obj(
+          "items" -> AsValue(componentType),
+          "uniqueItems" -> true)
+
       case `enum`(values) =>
         obj(
           "type" -> "string",
           "enum" -> values.toArr)
 
       case `$ref`(sig, t) =>
-        obj("$ref" -> s"#/definitions/$sig")
+        val ref = t.refName getOrElse sig
+        obj(f"$$ref" -> s"#/definitions/$ref")
 
       case _ =>
         obj()
     }
 
-    out ++ specifics
+    out ++ validations ++ specifics
   }
 }

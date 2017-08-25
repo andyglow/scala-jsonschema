@@ -12,6 +12,7 @@ object SchemaMacro {
 
     val subject             = weakTypeOf[T]
     val optionTpe           = weakTypeOf[Option[_]]
+    val setTpe              = weakTypeOf[Set[_]]
     val jsonTypeConstructor = weakTypeOf[json.Schema[_]].typeConstructor
     val jsonSubject         = appliedType(jsonTypeConstructor, subject)
 
@@ -254,16 +255,18 @@ object SchemaMacro {
     object Arr {
 
       def gen(tpe: Type, stack: List[Type]): Tree = {
-        val componentType = tpe.typeArgs.head
+        val componentType     = tpe.typeArgs.head
         val componentJsonType = resolve(componentType, tpe +: stack)
+        val isSet             = tpe <:< setTpe
 
-        q"""`array`[$componentType, ${tpe.typeConstructor}]($componentJsonType)"""
+        if (isSet)
+          q"""`set`[$componentType, ${tpe.typeConstructor}]($componentJsonType)"""
+        else
+          q"""`array`[$componentType, ${tpe.typeConstructor}]($componentJsonType)"""
       }
     }
 
     val out = resolve(subject, Nil)
-
-//    c.info(c.enclosingPosition, "OUT: " + showCode(out), force = true)
 
     c.Expr[json.Schema[T]] {
       q"""

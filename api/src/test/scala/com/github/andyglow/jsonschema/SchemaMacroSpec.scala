@@ -1,6 +1,6 @@
 package com.github.andyglow.jsonschema
 
-import json.Json
+import json.{Json, Schema}
 import json.Schema._
 import org.scalatest.Matchers._
 import org.scalatest._
@@ -31,17 +31,24 @@ class SchemaMacroSpec extends WordSpec {
     "generate schema for case class of primitive fields with default values" in {
       import `object`.Field
 
-      // for locally defined case class
       Json.schema[Foo3] shouldEqual `object`(
         Field("name"    , `string`[String](None, None), required = false),
         Field("bar"     , `integer`, required = false),
         Field("active"  , `boolean`, required = false))
+    }
 
-      // for case class defined in companion
-      Json.schema[Foo4] shouldEqual `object`(
-        Field("name"    , `string`[String](None, None), required = false),
-        Field("bar"     , `integer`, required = false),
-        Field("active"  , `boolean`, required = false))
+    "generate references for implicitly defined dependencies" in {
+      import `object`.Field
+
+      implicit val compoSchema: Schema[Compo1] = Json.schema[Compo1]
+
+      val schema = Json.schema[Foo4]
+
+      schema shouldEqual `object`(
+        Field("component", `$ref`[Compo1](
+          "com.github.andyglow.jsonschema.SchemaMacroSpec.Compo1",
+          `string`[Compo1](None, None)),
+          required = true))
     }
 
     "generate schema for Sealed Trait Enums" in {
@@ -56,6 +63,11 @@ class SchemaMacroSpec extends WordSpec {
 
         case object Blue extends Color
       }
+
+      // suppress compile warnings
+      Color.Red
+      Color.Green
+      Color.Blue
 
       Json.schema[Color] shouldEqual `enum`(Set("Red", "Green", "Blue"))
     }
@@ -113,13 +125,15 @@ class SchemaMacroSpec extends WordSpec {
 
 object SchemaMacroSpec {
 
+  case class Compo1(value: String) extends AnyVal
+
   case class Foo1(name: String, bar: Int)
 
   case class Foo2(name: Option[String], bar: Option[Int])
 
   case class Foo3(name: String = "xxx", bar: Int = 5, active: Boolean = true)
 
-  case class Foo4(name: String = "xxx", bar: Int = 5, active: Boolean = true)
+  case class Foo4(component: Compo1)
 
   case class Foo5(name: String, bar: Int)
 

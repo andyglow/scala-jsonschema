@@ -33,6 +33,23 @@ object Value {
 
   case class num(value: BigDecimal) extends Value { override def toString = s"$value" }
 
+  object num {
+
+    def apply(x: Int): num = new num(x)
+
+    def apply(x: Long): num = new num(x)
+
+    def apply(x: Short): num = new num(x.toInt)
+
+    def apply(x: Float): num = new num(x.toDouble)
+
+    def apply(x: Double): num = new num(x)
+
+    def apply(x: BigInt): num = new num(BigDecimal(x))
+
+    def apply(x: Number): num = new num(BigDecimal(x.doubleValue()))
+  }
+
   case class str(value: String) extends Value { override def toString = s""""$value"""" }
 
   case class arr(value: Seq[Value] = Seq.empty) extends Value {

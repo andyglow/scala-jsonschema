@@ -263,7 +263,152 @@ The result will be looking this way then.
 }
 ```
 
-## Json
+## Definitions/References
+There are couple of ways to specify reference of schema.
+1. It could be generated from type name (including type args)
+2. You can do it yourself. It is useful when you want to provide couple of schemas with same type but with different validation rules.
+
+So originally you use
+```scala
+import json._
+
+implicit val someStrSchema: json.Schema[String] = Json.schema[String]
+
+implicit val someArrSchema: json.Schema[Array[String]] = Json.schema[Array[String]]
+
+println(JsonFormatter.format(AsValue.schema(someArrSchema)))
+``` 
+
+```json
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "array",
+  "items": {
+    "$ref": "#/definitions/java.lang.String"
+  },
+  "definitions": {
+    "java.lang.String": {
+      "type": "string"
+    }
+  }
+}
+```
+
+See that `java.lang.String`?
+
+To use custom name, just apply it.
+```scala
+import json._
+
+implicit val someStrSchema: json.Schema[String] = Json.schema[String]("my-lovely-string")
+
+implicit val someArrSchema: json.Schema[Array[String]] = Json.schema[Array[String]]
+
+println(JsonFormatter.format(AsValue.schema(someArrSchema)))
+``` 
+
+```json
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "array",
+  "items": {
+    "$ref": "#/definitions/my-lovely-string"
+  },
+  "definitions": {
+    "my-lovely-string": {
+      "type": "string"
+    }
+  }
+}
+```
+
+There is, though, one circumstance that will make you think twice defining `implicit val someStrSchema: json.Schema[String] = Json.schema[String]` as it will influence all string fields or components of your schema.
+Say you want to use simple string along with validated string for ID representation.
+As the library operates at compile time level it completely rely on type information and
+thus it limits us to only one solution: specify special types as types.
+
+### Use Value Classes.
+```scala
+case class UserId(value: String) extends AnyVal
+
+case class User(id: UserId, name: String)
+```
+
+Then you can do
+```scala
+import json._
+
+implicit val userIdSchema: json.Schema[UserId] = Json.schema[UserId]("userId")
+
+implicit val userSchema: json.Schema[User] = Json.schema[User]
+
+println(JsonFormatter.format(AsValue.schema(someArrSchema)))
+``` 
+
+and expect
+```json
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "$ref": "#/definitions/userId"
+    },
+    "name": {
+      "type": "string"
+    },
+    "required": [
+      "id",
+      "name"
+    ],
+    "definitions": {
+      "userId": {
+        "type": "string"
+      }
+    }
+  }
+}
+``` 
+
+## Validation
+It is also possible to add specific validation rules to our schemas.
+
+Available validations:
+- multipleOf
+- maximum
+- minimum
+- exclusiveMaximum
+- exclusiveMinimum
+- maxLength
+- minLength
+- pattern
+- maxItems
+- minItems
+- uniqueItems
+- maxProperties
+- minProperties
+
+Example
+```scala
+import json._
+import json.Validation._
+
+implicit val userIdSchema: json.Schema[UserId] = Json.schema[UserId]("userId") withValidation (
+  `pattern` := "[a-f\\d]{16}"
+)
+``` 
+Definition will look then like
+```json
+{
+  "userId": {
+    "type": "string",
+    "pattern": "[a-f\\d]{16}"
+  }
+}
+```
+
+## Json Libraries
 The library uses its own Json model _com.github.andyglow.json.Value_ to represent Json Schema as JSON document.
 But project contains additionally several modules which could connect it with library of your choice.
 
@@ -304,5 +449,4 @@ val fooSchema: Json = Json.schema[Foo].asCirce()
 
 ## TODO
 - support of self-referenced case classes
-- support for case classes defined locally
-- decorations ("multipleOf", minimum, exclusiveMinimum, maximum, exclusiveMaximum, format, pattern, etc..)
+- support for case classes defined locally (problem comes from inability to locate companion in this case)
