@@ -10,9 +10,9 @@ lazy val commonSettings = Seq(
 
   organizationHomepage := Some(url("http://evolutiongaming.com")),
 
-  scalaVersion := "2.12.3",
+  scalaVersion := "2.12.6",
 
-  crossScalaVersions := Seq("2.12.3", "2.11.11"),
+  crossScalaVersions := Seq("2.12.6", "2.11.12"),
 
   scalacOptions ++= Seq(
     "-encoding", "UTF-8",
