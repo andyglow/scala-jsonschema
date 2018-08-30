@@ -1,8 +1,7 @@
 # Scala JSON Schema
 [![Build Status](https://travis-ci.org/andyglow/scala-jsonschema.svg)](https://travis-ci.org/andyglow/scala-jsonschema)
-[![Maven Central 2.11](https://maven-badges.herokuapp.com/maven-central/com.github.andyglow/scala-jsonschema_2.11/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.github.andyglow/scala-jsonschema_2.11)
-[![Maven Central 2.12](https://maven-badges.herokuapp.com/maven-central/com.github.andyglow/scala-jsonschema_2.12/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.github.andyglow/scala-jsonschema_2.12)
-[![Bintray](https://api.bintray.com/packages/andyglow/scala-tools/scala-jsonschema/images/download.svg) ](https://bintray.com/andyglow/scala-tools/scala-jsonschema/_latestVersion)
+![Maven Central 2.11](https://img.shields.io/maven-central/v/com.github.andyglow/scala-jsonschema_2.11.svg)
+![Maven Central 2.12](https://img.shields.io/maven-central/v/com.github.andyglow/scala-jsonschema_2.12.svg)
 [![Coverage Status](https://coveralls.io/repos/github/andyglow/scala-jsonschema/badge.svg?branch=master)](https://coveralls.io/github/andyglow/scala-jsonschema?branch=master)
 
 ## Generate JSON Schema from Scala classes
