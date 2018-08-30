@@ -1,3 +1,5 @@
+import xerial.sbt.Sonatype._
+
 lazy val commonSettings = Seq(
 
   organization := "com.github.andyglow",
@@ -8,7 +10,7 @@ lazy val commonSettings = Seq(
 
   organizationName := "andyglow",
 
-  organizationHomepage := Some(url("http://evolutiongaming.com")),
+  publishTo := sonatypePublishTo.value,
 
   scalaVersion := "2.12.6",
 
@@ -33,26 +35,27 @@ lazy val commonSettings = Seq(
 
   licenses := Seq(("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))),
 
-  bintrayPackageLabels := Seq("scala", "json-schema", "json"),
+  sonatypeProfileName := "org.github.andyglow",
 
-  bintrayRepository := "scala-tools",
+  publishMavenStyle := true,
 
-  bintrayOrganization := Some("andyglow"),
+  sonatypeProjectHosting := Some(
+    GitHubHosting(
+      "andyglow",
+      "scala-jsonschema",
+      "andyglow@gmail.com")),
 
-  resolvers += Resolver.bintrayRepo("andyglow", "scala-tools"),
+  scmInfo := Some(
+    ScmInfo(
+      url("https://github.com/andyglow/scala-jsonschema"),
+      "scm:git@github.com:andyglow/scala-jsonschema.git")),
 
-  pomExtra :=
-    <scm>
-      <url>git://github.com/andyglow/scala-jsonschema.git</url>
-      <connection>scm:git://github.com/andyglow/scala-jsonschema.git</connection>
-    </scm>
-      <developers>
-        <developer>
-          <id>andyglow</id>
-          <name>Andrey Onistchuk</name>
-          <url>https://ua.linkedin.com/in/andyglow</url>
-        </developer>
-      </developers>,
+  developers := List(
+    Developer(
+      id    = "andyglow",
+      name  = "Andriy Onyshchuk",
+      email = "andyglow@gmail.com",
+      url   = url("https://ua.linkedin.com/in/andyglow"))),
 
   releaseCrossBuild := true,
 
