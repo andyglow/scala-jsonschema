@@ -33,7 +33,7 @@ lazy val commonSettings = Seq(
 
   licenses := Seq(("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))),
 
-  bintrayPackageLabels := Seq("scala", "tools", "websocket", "client"),
+  bintrayPackageLabels := Seq("scala", "json-schema", "json"),
 
   bintrayRepository := "scala-tools",
 
