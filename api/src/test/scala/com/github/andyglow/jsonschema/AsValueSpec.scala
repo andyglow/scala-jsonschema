@@ -3,6 +3,7 @@ package com.github.andyglow.jsonschema
 import java.net.URI
 
 import com.github.andyglow.json.Value._
+import json.Json
 import json.Schema._
 import org.scalatest.Matchers._
 import org.scalatest._
@@ -128,16 +129,29 @@ class AsValueSpec extends WordSpec {
 
     "emit validations" in {
       import json.Validation._
-      val schema = `string`[String](None, None) withValidation (
+      val schema1 = `string`[String](None, None) withValidation (
         `maxLength` := 20,
-        `minLength` := 15
-      )
+        `minLength` := 15)
 
-      AsValue(schema) shouldEqual obj(
-        "type" -> "string",
-        "minLength" -> 15,
-        "maxLength" -> 20)
+      AsValue(schema1) shouldEqual obj("type" -> "string", "minLength" -> 15, "maxLength" -> 20)
 
+      val schema2 = `array`[String, List](`string`[String](None, None)) withValidation (
+        `maxItems` := 20,
+        `minItems` := 15)
+
+      AsValue(schema2) shouldEqual obj("type" -> "array", "items" -> obj("type" -> "string"), "minItems" -> 15, "maxItems" -> 20)
+
+      val schema3 = Json.schema[String].asInstanceOf[`string`[String]] withValidation (
+        `maxLength` := 20,
+        `minLength` := 15)
+
+      AsValue(schema3) shouldEqual obj("type" -> "string", "minLength" -> 15, "maxLength" -> 20)
+
+      val schema4 = Json.schema[Traversable[String]].asInstanceOf[`array`[String, List]] withValidation (
+        `maxItems` := 20,
+        `minItems` := 15)
+
+      AsValue(schema4) shouldEqual obj("type" -> "array", "items" -> obj("type" -> "string"), "minItems" -> 15, "maxItems" -> 20)
     }
   }
 }
