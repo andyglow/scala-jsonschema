@@ -35,7 +35,7 @@ lazy val commonSettings = Seq(
 
   licenses := Seq(("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))),
 
-  sonatypeProfileName := "org.github.andyglow",
+  sonatypeProfileName := "com.github.andyglow",
 
   publishMavenStyle := true,
 
