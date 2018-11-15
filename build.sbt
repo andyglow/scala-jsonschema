@@ -116,13 +116,22 @@ lazy val `circe-json` = { project in file("circe-json") }.dependsOn(core, api).s
   }
 )
 
+lazy val `json4s-json` = { project in file("json4s-json") }.dependsOn(core, api).settings(
+  commonSettings,
+
+  name := "scala-jsonschema-json4s-json",
+
+  libraryDependencies += "org.json4s" %% "json4s-ast" % "3.6.2"
+)
+
 lazy val root = { project in file(".") }.aggregate(
   core,
   macros,
   api,
   `play-json`,
   `circe-json`,
-  `spray-json`).settings(
+  `spray-json`,
+  `json4s-json`).settings(
 
   commonSettings,
 
