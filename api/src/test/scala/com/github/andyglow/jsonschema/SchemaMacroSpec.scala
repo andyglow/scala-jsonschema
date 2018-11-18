@@ -155,9 +155,8 @@ object SchemaMacroSpec {
   case class Bar8(foo: String) extends AnyVal
 
   case class Foo9(name: String)
-
-  sealed trait FooBar
-
-  case class FooBar1(foo: Double) extends FooBar
-  case class FooBar2(bar: Double) extends FooBar
 }
+
+sealed trait FooBar
+case class FooBar1(foo: Double) extends FooBar
+case class FooBar2(bar: Double) extends FooBar
