@@ -34,7 +34,7 @@ object AsValue {
   }
 
   def apply(x: json.Schema[_]): obj = {
-    val out = if(x.isInstanceOf[`$ref`[_]]) obj() else obj("type" -> x.jsonType)
+    val out = if(x.isInstanceOf[`$ref`[_]] || x.isInstanceOf[`oneof`[_]]) obj() else obj("type" -> x.jsonType)
 
     val validations = obj(x.validations.map { d => d.name -> d.json }.toMap)
 
@@ -78,6 +78,14 @@ object AsValue {
         obj(
           "type" -> "string",
           "enum" -> values.toArr)
+
+      case `oneof`(schemas) =>
+        val subTypesSeq = schemas.toArray
+        obj(
+          "oneOf" -> `arr`(AsValue(subTypesSeq.head),
+            subTypesSeq.tail.map(AsValue.apply): _*
+          )
+        )
 
       case `$ref`(sig, t) =>
         val ref = t.refName getOrElse sig

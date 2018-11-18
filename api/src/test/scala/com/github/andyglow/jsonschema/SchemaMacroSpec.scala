@@ -72,6 +72,15 @@ class SchemaMacroSpec extends WordSpec {
       Json.schema[Color] shouldEqual `enum`(Set("Red", "Green", "Blue"))
     }
 
+    "generate schema for Sealed Trait subclasses" in {
+      import `object`.Field
+
+      Json.schema[FooBar] shouldEqual `oneof`(Set(
+        `object`(Field("foo", `number`[Double]())),
+        `object`(Field("bar", `number`[Double]()))
+      ))
+    }
+
     "generate schema for case class using another case class" in {
       import `object`.Field
 
@@ -146,4 +155,9 @@ object SchemaMacroSpec {
   case class Bar8(foo: String) extends AnyVal
 
   case class Foo9(name: String)
+
+  sealed trait FooBar
+
+  case class FooBar1(foo: Double) extends FooBar
+  case class FooBar2(bar: Double) extends FooBar
 }

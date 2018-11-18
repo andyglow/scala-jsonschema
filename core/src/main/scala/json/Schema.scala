@@ -93,5 +93,7 @@ object Schema {
 
   final case class `enum`[T](values: Set[String]) extends Schema[T] { override type BoundType = T }
 
+  final case class `oneof`[T](subTypes: Set[`object`[_]]) extends Schema[T] { override type BoundType = T }
+
   final case class $ref[T](sig: String, tpe: Schema[T]) extends Schema[T] { override type BoundType = T }
 }

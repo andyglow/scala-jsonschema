@@ -16,6 +16,7 @@ Inspired by Coursera Autoschema but uses `Scala Macros` instead of `Java Reflect
 - As well as treat fields with `default values` as optional
 - Support `value classes`
 - Support `sealed trait enums`
+- Support `sealed trait case classes`
 - Any `Traversable` will be treated as `array`
 
 ### Types supported out of the box
@@ -23,6 +24,7 @@ Inspired by Coursera Autoschema but uses `Scala Macros` instead of `Java Reflect
 - Numeric
     - `Short`
     - `Int`
+    - `Char`
     - `Double`
     - `Float`
     - `Long`
@@ -48,6 +50,7 @@ Inspired by Coursera Autoschema but uses `Scala Macros` instead of `Java Reflect
     - `Traversable[T]`
 - Sealed Trait hierarchy of case objects (Enums)
 - Case Classes
+- Sealed Trait hierarchy of case classes
 - Value Classes    
 
 ## Example
@@ -444,6 +447,16 @@ import io.circe._
 case class Foo(name: String)
 
 val fooSchema: Json = Json.schema[Foo].asCirce()
+``` 
+
+Example usage: _Json4s_
+```scala
+import con.github.andyglow.jsonschema.AsJson4s._
+import org.json4s.JsonAST._
+
+case class Foo(name: String)
+
+val fooSchema: JValue = Json.schema[Foo].asJson4s()
 ``` 
 
 ## TODO

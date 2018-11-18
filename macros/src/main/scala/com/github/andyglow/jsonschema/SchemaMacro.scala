@@ -34,6 +34,7 @@ object SchemaMacro {
 
         // string
         case x if x =:= typeOf[String]                  => q"`string`[String](None, None)"
+        case x if x =:= typeOf[Char]                    => q"""`string`[$x](None, Some("^[.\\s]$$"))"""
 
         // uuid
         case x if x =:= typeOf[UUID]                    => q"""`string`[$x](None, Some("^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$$"))"""
@@ -59,6 +60,8 @@ object SchemaMacro {
         case x if x <:< typeOf[Traversable[_]]          => Arr.gen(x, stack)
 
         case SE(names)                                  => SE.gen(tpe, names)
+
+        case SC(subTypes)                               => SC.gen(tpe, subTypes.map(CC.unapply).flatMap(_.map(CC.gen(_, tpe, stack))))
 
         case CC(fields)                                 => CC.gen(fields, tpe, stack)
 
@@ -101,6 +104,23 @@ object SchemaMacro {
       }
 
       def gen(tpe: Type, names: Set[String]): Tree = q"`enum`[$tpe]($names)"
+    }
+
+    object SC {
+
+      def unapply(tpe: Type): Option[Set[Type]] = {
+        if (tpe.typeSymbol.isClass && tpe.typeSymbol.asClass.isSealed) {
+          val instances = tpe.typeSymbol.asClass.knownDirectSubclasses
+
+          if (instances forall { i => val c = i.asClass; !c.isModuleClass && c.isCaseClass}) {
+            Some(instances map { _.typeSignature })
+          } else
+            None
+        } else
+          None
+      }
+
+      def gen(tpe: Type, subTypes: Set[Tree]): Tree = q"`oneof`[$tpe]($subTypes)"
     }
 
     object CC {
