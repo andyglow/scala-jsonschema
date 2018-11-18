@@ -89,20 +89,18 @@ class AsValueSpec extends WordSpec {
         "enum" -> arr("Red", "Blue", "Green"))
     }
 
-    "emit oneOf" in {
-
+    "emit OneOf" in {
       import `object`.Field
 
-      val obj1 = `object`(
-        Field("foo", `string`[String](None, None)),
-        Field("bar", `integer`, required = false),
-      )
-
-      val obj2 = `object`(
-        Field("foo", `string`[String](None, None)),
-      )
-
-      AsValue(`oneof`(Set(obj1, obj2))) shouldEqual obj(
+      AsValue(`oneof`(Set(
+        `object`(
+          Field("foo", `string`[String](None, None)),
+          Field("bar", `integer`, required = false)
+        ),
+        `object`(
+          Field("foo", `string`[String](None, None))
+        )
+      ))) shouldEqual obj(
         "oneOf" -> arr(
           obj(
             "type" -> "object",
@@ -110,16 +108,13 @@ class AsValueSpec extends WordSpec {
             "required" -> arr("foo"),
             "properties" -> obj(
               "foo" -> obj("type" -> "string"),
-              "bar" -> obj("type" -> "integer"),
-            )),
+              "bar" -> obj("type" -> "integer"))),
           obj(
             "type" -> "object",
             "additionalProperties" -> false,
             "required" -> arr("foo"),
             "properties" -> obj(
-              "foo" -> obj("type" -> "string")
-            ))
-        ))
+              "foo" -> obj("type" -> "string")))))
     }
 
     "emit Map[String, _]" in {
