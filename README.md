@@ -32,6 +32,7 @@ Inspired by Coursera Autoschema but uses `Scala Macros` instead of `Java Reflect
     - `BigDecimal`
 - `String`
 - Date Time
+    - `org.joda.time.DateTime`
     - `java.util.Date`
     - `java.sql.Timestamp`
     - `java.time.Instant`

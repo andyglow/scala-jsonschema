@@ -3,6 +3,8 @@ package com.github.andyglow.jsonschema
 import java.net.{URI, URL}
 import java.util.UUID
 
+import org.joda.time.DateTime
+
 import scala.reflect.macros.blackbox
 
 object SchemaMacro {
@@ -44,6 +46,7 @@ object SchemaMacro {
         case x if x =:= typeOf[URI]                     => q"`string`[$x](Some(`string`.Format.`uri`), None)"
 
         // date, date-time
+        case x if x =:= typeOf[org.joda.time.DateTime]  => q"`string`[$x](Some(`string`.Format.`date-time`), None)"
         case x if x =:= typeOf[java.util.Date]          => q"`string`[$x](Some(`string`.Format.`date-time`), None)"
         case x if x =:= typeOf[java.sql.Timestamp]      => q"`string`[$x](Some(`string`.Format.`date-time`), None)"
         case x if x =:= typeOf[java.time.Instant]       => q"`string`[$x](Some(`string`.Format.`date-time`), None)"
@@ -52,6 +55,7 @@ object SchemaMacro {
         case x if x =:= typeOf[java.time.LocalDate]     => q"`string`[$x](Some(`string`.Format.`date`), None)"
         case x if x =:= typeOf[java.sql.Time]           => q"`string`[$x](Some(`string`.Format.`time`), None)"
         case x if x =:= typeOf[java.time.LocalTime]     => q"`string`[$x](Some(`string`.Format.`time`), None)"
+
 
         case x if x <:< typeOf[Map[String, _]]          => SM.gen(x, stack)
 

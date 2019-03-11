@@ -59,7 +59,10 @@ lazy val commonSettings = Seq(
 
   releaseCrossBuild := true,
 
-  libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.1" % Test
+  libraryDependencies ++= Seq(
+    "org.scalatest" %% "scalatest" % "3.0.1" % Test,
+    "joda-time" % "joda-time" % "2.10.1"
+  )
 )
 
 
@@ -89,7 +92,10 @@ lazy val `play-json` = { project in file("play-json") }.dependsOn(core, api).set
 
   name := "scala-jsonschema-play-json",
 
-  libraryDependencies += "com.typesafe.play" %% "play-json" % "2.6.3"
+  libraryDependencies ++= Seq(
+    "com.typesafe.play" %% "play-json" % "2.6.3",
+    "com.typesafe.play" %% "play-json-joda" % "2.6.3",
+  )
 )
 
 lazy val `spray-json` = { project in file("spray-json") }.dependsOn(core, api).settings(
