@@ -138,6 +138,7 @@ lazy val root = { project in file(".") }.aggregate(
   core,
   macros,
   api,
+  `joda-time`,
   `play-json`,
   `circe-json`,
   `spray-json`,
