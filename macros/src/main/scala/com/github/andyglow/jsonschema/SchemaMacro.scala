@@ -290,6 +290,7 @@ object SchemaMacro {
 
     c.Expr[json.Schema[T]] {
       q"""
+        import json._
         import json.Schema._
 
         $out

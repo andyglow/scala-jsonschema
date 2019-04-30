@@ -126,6 +126,14 @@ lazy val `json4s-json` = { project in file("json4s-json") }.dependsOn(core, api)
   libraryDependencies += "org.json4s" %% "json4s-ast" % "3.6.2"
 )
 
+lazy val `joda-time` = { project in file("joda-time") }.dependsOn(core, api).settings(
+  commonSettings,
+
+  name := "scala-jsonschema-joda-time",
+
+  libraryDependencies += "joda-time" % "joda-time" % "2.10.1"
+)
+
 lazy val root = { project in file(".") }.aggregate(
   core,
   macros,
