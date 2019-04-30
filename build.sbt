@@ -59,6 +59,8 @@ lazy val commonSettings = Seq(
 
   releaseCrossBuild := true,
 
+  releasePublishArtifactsAction := PgpKeys.publishSigned.value,
+  
   libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.1" % Test
 )
 
