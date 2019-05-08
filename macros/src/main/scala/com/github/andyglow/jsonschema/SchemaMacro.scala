@@ -61,7 +61,7 @@ object SchemaMacro {
 
         case SE(names)                                  => SE.gen(tpe, names)
 
-        case SC(subTypes)                               => SC.gen(tpe, subTypes.map(CC.unapply).flatMap(_.map(CC.gen(_, tpe, stack))))
+        case SC(subTypes)                               => SC.gen(tpe, subTypes, stack)
 
         case CC(fields)                                 => CC.gen(fields, tpe, stack)
 
@@ -120,7 +120,14 @@ object SchemaMacro {
           None
       }
 
-      def gen(tpe: Type, subTypes: Set[Tree]): Tree = q"`oneof`[$tpe]($subTypes)"
+      def gen(tpe: Type, subTypes: Set[Type], stack: List[Type]): Tree = {
+        val trees = subTypes collect {
+          case CC(fields)    => CC.gen(fields, tpe, stack)
+          case VC(innerType) => VC.gen(innerType, tpe, stack)
+        }
+
+        q"`oneof`[$tpe]($trees)"
+      }
     }
 
     object CC {
@@ -257,7 +264,8 @@ object SchemaMacro {
           if (clazz.isCaseClass) {
             if (clazz.isDerivedValueClass) Some {
               clazz.primaryConstructor.asMethod.paramLists.head.head.typeSignature
-            } else None
+            } else
+              None
           } else
             None
         } else
@@ -268,6 +276,7 @@ object SchemaMacro {
         val x = resolve(innerType, tpe +: stack)
         x match {
           case q"""$c[$t](..$args)""" => q"$c[$tpe](..$args)"
+          case x => x
         }
       }
     }

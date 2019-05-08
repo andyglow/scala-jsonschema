@@ -77,8 +77,22 @@ class SchemaMacroSpec extends WordSpec {
 
       Json.schema[FooBar] shouldEqual `oneof`(Set(
         `object`(Field("foo", `number`[Double]())),
-        `object`(Field("bar", `number`[Double]()))
-      ))
+        `object`(Field("bar", `number`[Double]()))))
+    }
+
+    "generate schema for Map which Sealed Family for values" in {
+      import `object`.Field
+
+      Json.schema[Map[String, FooBar]] shouldEqual `string-map`(
+        `oneof`(Set(
+          `object`(Field("foo", `number`[Double]())),
+          `object`(Field("bar", `number`[Double]())))))
+    }
+
+    "generate schema for Map which Sealed Values Family for values" in {
+
+      Json.schema[Map[String, AnyFooBar]] shouldEqual `string-map`(
+        `oneof`(Set(`string`[String](None, None), `integer`)))
     }
 
     "generate schema for case class using another case class" in {
@@ -160,3 +174,7 @@ object SchemaMacroSpec {
 sealed trait FooBar
 case class FooBar1(foo: Double) extends FooBar
 case class FooBar2(bar: Double) extends FooBar
+
+sealed trait AnyFooBar extends Any
+case class AnyFooBar1(value: String) extends AnyVal with AnyFooBar
+case class AnyFooBar2(value: Int) extends AnyVal with AnyFooBar

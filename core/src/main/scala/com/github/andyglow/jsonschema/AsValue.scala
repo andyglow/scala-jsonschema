@@ -82,10 +82,9 @@ object AsValue {
       case `oneof`(schemas) =>
         val subTypesSeq = schemas.toArray
         obj(
-          "oneOf" -> `arr`(AsValue(subTypesSeq.head),
-            subTypesSeq.tail.map(AsValue.apply): _*
-          )
-        )
+          "oneOf" -> `arr`(
+            AsValue(subTypesSeq.head),
+            subTypesSeq.tail.map(AsValue.apply): _*))
 
       case `$ref`(sig, t) =>
         val ref = t.refName getOrElse sig
