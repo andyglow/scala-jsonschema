@@ -73,7 +73,7 @@ object Schema {
 
   object `object` {
 
-    final case class Field[T](name: String, tpe: Schema[T], required: Boolean = true) {
+    final case class Field[+T](name: String, tpe: Schema[T], required: Boolean = true) {
 
       def canEqual(that: Any): Boolean = that.isInstanceOf[Field[T]]
 

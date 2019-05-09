@@ -34,7 +34,7 @@ object AsValue {
   }
 
   def apply(x: json.Schema[_]): obj = {
-    val out = if(x.isInstanceOf[`$ref`[_]] || x.isInstanceOf[`oneof`[_]]) obj() else obj("type" -> x.jsonType)
+    val out = if (x.isInstanceOf[`$ref`[_]] || x.isInstanceOf[`oneof`[_]]) obj() else obj("type" -> x.jsonType)
 
     val validations = obj(x.validations.map { d => d.name -> d.json }.toMap)
 

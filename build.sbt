@@ -1,4 +1,9 @@
 import xerial.sbt.Sonatype._
+import ReleaseTransformations._
+import scala.sys.process._
+
+// https://github.com/xerial/sbt-sonatype/issues/71
+publishTo in ThisBuild := sonatypePublishTo.value
 
 lazy val commonSettings = Seq(
 
@@ -9,8 +14,6 @@ lazy val commonSettings = Seq(
   startYear := Some(2017),
 
   organizationName := "andyglow",
-
-  publishTo := sonatypePublishTo.value,
 
   scalaVersion := "2.12.8",
 
@@ -60,6 +63,20 @@ lazy val commonSettings = Seq(
   releaseCrossBuild := true,
 
   releasePublishArtifactsAction := PgpKeys.publishSigned.value,
+
+  releaseProcess := Seq[ReleaseStep](
+    checkSnapshotDependencies,
+    inquireVersions,
+    runClean,
+    runTest,
+    setReleaseVersion,
+    commitReleaseVersion,
+    tagRelease,
+    ReleaseStep(action = Command.process("publishSigned", _), enableCrossBuild = true),
+    setNextVersion,
+    commitNextVersion,
+    ReleaseStep(action = Command.process("sonatypeReleaseAll", _), enableCrossBuild = true),
+    pushChanges),
   
   libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.1" % Test
 )
@@ -134,10 +151,17 @@ lazy val `joda-time` = { project in file("joda-time") }.dependsOn(core, api).set
   libraryDependencies += "joda-time" % "joda-time" % "2.10.1"
 )
 
+lazy val parser = { project in file("parser") }.dependsOn(core, api).settings(
+  commonSettings,
+
+  name := "scala-jsonschema-parser",
+)
+
 lazy val root = { project in file(".") }.aggregate(
   core,
   macros,
   api,
+  parser,
   `joda-time`,
   `play-json`,
   `circe-json`,
@@ -147,6 +171,12 @@ lazy val root = { project in file(".") }.aggregate(
   commonSettings,
 
   name := "scala-jsonschema",
+  
+  crossScalaVersions := Nil,
+  
+  publish / skip := true,
+  
+  publishArtifact := false,
 
   aggregate in update := false
 )
