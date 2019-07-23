@@ -10,6 +10,10 @@ object SchemaMacro {
   def impl[T : c.WeakTypeTag](c: blackbox.Context): c.Expr[json.Schema[T]] = {
     import c.universe._
 
+    val jsonPkg   = q"_root_.json"
+    val scalaPkg  = q"_root_.scala"
+    val schemaObj = q"$jsonPkg.Schema"
+
     val subject             = weakTypeOf[T]
     val optionTpe           = weakTypeOf[Option[_]]
     val setTpe              = weakTypeOf[Set[_]]
@@ -19,39 +23,45 @@ object SchemaMacro {
     def resolve(tpe: Type, stack: List[Type]): Tree = {
       if (stack contains tpe) c.error(c.enclosingPosition, s"cyclic dependency for $tpe")
 
+      val integer = q"$schemaObj.`integer`"
+      val number  = q"$schemaObj.`number`"
+      val string  = q"$schemaObj.`string`"
+      val some    = q"$scalaPkg.Some"
+      val none    = q"$scalaPkg.None"
+
       def genTree: Tree = tpe match {
         // boolean
-        case x if x =:= typeOf[Boolean]                 => q"`boolean`"
+        case x if x =:= typeOf[Boolean]                 => q"$schemaObj.`boolean`"
 
         // numeric
-        case x if x =:= typeOf[Short]                   => q"`integer`"
-        case x if x =:= typeOf[Int]                     => q"`integer`"
-        case x if x =:= typeOf[Double]                  => q"`number`[$x]()"
-        case x if x =:= typeOf[Float]                   => q"`number`[$x]()"
-        case x if x =:= typeOf[Long]                    => q"`number`[$x]()"
-        case x if x =:= typeOf[BigInt]                  => q"`number`[$x]()"
-        case x if x =:= typeOf[BigDecimal]              => q"`number`[$x]()"
+        case x if x =:= typeOf[Short]                   => integer
+        case x if x =:= typeOf[Int]                     => integer
+        case x if x =:= typeOf[Double]                  => q"$number[$x]()"
+        case x if x =:= typeOf[Float]                   => q"$number[$x]()"
+        case x if x =:= typeOf[Long]                    => q"$number[$x]()"
+        case x if x =:= typeOf[BigInt]                  => q"$number[$x]()"
+        case x if x =:= typeOf[BigDecimal]              => q"$number[$x]()"
 
         // string
-        case x if x =:= typeOf[String]                  => q"`string`[String](None, None)"
-        case x if x =:= typeOf[Char]                    => q"""`string`[$x](None, Some("^[.\\s]$$"))"""
+        case x if x =:= typeOf[String]                  => q"$string[$scalaPkg.Predef.String]($none, $none)"
+        case x if x =:= typeOf[Char]                    => q"""$string[$x]($none, $some("^[.\\s]$$"))"""
 
         // uuid
-        case x if x =:= typeOf[UUID]                    => q"""`string`[$x](None, Some("^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$$"))"""
+        case x if x =:= typeOf[UUID]                    => q"""$string[$x]($none, $some("^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$$"))"""
 
         // url, uri
-        case x if x =:= typeOf[URL]                     => q"`string`[$x](Some(`string`.Format.`uri`), None)"
-        case x if x =:= typeOf[URI]                     => q"`string`[$x](Some(`string`.Format.`uri`), None)"
+        case x if x =:= typeOf[URL]                     => q"$string[$x]($some($string.Format.`uri`), $none)"
+        case x if x =:= typeOf[URI]                     => q"$string[$x]($some($string.Format.`uri`), $none)"
 
         // date, date-time
-        case x if x =:= typeOf[java.util.Date]          => q"`string`[$x](Some(`string`.Format.`date-time`), None)"
-        case x if x =:= typeOf[java.sql.Timestamp]      => q"`string`[$x](Some(`string`.Format.`date-time`), None)"
-        case x if x =:= typeOf[java.time.Instant]       => q"`string`[$x](Some(`string`.Format.`date-time`), None)"
-        case x if x =:= typeOf[java.time.LocalDateTime] => q"`string`[$x](Some(`string`.Format.`date-time`), None)"
-        case x if x =:= typeOf[java.sql.Date]           => q"`string`[$x](Some(`string`.Format.`date`), None)"
-        case x if x =:= typeOf[java.time.LocalDate]     => q"`string`[$x](Some(`string`.Format.`date`), None)"
-        case x if x =:= typeOf[java.sql.Time]           => q"`string`[$x](Some(`string`.Format.`time`), None)"
-        case x if x =:= typeOf[java.time.LocalTime]     => q"`string`[$x](Some(`string`.Format.`time`), None)"
+        case x if x =:= typeOf[java.util.Date]          => q"$string[$x]($some($string.Format.`date-time`), $none)"
+        case x if x =:= typeOf[java.sql.Timestamp]      => q"$string[$x]($some($string.Format.`date-time`), $none)"
+        case x if x =:= typeOf[java.time.Instant]       => q"$string[$x]($some($string.Format.`date-time`), $none)"
+        case x if x =:= typeOf[java.time.LocalDateTime] => q"$string[$x]($some($string.Format.`date-time`), $none)"
+        case x if x =:= typeOf[java.sql.Date]           => q"$string[$x]($some($string.Format.`date`), $none)"
+        case x if x =:= typeOf[java.time.LocalDate]     => q"$string[$x]($some($string.Format.`date`), $none)"
+        case x if x =:= typeOf[java.sql.Time]           => q"$string[$x]($some($string.Format.`time`), $none)"
+        case x if x =:= typeOf[java.time.LocalTime]     => q"$string[$x]($some($string.Format.`time`), $none)"
 
         case x if x <:< typeOf[Map[String, _]]          => SM.gen(x, stack)
 
@@ -83,7 +93,7 @@ object SchemaMacro {
         if (typeType =:= jsonSubject) gen else {
           c.inferImplicitValue(typeType) match {
             case EmptyTree  => gen
-            case x          => q"""`$$ref`[$tpe](Json.sig[$tpe].signature, $x)"""
+            case x          => q"""$schemaObj.`$$ref`[$tpe]($jsonPkg.Json.sig[$tpe].signature, $x)"""
           }
         }
       }
@@ -103,7 +113,7 @@ object SchemaMacro {
           None
       }
 
-      def gen(tpe: Type, names: Set[String]): Tree = q"`enum`[$tpe]($names)"
+      def gen(tpe: Type, names: Set[String]): Tree = q"$schemaObj.`enum`[$tpe]($names)"
     }
 
     object SC {
@@ -126,7 +136,7 @@ object SchemaMacro {
           case VC(innerType) => VC.gen(innerType, tpe, stack)
         }
 
-        q"`oneof`[$tpe]($trees)"
+        q"$schemaObj.`oneof`[$tpe]($trees)"
       }
     }
 
@@ -223,14 +233,15 @@ object SchemaMacro {
       }
 
       def gen(fieldMap: Seq[CC.Field], tpe: Type, stack: List[Type]): Tree = {
+        val obj = q"$schemaObj.`object`"
         val fields = fieldMap map { f =>
           val name      = f.name.decodedName.toString
           val jsonType  = resolve(f.effectiveTpe, if (f.isOption) stack else tpe +: stack)
 
-          q"`object`.Field[${f.effectiveTpe}](name = $name, tpe = $jsonType, required = ${ !f.isOption && !f.hasDefault })"
+          q"$obj.Field[${f.effectiveTpe}](name = $name, tpe = $jsonType, required = ${ !f.isOption && !f.hasDefault })"
         }
 
-        q"`object`[$tpe](..$fields)"
+        q"$obj[$tpe](..$fields)"
       }
     }
 
@@ -240,7 +251,7 @@ object SchemaMacro {
         val componentType = tpe.typeArgs.tail.head
         val componentJsonType = resolve(componentType, tpe +: stack)
 
-        q"""`int-map`[$componentType]($componentJsonType)"""
+        q"""$schemaObj.`int-map`[$componentType]($componentJsonType)"""
       }
     }
 
@@ -250,7 +261,7 @@ object SchemaMacro {
         val componentType = tpe.typeArgs.tail.head
         val componentJsonType = resolve(componentType, tpe +: stack)
 
-        q"""`string-map`[$componentType]($componentJsonType)"""
+        q"""$schemaObj.`string-map`[$componentType]($componentJsonType)"""
       }
     }
 
@@ -289,21 +300,14 @@ object SchemaMacro {
         val isSet             = tpe <:< setTpe
 
         if (isSet)
-          q"""`set`[$componentType, ${tpe.typeConstructor}]($componentJsonType)"""
+          q"""$schemaObj.`set`[$componentType, ${tpe.typeConstructor}]($componentJsonType)"""
         else
-          q"""`array`[$componentType, ${tpe.typeConstructor}]($componentJsonType)"""
+          q"""$schemaObj.`array`[$componentType, ${tpe.typeConstructor}]($componentJsonType)"""
       }
     }
 
     val out = resolve(subject, Nil)
 
-    c.Expr[json.Schema[T]] {
-      q"""
-        import json._
-        import json.Schema._
-
-        $out
-       """
-    }
+    c.Expr[json.Schema[T]](out)
   }
 }

@@ -19,6 +19,6 @@ object TypeSignatureMacro {
       localName + s"[${tpe.typeArgs map { _.typeSymbol.fullName } mkString ","}]"
     }
 
-    q"TypeSignature[$tpe]($name)"
+    q"_root_.com.github.andyglow.jsonschema.TypeSignature[$tpe]($name)"
   }
 }
