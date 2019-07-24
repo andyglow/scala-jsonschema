@@ -3,6 +3,7 @@ package com.github.andyglow.jsonschema
 import com.github.andyglow.json.Value
 import json.Schema._
 import com.github.andyglow.json.Value._
+import json.Validation
 
 object AsValue {
 
@@ -36,7 +37,19 @@ object AsValue {
   def apply(x: json.Schema[_]): obj = {
     val out = if (x.isInstanceOf[`ref`[_]] || x.isInstanceOf[`oneof`[_]]) obj() else obj("type" -> x.jsonType)
 
-    val validations = obj(x.validations.map { d => d.name -> d.json }.toMap)
+    val (validations, pp) = {
+      import Validation._
+
+      val pp = x.validations.find(_.validation == `patternProperties`)
+      val validations = obj {
+        x.validations.collect {
+          case d if d.validation != `patternProperties` =>
+            d.validation.name -> d.json
+        }.toMap
+      }
+
+      (validations, pp)
+    }
 
     val specifics = x match {
       case `string`(format, pattern) =>
@@ -59,8 +72,9 @@ object AsValue {
           ("required"  , arr(required.toSeq)))
 
       case `string-map`(valueType) =>
+        val pattern = pp map { _.json.asInstanceOf[str].value } getOrElse "^.*$"
         obj("patternProperties" -> obj(
-          "^.*$" -> AsValue(valueType)))
+          pattern -> AsValue(valueType)))
 
       case `int-map`(valueType) =>
         obj("patternProperties" -> obj(

@@ -35,7 +35,6 @@ class AsValueSpec extends WordSpec {
       AsValue(`string`[String](Some(`string`.Format.`ipv6`), None)) shouldEqual obj("type" -> "string", "format" -> "ipv6")
     }
 
-
     "emit String with Custom Format" in {
 
       case object `fancy-string-format` extends `string`.Format
@@ -194,6 +193,14 @@ class AsValueSpec extends WordSpec {
         `minItems` := 15)
 
       AsValue(schema4) shouldEqual obj("type" -> "array", "items" -> obj("type" -> "string"), "minItems" -> 15, "maxItems" -> 20)
+
+      val schema5 = Json.schema[Map[String, String]].asInstanceOf[`string-map`[String]] withValidation (
+        `patternProperties` := "^[a-z]*$")
+
+      AsValue(schema5) shouldEqual obj(
+        "type" -> "object",
+        "patternProperties" -> obj(
+          "^[a-z]*$" -> obj("type" -> "string")))
     }
   }
 }

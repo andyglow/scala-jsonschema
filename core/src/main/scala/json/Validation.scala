@@ -4,11 +4,13 @@ import com.github.andyglow.json.Value._
 import com.github.andyglow.json.Value
 
 
-final case class ValidationDef[S, V](name: String, value: V, json: Value)
+final case class ValidationDef[S, V](validation: Validation[S, V], value: V, json: Value)
 
 sealed abstract class Validation[S, V]()(implicit conv: V => Value) extends Product {
 
-  def :=(x: V): ValidationDef[S, V] = ValidationDef(productPrefix, x, x)
+  def name: String = productPrefix
+
+  def :=(x: V): ValidationDef[S, V] = ValidationDef(this, x, x)
 }
 
 object Validation {
@@ -38,6 +40,8 @@ object Validation {
   final case object `maxProperties` extends Validation[Any, Int]()(num.apply)
 
   final case object `minProperties` extends Validation[Any, Int]()(num.apply)
+
+  final case object `patternProperties` extends Validation[Map[String, _], String]()(str.apply)
 }
 
 

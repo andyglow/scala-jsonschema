@@ -12,7 +12,7 @@ class ValueDslSpec extends PropSpec {
   val none: Option[String] = None
 
   val examples = Table(
-    ("DSL", "Expected"),
+    ("DSL"                            , "Expected"),
     (obj("foo" -> true)               , obj("foo" -> `true`)),
     (obj("foo" -> false)              , obj("foo" -> `false`)),
     (obj("foo" -> "bar")              , obj("foo" -> str("bar"))),
