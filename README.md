@@ -2,6 +2,7 @@
 [![Build Status](https://travis-ci.org/andyglow/scala-jsonschema.svg)](https://travis-ci.org/andyglow/scala-jsonschema)
 ![Maven Central 2.11](https://img.shields.io/maven-central/v/com.github.andyglow/scala-jsonschema_2.11.svg)
 ![Maven Central 2.12](https://img.shields.io/maven-central/v/com.github.andyglow/scala-jsonschema_2.12.svg)
+![Maven Central 2.13](https://img.shields.io/maven-central/v/com.github.andyglow/scala-jsonschema_2.13.svg)
 [![Coverage Status](https://coveralls.io/repos/github/andyglow/scala-jsonschema/badge.svg?branch=master)](https://coveralls.io/github/andyglow/scala-jsonschema?branch=master)
 
 ## Generate JSON Schema from Scala classes
@@ -17,7 +18,7 @@ Inspired by Coursera Autoschema but uses `Scala Macros` instead of `Java Reflect
 - Support `value classes`
 - Support `sealed trait enums`
 - Support `sealed trait case classes`
-- Any `Traversable` will be treated as `array`
+- Any `Iterable` will be treated as `array`
 - Optional Joda-Time Support
 
 ### Types supported out of the box
@@ -54,7 +55,7 @@ Inspired by Coursera Autoschema but uses `Scala Macros` instead of `Java Reflect
 - Collections
     - String Map (eg. `Map[String, T]`)
     - Int Map (eg. `Map[Int, T]`)
-    - `Traversable[T]`
+    - `Iterable[T]`
 - Sealed Trait hierarchy of case objects (Enums)
 - Case Classes
 - Sealed Trait hierarchy of case classes
@@ -467,6 +468,7 @@ Currently supported:
 - Spray Json
 - Circe
 - Json4s
+- uJson
 
 Example usage: _Play_
 ```scala
@@ -506,6 +508,15 @@ import org.json4s.JsonAST._
 case class Foo(name: String)
 
 val fooSchema: JValue = Json.schema[Foo].asJson4s()
+``` 
+
+Example usage: _uJson_
+```scala
+import con.github.andyglow.jsonschema.AsU._
+
+case class Foo(name: String)
+
+val fooSchema: ujson.Value = Json.schema[Foo].asU()
 ``` 
 
 ## TODO
