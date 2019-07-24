@@ -4,12 +4,12 @@ import com.github.andyglow.json.{ParseJson, Value}
 import json.Schema
 import org.scalatest._
 import org.scalatest.Matchers._
-import com.github.andyglow.util.Scala212Compat._
+import com.github.andyglow.testsupport._
+import com.github.andyglow.scalamigration._
 import scala.util.Try
 
 
 class ParseJsonSchemaSpec extends FunSuite {
-  import com.github.andyglow.json.ParseJsonSpec._
   import Schema._
 
   test("string") {
@@ -165,5 +165,5 @@ class ParseJsonSchemaSpec extends FunSuite {
   }
 
   def parseType(x: String): Try[Schema[_]] =
-    ParseJson(x) collect { case x: Value.obj => x } flatMap ParseJsonSchema.makeType
+    ParseJson(x) find { case e: Value.obj => e } flatMap ParseJsonSchema.makeType
 }

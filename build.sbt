@@ -15,21 +15,36 @@ lazy val commonSettings = Seq(
 
   organizationName := "andyglow",
 
-  scalaVersion := "2.12.8",
+  scalaVersion := "2.13.0",
 
-  crossScalaVersions := Seq("2.12.8", "2.11.12"),
+  crossScalaVersions := Seq("2.11.12", "2.12.8", "2.13.0"),
 
-  scalacOptions ++= Seq(
-    "-encoding", "UTF-8",
-    "-feature",
-    "-unchecked",
-    "-deprecation",
-    //  "-Xfatal-warnings",
-    "-Xlint",
-    "-Yno-adapted-args",
-    "-Ywarn-dead-code",
-    "-Ywarn-numeric-widen",
-    "-Xfuture"),
+  scalacOptions ++= {
+    val options = Seq(
+      "-encoding", "UTF-8",
+      "-feature",
+      "-unchecked",
+      "-deprecation",
+      "-Xfatal-warnings",
+      "-Xlint",
+      "-Yno-adapted-args",
+      "-Ywarn-dead-code",
+      "-Ywarn-numeric-widen",
+      "-Xfuture")
+
+    // WORKAROUND https://github.com/scala/scala/pull/5402
+    CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, 12)) => options.map {
+        case "-Xlint"               => "-Xlint:-unused,_"
+        case "-Ywarn-unused-import" => "-Ywarn-unused:imports,-patvars,-privates,-locals,-params,-implicits"
+        case other                  => other
+      }
+      case Some((2, n)) if n >= 13  => options.filterNot { opt =>
+        opt == "-Yno-adapted-args" || opt == "-Xfuture"
+      } :+ "-Xsource:2.13"
+      case _             => options
+    }
+  },
 
   scalacOptions in (Compile,doc) ++= Seq(
     "-groups",
@@ -78,7 +93,7 @@ lazy val commonSettings = Seq(
     ReleaseStep(action = Command.process("sonatypeReleaseAll", _), enableCrossBuild = true),
     pushChanges),
   
-  libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.1" % Test
+  libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.8" % Test
 )
 
 
@@ -108,7 +123,7 @@ lazy val `play-json` = { project in file("play-json") }.dependsOn(core, api).set
 
   name := "scala-jsonschema-play-json",
 
-  libraryDependencies += "com.typesafe.play" %% "play-json" % "2.6.3"
+  libraryDependencies += "com.typesafe.play" %% "play-json" % "2.7.4"
 )
 
 lazy val `spray-json` = { project in file("spray-json") }.dependsOn(core, api).settings(
@@ -116,7 +131,7 @@ lazy val `spray-json` = { project in file("spray-json") }.dependsOn(core, api).s
 
   name := "scala-jsonschema-spray-json",
 
-  libraryDependencies += "io.spray" %%  "spray-json" % "1.3.3"
+  libraryDependencies += "io.spray" %%  "spray-json" % "1.3.5"
 )
 
 lazy val `circe-json` = { project in file("circe-json") }.dependsOn(core, api).settings(
@@ -125,7 +140,7 @@ lazy val `circe-json` = { project in file("circe-json") }.dependsOn(core, api).s
   name := "scala-jsonschema-circe-json",
 
   libraryDependencies ++= {
-    val circeVersion = "0.8.0"
+    val circeVersion = "0.12.0-M3"
 
     Seq(
       "io.circe" %% "circe-core",
@@ -140,7 +155,7 @@ lazy val `json4s-json` = { project in file("json4s-json") }.dependsOn(core, api)
 
   name := "scala-jsonschema-json4s-json",
 
-  libraryDependencies += "org.json4s" %% "json4s-ast" % "3.6.2"
+  libraryDependencies += "org.json4s" %% "json4s-ast" % "3.6.7"
 )
 
 lazy val `joda-time` = { project in file("joda-time") }.dependsOn(core, api).settings(
@@ -148,13 +163,13 @@ lazy val `joda-time` = { project in file("joda-time") }.dependsOn(core, api).set
 
   name := "scala-jsonschema-joda-time",
 
-  libraryDependencies += "joda-time" % "joda-time" % "2.10.1"
+  libraryDependencies += "joda-time" % "joda-time" % "2.10.3"
 )
 
-lazy val parser = { project in file("parser") }.dependsOn(core, api).settings(
+lazy val parser = { project in file("parser") }.dependsOn(core % "compile->compile;test->test", api).settings(
   commonSettings,
 
-  name := "scala-jsonschema-parser",
+  name := "scala-jsonschema-parser"
 )
 
 lazy val root = { project in file(".") }.aggregate(

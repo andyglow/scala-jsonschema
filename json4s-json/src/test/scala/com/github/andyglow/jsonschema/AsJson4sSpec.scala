@@ -1,15 +1,17 @@
 package com.github.andyglow.jsonschema
 
+import com.github.andyglow.json.Value
 import org.scalatest._
 import org.scalatest.Matchers._
 import org.scalatest.prop.TableDrivenPropertyChecks._
 import com.github.andyglow.json.Value._
 import org.json4s.JsonAST._
+import org.scalactic.Equality
 
 class AsJson4sSpec extends PropSpec{
   import AsJson4sSpec._
 
-  private val examples = Table(
+  private val examples = Table[Value, JValue](
     ("json"                           , "PlayJson"),
     (`null`                           , JNull),
     (`true`                           , JBool(true)),
@@ -50,4 +52,56 @@ object AsJson4sSpec {
     lastName: String,
     age: Int,
     active: Boolean = true)
+
+
+  implicit val jsValEq: Equality[JValue] = new Equality[JValue] {
+    override def areEqual(a: JValue, b: Any): Boolean = a match {
+      case JNull => b == JNull
+      case JBool.True => b == JBool.True
+      case JBool.False => b == JBool.False
+      case JDecimal(a) if b.isInstanceOf[JDecimal] => b.asInstanceOf[JDecimal].num == a
+      case JString(a) if b.isInstanceOf[JString] => b.asInstanceOf[JString].s == a
+      case a: JArray => jsArrEq.areEqual(a, b)
+      case a: JObject => jsObjEq.areEqual(a, b)
+    }
+  }
+
+  implicit val jsArrEq: Equality[JArray] = new Equality[JArray] {
+
+    override def areEqual(a: JArray, b: Any): Boolean = b match {
+      case b: JArray =>
+        if (a.arr.size == b.arr.size) {
+          a.arr forall { aa =>
+            b.arr exists { bb =>
+              jsValEq.areEqual(aa, bb)
+            }
+          }
+        } else
+          false
+      case _ => false
+    }
+  }
+
+  implicit val jsObjEq: Equality[JObject] = new Equality[JObject] {
+
+    override def areEqual(a: JObject, b: Any): Boolean = b match {
+      case b: JObject =>
+        val am = a.obj.toMap
+        val bm = b.obj.toMap
+        val keys = am.keySet ++ bm.keySet
+        keys.foldLeft(true) {
+          case (true, k)  =>
+            val r = for {
+              a <- am.get(k)
+              b <- bm.get(k)
+            } yield {
+              jsValEq.areEqual(a, b)
+            }
+
+            r getOrElse false
+          case (false, _) => false
+        }
+      case _ => false
+    }
+  }
 }

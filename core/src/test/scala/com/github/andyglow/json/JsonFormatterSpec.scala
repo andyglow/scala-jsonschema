@@ -12,7 +12,7 @@ class JsonFormatterSpec extends PropSpec {
     ("JS Input"           , "Expected"),
     (str("foo")           , """"foo""""),
     (num(5)               , """5"""),
-    (num(5l)              , """5"""),
+    (num(5L)              , """5"""),
     (num(5.1)             , """5.1"""),
     (num(BigDecimal(5.1)) , """5.1"""),
     (num(BigDecimal(5))   , """5"""),

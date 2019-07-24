@@ -5,6 +5,7 @@ import org.scalatest.Matchers._
 import org.scalatest.prop.TableDrivenPropertyChecks._
 import com.github.andyglow.json.Value._
 import io.circe._
+import org.scalactic.Equality
 
 class AsCirceSpec extends PropSpec {
   import AsCirceSpec._
@@ -50,4 +51,56 @@ object AsCirceSpec {
     lastName: String,
     age: Int,
     active: Boolean = true)
+
+
+  implicit val jsValEq: Equality[Json] = new Equality[Json] {
+    override def areEqual(a: Json, b: Any): Boolean = a match {
+      case Json.Null                 => b == Json.Null
+      case Json.True                 => b == Json.True
+      case Json.False                => b == Json.False
+      case _ if b.isInstanceOf[Json] =>
+        val bb = b.asInstanceOf[Json]
+        if (a.isNumber && bb.isNumber) a.asNumber == bb.asNumber
+        else if (a.isString && bb.isString) a.asString == bb.asString
+        else if (a.isArray && bb.isArray) {
+          val r = for {
+            aa <- a.asArray
+            bb <- bb.asArray
+          } yield {
+            aa forall { aa =>
+              bb exists { bb =>
+                jsValEq.areEqual(aa, bb)
+              }
+            }
+          }
+
+          r getOrElse false
+        } else if (a.isObject && bb.isObject) {
+          val r = for {
+            aa <- a.asObject
+            bb <- bb.asObject
+          } yield {
+            val am = aa.toMap
+            val bm = bb.toMap
+            val keys = am.keySet ++ bm.keySet
+            keys.foldLeft(true) {
+              case (true, k)  =>
+                val r = for {
+                  a <- am.get(k)
+                  b <- bm.get(k)
+                } yield {
+                  jsValEq.areEqual(a, b)
+                }
+
+                r getOrElse false
+              case (false, _) => false
+            }
+          }
+
+          r getOrElse false
+        } else
+          false
+      case _                         => false
+    }
+  }
 }

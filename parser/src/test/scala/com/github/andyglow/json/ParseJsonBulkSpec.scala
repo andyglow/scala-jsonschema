@@ -1,7 +1,6 @@
 package com.github.andyglow.json
 
 import org.scalatest._
-import org.scalatest.Matchers._
 
 import scala.io.Source
 import scala.util.{Failure, Success}

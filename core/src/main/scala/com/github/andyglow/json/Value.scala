@@ -93,9 +93,9 @@ object Value {
 
     def ++(other: Option[obj]): obj = other.fold(this)(x => obj(underlying ++ x.underlying))
 
-    def -(otherField: String): obj = obj(underlying - otherField)
+    def -(otherField: String): obj = obj(underlying.toMap - otherField)
 
-    def +(otherField: (String, Value)): obj = obj(underlying + otherField)
+    def +(otherField: (String, Value)): obj = obj(underlying.toMap + otherField)
 
     def canEqual(other: Any): Boolean = other.isInstanceOf[obj]
 
@@ -207,9 +207,8 @@ object Value {
 
   implicit def convertValueField[T](x: (String, Value)): obj.field = obj.field.some(x._1, x._2)
 
-  implicit class TraversableOps[T](val x: Traversable[T]) {
+  implicit class IterableOps[T](val x: Iterable[T]) {
 
     def toArr(implicit elementAdapter: ValueAdapter[T]): arr = arr(x.map { elementAdapter adapt _ }.toSeq)
   }
-
 }

@@ -1,6 +1,8 @@
 package com.github.andyglow.json
 
 import scala.collection.mutable
+import com.github.andyglow.scalamigration._
+
 
 sealed trait MutableValue {
 
@@ -33,6 +35,6 @@ object MutableValue {
 
     def update(k: String, v: MutableValue): obj = { value.update(k, v); this }
 
-    override def toValue = Value.obj(value.toMap mapValues { _.toValue })
+    override def toValue = Value.obj(value.toMap mapV { _.toValue })
   }
 }

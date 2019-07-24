@@ -7,20 +7,55 @@ import org.json4s.JsonAST._
 
 object AsJson4s {
 
-  def apply(value: Value): JValue = value match {
-    case `null` => JNull
-    case `true` => JBool(true)
-    case `false` => JBool(false)
-    case num(x) => JDecimal(x)
-    case str(x) => JString(x)
-    case arr(x) => JArray(x.map(AsJson4s.apply).toList)
-    case obj(x) => JObject(x.map { case (k, v) => JField(k, AsJson4s.apply(v)) }.toList)
-  }
+  def apply[T](value: T)(implicit a: Adapter[T]): a.P = a.adapt(value)
 
   implicit class SchemaOps[T](val x: Schema[T]) extends AnyVal {
 
     def asJson4s(
       title: Option[String] = None,
-      description: Option[String] = None): JValue = AsJson4s(AsValue.schema(x, title, description))
+      description: Option[String] = None): JObject = AsJson4s(AsValue.schema(x, title, description))
+  }
+
+  trait Adapter[T] {
+    type P
+
+    def adapt(x: T): P
+  }
+
+  trait LowPriorityAdapter {
+
+    implicit val anyAdapter: Adapter.Aux[Value, JValue] = Adapter make {
+      case `null`  => JNull
+      case `true`  => JBool.True
+      case `false` => JBool.False
+      case x: num  => Adapter.numAdapter.adapt(x)
+      case x: str  => Adapter.strAdapter.adapt(x)
+      case x: arr  => Adapter.arrAdapter.adapt(x)
+      case x: obj  => Adapter.objAdapter.adapt(x)
+    }
+  }
+
+  object Adapter extends LowPriorityAdapter {
+    type Aux[T, PP] = Adapter[T] { type P = PP }
+
+    def make[T, PP](f: T => PP): Aux[T, PP] = new Adapter[T] {
+      type P = PP
+
+      def adapt(x: T): PP = f(x)
+    }
+
+    implicit val nullAdapter: Aux[`null`.type, JNull.type] = make(_ => JNull)
+    implicit val trueAdapter: Aux[`true`.type, JBool] = make(_ => JBool.True)
+    implicit val falseAdapter: Aux[`false`.type, JBool] = make(_ => JBool.False)
+    implicit val numAdapter: Aux[num, JDecimal] = make(x => JDecimal(x.value))
+    implicit val strAdapter: Aux[str, JString] = make(x => JString(x.value))
+    implicit val arrAdapter: Aux[arr, JArray] = make(x => JArray { x.value.toList map { AsJson4s(_) } })
+    implicit val objAdapter: Aux[obj, JObject] = make { x =>
+      val fields = x.value.toList.map {
+        case (k, v) => JField(k, AsJson4s.apply(v))
+      }
+
+      JObject(fields)
+    }
   }
 }

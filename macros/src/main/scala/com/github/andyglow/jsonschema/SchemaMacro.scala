@@ -67,7 +67,7 @@ object SchemaMacro {
 
         case x if x <:< typeOf[Map[Int, _]]             => IM.gen(x, stack)
 
-        case x if x <:< typeOf[Traversable[_]]          => Arr.gen(x, stack)
+        case x if x <:< typeOf[Iterable[_]]             => Arr.gen(x, stack)
 
         case SE(names)                                  => SE.gen(tpe, names)
 
@@ -93,7 +93,7 @@ object SchemaMacro {
         if (typeType =:= jsonSubject) gen else {
           c.inferImplicitValue(typeType) match {
             case EmptyTree  => gen
-            case x          => q"""$schemaObj.`$$ref`[$tpe]($jsonPkg.Json.sig[$tpe].signature, $x)"""
+            case x          => q"""$schemaObj.`ref`[$tpe]($jsonPkg.Json.sig[$tpe].signature, $x)"""
           }
         }
       }

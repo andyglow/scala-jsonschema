@@ -2,12 +2,10 @@ package com.github.andyglow.json
 
 import org.scalatest.Matchers._
 import org.scalatest._
-import com.github.andyglow.util.Scala212Compat._
-import scala.util.Try
+import com.github.andyglow.testsupport._
 
 
 class ParseJsonSpec extends FunSuite {
-  import ParseJsonSpec._
   import Value._
 
   test("null") { ParseJson("null").value shouldBe `null` }
@@ -32,12 +30,4 @@ class ParseJsonSpec extends FunSuite {
   test("non empty object. booleans") { ParseJson("{\"a\": true, \"b\": false}").value shouldBe obj("a" -> true, "b" -> false) }
   test("non empty object. nulls") { ParseJson("{\"a\": null, \"b\": null}").value shouldBe obj("a" -> `null`, "b" -> `null`) }
   test("non empty object. mixed") { ParseJson("{\"a\": 1, \"b\": .2, \"c\": \"foo\", \"d\": true, \"e\": null}").value shouldBe obj("a" -> 1, "b" -> .2, "c" -> "foo", "d" -> true, "e" -> `null`) }
-}
-
-object ParseJsonSpec {
-
-  implicit class TryOps[T](private val t: Try[T]) extends AnyVal {
-
-    def value: T = t.fold(err => fail("", err), identity)
-  }
 }

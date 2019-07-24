@@ -41,13 +41,16 @@ class SchemaMacroSpec extends WordSpec {
       import `object`.Field
 
       implicit val compoSchema: Schema[Compo1] = Json.schema[Compo1]
+      compoSchema.refName // need this to workaround compiler warning that compoSchema is not used
 
       val schema = Json.schema[Foo4]
 
       schema shouldEqual `object`(
-        Field("component", `$ref`[Compo1](
-          "com.github.andyglow.jsonschema.SchemaMacroSpec.Compo1",
-          `string`[Compo1](None, None)),
+        Field(
+          "component",
+          `ref`[Compo1](
+            "com.github.andyglow.jsonschema.SchemaMacroSpec.Compo1",
+            `string`[Compo1](None, None)),
           required = true))
     }
 

@@ -22,7 +22,7 @@ object ParseJsonSchema {
 
     def str(k: String): Option[String] = x.get(k) collect { case str(x) => x }
 
-    def int(k: String): Option[Int] = x.get(k) collect { case num(x) => x.intValue() }
+    def int(k: String): Option[Int] = x.get(k) collect { case num(x) => x.intValue }
 
     def obj(k: String): Option[obj] = x.get(k) collect { case x: obj => x }
 

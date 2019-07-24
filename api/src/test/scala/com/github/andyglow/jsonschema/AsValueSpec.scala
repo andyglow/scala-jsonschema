@@ -163,7 +163,10 @@ class AsValueSpec extends WordSpec {
     }
 
     "consider Ref if defined" in {
-      AsValue(`$ref`[Boolean]("scala.Boolean", `boolean`("my-bool"))) shouldEqual obj("$ref" -> "#/definitions/my-bool")
+      AsValue(
+        `ref`[Boolean](
+          "scala.Boolean",
+          `boolean`("my-bool"))) shouldEqual obj(s"$$ref" -> "#/definitions/my-bool")
     }
 
     "emit validations" in {
@@ -186,7 +189,7 @@ class AsValueSpec extends WordSpec {
 
       AsValue(schema3) shouldEqual obj("type" -> "string", "minLength" -> 15, "maxLength" -> 20)
 
-      val schema4 = Json.schema[Traversable[String]].asInstanceOf[`array`[String, List]] withValidation (
+      val schema4 = Json.schema[Iterable[String]].asInstanceOf[`array`[String, List]] withValidation (
         `maxItems` := 20,
         `minItems` := 15)
 

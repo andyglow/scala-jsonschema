@@ -2,6 +2,7 @@ package json
 
 import scala.language.higherKinds
 
+
 sealed trait Schema[+T] extends Product {
 
   type BoundType
@@ -63,7 +64,7 @@ object Schema {
 
   final case class `set`[T, C[_]](componentType: Schema[T]) extends Schema[C[T]] { override type BoundType = Set[_]; override def jsonType = "array" }
 
-  final case class `array`[T, C[_]](componentType: Schema[T]) extends Schema[C[T]] { override type BoundType = Traversable[_] }
+  final case class `array`[T, C[_]](componentType: Schema[T]) extends Schema[C[T]] { override type BoundType = Iterable[_] }
 
   final case class `string-map`[T](valueType: Schema[T]) extends Schema[Map[String, T]] { override type BoundType = Map[String, _]; override def jsonType = "object" }
 
@@ -95,5 +96,5 @@ object Schema {
 
   final case class `oneof`[T](subTypes: Set[Schema[_]]) extends Schema[T] { override type BoundType = T }
 
-  final case class $ref[T](sig: String, tpe: Schema[T]) extends Schema[T] { override type BoundType = T }
+  final case class `ref`[T](sig: String, tpe: Schema[T]) extends Schema[T] { override type BoundType = T; override def jsonType: String = s"$$ref" }
 }

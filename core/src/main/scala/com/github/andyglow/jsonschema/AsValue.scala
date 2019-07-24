@@ -11,8 +11,8 @@ object AsValue {
     title: Option[String] = None,
     description: Option[String] = None): obj = {
 
-    def references(tpe: json.Schema[_]): Seq[`$ref`[_]] = tpe match {
-      case x: `$ref`[_]     => references(x.tpe) :+ x
+    def references(tpe: json.Schema[_]): Seq[`ref`[_]] = tpe match {
+      case x: `ref`[_]      => references(x.tpe) :+ x
       case `array`(ref)     => references(ref)
       case `object`(fields) => fields.toSeq map { _.tpe } flatMap references
       case _                => Seq.empty
@@ -34,7 +34,7 @@ object AsValue {
   }
 
   def apply(x: json.Schema[_]): obj = {
-    val out = if (x.isInstanceOf[`$ref`[_]] || x.isInstanceOf[`oneof`[_]]) obj() else obj("type" -> x.jsonType)
+    val out = if (x.isInstanceOf[`ref`[_]] || x.isInstanceOf[`oneof`[_]]) obj() else obj("type" -> x.jsonType)
 
     val validations = obj(x.validations.map { d => d.name -> d.json }.toMap)
 
@@ -84,9 +84,9 @@ object AsValue {
         obj(
           "oneOf" -> `arr`(
             AsValue(subTypesSeq.head),
-            subTypesSeq.tail.map(AsValue.apply): _*))
+            subTypesSeq.tail.toSeq.map(AsValue.apply): _*))
 
-      case `$ref`(sig, t) =>
+      case `ref`(sig, t) =>
         val ref = t.refName getOrElse sig
         obj(f"$$ref" -> s"#/definitions/$ref")
 
