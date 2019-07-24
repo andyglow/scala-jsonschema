@@ -158,6 +158,21 @@ lazy val `json4s-json` = { project in file("json4s-json") }.dependsOn(core, api)
   libraryDependencies += "org.json4s" %% "json4s-ast" % "3.6.7"
 )
 
+lazy val `u-json` = { project in file("u-json") }.dependsOn(core, api).settings(
+  commonSettings,
+
+  name := "scala-jsonschema-ujson",
+
+  libraryDependencies += {
+    val ujsonVersion = CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, 11)) => "0.7.4"
+      case _             => "0.7.5"
+    }
+    
+    "com.lihaoyi" %% "ujson" % ujsonVersion
+  }
+)
+
 lazy val `joda-time` = { project in file("joda-time") }.dependsOn(core, api).settings(
   commonSettings,
 
@@ -181,7 +196,8 @@ lazy val root = { project in file(".") }.aggregate(
   `play-json`,
   `circe-json`,
   `spray-json`,
-  `json4s-json`).settings(
+  `json4s-json`,
+  `u-json`).settings(
 
   commonSettings,
 
