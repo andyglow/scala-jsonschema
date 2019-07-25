@@ -1,20 +1,22 @@
 package json
 
+import scala.annotation.implicitNotFound
 import scala.language.higherKinds
 
 
 sealed trait Schema[+T] extends Product {
-
-  type BoundType
+  import Schema._
 
   private var _refName: Option[String] = None
 
-  private var _validations: Seq[ValidationDef[BoundType, _]] = Seq.empty
+  private var _validations: collection.Seq[ValidationDef[_, _]] = Seq.empty
 
   def jsonType: String = productPrefix
 
-  def withValidation(v: ValidationDef[BoundType, _], vs: ValidationDef[BoundType, _]*): Schema[T] = {
-    this._validations = v +: vs
+  def withValidation[TT >: T, B](v: ValidationDef[B, _], vs: ValidationDef[B, _]*)(implicit bound: ValidationBound[TT, B]): Schema[T] = {
+    this._validations = (v +: vs).foldLeft(_validations) {
+      case (agg, v) => bound.append(agg, v)
+    }
     this
   }
 
@@ -25,18 +27,57 @@ sealed trait Schema[+T] extends Product {
 
   def refName: Option[String] = _refName
 
-  def validations: Seq[ValidationDef[BoundType, _]] = _validations
+  def validations: Seq[ValidationDef[_, _]] = _validations.toSeq
 }
 
 object Schema {
 
-  final case object `boolean` extends Schema[Boolean] { override type BoundType = Boolean }
+  final case object `boolean` extends Schema[Boolean]
 
-  final case object `integer` extends Schema[Int] { override type BoundType = Int }
+  final case object `integer` extends Schema[Int]
 
-  final case class `number`[T : Numeric]() extends Schema[T] { override type BoundType = Number }
+  final case class `number`[T : Numeric]() extends Schema[T]
 
-  final case class `string`[T](format: Option[`string`.Format], pattern: Option[String]) extends Schema[T] { override type BoundType = String }
+  final case class `string`[T](format: Option[`string`.Format], pattern: Option[String]) extends Schema[T]
+
+  final case class `set`[T, C[_]](componentType: Schema[T]) extends Schema[C[T]] { override def jsonType = "array" }
+
+  final case class `array`[T, C[_]](componentType: Schema[T]) extends Schema[C[T]]
+
+  final case class `string-map`[T](valueType: Schema[T]) extends Schema[Map[String, T]] { override def jsonType = "object" }
+
+  final case class `int-map`[T](valueType: Schema[T]) extends Schema[Map[Int, T]] { override def jsonType = "object" }
+
+  final case class `object`[T](fields: Set[`object`.Field[_]]) extends Schema[T]
+
+  final case class `enum`[T](values: Set[String]) extends Schema[T]
+
+  final case class `oneof`[T](subTypes: Set[Schema[_]]) extends Schema[T]
+
+  final case class `ref`[T](sig: String, tpe: Schema[T]) extends Schema[T] { override def jsonType: String = s"$$ref" }
+
+  @implicitNotFound("Implicit not found: ValidationBound[${F}, ${T}]. Some of validations doesn't match schema type")
+  sealed trait ValidationBound[F, T] {
+    def append(
+      seq: collection.Seq[ValidationDef[_, _]],
+      item: ValidationDef[T, _]): collection.Seq[ValidationDef[_, _]] = seq :+ item
+  }
+  object ValidationBound {
+
+    implicit def identity[X]: ValidationBound[X, X] = new ValidationBound[X, X] {}
+
+    implicit def numeric[X: Numeric]: ValidationBound[X, Number] = new ValidationBound[X, Number] {}
+
+    implicit def stringMap[X]: ValidationBound[Map[String, X], Map[String, _]] = new ValidationBound[Map[String, X], Map[String, _]] {}
+    implicit def map[K, V]: ValidationBound[Map[K, V], Map[_, _]] = new ValidationBound[Map[K, V], Map[_, _]] {}
+
+    implicit def array[X]: ValidationBound[Array[X], Iterable[_]] = new ValidationBound[Array[X], Iterable[_]] {}
+    implicit def iterable[X]: ValidationBound[Iterable[X], Iterable[_]] = new ValidationBound[Iterable[X], Iterable[_]] {}
+    implicit def seq[X]: ValidationBound[Seq[X], Iterable[_]] = new ValidationBound[Seq[X], Iterable[_]] {}
+    implicit def list[X]: ValidationBound[List[X], Iterable[_]] = new ValidationBound[List[X], Iterable[_]] {}
+    implicit def vector[X]: ValidationBound[Vector[X], Iterable[_]] = new ValidationBound[Vector[X], Iterable[_]] {}
+    implicit def set[X]: ValidationBound[Set[X], Iterable[_]] = new ValidationBound[Set[X], Iterable[_]] {}
+  }
 
   object `string` {
 
@@ -62,19 +103,9 @@ object Schema {
     }
   }
 
-  final case class `set`[T, C[_]](componentType: Schema[T]) extends Schema[C[T]] { override type BoundType = Set[_]; override def jsonType = "array" }
-
-  final case class `array`[T, C[_]](componentType: Schema[T]) extends Schema[C[T]] { override type BoundType = Iterable[_] }
-
-  final case class `string-map`[T](valueType: Schema[T]) extends Schema[Map[String, T]] { override type BoundType = Map[String, _]; override def jsonType = "object" }
-
-  final case class `int-map`[T](valueType: Schema[T]) extends Schema[Map[Int, T]] { override type BoundType = Map[Int, _]; override def jsonType = "object" }
-
-  final case class `object`[T](fields: Set[`object`.Field[_]]) extends Schema[T]
-
   object `object` {
 
-    final case class Field[+T](name: String, tpe: Schema[T], required: Boolean = true) {
+    final case class Field[T](name: String, tpe: Schema[T], required: Boolean = true) {
 
       def canEqual(that: Any): Boolean = that.isInstanceOf[Field[T]]
 
@@ -82,8 +113,8 @@ object Schema {
         val other = that.asInstanceOf[Field[T]]
 
         this.name     == other.name &&
-        this.required == other.required &&
-        this.tpe      == other.tpe
+          this.required == other.required &&
+          this.tpe      == other.tpe
       }
 
       override def hashCode: Int = name.hashCode
@@ -91,10 +122,4 @@ object Schema {
 
     def apply[T](field: Field[_], xs: Field[_]*): `object`[T] = new `object`((field +: xs.toSeq).toSet)
   }
-
-  final case class `enum`[T](values: Set[String]) extends Schema[T] { override type BoundType = T }
-
-  final case class `oneof`[T](subTypes: Set[Schema[_]]) extends Schema[T] { override type BoundType = T }
-
-  final case class `ref`[T](sig: String, tpe: Schema[T]) extends Schema[T] { override type BoundType = T; override def jsonType: String = s"$$ref" }
 }

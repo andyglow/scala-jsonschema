@@ -7,6 +7,8 @@ import json.Json
 import json.Schema._
 import org.scalatest.Matchers._
 import org.scalatest._
+import JsonMatchers._
+
 
 class AsValueSpec extends WordSpec {
 
@@ -168,39 +170,78 @@ class AsValueSpec extends WordSpec {
           `boolean`("my-bool"))) shouldEqual obj(s"$$ref" -> "#/definitions/my-bool")
     }
 
-    "emit validations" in {
+    "handle validations" when {
       import json.Validation._
-      val schema1 = `string`[String](None, None) withValidation (
-        `maxLength` := 20,
-        `minLength` := 15)
 
-      AsValue(schema1) shouldEqual obj("type" -> "string", "minLength" -> 15, "maxLength" -> 20)
+      "string" in {
+        val schema1 = Json.schema[String] withValidation (
+          `maxLength` := 20,
+          `minLength` := 15,
+          `pattern` := "[a-z]+")
 
-      val schema2 = `array`[String, List](`string`[String](None, None)) withValidation (
-        `maxItems` := 20,
-        `minItems` := 15)
+        AsValue(schema1) shouldEqual obj("type" -> "string", "minLength" -> 15, "maxLength" -> 20, "pattern" -> "[a-z]+")
+      }
 
-      AsValue(schema2) shouldEqual obj("type" -> "array", "items" -> obj("type" -> "string"), "minItems" -> 15, "maxItems" -> 20)
+      def numCase[T: Numeric](schema: json.Schema[T], t: String = "number")(implicit bound: ValidationBound[T, Number]): Unit = {
+        AsValue {
+          schema withValidation (
+            `maximum` := 20,
+            `minimum` := 15,
+            `exclusiveMinimum` := 3,
+            `exclusiveMaximum` := 18,
+            `multipleOf` := 3)
+        } shouldEqual obj(
+          "type" -> t,
+          "minimum" -> 15,
+          "maximum" -> 20,
+          "exclusiveMinimum" -> 3,
+          "exclusiveMaximum" -> 18,
+          "multipleOf" -> 3)
+      }
 
-      val schema3 = Json.schema[String].asInstanceOf[`string`[String]] withValidation (
-        `maxLength` := 20,
-        `minLength` := 15)
+      "byte" in numCase(Json.schema[Byte])
+      "short" in numCase(Json.schema[Short])
+      "int" in numCase(Json.schema[Int], "integer")
+      "long" in numCase(Json.schema[Long])
+      "float" in numCase(Json.schema[Float])
+      "double" in numCase(Json.schema[Double])
+      "bigInt" in numCase(Json.schema[BigInt])
+      "bigDec" in numCase(Json.schema[BigDecimal])
 
-      AsValue(schema3) shouldEqual obj("type" -> "string", "minLength" -> 15, "maxLength" -> 20)
+      def arrCase[T](schema: json.Schema[T])(implicit bound: ValidationBound[T, Iterable[_]]): Unit = {
+        AsValue {
+          schema withValidation (
+            `maxItems` := 20,
+            `minItems` := 15)
+        } should containJson(
+          obj(
+            "type" -> "array",
+            "items" -> obj("type" -> "string"),
+            "minItems" -> 15,
+            "maxItems" -> 20))
+      }
 
-      val schema4 = Json.schema[Iterable[String]].asInstanceOf[`array`[String, List]] withValidation (
-        `maxItems` := 20,
-        `minItems` := 15)
+      "array" in arrCase(Json.schema[Array[String]])
+      "iterable" in arrCase(Json.schema[Iterable[String]])
+      "seq" in arrCase(Json.schema[Seq[String]])
+      "list" in arrCase(Json.schema[List[String]])
+      "vector" in arrCase(Json.schema[Vector[String]])
+      "set" in arrCase(Json.schema[Set[String]])
 
-      AsValue(schema4) shouldEqual obj("type" -> "array", "items" -> obj("type" -> "string"), "minItems" -> 15, "maxItems" -> 20)
-
-      val schema5 = Json.schema[Map[String, String]].asInstanceOf[`string-map`[String]] withValidation (
-        `patternProperties` := "^[a-z]*$")
-
-      AsValue(schema5) shouldEqual obj(
-        "type" -> "object",
-        "patternProperties" -> obj(
-          "^[a-z]*$" -> obj("type" -> "string")))
+      "map" in {
+        AsValue {
+          Json.schema[Map[String, String]] withValidation (
+            `patternProperties` := "^[a-z]*$",
+            `maxProperties`     := 10,
+            `minProperties`     := 4)
+        } shouldBe obj(
+          "type" -> "object",
+          "maxProperties" -> 10,
+          "minProperties" -> 4,
+          "patternProperties" -> obj(
+            "^[a-z]*$" -> obj("type" -> "string"))
+        )
+      }
     }
   }
 }

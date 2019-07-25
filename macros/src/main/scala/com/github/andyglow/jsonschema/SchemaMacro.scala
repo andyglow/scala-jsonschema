@@ -34,7 +34,8 @@ object SchemaMacro {
         case x if x =:= typeOf[Boolean]                 => q"$schemaObj.`boolean`"
 
         // numeric
-        case x if x =:= typeOf[Short]                   => integer
+        case x if x =:= typeOf[Byte]                    => q"$number[$x]()"
+        case x if x =:= typeOf[Short]                   => q"$number[$x]()"
         case x if x =:= typeOf[Int]                     => integer
         case x if x =:= typeOf[Double]                  => q"$number[$x]()"
         case x if x =:= typeOf[Float]                   => q"$number[$x]()"
@@ -67,6 +68,7 @@ object SchemaMacro {
 
         case x if x <:< typeOf[Map[Int, _]]             => IM.gen(x, stack)
 
+        case x if x <:< typeOf[Array[_]]                => Arr.gen(x, stack)
         case x if x <:< typeOf[Iterable[_]]             => Arr.gen(x, stack)
 
         case SE(names)                                  => SE.gen(tpe, names)

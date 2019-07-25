@@ -112,7 +112,7 @@ object Value {
               case _                      => otherValue
             }
 
-            otherKey -> newValue
+            (otherKey, newValue)
         }
 
         obj(result)
@@ -121,12 +121,25 @@ object Value {
       merge(this, other)
     }
 
+    def contains(other: obj): Boolean = {
+      other.underlying forall { case (k, thatV) =>
+          underlying.get(k) match {
+            case None => true
+            case Some(thisV) =>
+              (thatV, thisV) match {
+                case (thisV: obj, thatV: obj) => thisV contains thatV
+                case _ => thatV == thisV
+              }
+          }
+      }
+    }
+
     override def equals(other: Any): Boolean = other match {
       case that@obj(_) => (that canEqual this) && fieldSet == that.fieldSet
       case _           => false
     }
 
-    override def toString = value map {x => s""""${x._1}": ${x._2.toString}"""} mkString ("{", ", ", "}")
+    override def toString = value map { case (k, v) => s""""$k": ${v.toString}"""} mkString ("{", ", ", "}")
   }
 
   object obj {
