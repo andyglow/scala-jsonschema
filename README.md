@@ -13,7 +13,7 @@ The goal of this library is to make JSON Schema generation done the way all popu
 Inspired by Coursera Autoschema but uses `Scala Macros` instead of `Java Reflection`.
 
 ## Features
-
+- Supports Json Schema `draft-04`, `draft-06`, `draft-07`
 - Generate Json Schema
 - Treat `Option` as optional fields
 - As well as treat fields with `default values` as optional
@@ -475,50 +475,55 @@ Currently supported:
 Example usage: _Play_
 ```scala
 import con.github.andyglow.jsonschema.AsPlay._
+import json.schema.Version._
 import play.api.libs.json._
 
 case class Foo(name: String)
 
-val fooSchema: JsValue = Json.schema[Foo].asPlay()
+val fooSchema: JsValue = Json.schema[Foo].asPlay(Draft04())
 ``` 
 
 Example usage: _Spray_
 ```scala
 import con.github.andyglow.jsonschema.AsSpray._
+import json.schema.Version._
 import spray.json._
 
 case class Foo(name: String)
 
-val fooSchema: JsValue = Json.schema[Foo].asSpray()
+val fooSchema: JsValue = Json.schema[Foo].asSpray(Draft04())
 ``` 
 
 Example usage: _Circe_
 ```scala
 import con.github.andyglow.jsonschema.AsCirce._
+import json.schema.Version._
 import io.circe._
 
 case class Foo(name: String)
 
-val fooSchema: Json = Json.schema[Foo].asCirce()
+val fooSchema: Json = Json.schema[Foo].asCirce(Draft04())
 ``` 
 
 Example usage: _Json4s_
 ```scala
 import con.github.andyglow.jsonschema.AsJson4s._
+import json.schema.Version._
 import org.json4s.JsonAST._
 
 case class Foo(name: String)
 
-val fooSchema: JValue = Json.schema[Foo].asJson4s()
+val fooSchema: JValue = Json.schema[Foo].asJson4s(Draft04())
 ``` 
 
 Example usage: _uJson_
 ```scala
 import con.github.andyglow.jsonschema.AsU._
+import json.schema.Version._
 
 case class Foo(name: String)
 
-val fooSchema: ujson.Value = Json.schema[Foo].asU()
+val fooSchema: ujson.Value = Json.schema[Foo].asU(Draft04())
 ``` 
 
 ## TODO

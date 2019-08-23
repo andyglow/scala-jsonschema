@@ -5,6 +5,7 @@ import com.github.andyglow.json.Value._
 import json.Schema
 import spray.json._
 import com.github.andyglow.scalamigration._
+import json.schema.Version
 
 
 object AsSpray {
@@ -13,9 +14,7 @@ object AsSpray {
 
   implicit class SchemaOps[T](val x: Schema[T]) extends AnyVal {
 
-    def asSpray(
-      title: Option[String] = None,
-      description: Option[String] = None): JsObject = AsSpray(AsValue.schema(x, title, description))
+    def asSpray[V <: Version](v: V)(implicit asValue: AsValueBuilder[V]): JsObject = AsSpray(AsValue.schema(x, v))
   }
 
   trait Adapter[T] {

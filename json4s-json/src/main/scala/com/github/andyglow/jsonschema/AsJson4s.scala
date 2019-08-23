@@ -3,6 +3,7 @@ package com.github.andyglow.jsonschema
 import com.github.andyglow.json.Value._
 import com.github.andyglow.json._
 import json.Schema
+import json.schema.Version
 import org.json4s.JsonAST._
 
 object AsJson4s {
@@ -11,9 +12,8 @@ object AsJson4s {
 
   implicit class SchemaOps[T](val x: Schema[T]) extends AnyVal {
 
-    def asJson4s(
-      title: Option[String] = None,
-      description: Option[String] = None): JObject = AsJson4s(AsValue.schema(x, title, description))
+    def asJson4s[V <: Version](v: V)(implicit asValue: AsValueBuilder[V]): JObject =
+      AsJson4s(AsValue.schema(x, v))
   }
 
   trait Adapter[T] {

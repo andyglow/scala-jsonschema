@@ -4,6 +4,7 @@ import com.github.andyglow.json._
 import com.github.andyglow.json.Value._
 import json.Schema
 import com.github.andyglow.scalamigration._
+import json.schema.Version
 
 
 object AsU {
@@ -12,9 +13,7 @@ object AsU {
 
   implicit class SchemaOps[T](val x: Schema[T]) extends AnyVal {
 
-    def asU(
-      title: Option[String] = None,
-      description: Option[String] = None): ujson.Obj = AsU(AsValue.schema(x, title, description))
+    def asU[V <: Version](v: V)(implicit asValue: AsValueBuilder[V]): ujson.Obj = AsU(AsValue.schema(x, v))
   }
 
   trait Adapter[T] {

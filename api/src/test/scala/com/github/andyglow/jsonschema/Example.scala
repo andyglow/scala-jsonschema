@@ -4,12 +4,13 @@ import java.time.LocalDateTime
 
 import com.github.andyglow.json.JsonFormatter
 import json.Json
+import json.schema.Version
 
 object Example {
   import ExampleJsonSchema._
 
   def main(args: Array[String]): Unit = {
-    println(JsonFormatter.format(AsValue.schema(personJsonType)))
+    println(JsonFormatter.format(AsValue.schema(personJsonType, Version.Draft04())))
   }
 }
 

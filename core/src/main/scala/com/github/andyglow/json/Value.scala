@@ -155,7 +155,7 @@ object Value {
 
     def apply(fields: field*): obj = new obj(mutable.LinkedHashMap(fields collect {case field.some(k, v) => (k, v)}: _*))
 
-    def empty: obj = obj()
+    val empty: obj = obj()
   }
 
   sealed trait FieldAdapter[T] {

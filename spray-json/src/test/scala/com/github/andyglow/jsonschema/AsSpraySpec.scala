@@ -5,6 +5,7 @@ import org.scalatest._
 import org.scalatest.Matchers._
 import org.scalatest.prop.TableDrivenPropertyChecks._
 import com.github.andyglow.json.Value._
+import json.schema.Version.Draft04
 import org.scalactic.Equality
 import spray.json._
 
@@ -30,7 +31,7 @@ class AsSpraySpec extends PropSpec {
   property("Check Schema.asSpray") {
     import AsSpray._
 
-    json.Json.schema[UserProfile].asSpray() shouldEqual JsObject(
+    json.Json.schema[UserProfile].asSpray(Draft04()) shouldEqual JsObject(
       f"$$schema"             -> JsString("http://json-schema.org/draft-04/schema#"),
       "type"                  -> JsString("object"),
       "additionalProperties"  -> JsFalse,

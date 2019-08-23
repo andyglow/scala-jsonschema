@@ -5,6 +5,7 @@ import org.scalatest._
 import org.scalatest.Matchers._
 import org.scalatest.prop.TableDrivenPropertyChecks._
 import com.github.andyglow.json.Value._
+import json.schema.Version.Draft04
 import org.json4s.JsonAST._
 import org.scalactic.Equality
 
@@ -30,7 +31,7 @@ class AsJson4sSpec extends PropSpec{
   property("Check Schema.asJson4s") {
     import AsJson4s._
 
-    json.Json.schema[UserProfile].asJson4s() shouldEqual JObject(
+    json.Json.schema[UserProfile].asJson4s(Draft04()) shouldEqual JObject(
       f"$$schema"             -> JString("http://json-schema.org/draft-04/schema#"),
       "type"                  -> JString("object"),
       "additionalProperties"  -> JBool(false),

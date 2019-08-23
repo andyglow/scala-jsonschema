@@ -5,6 +5,7 @@ import com.github.andyglow.json.Value._
 import json.Schema
 import play.api.libs.json._
 import com.github.andyglow.scalamigration._
+import json.schema.Version
 
 object AsPlay {
 
@@ -12,9 +13,7 @@ object AsPlay {
 
   implicit class SchemaOps[T](val x: Schema[T]) extends AnyVal {
 
-    def asPlay(
-      title: Option[String] = None,
-      description: Option[String] = None): JsObject = AsPlay(AsValue.schema(x, title, description))
+    def asPlay[V <: Version](v: V)(implicit asValue: AsValueBuilder[V]): JsObject = AsPlay(AsValue.schema(x, v))
   }
 
   trait Adapter[T] {

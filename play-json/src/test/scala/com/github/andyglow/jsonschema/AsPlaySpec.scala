@@ -5,6 +5,7 @@ import org.scalatest._
 import org.scalatest.Matchers._
 import org.scalatest.prop.TableDrivenPropertyChecks._
 import com.github.andyglow.json.Value._
+import json.schema.Version.Draft04
 import org.scalactic.Equality
 import play.api.libs.json._
 
@@ -30,7 +31,7 @@ class AsPlaySpec extends PropSpec{
   property("Check Schema.asPlay") {
     import AsPlay._
 
-    json.Json.schema[UserProfile].asPlay() shouldEqual Json.obj(
+    json.Json.schema[UserProfile].asPlay(Draft04()) shouldEqual Json.obj(
       f"$$schema"             -> "http://json-schema.org/draft-04/schema#",
       "type"                  -> "object",
       "additionalProperties"  -> false,

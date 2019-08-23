@@ -5,6 +5,7 @@ import org.scalatest.Matchers._
 import org.scalatest.prop.TableDrivenPropertyChecks._
 import com.github.andyglow.json.Value._
 import io.circe._
+import json.schema.Version.Draft04
 import org.scalactic.Equality
 
 class AsCirceSpec extends PropSpec {
@@ -29,7 +30,7 @@ class AsCirceSpec extends PropSpec {
   property("Check Schema.asCirce") {
     import AsCirce._
 
-    json.Json.schema[UserProfile].asCirce() shouldEqual Json.obj(
+    json.Json.schema[UserProfile].asCirce(Draft04()) shouldEqual Json.obj(
       f"$$schema"             -> Json.fromString("http://json-schema.org/draft-04/schema#"),
       "type"                  -> Json.fromString("object"),
       "additionalProperties"  -> Json.False,

@@ -28,6 +28,22 @@ sealed trait Schema[+T] extends Product {
   def refName: Option[String] = _refName
 
   def validations: Seq[ValidationDef[_, _]] = _validations.toSeq
+
+  override def toString: String = {
+    val sb = new StringBuilder
+    sb.append(productPrefix)
+    if (productIterator.hasNext) {
+      sb.append("(")
+      sb.append(productIterator.mkString(","))
+      sb.append(")")
+    }
+    refName foreach { refName =>
+      sb.append("#")
+      sb.append(refName)
+    }
+
+    sb.toString
+  }
 }
 
 object Schema {
