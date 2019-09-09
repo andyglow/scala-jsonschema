@@ -474,7 +474,7 @@ Currently supported:
 
 Example usage: _Play_
 ```scala
-import con.github.andyglow.jsonschema.AsPlay._
+import com.github.andyglow.jsonschema.AsPlay._
 import json.schema.Version._
 import play.api.libs.json._
 
@@ -485,7 +485,7 @@ val fooSchema: JsValue = Json.schema[Foo].asPlay(Draft04())
 
 Example usage: _Spray_
 ```scala
-import con.github.andyglow.jsonschema.AsSpray._
+import com.github.andyglow.jsonschema.AsSpray._
 import json.schema.Version._
 import spray.json._
 
@@ -496,7 +496,7 @@ val fooSchema: JsValue = Json.schema[Foo].asSpray(Draft04())
 
 Example usage: _Circe_
 ```scala
-import con.github.andyglow.jsonschema.AsCirce._
+import com.github.andyglow.jsonschema.AsCirce._
 import json.schema.Version._
 import io.circe._
 
@@ -507,7 +507,7 @@ val fooSchema: Json = Json.schema[Foo].asCirce(Draft04())
 
 Example usage: _Json4s_
 ```scala
-import con.github.andyglow.jsonschema.AsJson4s._
+import com.github.andyglow.jsonschema.AsJson4s._
 import json.schema.Version._
 import org.json4s.JsonAST._
 
@@ -518,7 +518,7 @@ val fooSchema: JValue = Json.schema[Foo].asJson4s(Draft04())
 
 Example usage: _uJson_
 ```scala
-import con.github.andyglow.jsonschema.AsU._
+import com.github.andyglow.jsonschema.AsU._
 import json.schema.Version._
 
 case class Foo(name: String)
