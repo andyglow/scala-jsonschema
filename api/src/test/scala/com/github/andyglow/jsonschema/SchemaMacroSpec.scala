@@ -44,7 +44,9 @@ class SchemaMacroSpec extends WordSpec {
         Field("seq"     , `array`(`string`[String](None, None)), required = false, default = Seq.empty[String]),
         Field("set"     , `set`(`integer`), required = false, default = Set(1, 5, 9)),
         Field("list"    , `array`(`boolean`), required = false, default = List(true, false)),
-        Field("vector"  , `array`(`number`[Long]), required = false, default = Vector(9, 7)))
+        Field("vector"  , `array`(`number`[Long]), required = false, default = Vector(9, 7)),
+        Field("strMap"  , `string-map`(`number`[Double]), required = false, default = Map("foo" -> .12)),
+        Field("intMap"  , `int-map`(`string`[String](None, None)), required = false, default = Map(1 -> "1", 2 -> "2")))
     }
 
     "generate references for implicitly defined dependencies" in {
@@ -187,10 +189,9 @@ object SchemaMacroSpec {
     seq: Seq[String] = Seq.empty,
     set: Set[Int] = Set(1, 5, 9),
     list: List[Boolean] = List(true, false),
-    vector: Vector[Long] = Vector(9L, 7L))
-
-
-
+    vector: Vector[Long] = Vector(9L, 7L),
+    strMap: Map[String, Double] = Map("foo" -> .12),
+    intMap: Map[Int, String] = Map(1 -> "1", 2 -> "2"))
 }
 
 sealed trait FooBar

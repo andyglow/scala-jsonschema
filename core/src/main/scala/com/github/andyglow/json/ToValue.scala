@@ -26,7 +26,33 @@ trait LowPriorityPrimitiveImplicits {
   // may generate different json representations out of the single case class instance
 }
 
-trait LowPriorityImplicits extends LowPriorityPrimitiveImplicits with LowPriorityArrayImplicits
+trait LowPriorityMapImplicits { this: LowPriorityPrimitiveImplicits =>
+  import Value._
+  import ToValue._
+
+  implicit def StrMapV[T](implicit
+    to: ToValue[T]): ToValue[Map[String, T]] = {
+
+    mk { items =>
+      val v = items map { case (k, v) => (k, to(v)) }
+      obj(v.toMap)
+    }
+  }
+
+  implicit def IntMapV[T](implicit
+    to: ToValue[T]): ToValue[Map[Int, T]] = {
+
+    mk { items =>
+      val v = items map { case (k, v) => (k.toString, to(v)) }
+      obj(v.toMap)
+    }
+  }
+}
+
+trait LowPriorityImplicits
+  extends LowPriorityPrimitiveImplicits
+    with LowPriorityArrayImplicits
+    with LowPriorityMapImplicits
 
 object ToValue extends LowPriorityImplicits {
 
