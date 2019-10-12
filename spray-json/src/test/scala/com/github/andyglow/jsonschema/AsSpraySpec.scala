@@ -40,7 +40,7 @@ class AsSpraySpec extends PropSpec {
         "middleName"              -> JsObject("type" -> JsString("string")),
         "lastName"                -> JsObject("type" -> JsString("string")),
         "age"                     -> JsObject("type" -> JsString("integer")),
-        "active"                  -> JsObject("type" -> JsString("boolean"))),
+        "active"                  -> JsObject("type" -> JsString("boolean"), "default" -> JsTrue)),
       "required"              -> JsArray(JsString("age"), JsString("lastName"), JsString("firstName")))
   }
 }

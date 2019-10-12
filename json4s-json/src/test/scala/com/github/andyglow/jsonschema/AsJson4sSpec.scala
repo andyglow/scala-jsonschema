@@ -40,7 +40,7 @@ class AsJson4sSpec extends PropSpec{
         "middleName"              -> JObject("type" -> JString("string")),
         "lastName"                -> JObject("type" -> JString("string")),
         "age"                     -> JObject("type" -> JString("integer")),
-        "active"                  -> JObject("type" -> JString("boolean"))),
+        "active"                  -> JObject("type" -> JString("boolean"), "default" -> JBool.True)),
       "required"              -> JArray(List(JString("age"), JString("lastName"), JString("firstName"))))
   }
 }

@@ -32,9 +32,19 @@ class SchemaMacroSpec extends WordSpec {
       import `object`.Field
 
       Json.schema[Foo3] shouldEqual `object`(
-        Field("name"    , `string`[String](None, None), required = false),
-        Field("bar"     , `integer`, required = false),
-        Field("active"  , `boolean`, required = false))
+        Field("name"    , `string`[String](None, None), required = false, default = "xxx"),
+        Field("bar"     , `integer`, required = false, default = 5),
+        Field("active"  , `boolean`, required = false, default = true))
+    }
+
+    "generate schema for case class of array fields with default values" in {
+      import `object`.Field
+
+      Json.schema[Bar9] shouldEqual `object`(
+        Field("seq"     , `array`(`string`[String](None, None)), required = false, default = Seq.empty[String]),
+        Field("set"     , `set`(`integer`), required = false, default = Set(1, 5, 9)),
+        Field("list"    , `array`(`boolean`), required = false, default = List(true, false)),
+        Field("vector"  , `array`(`number`[Long]), required = false, default = Vector(9, 7)))
     }
 
     "generate references for implicitly defined dependencies" in {
@@ -172,6 +182,15 @@ object SchemaMacroSpec {
   case class Bar8(foo: String) extends AnyVal
 
   case class Foo9(name: String)
+
+  case class Bar9(
+    seq: Seq[String] = Seq.empty,
+    set: Set[Int] = Set(1, 5, 9),
+    list: List[Boolean] = List(true, false),
+    vector: Vector[Long] = Vector(9L, 7L))
+
+
+
 }
 
 sealed trait FooBar

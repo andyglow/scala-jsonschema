@@ -41,7 +41,7 @@ class AsUSpec extends PropSpec {
       "properties"            -> ujson.Obj(
         "rating"                  -> ujson.Obj(f"$$ref" -> ujson.Str("#/definitions/com.github.andyglow.jsonschema.AsUSpec.Rating")),
         "age"                     -> ujson.Obj("type" -> ujson.Str("integer")),
-        "active"                  -> ujson.Obj("type" -> ujson.Str("boolean")),
+        "active"                  -> ujson.Obj("type" -> ujson.Str("boolean"), "default" -> ujson.True),
         "name"                    -> ujson.Obj(
           "type"                    -> ujson.Str("object"),
           "additionalProperties"    -> ujson.False,
@@ -75,7 +75,7 @@ class AsUSpec extends PropSpec {
       "properties"            -> ujson.Obj(
         "rating"                  -> ujson.Obj(f"$$ref" -> ujson.Str("#com.github.andyglow.jsonschema.AsUSpec.Rating")),
         "age"                     -> ujson.Obj("type" -> ujson.Str("integer")),
-        "active"                  -> ujson.Obj("type" -> ujson.Str("boolean")),
+        "active"                  -> ujson.Obj("type" -> ujson.Str("boolean"), "default" -> ujson.True),
         "name"                    -> ujson.Obj(
           "type"                    -> ujson.Str("object"),
           "additionalProperties"    -> ujson.False,
@@ -110,7 +110,7 @@ class AsUSpec extends PropSpec {
       "properties"            -> ujson.Obj(
         "rating"                  -> ujson.Obj(f"$$ref" -> ujson.Str("#com.github.andyglow.jsonschema.AsUSpec.Rating")),
         "age"                     -> ujson.Obj("type" -> ujson.Str("integer")),
-        "active"                  -> ujson.Obj("type" -> ujson.Str("boolean")),
+        "active"                  -> ujson.Obj("type" -> ujson.Str("boolean"), "default" -> ujson.True),
         "name"                    -> ujson.Obj(
           "type"                    -> ujson.Str("object"),
           "additionalProperties"    -> ujson.False,

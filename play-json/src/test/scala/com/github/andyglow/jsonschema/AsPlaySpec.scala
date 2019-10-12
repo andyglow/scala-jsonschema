@@ -40,7 +40,7 @@ class AsPlaySpec extends PropSpec{
         "middleName"              -> Json.obj("type" -> "string"),
         "lastName"                -> Json.obj("type" -> "string"),
         "age"                     -> Json.obj("type" -> "integer"),
-        "active"                  -> Json.obj("type" -> "boolean")),
+        "active"                  -> Json.obj("type" -> "boolean", "default" -> true)),
       "required"              -> Json.arr("age", "lastName", "firstName"))
   }
 }

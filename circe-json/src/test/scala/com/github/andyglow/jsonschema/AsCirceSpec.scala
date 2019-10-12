@@ -39,7 +39,7 @@ class AsCirceSpec extends PropSpec {
         "middleName"              -> Json.obj("type" -> Json.fromString("string")),
         "lastName"                -> Json.obj("type" -> Json.fromString("string")),
         "age"                     -> Json.obj("type" -> Json.fromString("integer")),
-        "active"                  -> Json.obj("type" -> Json.fromString("boolean"))),
+        "active"                  -> Json.obj("type" -> Json.fromString("boolean"), "default" -> Json.True)),
       "required"              -> Json.arr(Json.fromString("age"), Json.fromString("lastName"), Json.fromString("firstName")))
   }
 }

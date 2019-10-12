@@ -1,5 +1,7 @@
 package json
 
+import com.github.andyglow.json.{ToValue, Value}
+
 import scala.annotation.implicitNotFound
 import scala.language.higherKinds
 
@@ -119,9 +121,13 @@ object Schema {
     }
   }
 
-  object `object` {
+  final object `object` {
 
-    final case class Field[T](name: String, tpe: Schema[T], required: Boolean = true) {
+    final class Field[T](
+      val name: String,
+      val tpe: Schema[T],
+      val required: Boolean,
+      val default: Option[Value]) {
 
       def canEqual(that: Any): Boolean = that.isInstanceOf[Field[T]]
 
@@ -129,11 +135,50 @@ object Schema {
         val other = that.asInstanceOf[Field[T]]
 
         this.name     == other.name &&
-          this.required == other.required &&
-          this.tpe      == other.tpe
+        this.required == other.required &&
+        this.tpe      == other.tpe &&
+        this.default  == other.default
       }
 
       override def hashCode: Int = name.hashCode
+
+      override def toString: String = {
+        val extra = (required, default) match {
+          case (true, None)     => " /R"
+          case (false, None)    => ""
+          case (true, Some(v))  => s" /R /$v"
+          case (false, Some(v)) => s" /$v"
+        }
+
+        s"$name: ${tpe}$extra"
+      }
+    }
+
+    final object Field {
+
+      def apply[T](
+        name: String,
+        tpe: Schema[T]): Field[T] = {
+
+        new Field(name, tpe, required = true, default = None)
+      }
+
+      def apply[T](
+        name: String,
+        tpe: Schema[T],
+        required: Boolean): Field[T] = {
+
+        new Field(name, tpe, required, default = None)
+      }
+
+      def apply[T: ToValue](
+        name: String,
+        tpe: Schema[T],
+        required: Boolean,
+        default: T): Field[T] = {
+
+        new Field(name, tpe, required, Some(ToValue(default)))
+      }
     }
 
     def apply[T](field: Field[_], xs: Field[_]*): `object`[T] = new `object`((field +: xs.toSeq).toSet)

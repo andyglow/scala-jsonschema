@@ -148,9 +148,7 @@ object SchemaMacro {
 
       final def lookupCompanionOf(clazz: Symbol): Symbol = clazz.companion
 
-      def possibleApplyMethodsOf(tpe: Type): List[MethodSymbol] = {
-        val subjectCompanionSym = tpe.typeSymbol
-        val subjectCompanion    = lookupCompanionOf(subjectCompanionSym)
+      def possibleApplyMethodsOf(subjectCompanion: Symbol): List[MethodSymbol] = {
         val subjectCompanionTpe = subjectCompanion.typeSignature
 
         subjectCompanionTpe.decl(TermName("apply")) match {
@@ -174,15 +172,19 @@ object SchemaMacro {
         }
       }
 
-      def applyMethod(tpe: Type): Option[MethodSymbol] = possibleApplyMethodsOf(tpe).headOption
+      def applyMethod(subjectCompanion: Symbol): Option[MethodSymbol] =
+        possibleApplyMethodsOf(subjectCompanion).headOption
 
       case class Field(
         name: TermName,
         tpe: Type,
         effectiveTpe: Type,
         annotations: List[Annotation],
-        hasDefault: Boolean,
-        isOption: Boolean)
+        default: Option[Tree],
+        isOption: Boolean) {
+
+        def hasDefault: Boolean = default.isDefined
+      }
 
       def fieldMap(tpe: Type): Seq[Field] = {
 
@@ -196,25 +198,33 @@ object SchemaMacro {
             s.name.toString.trim -> s.accessed.annotations
         }.toMap
 
-        def toField(fieldSym: TermSymbol): Field = {
+        val subjectCompanionSym = tpe.typeSymbol
+        val subjectCompanion    = lookupCompanionOf(subjectCompanionSym)
+
+
+        def toField(fieldSym: TermSymbol, i: Int): Field = {
           val name        = fieldSym.name.toString.trim
           val fieldTpe    = fieldSym.typeSignature
           val isOption    = fieldTpe <:< optionTpe
+          val hasDefault  = fieldSym.isParamWithDefault
+          val default     = if (hasDefault) {
+            val getter = TermName("apply$default$" + (i + 1))
+            Some(q"$subjectCompanion.$getter")
+          } else
+            None
 
           Field(
             name          = TermName(name),
             tpe           = fieldTpe,
             effectiveTpe  = if (isOption) fieldTpe.typeArgs.head else fieldTpe,
             annotations   = annotationMap.getOrElse(name, List.empty),
-            isOption      = isOption,
-            hasDefault    = fieldSym.isParamWithDefault)
+            default       = default,
+            isOption      = isOption)
         }
 
-        val fields = applyMethod(tpe) flatMap { method =>
+        val fields = applyMethod(subjectCompanion) flatMap { method =>
           method.paramLists.headOption map { params =>
-            val fields = params map { _.asTerm } map toField
-
-            fields.toSeq
+            params.map { _.asTerm }.zipWithIndex map { case (f, i) => toField(f, i) }
           }
         }
 
@@ -240,7 +250,11 @@ object SchemaMacro {
           val name      = f.name.decodedName.toString
           val jsonType  = resolve(f.effectiveTpe, if (f.isOption) stack else tpe +: stack)
 
-          q"$obj.Field[${f.effectiveTpe}](name = $name, tpe = $jsonType, required = ${ !f.isOption && !f.hasDefault })"
+          f.default map { d =>
+            q"$obj.Field[${f.effectiveTpe}](name = $name, tpe = $jsonType, required = ${ !f.isOption && !f.hasDefault }, default = $d)"
+          } getOrElse {
+            q"$obj.Field[${f.effectiveTpe}](name = $name, tpe = $jsonType, required = ${ !f.isOption && !f.hasDefault })"
+          }
         }
 
         q"$obj[$tpe](..$fields)"
