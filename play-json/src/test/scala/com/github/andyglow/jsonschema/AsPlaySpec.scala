@@ -1,5 +1,7 @@
 package com.github.andyglow.jsonschema
 
+import java.time.LocalDate
+
 import com.github.andyglow.json.Value
 import org.scalatest._
 import org.scalatest.Matchers._
@@ -40,19 +42,32 @@ class AsPlaySpec extends PropSpec{
         "middleName"              -> Json.obj("type" -> "string"),
         "lastName"                -> Json.obj("type" -> "string"),
         "age"                     -> Json.obj("type" -> "integer"),
-        "active"                  -> Json.obj("type" -> "boolean", "default" -> true)),
+        "active"                  -> Json.obj("type" -> "boolean", "default" -> true),
+        "credentials"             -> Json.obj("type" -> "object",
+                                              "additionalProperties" -> false,
+                                              "required"   -> Json.arr("login", "password"),
+                                              "properties" -> Json.obj(
+                                                "login"         -> Json.obj("type" -> "string"),
+                                                "password"      -> Json.obj("type" -> "string")),
+                                              "default" -> Json.obj("login" -> "anonymous", "password" -> "-"))),
       "required"              -> Json.arr("age", "lastName", "firstName"))
   }
 }
 
 object AsPlaySpec {
 
+  case class Credentials(login: String, password: String)
+  object Credentials {
+    implicit val writes: Writes[Credentials] = Json.writes[Credentials]
+  }
+
   case class UserProfile(
     firstName: String,
     middleName: Option[String],
     lastName: String,
     age: Int,
-    active: Boolean = true)
+    active: Boolean = true,
+    credentials: Credentials = Credentials("anonymous", "-"))
 
   implicit val jsValEq: Equality[JsValue] = new Equality[JsValue] {
     override def areEqual(a: JsValue, b: Any): Boolean = a match {
