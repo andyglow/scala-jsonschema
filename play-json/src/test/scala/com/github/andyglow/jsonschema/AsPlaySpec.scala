@@ -1,7 +1,5 @@
 package com.github.andyglow.jsonschema
 
-import java.time.LocalDate
-
 import com.github.andyglow.json.Value
 import org.scalatest._
 import org.scalatest.Matchers._

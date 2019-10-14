@@ -50,6 +50,7 @@ object AsPlay {
     type Aux[T, PP] = Adapter[T] { type P = PP }
 
     def adapt[T, PP](value: T)(implicit a: Aux[T, PP]): PP = a.adapt(value)
+
     def unadapt[T, PP](value: PP)(implicit a: Aux[T, PP]): T = a.unadapt(value)
 
     def make[T, PP](t: T => PP, f: PP => T): Aux[T, PP] = new Adapter[T] {
