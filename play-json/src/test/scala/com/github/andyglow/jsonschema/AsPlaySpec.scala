@@ -42,7 +42,9 @@ class AsPlaySpec extends PropSpec{
         "middleName"              -> Json.obj("type" -> "string"),
         "lastName"                -> Json.obj("type" -> "string"),
         "age"                     -> Json.obj("type" -> "integer"),
-        "active"                  -> Json.obj("type" -> "boolean", "default" -> true),
+        "role"                    -> Json.obj("type" -> "string", "default" -> "e-user", "enum" -> Json.arr("e-admin","e-manager","e-user")),
+        "active"                  -> Json.obj("type" -> "string", "default" -> "On", "enum" -> Json.arr("On", "Off", "Suspended")),
+        "enabledFeatures"         -> Json.obj("type" -> "array", "uniqueItems" -> true, "default" -> Json.arr("feature-0-name", "feature-1-name"), "items" -> Json.obj("type" -> "string", "enum" -> Json.arr("feature-0-name", "feature-1-name", "feature-2-name"))),
         "credentials"             -> Json.obj("type" -> "object",
                                               "additionalProperties" -> false,
                                               "required"   -> Json.arr("login", "password"),
@@ -54,20 +56,10 @@ class AsPlaySpec extends PropSpec{
   }
 }
 
+
+
 object AsPlaySpec {
-
-  case class Credentials(login: String, password: String)
-  object Credentials {
-    implicit val writes: Writes[Credentials] = Json.writes[Credentials]
-  }
-
-  case class UserProfile(
-    firstName: String,
-    middleName: Option[String],
-    lastName: String,
-    age: Int,
-    active: Boolean = true,
-    credentials: Credentials = Credentials("anonymous", "-"))
+  import Role._
 
   implicit val jsValEq: Equality[JsValue] = new Equality[JsValue] {
     override def areEqual(a: JsValue, b: Any): Boolean = a match {

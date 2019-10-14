@@ -68,7 +68,7 @@ object Schema {
 
   final case class `object`[T](fields: Set[`object`.Field[_]]) extends Schema[T]
 
-  final case class `enum`[T](values: Set[String]) extends Schema[T]
+  final case class `enum`[T](values: Set[Value]) extends Schema[T]
 
   final case class `oneof`[T](subTypes: Set[Schema[_]]) extends Schema[T]
 
@@ -178,6 +178,15 @@ object Schema {
         default: T): Field[T] = {
 
         new Field(name, tpe, required, Some(ToValue(default)))
+      }
+
+      def fromJson[T](
+        name: String,
+        tpe: Schema[T],
+        required: Boolean,
+        default: Option[Value]): Field[T] = {
+
+        new Field(name, tpe, required, default)
       }
     }
 

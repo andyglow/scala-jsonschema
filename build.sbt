@@ -17,7 +17,7 @@ lazy val commonSettings = Seq(
 
   scalaVersion := "2.11.12",
 
-  crossScalaVersions := Seq("2.11.12", "2.12.8", "2.13.0"),
+  crossScalaVersions := Seq("2.11.12", "2.12.10", "2.13.1"),
 
   scalacOptions ++= {
     val options = Seq(
@@ -109,7 +109,7 @@ lazy val macros = project in file("macros") dependsOn core settings (
   name := "scala-jsonschema-macros",
 
   libraryDependencies ++= Seq(
-    (scalaVersion apply ("org.scala-lang" % "scala-reflect" % _ % Compile)).value)
+    (scalaVersion apply ("org.scala-lang" % "scala-reflect" % _ % Compile)).value.withSources.withJavadoc)
 )
 
 lazy val api = { project in file("api") }.dependsOn(core, macros).settings(

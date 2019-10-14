@@ -51,7 +51,7 @@ object ParseJsonSchema {
 
     def makeStrOrEnum = x.value.arr("enum") match {
       case None => makeStr
-      case Some(arr) => Success { `enum`((arr collect { case str(x) => x }).toSet) }
+      case Some(arr) => Success { `enum`(arr.toSet) }
     }
 
     def makeStr = Success {

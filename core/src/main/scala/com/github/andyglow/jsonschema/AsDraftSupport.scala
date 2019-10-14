@@ -64,7 +64,7 @@ trait AsDraftSupport {
   def mkEnum(pp: Option[ValidationDef[_, _]], x: `enum`[_]): obj = {
     obj(
       "type" -> "string",
-      "enum" -> x.values.toArr)
+      "enum" -> arr(x.values.toSeq))
   }
 
   def mkOneOf(pp: Option[ValidationDef[_, _]], x: `oneof`[_]): obj = {

@@ -3,6 +3,8 @@ package com.github.andyglow.jsonschema
 import java.net.{URI, URL}
 import java.util.UUID
 
+import com.github.andyglow.json.ToValue
+
 import scala.reflect.macros.blackbox
 
 object SchemaMacro {
@@ -10,12 +12,14 @@ object SchemaMacro {
   def impl[T : c.WeakTypeTag](c: blackbox.Context): c.Expr[json.Schema[T]] = {
     import c.universe._
 
-    val jsonPkg   = q"_root_.json"
-    val scalaPkg  = q"_root_.scala"
-    val schemaObj = q"$jsonPkg.Schema"
+    val jsonPkg     = q"_root_.json"
+    val intJsonPkg  = q"_root_.com.github.andyglow.json"
+    val scalaPkg    = q"_root_.scala"
+    val schemaObj   = q"$jsonPkg.Schema"
 
     val subject             = weakTypeOf[T]
     val optionTpe           = weakTypeOf[Option[_]]
+    val toValueTpe          = weakTypeOf[ToValue[_]]
     val setTpe              = weakTypeOf[Set[_]]
     val jsonTypeConstructor = weakTypeOf[json.Schema[_]].typeConstructor
     val jsonSubject         = appliedType(jsonTypeConstructor, subject)
@@ -103,19 +107,37 @@ object SchemaMacro {
 
     object SE {
 
-      def unapply(tpe: Type): Option[Set[String]] = {
+      def unapply(tpe: Type): Option[Set[Tree]] = {
+
         if (tpe.typeSymbol.isClass && tpe.typeSymbol.asClass.isSealed) {
           val instances = tpe.typeSymbol.asClass.knownDirectSubclasses
+          val toValueTree = c.inferImplicitValue(
+            appliedType(toValueTpe, tpe),
+            silent = true,
+            withMacrosDisabled = true)
 
-          if (instances forall { i => val c = i.asClass; c.isModuleClass && c.isCaseClass}) {
-            Some(instances map { _.name.decodedName.toString })
+          if (instances forall { i => val c = i.asClass; c.isModuleClass}) {
+            if (toValueTree.nonEmpty) {
+              Some(instances collect {
+                case i: ClassSymbol =>
+                  val caseObj = i.owner.asClass.toType.decls.find { d =>
+                    d.name == i.name.toTermName
+                  } getOrElse NoSymbol
+
+                  q"$toValueTree($caseObj)"
+              })
+            } else {
+              Some(instances map { i => q"$intJsonPkg.Value.str(${i.name.decodedName.toString})" })
+            }
           } else
             None
         } else
           None
       }
 
-      def gen(tpe: Type, names: Set[String]): Tree = q"$schemaObj.`enum`[$tpe]($names)"
+      def gen(tpe: Type, symbols: Set[Tree]): Tree = {
+        q"$schemaObj.`enum`[$tpe]($symbols)"
+      }
     }
 
     object SC {
@@ -201,15 +223,18 @@ object SchemaMacro {
         val subjectCompanionSym = tpe.typeSymbol
         val subjectCompanion    = lookupCompanionOf(subjectCompanionSym)
 
-
         def toField(fieldSym: TermSymbol, i: Int): Field = {
           val name        = fieldSym.name.toString.trim
           val fieldTpe    = fieldSym.typeSignature
           val isOption    = fieldTpe <:< optionTpe
           val hasDefault  = fieldSym.isParamWithDefault
+          val toV         = c.inferImplicitValue(appliedType(toValueTpe, fieldTpe))
           val default     = if (hasDefault) {
             val getter = TermName("apply$default$" + (i + 1))
-            Some(q"$subjectCompanion.$getter")
+            if (toV.nonEmpty) Some(q"Some($toV($subjectCompanion.$getter))") else {
+              c.error(c.enclosingPosition, s"Can't infer a json value for $name")
+              None
+            }
           } else
             None
 
@@ -251,7 +276,7 @@ object SchemaMacro {
           val jsonType  = resolve(f.effectiveTpe, if (f.isOption) stack else tpe +: stack)
 
           f.default map { d =>
-            q"$obj.Field[${f.effectiveTpe}](name = $name, tpe = $jsonType, required = ${ !f.isOption && !f.hasDefault }, default = $d)"
+            q"$obj.Field.fromJson[${f.effectiveTpe}](name = $name, tpe = $jsonType, required = ${ !f.isOption && !f.hasDefault }, default = $d)"
           } getOrElse {
             q"$obj.Field[${f.effectiveTpe}](name = $name, tpe = $jsonType, required = ${ !f.isOption && !f.hasDefault })"
           }

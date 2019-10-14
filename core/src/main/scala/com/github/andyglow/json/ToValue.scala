@@ -49,6 +49,12 @@ trait LowPriorityMapImplicits { this: LowPriorityPrimitiveImplicits =>
   }
 }
 
+trait LowPriorityProductImplicits {
+  import Value._
+  import ToValue._
+
+  implicit def ProductV[T <: Product]: ToValue[T] = mk(p => str(p.productPrefix))
+}
 trait LowPriorityImplicits
   extends LowPriorityPrimitiveImplicits
     with LowPriorityArrayImplicits
