@@ -1,7 +1,5 @@
 package com.github.andyglow.json
 
-import scala.language.higherKinds
-
 
 trait LowPriorityArrayImplicits { this: LowPriorityPrimitiveImplicits =>
   import Value._

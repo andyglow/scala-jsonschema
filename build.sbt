@@ -30,7 +30,8 @@ lazy val commonSettings = Seq(
       "-Yno-adapted-args",
       "-Ywarn-dead-code",
       "-Ywarn-numeric-widen",
-      "-Xfuture")
+      "-Xfuture",
+      "-language:higherKinds")
 
     // WORKAROUND https://github.com/scala/scala/pull/5402
     CrossVersion.partialVersion(scalaVersion.value) match {
@@ -118,7 +119,7 @@ lazy val api = { project in file("api") }.dependsOn(core, macros).settings(
   name := "scala-jsonschema-api"
 )
 
-lazy val `play-json` = { project in file("play-json") }.dependsOn(core % "compile->compile;test->test", api).settings(
+lazy val `play-json` = { project in file("play-json") }.dependsOn(core, api % "compile->compile;test->test").settings(
   commonSettings,
 
   name := "scala-jsonschema-play-json",
@@ -126,7 +127,7 @@ lazy val `play-json` = { project in file("play-json") }.dependsOn(core % "compil
   libraryDependencies += "com.typesafe.play" %% "play-json" % "2.7.4"
 )
 
-lazy val `spray-json` = { project in file("spray-json") }.dependsOn(core % "compile->compile;test->test", api).settings(
+lazy val `spray-json` = { project in file("spray-json") }.dependsOn(core, api % "compile->compile;test->test").settings(
   commonSettings,
 
   name := "scala-jsonschema-spray-json",
@@ -134,7 +135,7 @@ lazy val `spray-json` = { project in file("spray-json") }.dependsOn(core % "comp
   libraryDependencies += "io.spray" %%  "spray-json" % "1.3.5"
 )
 
-lazy val `circe-json` = { project in file("circe-json") }.dependsOn(core % "compile->compile;test->test", api).settings(
+lazy val `circe-json` = { project in file("circe-json") }.dependsOn(core, api % "compile->compile;test->test").settings(
   commonSettings,
 
   name := "scala-jsonschema-circe-json",
@@ -150,7 +151,7 @@ lazy val `circe-json` = { project in file("circe-json") }.dependsOn(core % "comp
   }
 )
 
-lazy val `json4s-json` = { project in file("json4s-json") }.dependsOn(core % "compile->compile;test->test", api).settings(
+lazy val `json4s-json` = { project in file("json4s-json") }.dependsOn(core, api % "compile->compile;test->test").settings(
   commonSettings,
 
   name := "scala-jsonschema-json4s-json",
@@ -158,7 +159,7 @@ lazy val `json4s-json` = { project in file("json4s-json") }.dependsOn(core % "co
   libraryDependencies += "org.json4s" %% "json4s-core" % "3.6.7"
 )
 
-lazy val `u-json` = { project in file("u-json") }.dependsOn(core % "compile->compile;test->test", api).settings(
+lazy val `u-json` = { project in file("u-json") }.dependsOn(core, api % "compile->compile;test->test").settings(
   commonSettings,
 
   name := "scala-jsonschema-ujson",

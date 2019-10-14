@@ -3,7 +3,6 @@ package json
 import com.github.andyglow.json.{ToValue, Value}
 
 import scala.annotation.implicitNotFound
-import scala.language.higherKinds
 
 
 sealed trait Schema[+T] extends Product {

@@ -5,7 +5,6 @@ import org.json4s.Writer
 import org.json4s.JsonAST._
 
 object UserProfileJson {
-  import org.json4s.JsonMethods
 
   implicit val CredentialsW: Writer[Credentials] = new Writer[Credentials] {
     override def write(o: Credentials): JValue = JObject(
