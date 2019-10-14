@@ -7,12 +7,14 @@ import org.scalatest._
 import org.scalatest.Matchers._
 import org.scalatest.prop.TableDrivenPropertyChecks._
 import com.github.andyglow.json.Value._
+import com.github.andyglow.jsonschema.model.UserProfile
 import json.schema.Version.Draft04
 import org.scalactic.Equality
 import play.api.libs.json._
 
 class AsPlaySpec extends PropSpec{
   import AsPlaySpec._
+  import UserProfileJson._
 
   private val examples = Table[Value, JsValue](
     ("json"                           , "PlayJson"),
@@ -59,7 +61,6 @@ class AsPlaySpec extends PropSpec{
 
 
 object AsPlaySpec {
-  import Role._
 
   implicit val jsValEq: Equality[JsValue] = new Equality[JsValue] {
     override def areEqual(a: JsValue, b: Any): Boolean = a match {

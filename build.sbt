@@ -118,7 +118,7 @@ lazy val api = { project in file("api") }.dependsOn(core, macros).settings(
   name := "scala-jsonschema-api"
 )
 
-lazy val `play-json` = { project in file("play-json") }.dependsOn(core, api).settings(
+lazy val `play-json` = { project in file("play-json") }.dependsOn(core % "compile->compile;test->test", api).settings(
   commonSettings,
 
   name := "scala-jsonschema-play-json",
@@ -126,7 +126,7 @@ lazy val `play-json` = { project in file("play-json") }.dependsOn(core, api).set
   libraryDependencies += "com.typesafe.play" %% "play-json" % "2.7.4"
 )
 
-lazy val `spray-json` = { project in file("spray-json") }.dependsOn(core, api).settings(
+lazy val `spray-json` = { project in file("spray-json") }.dependsOn(core % "compile->compile;test->test", api).settings(
   commonSettings,
 
   name := "scala-jsonschema-spray-json",
@@ -134,7 +134,7 @@ lazy val `spray-json` = { project in file("spray-json") }.dependsOn(core, api).s
   libraryDependencies += "io.spray" %%  "spray-json" % "1.3.5"
 )
 
-lazy val `circe-json` = { project in file("circe-json") }.dependsOn(core, api).settings(
+lazy val `circe-json` = { project in file("circe-json") }.dependsOn(core % "compile->compile;test->test", api).settings(
   commonSettings,
 
   name := "scala-jsonschema-circe-json",
@@ -150,7 +150,7 @@ lazy val `circe-json` = { project in file("circe-json") }.dependsOn(core, api).s
   }
 )
 
-lazy val `json4s-json` = { project in file("json4s-json") }.dependsOn(core, api).settings(
+lazy val `json4s-json` = { project in file("json4s-json") }.dependsOn(core % "compile->compile;test->test", api).settings(
   commonSettings,
 
   name := "scala-jsonschema-json4s-json",
@@ -158,7 +158,7 @@ lazy val `json4s-json` = { project in file("json4s-json") }.dependsOn(core, api)
   libraryDependencies += "org.json4s" %% "json4s-ast" % "3.6.7"
 )
 
-lazy val `u-json` = { project in file("u-json") }.dependsOn(core, api).settings(
+lazy val `u-json` = { project in file("u-json") }.dependsOn(core % "compile->compile;test->test", api).settings(
   commonSettings,
 
   name := "scala-jsonschema-ujson",

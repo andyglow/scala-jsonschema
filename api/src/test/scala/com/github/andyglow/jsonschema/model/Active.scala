@@ -1,4 +1,4 @@
-package com.github.andyglow.jsonschema
+package com.github.andyglow.jsonschema.model
 
 import com.github.andyglow.json.{ToValue, Value}
 
@@ -12,6 +12,7 @@ case object Suspended extends Active
 
 object Active {
 
+  // ToValue is explicitly specified
   implicit val ActiveV: ToValue[Active] = ToValue mk {
     case On         => Value.str("On")
     case Off        => Value.str("Off")

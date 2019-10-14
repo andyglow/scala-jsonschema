@@ -1,4 +1,4 @@
-package com.github.andyglow.jsonschema
+package com.github.andyglow.jsonschema.model
 
 case class UserProfile(
   firstName: String,
