@@ -163,13 +163,16 @@ lazy val `u-json` = { project in file("u-json") }.dependsOn(core % "compile->com
 
   name := "scala-jsonschema-ujson",
 
-  libraryDependencies += {
+  libraryDependencies ++= {
     val ujsonVersion = CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, 11)) => "0.7.4"
       case _             => "0.7.5"
     }
     
-    "com.lihaoyi" %% "ujson" % ujsonVersion
+    Seq(
+      "com.lihaoyi" %% "ujson" % ujsonVersion,
+      "com.lihaoyi" %% "upickle" % ujsonVersion)
+
   }
 )
 
