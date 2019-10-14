@@ -5,12 +5,14 @@ import org.scalatest._
 import org.scalatest.Matchers._
 import org.scalatest.prop.TableDrivenPropertyChecks._
 import com.github.andyglow.json.Value._
+import com.github.andyglow.jsonschema.model.UserProfile
 import json.schema.Version.Draft04
 import org.json4s.JsonAST._
 import org.scalactic.Equality
 
 class AsJson4sSpec extends PropSpec{
   import AsJson4sSpec._
+  import UserProfileJson._
 
   private val examples = Table[Value, JValue](
     ("json"                           , "PlayJson"),
@@ -40,20 +42,21 @@ class AsJson4sSpec extends PropSpec{
         "middleName"              -> JObject("type" -> JString("string")),
         "lastName"                -> JObject("type" -> JString("string")),
         "age"                     -> JObject("type" -> JString("integer")),
-        "active"                  -> JObject("type" -> JString("boolean"), "default" -> JBool.True)),
+        "role"                    -> JObject("type" -> JString("string"), "default" -> JString("e-user"), "enum" -> JArray(List(JString("e-admin"), JString("e-manager"), JString("e-user")))),
+        "active"                  -> JObject("type" -> JString("string"), "default" -> JString("On"), "enum" -> JArray(List(JString("On"), JString("Off"), JString("Suspended")))),
+        "enabledFeatures"         -> JObject("type" -> JString("array"), "uniqueItems" -> JBool.True, "default" -> JArray(List(JString("feature-0-name"), JString("feature-1-name"))), "items" -> JObject("type" -> JString("string"), "enum" -> JArray(List(JString("feature-0-name"), JString("feature-1-name"), JString("feature-2-name"))))),
+        "credentials"             -> JObject("type" -> JString("object"),
+                                              "additionalProperties" -> JBool.False,
+                                              "required"   -> JArray(List(JString("login"), JString("password"))),
+                                              "properties" -> JObject(
+                                                "login"         -> JObject("type" -> JString("string")),
+                                                "password"      -> JObject("type" -> JString("string"))),
+                                              "default" -> JObject("login" -> JString("anonymous"), "password" -> JString("-")))),
       "required"              -> JArray(List(JString("age"), JString("lastName"), JString("firstName"))))
   }
 }
 
 object AsJson4sSpec {
-
-  case class UserProfile(
-    firstName: String,
-    middleName: Option[String],
-    lastName: String,
-    age: Int,
-    active: Boolean = true)
-
 
   implicit val jsValEq: Equality[JValue] = new Equality[JValue] {
     override def areEqual(a: JValue, b: Any): Boolean = a match {

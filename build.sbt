@@ -155,7 +155,7 @@ lazy val `json4s-json` = { project in file("json4s-json") }.dependsOn(core % "co
 
   name := "scala-jsonschema-json4s-json",
 
-  libraryDependencies += "org.json4s" %% "json4s-ast" % "3.6.7"
+  libraryDependencies += "org.json4s" %% "json4s-core" % "3.6.7"
 )
 
 lazy val `u-json` = { project in file("u-json") }.dependsOn(core % "compile->compile;test->test", api).settings(
