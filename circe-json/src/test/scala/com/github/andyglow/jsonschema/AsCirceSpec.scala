@@ -4,12 +4,14 @@ import org.scalatest._
 import org.scalatest.Matchers._
 import org.scalatest.prop.TableDrivenPropertyChecks._
 import com.github.andyglow.json.Value._
+import com.github.andyglow.jsonschema.model.UserProfile
 import io.circe._
 import json.schema.Version.Draft04
 import org.scalactic.Equality
 
 class AsCirceSpec extends PropSpec {
   import AsCirceSpec._
+  import UserProfileJson._
 
   private val examples = Table(
     ("json"                           , "Circe"),
@@ -39,20 +41,21 @@ class AsCirceSpec extends PropSpec {
         "middleName"              -> Json.obj("type" -> Json.fromString("string")),
         "lastName"                -> Json.obj("type" -> Json.fromString("string")),
         "age"                     -> Json.obj("type" -> Json.fromString("integer")),
-        "active"                  -> Json.obj("type" -> Json.fromString("boolean"), "default" -> Json.True)),
+        "role"                    -> Json.obj("type" -> Json.fromString("string"), "default" -> Json.fromString("e-user"), "enum" -> Json.arr(Json.fromString("e-admin"), Json.fromString("e-manager"), Json.fromString("e-user"))),
+        "active"                  -> Json.obj("type" -> Json.fromString("string"), "default" -> Json.fromString("On"), "enum" -> Json.arr(Json.fromString("On"), Json.fromString("Off"), Json.fromString("Suspended"))),
+        "enabledFeatures"         -> Json.obj("type" -> Json.fromString("array"), "uniqueItems" -> Json.True, "default" -> Json.arr(Json.fromString("feature-0-name"), Json.fromString("feature-1-name")), "items" -> Json.obj("type" -> Json.fromString("string"), "enum" -> Json.arr(Json.fromString("feature-0-name"), Json.fromString("feature-1-name"), Json.fromString("feature-2-name")))),
+        "credentials"             -> Json.obj("type" -> Json.fromString("object"),
+                                              "additionalProperties" -> Json.False,
+                                              "required"   -> Json.arr(Json.fromString("login"), Json.fromString("password")),
+                                              "properties" -> Json.obj(
+                                                "login"         -> Json.obj("type" -> Json.fromString("string")),
+                                                "password"      -> Json.obj("type" -> Json.fromString("string"))),
+                                              "default" -> Json.obj("login" -> Json.fromString("anonymous"), "password" -> Json.fromString("-")))),
       "required"              -> Json.arr(Json.fromString("age"), Json.fromString("lastName"), Json.fromString("firstName")))
   }
 }
 
 object AsCirceSpec {
-
-  case class UserProfile(
-    firstName: String,
-    middleName: Option[String],
-    lastName: String,
-    age: Int,
-    active: Boolean = true)
-
 
   implicit val jsValEq: Equality[Json] = new Equality[Json] {
     override def areEqual(a: Json, b: Any): Boolean = a match {

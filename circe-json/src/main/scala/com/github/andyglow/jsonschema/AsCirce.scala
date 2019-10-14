@@ -24,4 +24,21 @@ object AsCirce {
 
     def asCirce[V <: Version](v: V)(implicit asValue: AsValueBuilder[V]): Json = AsCirce(AsValue.schema(x, v))
   }
+
+  implicit def toValue[T](implicit w: Encoder[T]): ToValue[T] = new ToValue[T] {
+    override def apply(x: T): Value = {
+      val js = w.apply(x)
+      def translate(js: Json): Value = js match {
+        case Json.Null => `null`
+        case Json.True => `true`
+        case Json.False=> `false`
+        case x if x.isNumber => num(x.asNumber.get.toDouble)
+        case x if x.isString => str(x.asString.get)
+        case x if x.isArray  => val a = x.asArray.get map translate; arr(a)
+        case x if x.isObject => val map = x.asObject.get.toMap mapV translate; obj(map)
+      }
+
+      translate(js)
+    }
+  }
 }
