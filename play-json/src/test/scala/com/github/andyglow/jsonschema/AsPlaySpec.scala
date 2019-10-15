@@ -5,12 +5,14 @@ import org.scalatest._
 import org.scalatest.Matchers._
 import org.scalatest.prop.TableDrivenPropertyChecks._
 import com.github.andyglow.json.Value._
+import com.github.andyglow.jsonschema.model.UserProfile
 import json.schema.Version.Draft04
 import org.scalactic.Equality
 import play.api.libs.json._
 
 class AsPlaySpec extends PropSpec{
   import AsPlaySpec._
+  import UserProfileJson._
 
   private val examples = Table[Value, JsValue](
     ("json"                           , "PlayJson"),
@@ -40,19 +42,23 @@ class AsPlaySpec extends PropSpec{
         "middleName"              -> Json.obj("type" -> "string"),
         "lastName"                -> Json.obj("type" -> "string"),
         "age"                     -> Json.obj("type" -> "integer"),
-        "active"                  -> Json.obj("type" -> "boolean")),
+        "role"                    -> Json.obj("type" -> "string", "default" -> "e-user", "enum" -> Json.arr("e-admin","e-manager","e-user")),
+        "active"                  -> Json.obj("type" -> "string", "default" -> "On", "enum" -> Json.arr("On", "Off", "Suspended")),
+        "enabledFeatures"         -> Json.obj("type" -> "array", "uniqueItems" -> true, "default" -> Json.arr("feature-0-name", "feature-1-name"), "items" -> Json.obj("type" -> "string", "enum" -> Json.arr("feature-0-name", "feature-1-name", "feature-2-name"))),
+        "credentials"             -> Json.obj("type" -> "object",
+                                              "additionalProperties" -> false,
+                                              "required"   -> Json.arr("login", "password"),
+                                              "properties" -> Json.obj(
+                                                "login"         -> Json.obj("type" -> "string"),
+                                                "password"      -> Json.obj("type" -> "string")),
+                                              "default" -> Json.obj("login" -> "anonymous", "password" -> "-"))),
       "required"              -> Json.arr("age", "lastName", "firstName"))
   }
 }
 
-object AsPlaySpec {
 
-  case class UserProfile(
-    firstName: String,
-    middleName: Option[String],
-    lastName: String,
-    age: Int,
-    active: Boolean = true)
+
+object AsPlaySpec {
 
   implicit val jsValEq: Equality[JsValue] = new Equality[JsValue] {
     override def areEqual(a: JsValue, b: Any): Boolean = a match {

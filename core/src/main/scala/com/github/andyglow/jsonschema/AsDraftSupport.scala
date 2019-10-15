@@ -25,7 +25,9 @@ trait AsDraftSupport {
 
   def mkObj(pp: Option[ValidationDef[_, _]], x: `object`[_]): obj = {
     val props = x.fields.map { field =>
-      field.name -> apply(field.tpe)
+      val d = field.default map { d => obj("default" -> d) } getOrElse obj()
+
+      field.name -> ( d ++ apply(field.tpe))
     }.toMap
 
     val required = x.fields collect {
@@ -62,7 +64,7 @@ trait AsDraftSupport {
   def mkEnum(pp: Option[ValidationDef[_, _]], x: `enum`[_]): obj = {
     obj(
       "type" -> "string",
-      "enum" -> x.values.toArr)
+      "enum" -> arr(x.values.toSeq))
   }
 
   def mkOneOf(pp: Option[ValidationDef[_, _]], x: `oneof`[_]): obj = {

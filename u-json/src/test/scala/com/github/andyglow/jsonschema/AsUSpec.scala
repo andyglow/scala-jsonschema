@@ -5,12 +5,14 @@ import org.scalatest._
 import org.scalatest.Matchers._
 import org.scalatest.prop.TableDrivenPropertyChecks._
 import com.github.andyglow.json.Value._
+import com.github.andyglow.jsonschema.model.UserProfile
 import json.schema.Version._
 import org.scalactic.Equality
 
 
 class AsUSpec extends PropSpec {
   import AsUSpec._
+  import UserProfileJson._
 
   private val examples = Table[Value, ujson.Value](
     ("json"                           , "uJson"),
@@ -34,14 +36,14 @@ class AsUSpec extends PropSpec {
     implicit val ratingSchema = json.Json.schema[Rating]
     ratingSchema.refName
 
-    json.Json.schema[UserProfile].asU(Draft04()) shouldEqual ujson.Obj(
+    json.Json.schema[User].asU(Draft04()) shouldEqual ujson.Obj(
       f"$$schema"             -> ujson.Str("http://json-schema.org/draft-04/schema#"),
       "type"                  -> ujson.Str("object"),
       "additionalProperties"  -> ujson.False,
       "properties"            -> ujson.Obj(
         "rating"                  -> ujson.Obj(f"$$ref" -> ujson.Str("#/definitions/com.github.andyglow.jsonschema.AsUSpec.Rating")),
         "age"                     -> ujson.Obj("type" -> ujson.Str("integer")),
-        "active"                  -> ujson.Obj("type" -> ujson.Str("boolean")),
+        "active"                  -> ujson.Obj("type" -> ujson.Str("boolean"), "default" -> ujson.True),
         "name"                    -> ujson.Obj(
           "type"                    -> ujson.Str("object"),
           "additionalProperties"    -> ujson.False,
@@ -67,7 +69,7 @@ class AsUSpec extends PropSpec {
     implicit val ratingSchema = json.Json.schema[Rating]
     ratingSchema.refName
 
-    json.Json.schema[UserProfile].asU(Draft06(id = "http://models.org/userProfile.json")) shouldEqual ujson.Obj(
+    json.Json.schema[User].asU(Draft06(id = "http://models.org/userProfile.json")) shouldEqual ujson.Obj(
       f"$$schema"             -> ujson.Str("http://json-schema.org/draft-06/schema#"),
       f"$$id"                 -> ujson.Str("http://models.org/userProfile.json"),
       "type"                  -> ujson.Str("object"),
@@ -75,7 +77,7 @@ class AsUSpec extends PropSpec {
       "properties"            -> ujson.Obj(
         "rating"                  -> ujson.Obj(f"$$ref" -> ujson.Str("#com.github.andyglow.jsonschema.AsUSpec.Rating")),
         "age"                     -> ujson.Obj("type" -> ujson.Str("integer")),
-        "active"                  -> ujson.Obj("type" -> ujson.Str("boolean")),
+        "active"                  -> ujson.Obj("type" -> ujson.Str("boolean"), "default" -> ujson.True),
         "name"                    -> ujson.Obj(
           "type"                    -> ujson.Str("object"),
           "additionalProperties"    -> ujson.False,
@@ -102,7 +104,7 @@ class AsUSpec extends PropSpec {
     implicit val ratingSchema = json.Json.schema[Rating]
     ratingSchema.refName
 
-    json.Json.schema[UserProfile].asU(Draft07(id = "http://models.org/userProfile.json")) shouldEqual ujson.Obj(
+    json.Json.schema[User].asU(Draft07(id = "http://models.org/userProfile.json")) shouldEqual ujson.Obj(
       f"$$schema"             -> ujson.Str("http://json-schema.org/draft-07/schema#"),
       f"$$id"                 -> ujson.Str("http://models.org/userProfile.json"),
       "type"                  -> ujson.Str("object"),
@@ -110,7 +112,7 @@ class AsUSpec extends PropSpec {
       "properties"            -> ujson.Obj(
         "rating"                  -> ujson.Obj(f"$$ref" -> ujson.Str("#com.github.andyglow.jsonschema.AsUSpec.Rating")),
         "age"                     -> ujson.Obj("type" -> ujson.Str("integer")),
-        "active"                  -> ujson.Obj("type" -> ujson.Str("boolean")),
+        "active"                  -> ujson.Obj("type" -> ujson.Str("boolean"), "default" -> ujson.True),
         "name"                    -> ujson.Obj(
           "type"                    -> ujson.Str("object"),
           "additionalProperties"    -> ujson.False,
@@ -130,6 +132,31 @@ class AsUSpec extends PropSpec {
               "type"                  -> ujson.Str("integer"))),
           "required"              -> ujson.Arr(ujson.Str("value")))))
   }
+
+  property("Check Schema.asU") {
+    import AsU._
+
+    json.Json.schema[UserProfile].asU(Draft04()) shouldEqual ujson.Obj(
+      f"$$schema"             -> "http://json-schema.org/draft-04/schema#",
+      "type"                  -> "object",
+      "additionalProperties"  -> false,
+      "properties"            -> ujson.Obj(
+        "firstName"               -> ujson.Obj("type" -> "string"),
+        "middleName"              -> ujson.Obj("type" -> "string"),
+        "lastName"                -> ujson.Obj("type" -> "string"),
+        "age"                     -> ujson.Obj("type" -> "integer"),
+        "role"                    -> ujson.Obj("type" -> "string", "default" -> "e-user", "enum" -> ujson.Arr("e-admin","e-manager","e-user")),
+        "active"                  -> ujson.Obj("type" -> "string", "default" -> "On", "enum" -> ujson.Arr("On", "Off", "Suspended")),
+        "enabledFeatures"         -> ujson.Obj("type" -> "array", "uniqueItems" -> true, "default" -> ujson.Arr("feature-0-name", "feature-1-name"), "items" -> ujson.Obj("type" -> "string", "enum" -> ujson.Arr("feature-0-name", "feature-1-name", "feature-2-name"))),
+        "credentials"             -> ujson.Obj("type" -> "object",
+          "additionalProperties" -> false,
+          "required"   -> ujson.Arr("login", "password"),
+          "properties" -> ujson.Obj(
+            "login"         -> ujson.Obj("type" -> "string"),
+            "password"      -> ujson.Obj("type" -> "string")),
+          "default" -> ujson.Obj("login" -> "anonymous", "password" -> "-"))),
+      "required"              -> ujson.Arr("age", "lastName", "firstName"))
+  }
 }
 
 object AsUSpec {
@@ -141,7 +168,7 @@ object AsUSpec {
 
   case class Rating(value: Int)
 
-  case class UserProfile(
+  case class User(
     name: Name,
     rating: Rating,
     age: Int,

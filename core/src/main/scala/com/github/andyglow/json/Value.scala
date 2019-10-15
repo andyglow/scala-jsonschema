@@ -4,7 +4,7 @@ import scala.collection._
 
 sealed trait Value {
 
-  override def toString: String
+  def toString: String
 }
 
 object Value {

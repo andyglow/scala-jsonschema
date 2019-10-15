@@ -5,12 +5,14 @@ import org.scalatest._
 import org.scalatest.Matchers._
 import org.scalatest.prop.TableDrivenPropertyChecks._
 import com.github.andyglow.json.Value._
+import com.github.andyglow.jsonschema.model.UserProfile
 import json.schema.Version.Draft04
 import org.scalactic.Equality
 import spray.json._
 
 class AsSpraySpec extends PropSpec {
   import AsSpraySpec._
+  import UserProfileJson._
 
   private val examples = Table[Value, JsValue](
     ("json"                           , "SprayJson"),
@@ -40,19 +42,21 @@ class AsSpraySpec extends PropSpec {
         "middleName"              -> JsObject("type" -> JsString("string")),
         "lastName"                -> JsObject("type" -> JsString("string")),
         "age"                     -> JsObject("type" -> JsString("integer")),
-        "active"                  -> JsObject("type" -> JsString("boolean"))),
+        "role"                    -> JsObject("type" -> JsString("string"), "default" -> JsString("e-user"), "enum" -> JsArray(JsString("e-admin"), JsString("e-manager"), JsString("e-user"))),
+        "active"                  -> JsObject("type" -> JsString("string"), "default" -> JsString("On"), "enum" -> JsArray(JsString("On"), JsString("Off"), JsString("Suspended"))),
+        "enabledFeatures"         -> JsObject("type" -> JsString("array"), "uniqueItems" -> JsTrue, "default" -> JsArray(JsString("feature-0-name"), JsString("feature-1-name")), "items" -> JsObject("type" -> JsString("string"), "enum" -> JsArray(JsString("feature-0-name"), JsString("feature-1-name"), JsString("feature-2-name")))),
+        "credentials"             -> JsObject("type" -> JsString("object"),
+                                              "additionalProperties" -> JsFalse,
+                                              "required"   -> JsArray(JsString("login"), JsString("password")),
+                                              "properties" -> JsObject(
+                                                "login"         -> JsObject("type" -> JsString("string")),
+                                                "password"      -> JsObject("type" -> JsString("string"))),
+                                              "default" -> JsObject("login" -> JsString("anonymous"), "password" -> JsString("-")))),
       "required"              -> JsArray(JsString("age"), JsString("lastName"), JsString("firstName")))
   }
 }
 
 object AsSpraySpec {
-
-  case class UserProfile(
-    firstName: String,
-    middleName: Option[String],
-    lastName: String,
-    age: Int,
-    active: Boolean = true)
 
   implicit val jsValEq: Equality[JsValue] = new Equality[JsValue] {
     override def areEqual(a: JsValue, b: Any): Boolean = a match {
