@@ -3,12 +3,12 @@ package com.github.andyglow.jsonschema
 import java.net.URI
 
 import com.github.andyglow.json.Value._
-import json.{Json, Schema}
+import com.github.andyglow.jsonschema.JsonMatchers._
+import json.Json
 import json.Schema._
+import json.schema.Version.Draft04
 import org.scalatest.Matchers._
 import org.scalatest._
-import JsonMatchers._
-import json.schema.Version.Draft04
 
 
 class AsDraft04Spec extends WordSpec {
