@@ -95,6 +95,15 @@ class SchemaMacroSpec extends WordSpec {
         `object`(Field("bar", `number`[Double]()))))
     }
 
+    "generate schema for Sealed Trait subclasses defined inside of it's companion object" in {
+      import `object`.Field
+
+      Json.schema[FooBarInsideCompanion] shouldEqual `oneof`(Set(
+        `object`(Field("foo", `number`[Double]())),
+        `object`(Field("bar", `number`[Double]()))))
+    }
+
+
     "generate schema for Map which Sealed Family for values" in {
       import `object`.Field
 
@@ -192,11 +201,18 @@ object SchemaMacroSpec {
     vector: Vector[Long] = Vector(9L, 7L),
     strMap: Map[String, Double] = Map("foo" -> .12),
     intMap: Map[Int, String] = Map(1 -> "1", 2 -> "2"))
+
 }
 
 sealed trait FooBar
 case class FooBar1(foo: Double) extends FooBar
 case class FooBar2(bar: Double) extends FooBar
+
+sealed trait FooBarInsideCompanion
+object FooBarInsideCompanion {
+  case class FooBarInsideCompanion1(foo: Double) extends FooBarInsideCompanion
+  case class FooBarInsideCompanion2(bar: Double) extends FooBarInsideCompanion
+}
 
 sealed trait AnyFooBar extends Any
 case class AnyFooBar1(value: String) extends AnyVal with AnyFooBar
