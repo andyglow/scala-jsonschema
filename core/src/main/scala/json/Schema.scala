@@ -74,26 +74,27 @@ object Schema {
   final case class `ref`[T](sig: String, tpe: Schema[T]) extends Schema[T] { override def jsonType: String = s"$$ref" }
 
   @implicitNotFound("Implicit not found: ValidationBound[${F}, ${T}]. Some of validations doesn't match schema type")
-  sealed trait ValidationBound[F, T] {
+  trait ValidationBound[F, T] {
     def append(
       seq: collection.Seq[ValidationDef[_, _]],
       item: ValidationDef[T, _]): collection.Seq[ValidationDef[_, _]] = seq :+ item
   }
   object ValidationBound {
+    def mk[A, B]: ValidationBound[A, B] = new ValidationBound[A, B] {}
 
-    implicit def identity[X]: ValidationBound[X, X] = new ValidationBound[X, X] {}
+    implicit def identity[X]: ValidationBound[X, X] = mk[X, X]
 
-    implicit def numeric[X: Numeric]: ValidationBound[X, Number] = new ValidationBound[X, Number] {}
+    implicit def numeric[X: Numeric]: ValidationBound[X, Number] = mk[X, Number]
 
-    implicit def stringMap[X]: ValidationBound[Map[String, X], Map[String, _]] = new ValidationBound[Map[String, X], Map[String, _]] {}
-    implicit def map[K, V]: ValidationBound[Map[K, V], Map[_, _]] = new ValidationBound[Map[K, V], Map[_, _]] {}
+    implicit def stringMap[X]: ValidationBound[Map[String, X], Map[String, _]] = mk[Map[String, X], Map[String, _]]
+    implicit def map[K, V]: ValidationBound[Map[K, V], Map[_, _]] = mk[Map[K, V], Map[_, _]]
 
-    implicit def array[X]: ValidationBound[Array[X], Iterable[_]] = new ValidationBound[Array[X], Iterable[_]] {}
-    implicit def iterable[X]: ValidationBound[Iterable[X], Iterable[_]] = new ValidationBound[Iterable[X], Iterable[_]] {}
-    implicit def seq[X]: ValidationBound[Seq[X], Iterable[_]] = new ValidationBound[Seq[X], Iterable[_]] {}
-    implicit def list[X]: ValidationBound[List[X], Iterable[_]] = new ValidationBound[List[X], Iterable[_]] {}
-    implicit def vector[X]: ValidationBound[Vector[X], Iterable[_]] = new ValidationBound[Vector[X], Iterable[_]] {}
-    implicit def set[X]: ValidationBound[Set[X], Iterable[_]] = new ValidationBound[Set[X], Iterable[_]] {}
+    implicit def array[X]: ValidationBound[Array[X], Iterable[_]] = mk[Array[X], Iterable[_]]
+    implicit def iterable[X]: ValidationBound[Iterable[X], Iterable[_]] = mk[Iterable[X], Iterable[_]]
+    implicit def seq[X]: ValidationBound[Seq[X], Iterable[_]] = mk[Seq[X], Iterable[_]]
+    implicit def list[X]: ValidationBound[List[X], Iterable[_]] = mk[List[X], Iterable[_]]
+    implicit def vector[X]: ValidationBound[Vector[X], Iterable[_]] = mk[Vector[X], Iterable[_]]
+    implicit def set[X]: ValidationBound[Set[X], Iterable[_]] = mk[Set[X], Iterable[_]]
   }
 
   object `string` {

@@ -3,7 +3,7 @@ package com.github.andyglow.jsonschema
 import java.net.URI
 
 import com.github.andyglow.json.Value._
-import json.Json
+import json.{Json, Schema}
 import json.Schema._
 import org.scalatest.Matchers._
 import org.scalatest._
@@ -12,6 +12,7 @@ import json.schema.Version.Draft04
 
 
 class AsDraft04Spec extends WordSpec {
+  import AsDraft04Spec._
 
   "AsValue.schema" should {
 
@@ -269,6 +270,21 @@ class AsDraft04Spec extends WordSpec {
             "^[a-z]*$" -> obj("type" -> "string"))
         )
       }
+
+      "value class" in {
+        asDraft04 {
+          implicit val vb = ValidationBound.mk[ValueClass, String]
+          Json.schema[ValueClass] withValidation (
+            `pattern` := "^[a-z]*$")
+        } shouldBe obj(
+          "type" -> "string",
+          "pattern" -> "^[a-z]*$")
+      }
     }
   }
+}
+
+object AsDraft04Spec {
+
+  case class ValueClass(value: String) extends AnyVal
 }

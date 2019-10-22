@@ -60,6 +60,7 @@ Inspired by Coursera Autoschema but uses `Scala Macros` instead of `Java Reflect
     - `Iterable[T]`
 - Sealed Trait hierarchy of case objects (Enums)
 - Case Classes
+    - default value
 - Sealed Trait hierarchy of case classes
 - Value Classes    
 
@@ -405,6 +406,8 @@ Example
 ```scala
 import json._
 import json.Validation._
+
+implicit val vb = ValidationBound.mk[UserId, String]
 
 implicit val userIdSchema: json.Schema[UserId] = Json.schema[UserId]("userId") withValidation (
   `pattern` := "[a-f\\d]{16}"
