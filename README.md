@@ -6,6 +6,11 @@
 [![mvn: 2.12](https://img.shields.io/badge/dynamic/json.svg?label=mvn%3A%202.12&query=%24.response.docs%5B0%5D.latestVersion&url=https%3A%2F%2Fsearch.maven.org%2Fsolrsearch%2Fselect%3Fq%3Dscala-jsonschema-core_2.13%26start%3D0%26rows%3D1)](https://search.maven.org/artifact/com.github.andyglow/scala-jsonschema-core_2.12/)
 [![mvn: 2.13](https://img.shields.io/badge/dynamic/json.svg?label=mvn%3A%202.13&query=%24.response.docs%5B0%5D.latestVersion&url=https%3A%2F%2Fsearch.maven.org%2Fsolrsearch%2Fselect%3Fq%3Dscala-jsonschema-core_2.13%26start%3D0%26rows%3D1)](https://search.maven.org/artifact/com.github.andyglow/scala-jsonschema-core_2.13/)
 
+SBT dependency:
+```bash
+"com.github.andyglow" %% "scala-jsonschema-api" % <version>
+```
+
 
 ## Generate JSON Schema from Scala classes
 
@@ -317,7 +322,7 @@ implicit val someStrSchema: json.Schema[String] = Json.schema[String]("my-lovely
 
 implicit val someArrSchema: json.Schema[Array[String]] = Json.schema[Array[String]]
 
-println(JsonFormatter.format(AsValue.schema(someArrSchema)))
+println(JsonFormatter.format(AsValue.schema(someArrSchema, json.schema.Version.Draft04())))
 ``` 
 
 ```json
