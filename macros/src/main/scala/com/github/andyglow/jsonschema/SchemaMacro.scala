@@ -157,7 +157,7 @@ object SchemaMacro {
 
         def substituteTypes(x: Type, from: List[Symbol], to: List[Type]): Type =
           try x.substituteTypes(from, to) catch { case NonFatal(_) =>
-            c.abort(c.enclosingPosition, s"Cannot resolve generic type(s) for `$x`. Please provide a custom implicitly accessible codec for it.")
+            c.abort(c.enclosingPosition, s"Cannot resolve generic type(s) for `$x`. Please provide a custom implicitly accessible json.Schema for it.")
           }
 
         // BORROWED:
