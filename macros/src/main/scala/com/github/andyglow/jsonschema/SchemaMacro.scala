@@ -6,6 +6,7 @@ import java.util.UUID
 import com.github.andyglow.json.ToValue
 
 import scala.reflect.macros.blackbox
+import scala.util.control.NonFatal
 
 object SchemaMacro {
 
@@ -143,13 +144,40 @@ object SchemaMacro {
     object SC {
 
       def unapply(tpe: Type): Option[Set[Type]] = {
-        if (tpe.typeSymbol.isClass && tpe.typeSymbol.asClass.isSealed) {
-          val instances = tpe.typeSymbol.asClass.knownDirectSubclasses
 
-          if (instances forall { i => val c = i.asClass; !c.isModuleClass && c.isCaseClass}) {
-            Some(instances map { _.typeSignature })
-          } else
-            None
+        def isSealed(x: Type): Boolean = {
+          val s = x.typeSymbol
+          s.isClass && s.asClass.isSealed
+        }
+
+        def isSupportedLeafType(x: Type): Boolean = {
+          val s = x.typeSymbol
+          s.isClass && !s.isModuleClass && s.asClass.isCaseClass
+        }
+
+        def substituteTypes(x: Type, from: List[Symbol], to: List[Type]): Type =
+          try x.substituteTypes(from, to) catch { case NonFatal(_) =>
+            c.abort(c.enclosingPosition, s"Cannot resolve generic type(s) for `$x`. Please provide a custom implicitly accessible codec for it.")
+          }
+
+        // BORROWED:
+        // https://github.com/plokhotnyuk/jsoniter-scala/blob/3612fddf19a8ce23ac973d71e85ef02f79c06fff/jsoniter-scala-macros/src/main/scala/com/github/plokhotnyuk/jsoniter_scala/macros/JsonCodecMaker.scala#L351-L365
+        def collectRecursively(x: Type): Seq[Type] =
+          if (x.typeSymbol.isClass) {
+            val leafs = x.typeSymbol.asClass.knownDirectSubclasses.toSeq flatMap { s =>
+              val cs = s.asClass
+              val subTpe = if (cs.typeParams.isEmpty) cs.toType else substituteTypes(cs.toType, cs.typeParams, x.typeArgs)
+              if (isSealed(subTpe)) collectRecursively(subTpe)
+              else if (isSupportedLeafType(subTpe)) Seq(subTpe)
+              else c.abort(c.enclosingPosition, "Only Scala case classes are supported for ADT leaf classes. Please consider using of " +
+                s"them for ADT with base '$x' or provide a custom implicitly accessible json.Schema for the ADT base.")
+            }
+            if (isSupportedLeafType(x)) leafs :+ x else leafs
+          } else Seq.empty
+
+        if (isSealed(tpe)) {
+          val instances = collectRecursively(tpe)
+          Some(instances.toSet)
         } else
           None
       }

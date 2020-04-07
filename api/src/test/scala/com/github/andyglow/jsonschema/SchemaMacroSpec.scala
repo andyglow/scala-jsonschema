@@ -95,6 +95,17 @@ class SchemaMacroSpec extends WordSpec {
         `object`(Field("bar", `number`[Double]()))))
     }
 
+    "generate schema for Multi Level Sealed Trait subclasses" in {
+      import `object`.Field
+
+      Json.schema[MultiLevelSealedTraitRoot] shouldEqual `oneof`(Set(
+        `object`(Field("a", `integer`)),
+        `object`(Field("b", `string`(None, None))),
+        `object`(Field("c", `boolean`)),
+        `object`(Field("d", `number`[Double]())),
+        `object`(Field("e", `array`[String, List](`string`(None, None))))))
+    }
+
     "generate schema for Sealed Trait subclasses defined inside of it's companion object" in {
       import `object`.Field
 
@@ -207,6 +218,15 @@ object SchemaMacroSpec {
 sealed trait FooBar
 case class FooBar1(foo: Double) extends FooBar
 case class FooBar2(bar: Double) extends FooBar
+
+sealed trait MultiLevelSealedTraitRoot
+sealed trait MultiLevelBranch1 extends MultiLevelSealedTraitRoot
+sealed trait MultiLevelBranch2 extends MultiLevelSealedTraitRoot
+case class MultiLevelBranch1Instance1(a: Int) extends MultiLevelBranch1
+case class MultiLevelBranch1Instance2(b: String) extends MultiLevelBranch1
+case class MultiLevelBranch2Instance1(c: Boolean) extends MultiLevelBranch2
+case class MultiLevelBranch2Instance2(d: Double) extends MultiLevelBranch2
+case class MultiLevelRootInstance1(e: List[String]) extends MultiLevelSealedTraitRoot
 
 sealed trait FooBarInsideCompanion
 object FooBarInsideCompanion {
