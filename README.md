@@ -11,7 +11,7 @@
 Main module:
 
 ```scala
-libraryDependencies += "com.github.andyglow" %% "scala-jsonschema-api" % <version> // <-- required
+libraryDependencies += "com.github.andyglow" %% "scala-jsonschema" % <version> // <-- required
 ```
 
 Other libraries:
@@ -28,7 +28,9 @@ libraryDependencies ++= Seq(
   "com.github.andyglow" %% "scala-jsonschema-ujson" % <version>,             // <-- optional
   // joda-time support
   "com.github.andyglow" %% "scala-jsonschema-joda-time" % <version>,         // <-- optional
-  // zero-dependency jsonschema parser
+  // cats support
+  "com.github.andyglow" %% "scala-jsonschema-cats" % <version>,              // <-- optional
+  // zero-dependency json and jsonschema parser
   "com.github.andyglow" %% "scala-jsonschema-parser" % <version>             // <-- optional
 )
 ```
@@ -41,14 +43,15 @@ Inspired by Coursera Autoschema but uses `Scala Macros` instead of `Java Reflect
 
 ## Features
 - Supports Json Schema `draft-04`, `draft-06`, `draft-07`
-- Generate Json Schema
-- Treat `Option` as optional fields
-- As well as treat fields with `default values` as optional
-- Support `value classes`
-- Support `sealed trait enums`
-- Support `sealed trait case classes`
+- Supports `value classes`
+- Supports `sealed trait enums`
+- Supports `sealed trait case classes`
+- Treats `Option` as optional fields
+- As well as treats fields with `default values` as optional
 - Any `Iterable` will be treated as `array`
-- Optional Joda-Time Support
+- Pluggable Joda-Time Support
+- Pluggable Cats Support
+- Supports generic data types
 
 ### Types supported out of the box
 - `Boolean`
@@ -77,6 +80,14 @@ Inspired by Coursera Autoschema but uses `Scala Macros` instead of `Java Reflect
         - `org.joda.time.LocalDateTime`
         - `org.joda.time.LocalDate`
         - `org.joda.time.LocalTime`
+    - with Cats module imported
+        - `cats.data.NonEmptyList`
+        - `cats.data.NonEmptyVector`
+        - `cats.data.NonEmptySet`
+        - `cats.data.NonEmptyChain`
+        - `cats.data.NonEmptyMap`
+        - `cats.data.NonEmptyStream`
+        - `cats.data.OneAnd`
 - Misc
     - `java.util.UUID`
     - `java.net.URL`

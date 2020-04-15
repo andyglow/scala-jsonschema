@@ -121,18 +121,25 @@ lazy val macros = project in file("macros") dependsOn core settings (
 lazy val api = { project in file("api") }.dependsOn(core, macros).settings(
   commonSettings,
 
-  name := "scala-jsonschema-api"
+  name := "scala-jsonschema"
 )
 
-lazy val `play-json` = { project in file("play-json") }.dependsOn(core, api % "compile->compile;test->test").settings(
+lazy val `play-json` = { project in file("modules/play-json") }.dependsOn(core, api % "compile->compile;test->test").settings(
   commonSettings,
 
   name := "scala-jsonschema-play-json",
 
-  libraryDependencies += "com.typesafe.play" %% "play-json" % "2.7.4"
+  libraryDependencies += {
+    val playV = CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, 11)) => "2.7.4"
+      case _             => "2.8.1"
+    }
+
+    "com.typesafe.play" %% "play-json" % playV
+  }
 )
 
-lazy val `spray-json` = { project in file("spray-json") }.dependsOn(core, api % "compile->compile;test->test").settings(
+lazy val `spray-json` = { project in file("modules/spray-json") }.dependsOn(core, api % "compile->compile;test->test").settings(
   commonSettings,
 
   name := "scala-jsonschema-spray-json",
@@ -140,23 +147,26 @@ lazy val `spray-json` = { project in file("spray-json") }.dependsOn(core, api % 
   libraryDependencies += "io.spray" %%  "spray-json" % "1.3.5"
 )
 
-lazy val `circe-json` = { project in file("circe-json") }.dependsOn(core, api % "compile->compile;test->test").settings(
+lazy val `circe-json` = { project in file("modules/circe-json") }.dependsOn(core, api % "compile->compile;test->test").settings(
   commonSettings,
 
   name := "scala-jsonschema-circe-json",
 
   libraryDependencies ++= {
-    val circeVersion = "0.12.0-M3"
+    val circeV = CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, 11)) => "0.12.0-M3"
+      case _             => "0.13.0"
+    }
 
     Seq(
       "io.circe" %% "circe-core",
       "io.circe" %% "circe-generic",
       "io.circe" %% "circe-parser"
-    ) map { _ % circeVersion }
+    ) map { _ % circeV }
   }
 )
 
-lazy val `json4s-json` = { project in file("json4s-json") }.dependsOn(core, api % "compile->compile;test->test").settings(
+lazy val `json4s-json` = { project in file("modules/json4s-json") }.dependsOn(core, api % "compile->compile;test->test").settings(
   commonSettings,
 
   name := "scala-jsonschema-json4s-json",
@@ -164,33 +174,33 @@ lazy val `json4s-json` = { project in file("json4s-json") }.dependsOn(core, api 
   libraryDependencies += "org.json4s" %% "json4s-core" % "3.6.7"
 )
 
-lazy val `u-json` = { project in file("u-json") }.dependsOn(core, api % "compile->compile;test->test").settings(
+lazy val `u-json` = { project in file("modules/u-json") }.dependsOn(core, api % "compile->compile;test->test").settings(
   commonSettings,
 
   name := "scala-jsonschema-ujson",
 
   libraryDependencies ++= {
-    val ujsonVersion = CrossVersion.partialVersion(scalaVersion.value) match {
+    val uV = CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, 11)) => "0.7.4"
-      case _             => "0.7.5"
+      case _             => "1.0.0"
     }
-    
+
     Seq(
-      "com.lihaoyi" %% "ujson" % ujsonVersion,
-      "com.lihaoyi" %% "upickle" % ujsonVersion)
+      "com.lihaoyi" %% "ujson" % uV,
+      "com.lihaoyi" %% "upickle" % uV)
 
   }
 )
 
-lazy val `joda-time` = { project in file("joda-time") }.dependsOn(core, api).settings(
+lazy val `joda-time` = { project in file("modules/joda-time") }.dependsOn(core, api).settings(
   commonSettings,
 
   name := "scala-jsonschema-joda-time",
 
-  libraryDependencies += "joda-time" % "joda-time" % "2.10.3"
+  libraryDependencies += "joda-time" % "joda-time" % "2.10.5"
 )
 
-lazy val `cats` = { project in file("cats") }.dependsOn(core, api).settings(
+lazy val `cats` = { project in file("modules/cats") }.dependsOn(core, api).settings(
   commonSettings,
 
   name := "scala-jsonschema-cats",
@@ -198,7 +208,7 @@ lazy val `cats` = { project in file("cats") }.dependsOn(core, api).settings(
   libraryDependencies += "org.typelevel" %% "cats-core" % "2.0.0"
 )
 
-lazy val parser = { project in file("parser") }.dependsOn(core % "compile->compile;test->test", api).settings(
+lazy val parser = { project in file("modules/parser") }.dependsOn(core % "compile->compile;test->test", api).settings(
   commonSettings,
 
   name := "scala-jsonschema-parser"
@@ -218,7 +228,7 @@ lazy val root = { project in file(".") }.aggregate(
 
   commonSettings,
 
-  name := "scala-jsonschema",
+  name := "scala-jsonschema-root",
   
   crossScalaVersions := Nil,
   
