@@ -30,6 +30,8 @@ lazy val commonSettings = Seq(
       "-Yno-adapted-args",
       "-Ywarn-dead-code",
       "-Ywarn-numeric-widen",
+//      "-Xlog-implicits",
+//      "-Ytyper-debug",
       "-Xfuture",
       "-language:higherKinds")
 
@@ -101,7 +103,10 @@ lazy val commonSettings = Seq(
 lazy val core = { project in file("core") }.settings(
   commonSettings,
 
-  name := "scala-jsonschema-core"
+  name := "scala-jsonschema-core",
+
+  libraryDependencies ++= Seq(
+    (scalaVersion apply ("org.scala-lang" % "scala-reflect" % _ % Compile)).value.withSources.withJavadoc)
 )
 
 lazy val macros = project in file("macros") dependsOn core settings (
@@ -183,6 +188,14 @@ lazy val `joda-time` = { project in file("joda-time") }.dependsOn(core, api).set
   name := "scala-jsonschema-joda-time",
 
   libraryDependencies += "joda-time" % "joda-time" % "2.10.3"
+)
+
+lazy val `cats` = { project in file("cats") }.dependsOn(core, api).settings(
+  commonSettings,
+
+  name := "scala-jsonschema-cats",
+
+  libraryDependencies += "org.typelevel" %% "cats-core" % "2.0.0"
 )
 
 lazy val parser = { project in file("parser") }.dependsOn(core % "compile->compile;test->test", api).settings(

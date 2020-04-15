@@ -40,15 +40,15 @@ trait AsDraftSupport {
       ("required"  , arr(required.toSeq)))
   }
 
-  def mkStrMap(pp: Option[ValidationDef[_, _]], x: `string-map`[_]): obj = {
+  def mkStrMap(pp: Option[ValidationDef[_, _]], comp: Schema[_]): obj = {
     val pattern = pp map { _.json.asInstanceOf[str].value } getOrElse "^.*$"
     obj("patternProperties" -> obj(
-      pattern -> apply(x.valueType)))
+      pattern -> apply(comp)))
   }
 
-  def mkIntMap(pp: Option[ValidationDef[_, _]], x: `int-map`[_]): obj = {
+  def mkIntMap(pp: Option[ValidationDef[_, _]], comp: Schema[_]): obj = {
     obj("patternProperties" -> obj(
-      "^[0-9]*$" -> apply(x.valueType)))
+      "^[0-9]*$" -> apply(comp)))
   }
 
   def mkArr(pp: Option[ValidationDef[_, _]], comp: Schema[_]): obj = {
@@ -81,15 +81,15 @@ trait AsDraftSupport {
   }
 
   val inferSpecifics: PartialFunction[(Option[ValidationDef[_, _]], json.Schema[_]), obj] = {
-    case (pp, x: `string`[_])     => mkStr(pp, x)
-    case (pp, x: `object`[_])     => mkObj(pp, x)
-    case (pp, x: `string-map`[_]) => mkStrMap(pp, x)
-    case (pp, x: `int-map`[_])    => mkIntMap(pp, x)
-    case (pp, `array`(comp))      => mkArr(pp, comp)
-    case (pp, `set`(comp))        => mkSet(pp, comp)
-    case (pp, x: `enum`[_])       => mkEnum(pp, x)
-    case (pp, x: `oneof`[_])      => mkOneOf(pp, x)
-    case (pp, x: `ref`[_])        => mkRef(pp, x)
+    case (pp, x: `string`[_])        => mkStr(pp, x)
+    case (pp, x: `object`[_])        => mkObj(pp, x)
+    case (pp, `string-map`(comp))    => mkStrMap(pp, comp)
+    case (pp, `int-map`(comp))       => mkIntMap(pp, comp)
+    case (pp, `array`(comp))         => mkArr(pp, comp)
+    case (pp, `set`(comp))           => mkSet(pp, comp)
+    case (pp, x: `enum`[_])          => mkEnum(pp, x)
+    case (pp, x: `oneof`[_])         => mkOneOf(pp, x)
+    case (pp, x: `ref`[_])           => mkRef(pp, x)
   }
 
   def inferValidations(x: json.Schema[_]): (obj, Option[ValidationDef[_, _]]) = {

@@ -2,6 +2,8 @@ package json
 
 import com.github.andyglow.json.Value._
 import com.github.andyglow.json.Value
+import com.github.andyglow.jsonschema.AsValue
+import json.schema.Version.Draft04
 
 
 final case class ValidationDef[S, V](validation: Validation[S, V], value: V, json: Value)
@@ -15,7 +17,7 @@ sealed abstract class Validation[S, V]()(implicit conv: V => Value) extends Prod
 
 object Validation {
 
-  final case object `multipleOf` extends Validation[Number, Int]()(num.apply)
+  final case object `multipleOf` extends Validation[Number, Number]()(num.apply)
 
   final case object `maximum` extends Validation[Number, Number]()(num.apply)
 
@@ -24,6 +26,12 @@ object Validation {
   final case object `exclusiveMaximum` extends Validation[Number, Number]()(num.apply)
 
   final case object `exclusiveMinimum` extends Validation[Number, Number]()(num.apply)
+
+  final case object `contentEncoding` extends Validation[String, String]()(str.apply)
+
+  final case object `contentMediaType` extends Validation[String, String]()(str.apply)
+
+  final case object `contentSchema` extends Validation[String, Schema[_]]()(AsValue.schema(_, Draft04())) // FIXME: shouldn't specify a Version at this level
 
   final case object `maxLength` extends Validation[String, Int]()(num.apply)
 
@@ -35,13 +43,17 @@ object Validation {
 
   final case object `minItems` extends Validation[Iterable[_], Int]()(num.apply)
 
+  final case object `maxContains` extends Validation[Iterable[_], Int]()(num.apply)
+
+  final case object `minContains` extends Validation[Iterable[_], Int]()(num.apply)
+
   final case object `uniqueItems` extends Validation[Iterable[_], Boolean]()(bool.apply)
 
-  final case object `maxProperties` extends Validation[Map[String, _], Int]()(num.apply)
+  final case object `maxProperties` extends Validation[Map[_, _], Int]()(num.apply)
 
-  final case object `minProperties` extends Validation[Map[String, _], Int]()(num.apply)
+  final case object `minProperties` extends Validation[Map[_, _], Int]()(num.apply)
 
-  final case object `patternProperties` extends Validation[Map[String, _], String]()(str.apply)
+  final case object `patternProperties` extends Validation[Map[_, _], String]()(str.apply)
 }
 
 

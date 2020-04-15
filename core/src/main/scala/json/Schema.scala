@@ -15,15 +15,17 @@ sealed trait Schema[+T] extends Product {
   def jsonType: String = productPrefix
 
   def withValidation[TT >: T, B](v: ValidationDef[B, _], vs: ValidationDef[B, _]*)(implicit bound: ValidationBound[TT, B]): Schema[T] = {
-    this._validations = (v +: vs).foldLeft(_validations) {
+    val copy = this.copy()
+    copy._validations = (v +: vs).foldLeft(_validations) {
       case (agg, v) => bound.append(agg, v)
     }
-    this
+    copy
   }
 
   def apply(refName: String): Schema[T] = {
-    this._refName = Some(refName)
-    this
+    val copy = this.copy()
+    copy._refName = Some(refName)
+    copy
   }
 
   def refName: Option[String] = _refName
@@ -45,33 +47,45 @@ sealed trait Schema[+T] extends Product {
 
     sb.toString
   }
+
+  protected def mkCopy(): Schema[T]
+
+  def copy(): Schema[T] = {
+    val copy = mkCopy()
+    copy._refName = this._refName
+    copy._validations = this._validations
+
+    copy
+  }
 }
 
 object Schema {
 
-  final case object `boolean` extends Schema[Boolean]
+  sealed case class `boolean`() extends Schema[Boolean] { def mkCopy() = new `boolean`() }
+  final object `boolean` extends `boolean`()
 
-  final case object `integer` extends Schema[Int]
+  sealed case class `integer`() extends Schema[Int] { def mkCopy() = new `integer`() }
+  final object `integer` extends `integer`
 
-  final case class `number`[T : Numeric]() extends Schema[T]
+  final case class `number`[T : Numeric]() extends Schema[T] { def mkCopy() = new `number`[T]() }
 
-  final case class `string`[T](format: Option[`string`.Format], pattern: Option[String]) extends Schema[T]
+  final case class `string`[T](format: Option[`string`.Format], pattern: Option[String]) extends Schema[T] { def mkCopy() = new `string`[T](format, pattern) }
 
-  final case class `set`[T, C[_]](componentType: Schema[T]) extends Schema[C[T]] { override def jsonType = "array" }
+  final case class `set`[T, C[_]](componentType: Schema[T]) extends Schema[C[T]] { override def jsonType = "array"; def mkCopy() = new `set`[T, C](componentType) }
 
-  final case class `array`[T, C[_]](componentType: Schema[T]) extends Schema[C[T]]
+  final case class `array`[T, C[_]](componentType: Schema[T]) extends Schema[C[T]] { def mkCopy() = new `array`[T, C](componentType) }
 
-  final case class `string-map`[T](valueType: Schema[T]) extends Schema[Map[String, T]] { override def jsonType = "object" }
+  final case class `string-map`[T, C[_ <: String, _]](valueType: Schema[T]) extends Schema[C[String, T]] { override def jsonType = "object"; def mkCopy() = new `string-map`[T, C](valueType) }
 
-  final case class `int-map`[T](valueType: Schema[T]) extends Schema[Map[Int, T]] { override def jsonType = "object" }
+  final case class `int-map`[T, C[_ <: Int, _]](valueType: Schema[T]) extends Schema[C[Int, T]] { override def jsonType = "object"; def mkCopy() = new `int-map`[T, C](valueType) }
 
-  final case class `object`[T](fields: Set[`object`.Field[_]]) extends Schema[T]
+  final case class `object`[T](fields: Set[`object`.Field[_]]) extends Schema[T] { def mkCopy() = new `object`[T](fields) }
 
-  final case class `enum`[T](values: Set[Value]) extends Schema[T]
+  final case class `enum`[T](values: Set[Value]) extends Schema[T] { def mkCopy() = new `enum`[T](values) }
 
-  final case class `oneof`[T](subTypes: Set[Schema[_]]) extends Schema[T]
+  final case class `oneof`[T](subTypes: Set[Schema[_]]) extends Schema[T] { def mkCopy() = new `oneof`[T](subTypes) }
 
-  final case class `ref`[T](sig: String, tpe: Schema[T]) extends Schema[T] { override def jsonType: String = s"$$ref" }
+  final case class `ref`[T](sig: String, tpe: Schema[_]) extends Schema[T] { override def jsonType: String = s"$$ref"; def mkCopy() = new `ref`[T](sig, tpe) }
 
   @implicitNotFound("Implicit not found: ValidationBound[${F}, ${T}]. Some of validations doesn't match schema type")
   trait ValidationBound[F, T] {
@@ -86,18 +100,25 @@ object Schema {
 
     implicit def numeric[X: Numeric]: ValidationBound[X, Number] = mk[X, Number]
 
+    implicit def intMap[X]: ValidationBound[Map[Int, X], Map[Int, _]] = mk[Map[Int, X], Map[Int, _]]
     implicit def stringMap[X]: ValidationBound[Map[String, X], Map[String, _]] = mk[Map[String, X], Map[String, _]]
     implicit def map[K, V]: ValidationBound[Map[K, V], Map[_, _]] = mk[Map[K, V], Map[_, _]]
 
     implicit def array[X]: ValidationBound[Array[X], Iterable[_]] = mk[Array[X], Iterable[_]]
     implicit def iterable[X]: ValidationBound[Iterable[X], Iterable[_]] = mk[Iterable[X], Iterable[_]]
-    implicit def seq[X]: ValidationBound[Seq[X], Iterable[_]] = mk[Seq[X], Iterable[_]]
+//    implicit def seq[X]: ValidationBound[Seq[X], Iterable[_]] = mk[Seq[X], Iterable[_]]
     implicit def list[X]: ValidationBound[List[X], Iterable[_]] = mk[List[X], Iterable[_]]
     implicit def vector[X]: ValidationBound[Vector[X], Iterable[_]] = mk[Vector[X], Iterable[_]]
     implicit def set[X]: ValidationBound[Set[X], Iterable[_]] = mk[Set[X], Iterable[_]]
+
+    implicit def chr: ValidationBound[String, Character] = mk[String, Character]
   }
 
   object `string` {
+
+    def apply[T](): `string`[T] = `string`[T](None, None)
+    def apply[T](pattern: String): `string`[T] = `string`[T](None, Some(pattern))
+    def apply[T](format: Format): `string`[T] = `string`[T](Some(format), None)
 
     trait Format extends Product
 

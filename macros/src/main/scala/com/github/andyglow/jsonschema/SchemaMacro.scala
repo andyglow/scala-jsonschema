@@ -1,112 +1,52 @@
 package com.github.andyglow.jsonschema
 
-import java.net.{URI, URL}
-import java.util.UUID
-
 import com.github.andyglow.json.ToValue
 
+import scala.reflect.NameTransformer
 import scala.reflect.macros.blackbox
 import scala.util.control.NonFatal
 
+
 object SchemaMacro {
+
+  def implPredef[T : c.WeakTypeTag](c: blackbox.Context): c.Expr[json.schema.Predef[T]] = {
+    import c.universe._
+
+    val schema = impl[T](c)
+    c.Expr[json.schema.Predef[T]](q"_root_.json.schema.Predef($schema)")
+  }
 
   def impl[T : c.WeakTypeTag](c: blackbox.Context): c.Expr[json.Schema[T]] = {
     import c.universe._
 
     val jsonPkg     = q"_root_.json"
     val intJsonPkg  = q"_root_.com.github.andyglow.json"
-    val scalaPkg    = q"_root_.scala"
     val schemaObj   = q"$jsonPkg.Schema"
 
-    val subject             = weakTypeOf[T]
-    val optionTpe           = weakTypeOf[Option[_]]
-    val toValueTpe          = weakTypeOf[ToValue[_]]
-    val setTpe              = weakTypeOf[Set[_]]
-    val jsonTypeConstructor = weakTypeOf[json.Schema[_]].typeConstructor
-    val jsonSubject         = appliedType(jsonTypeConstructor, subject)
+    val subject               = weakTypeOf[T]
+    val optionTpe             = weakTypeOf[Option[_]]
+    val toValueTpe            = weakTypeOf[ToValue[_]]
+    val setTpe                = weakTypeOf[Set[_]]
+    val schemaTypeConstructor = typeOf[json.Schema[_]].typeConstructor
+    val predefTypeConstructor = typeOf[json.schema.Predef[_]].typeConstructor
 
-    def resolve(tpe: Type, stack: List[Type]): Tree = {
-      if (stack contains tpe) c.error(c.enclosingPosition, s"cyclic dependency for $tpe")
-
-      val integer = q"$schemaObj.`integer`"
-      val number  = q"$schemaObj.`number`"
-      val string  = q"$schemaObj.`string`"
-      val some    = q"$scalaPkg.Some"
-      val none    = q"$scalaPkg.None"
-
-      def genTree: Tree = tpe match {
-        // boolean
-        case x if x =:= typeOf[Boolean]                 => q"$schemaObj.`boolean`"
-
-        // numeric
-        case x if x =:= typeOf[Byte]                    => q"$number[$x]()"
-        case x if x =:= typeOf[Short]                   => q"$number[$x]()"
-        case x if x =:= typeOf[Int]                     => integer
-        case x if x =:= typeOf[Double]                  => q"$number[$x]()"
-        case x if x =:= typeOf[Float]                   => q"$number[$x]()"
-        case x if x =:= typeOf[Long]                    => q"$number[$x]()"
-        case x if x =:= typeOf[BigInt]                  => q"$number[$x]()"
-        case x if x =:= typeOf[BigDecimal]              => q"$number[$x]()"
-
-        // string
-        case x if x =:= typeOf[String]                  => q"$string[$scalaPkg.Predef.String]($none, $none)"
-        case x if x =:= typeOf[Char]                    => q"""$string[$x]($none, $some("^[.\\s]$$"))"""
-
-        // uuid
-        case x if x =:= typeOf[UUID]                    => q"""$string[$x]($none, $some("^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$$"))"""
-
-        // url, uri
-        case x if x =:= typeOf[URL]                     => q"$string[$x]($some($string.Format.`uri`), $none)"
-        case x if x =:= typeOf[URI]                     => q"$string[$x]($some($string.Format.`uri`), $none)"
-
-        // date, date-time
-        case x if x =:= typeOf[java.util.Date]          => q"$string[$x]($some($string.Format.`date-time`), $none)"
-        case x if x =:= typeOf[java.sql.Timestamp]      => q"$string[$x]($some($string.Format.`date-time`), $none)"
-        case x if x =:= typeOf[java.time.Instant]       => q"$string[$x]($some($string.Format.`date-time`), $none)"
-        case x if x =:= typeOf[java.time.LocalDateTime] => q"$string[$x]($some($string.Format.`date-time`), $none)"
-        case x if x =:= typeOf[java.sql.Date]           => q"$string[$x]($some($string.Format.`date`), $none)"
-        case x if x =:= typeOf[java.time.LocalDate]     => q"$string[$x]($some($string.Format.`date`), $none)"
-        case x if x =:= typeOf[java.sql.Time]           => q"$string[$x]($some($string.Format.`time`), $none)"
-        case x if x =:= typeOf[java.time.LocalTime]     => q"$string[$x]($some($string.Format.`time`), $none)"
-
-        case x if x <:< typeOf[Map[String, _]]          => SM.gen(x, stack)
-
-        case x if x <:< typeOf[Map[Int, _]]             => IM.gen(x, stack)
-
-        case x if x <:< typeOf[Array[_]]                => Arr.gen(x, stack)
-        case x if x <:< typeOf[Iterable[_]]             => Arr.gen(x, stack)
-
-        case SE(names)                                  => SE.gen(tpe, names)
-
-        case SC(subTypes)                               => SC.gen(tpe, subTypes, stack)
-
-        case CC(fields)                                 => CC.gen(fields, tpe, stack)
-
-        case VC(innerType)                              => VC.gen(innerType, tpe, stack)
-
-        case _ =>
-          c.error(c.enclosingPosition, s"schema for $tpe is not supported, ${stack mkString " :: "}")
-          q"null"
-      }
-
-      Implicit.getOrElse(tpe, genTree)
-    }
-
-    object Implicit {
-
-      def getOrElse(tpe: Type, gen: => Tree): Tree = {
-        val typeType = appliedType(jsonTypeConstructor, tpe)
-
-        if (typeType =:= jsonSubject) gen else {
-          c.inferImplicitValue(typeType) match {
-            case EmptyTree  => gen
-            case x          => q"""$schemaObj.`ref`[$tpe]($jsonPkg.Json.sig[$tpe].signature, $x)"""
-          }
-        }
+    def resolveGenericType(x: Type, from: List[Symbol], to: List[Type]): Type = {
+      try x.substituteTypes(from, to) catch {
+        case NonFatal(_) =>
+          c.abort(
+            c.enclosingPosition,
+            s"""Cannot resolve generic type(s) for `$x`
+               |Please provide a custom implicitly accessible json.Schema for it.
+               |""".stripMargin)
       }
     }
 
-    object SE {
+    //    implicit class TreeOps(private val x: Tree) {
+//
+//      def fold[A](ifEmpty: => A)(fn: Tree => A): A = if (x.isEmpty) ifEmpty else fn(x)
+//    }
+
+    object SealedEnum {
 
       def unapply(tpe: Type): Option[Set[Tree]] = {
 
@@ -141,8 +81,8 @@ object SchemaMacro {
       }
     }
 
-    object SC {
-
+    object SealedClasses {
+      
       def unapply(tpe: Type): Option[Set[Type]] = {
 
         def isSealed(x: Type): Boolean = {
@@ -155,18 +95,13 @@ object SchemaMacro {
           s.isClass && !s.isModuleClass && s.asClass.isCaseClass
         }
 
-        def substituteTypes(x: Type, from: List[Symbol], to: List[Type]): Type =
-          try x.substituteTypes(from, to) catch { case NonFatal(_) =>
-            c.abort(c.enclosingPosition, s"Cannot resolve generic type(s) for `$x`. Please provide a custom implicitly accessible json.Schema for it.")
-          }
-
         // BORROWED:
         // https://github.com/plokhotnyuk/jsoniter-scala/blob/3612fddf19a8ce23ac973d71e85ef02f79c06fff/jsoniter-scala-macros/src/main/scala/com/github/plokhotnyuk/jsoniter_scala/macros/JsonCodecMaker.scala#L351-L365
         def collectRecursively(x: Type): Seq[Type] =
           if (x.typeSymbol.isClass) {
             val leafs = x.typeSymbol.asClass.knownDirectSubclasses.toSeq flatMap { s =>
               val cs = s.asClass
-              val subTpe = if (cs.typeParams.isEmpty) cs.toType else substituteTypes(cs.toType, cs.typeParams, x.typeArgs)
+              val subTpe = if (cs.typeParams.isEmpty) cs.toType else resolveGenericType(cs.toType, cs.typeParams, x.typeArgs)
               if (isSealed(subTpe)) collectRecursively(subTpe)
               else if (isSupportedLeafType(subTpe)) Seq(subTpe)
               else c.abort(c.enclosingPosition, "Only Scala case classes are supported for ADT leaf classes. Please consider using of " +
@@ -184,15 +119,15 @@ object SchemaMacro {
 
       def gen(tpe: Type, subTypes: Set[Type], stack: List[Type]): Tree = {
         val trees = subTypes collect {
-          case CC(fields)    => CC.gen(fields, tpe, stack)
-          case VC(innerType) => VC.gen(innerType, tpe, stack)
+          case CaseClass(fields)     => CaseClass.gen(fields, tpe, stack)
+          case ValueClass(innerType) => ValueClass.gen(innerType, tpe, stack)
         }
 
         q"$schemaObj.`oneof`[$tpe]($trees)"
       }
     }
 
-    object CC {
+    object CaseClass {
 
       // TODO: add support for case classes defined in method body
 
@@ -252,8 +187,8 @@ object SchemaMacro {
         val subjectCompanion    = lookupCompanionOf(subjectCompanionSym)
 
         def toField(fieldSym: TermSymbol, i: Int): Field = {
-          val name        = fieldSym.name.toString.trim
-          val fieldTpe    = fieldSym.typeSignature
+          val name        = NameTransformer.decode(fieldSym.name.toString)
+          val fieldTpe    = fieldSym.typeSignature.dealias // In(tpe).dealias
           val isOption    = fieldTpe <:< optionTpe
           val hasDefault  = fieldSym.isParamWithDefault
           val toV         = c.inferImplicitValue(appliedType(toValueTpe, fieldTpe))
@@ -266,25 +201,45 @@ object SchemaMacro {
           } else
             None
 
+          def effectiveType = if (tpe.typeArgs.nonEmpty && tpe.typeSymbol.isClass) {
+            resolveGenericType(
+              fieldTpe,
+              tpe.typeSymbol.asClass.typeParams,
+              tpe.typeArgs)
+          } else
+            fieldTpe
+
+          val specifiedType =
+            if (isOption) effectiveType.typeArgs.head
+            else
+              effectiveType
+
           Field(
             name          = TermName(name),
             tpe           = fieldTpe,
-            effectiveTpe  = if (isOption) fieldTpe.typeArgs.head else fieldTpe,
+            effectiveTpe  = specifiedType,
             annotations   = annotationMap.getOrElse(name, List.empty),
             default       = default,
             isOption      = isOption)
         }
 
-        val fields = applyMethod(subjectCompanion) flatMap { method =>
-          method.paramLists.headOption map { params =>
-            params.map { _.asTerm }.zipWithIndex map { case (f, i) => toField(f, i) }
-          }
+// This old approach somehow didn't allow type substitution
+// so basically this was not working with generic case classes
+//        val fields = applyMethod(subjectCompanion) flatMap { method =>
+//          method.paramLists.headOption map { params =>
+//            params.map { _.asTerm }.zipWithIndex map { case (f, i) => toField(f, i) }
+//          }
+//        }
+        applyMethod(subjectCompanion)
+
+        val fields = tpe.typeSymbol.asClass.primaryConstructor.asMethod.paramLists.headOption map { params =>
+          params.map { _.asTerm }.zipWithIndex map { case (f, i) => toField(f, i) }
         }
 
         fields getOrElse Seq.empty
       }
 
-      def unapply(tpe: Type): Option[Seq[CC.Field]] = {
+      def unapply(tpe: Type): Option[Seq[CaseClass.Field]] = {
         val symbol = tpe.typeSymbol
 
         if (symbol.isClass) {
@@ -297,7 +252,7 @@ object SchemaMacro {
           None
       }
 
-      def gen(fieldMap: Seq[CC.Field], tpe: Type, stack: List[Type]): Tree = {
+      def gen(fieldMap: Seq[CaseClass.Field], tpe: Type, stack: List[Type]): Tree = {
         val obj = q"$schemaObj.`object`"
         val fields = fieldMap map { f =>
           val name      = f.name.decodedName.toString
@@ -314,27 +269,7 @@ object SchemaMacro {
       }
     }
 
-    object IM {
-
-      def gen(tpe: Type, stack: List[Type]): Tree = {
-        val componentType = tpe.typeArgs.tail.head
-        val componentJsonType = resolve(componentType, tpe +: stack)
-
-        q"""$schemaObj.`int-map`[$componentType]($componentJsonType)"""
-      }
-    }
-
-    object SM {
-
-      def gen(tpe: Type, stack: List[Type]): Tree = {
-        val componentType = tpe.typeArgs.tail.head
-        val componentJsonType = resolve(componentType, tpe +: stack)
-
-        q"""$schemaObj.`string-map`[$componentType]($componentJsonType)"""
-      }
-    }
-
-    object VC {
+    object ValueClass {
 
       def unapply(x: Type): Option[Type] = {
         val symbol = x.typeSymbol
@@ -354,10 +289,32 @@ object SchemaMacro {
 
       def gen(innerType: Type, tpe: Type, stack: List[Type]): Tree = {
         val x = resolve(innerType, tpe +: stack)
-        x match {
+        val z = x match {
           case q"""$c[$t](..$args)""" => q"$c[$tpe](..$args)"
-          case x => x
+          case x => val st = appliedType(schemaTypeConstructor, tpe); q"$x.asInstanceOf[$st]"
         }
+//        println(s"VC.gen ${tpe} [${innerType}] => ${show(x)} => ${show(z)}")
+        z
+      }
+    }
+
+    object IntMap {
+
+      def gen(tpe: Type, stack: List[Type]): Tree = {
+        val componentType = tpe.typeArgs.tail.head
+        val componentJsonType = resolve(componentType, tpe +: stack)
+
+        q"""$schemaObj.`int-map`[$componentType, ${tpe.typeConstructor}]($componentJsonType)"""
+      }
+    }
+
+    object StringMap {
+
+      def gen(tpe: Type, stack: List[Type]): Tree = {
+        val componentType = tpe.typeArgs.tail.head
+        val componentJsonType = resolve(componentType, tpe +: stack)
+
+        q"""$schemaObj.`string-map`[$componentType, ${tpe.typeConstructor}]($componentJsonType)"""
       }
     }
 
@@ -375,7 +332,74 @@ object SchemaMacro {
       }
     }
 
+    object Implicit {
+
+      sealed trait ImplicitSchema
+      case class FromPredef(x: Tree) extends ImplicitSchema
+      case class FromSchema(x: Tree) extends ImplicitSchema
+      case object NotFound extends ImplicitSchema
+
+      def getOrElse(tpe: Type, gen: => Tree): Tree = {
+        // def debug(msg: String): Unit = c.info(c.enclosingPosition, msg, force = true)
+
+        val sType = appliedType(schemaTypeConstructor, tpe) // .dealias.widen
+        val pType = appliedType(predefTypeConstructor, tpe) // .dealias.widen
+
+        // search implicit scope for a schema
+        //
+        // this 2 level implicit search is done this way because Schema/Predef
+        // are covariants which makes impossible use of implicit conversions like
+        // ```
+        // def schemaFromPredef[T](implicit p: Predef[T]): Schema[T] = p.schema
+        // ```
+        // if taken from schema - must be exposed as `ref`
+        // if taken from predef - exposing as is
+        def lookupSchema: ImplicitSchema = {
+          // schema
+          c.inferImplicitValue(sType) match {
+            case EmptyTree =>
+              // predef
+              c.inferImplicitValue(pType) match {
+                case EmptyTree  => NotFound
+                case x          => FromPredef(q"$x.schema")
+              }
+            case x => FromSchema(x)
+          }
+        }
+
+        lookupSchema match {
+          case NotFound      => gen
+          case FromPredef(x) => x
+          case FromSchema(x) => q"""$schemaObj.`ref`[$tpe]($jsonPkg.Json.sig[$tpe].signature, $x)"""
+        }
+      }
+    }
+
+    def resolve(tpe: Type, stack: List[Type]): Tree = {
+      if (stack contains tpe) c.error(c.enclosingPosition, s"cyclic dependency for $tpe")
+
+      def genTree: Tree = tpe match {
+        case x if x <:< typeOf[Map[String, _]]  => StringMap.gen(x, stack)
+        case x if x <:< typeOf[Map[Int, _]]     => IntMap.gen(x, stack)
+        case x if x <:< typeOf[Array[_]]        => Arr.gen(x, stack)
+        case x if x <:< typeOf[Iterable[_]]     => Arr.gen(x, stack)
+        case SealedEnum(names)                  => SealedEnum.gen(tpe, names)
+        case SealedClasses(subTypes)            => SealedClasses.gen(tpe, subTypes, stack)
+        case CaseClass(fields)                  => CaseClass.gen(fields, tpe, stack)
+        case ValueClass(innerType)              => ValueClass.gen(innerType, tpe, stack)
+
+        case _ =>
+          c.error(c.enclosingPosition, s"schema for $tpe is not supported, ${stack mkString " :: "}")
+          q"null"
+      }
+
+      Implicit.getOrElse(tpe, genTree)
+    }
+
     val out = resolve(subject, Nil)
+
+    if (c.settings.contains("print-jsonschema-code"))
+     c.info(c.enclosingPosition, show(out), force = false)
 
     c.Expr[json.Schema[T]](out)
   }

@@ -184,7 +184,10 @@ object Value {
 
     implicit def numberAdapter[T](implicit n: Numeric[T]): ValueAdapter[T] = new ValueAdapter[T] {
       type J = num
-      def adapt(x: T): num = num(n.toDouble(x))
+      def adapt(x: T): num = x match {
+        case x: Int => num(x)
+        case _      => num(n.toDouble(x))
+      }
     }
   }
 

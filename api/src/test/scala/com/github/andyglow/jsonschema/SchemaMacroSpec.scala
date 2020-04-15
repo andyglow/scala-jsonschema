@@ -14,8 +14,8 @@ class SchemaMacroSpec extends WordSpec {
       import `object`.Field
 
       val expected = `object`(
-        Field("name", `string`[String](None, None), required = true),
-        Field("bar" , `integer`, required = true))
+        Field("name", `string`[String](None, None)),
+        Field("bar" , `integer`))
 
       Json.schema[Foo1] shouldEqual expected
     }
@@ -41,7 +41,6 @@ class SchemaMacroSpec extends WordSpec {
       import `object`.Field
 
       Json.schema[Bar9] shouldEqual `object`(
-        Field("seq"     , `array`(`string`[String](None, None)), required = false, default = Seq.empty[String]),
         Field("set"     , `set`(`integer`), required = false, default = Set(1, 5, 9)),
         Field("list"    , `array`(`boolean`), required = false, default = List(true, false)),
         Field("vector"  , `array`(`number`[Long]), required = false, default = Vector(9, 7)),
@@ -52,18 +51,24 @@ class SchemaMacroSpec extends WordSpec {
     "generate references for implicitly defined dependencies" in {
       import `object`.Field
 
-      implicit val compoSchema: Schema[Compo1] = Json.schema[Compo1]
-      compoSchema.refName // need this to workaround compiler warning that compoSchema is not used
+      val compoSchema: Schema[Compo1] = Json.schema[Compo1]
 
-      val schema = Json.schema[Foo4]
+      {
+        implicit def _compoSchema: Schema[Compo1] = compoSchema
 
-      schema shouldEqual `object`(
-        Field(
-          "component",
-          `ref`[Compo1](
-            "com.github.andyglow.jsonschema.SchemaMacroSpec.Compo1",
-            `string`[Compo1](None, None)),
-          required = true))
+        // MUTE: local method _compoSchema in value <local SchemaMacroSpec> is never used
+        _compoSchema.refName
+
+        val schema = Json.schema[Foo4]
+
+        schema shouldEqual `object`(
+          Field(
+            "component",
+            `ref`[Compo1](
+              "com.github.andyglow.jsonschema.SchemaMacroSpec.Compo1",
+              `string`[Compo1](None, None)),
+            required = true))
+      }
     }
 
     "generate schema for Sealed Trait Enums" in {
@@ -135,22 +140,22 @@ class SchemaMacroSpec extends WordSpec {
 
       Json.schema[Bar5] shouldEqual `object`(
         Field("foo", `object`(
-          Field("name", `string`[String](None, None), required = true),
-          Field("bar" , `integer`, required = true))))
+          Field("name", `string`[String](None, None)),
+          Field("bar" , `integer`))))
     }
 
     "generate schema for case class using collection of string" in {
       import `object`.Field
 
       Json.schema[Bar6] shouldEqual `object`(
-        Field("foo", `array`(`string`[String](None, None)), required = true))
+        Field("foo", `array`(`string`[String](None, None))))
     }
 
     "generate schema for case class using collection of integers" in {
       import `object`.Field
 
       Json.schema[Bar7] shouldEqual `object`(
-        Field("foo", `array`(`integer`), required = true))
+        Field("foo", `array`(`integer`)))
     }
 
     "generate schema for value class" in {
@@ -164,7 +169,7 @@ class SchemaMacroSpec extends WordSpec {
 
       Json.schema[Map[String, Int]] shouldEqual `string-map`(`integer`)
 
-      Json.schema[Map[String, Foo9]] shouldEqual `string-map`(`object`(Field("name", `string`[String](None, None), required = true)))
+      Json.schema[Map[String, Foo9]] shouldEqual `string-map`(`object`(Field("name", `string`[String](None, None))))
     }
 
 
@@ -175,7 +180,7 @@ class SchemaMacroSpec extends WordSpec {
 
       Json.schema[Map[Int, Int]] shouldEqual `int-map`(`integer`)
 
-      Json.schema[Map[Int, Foo9]] shouldEqual `int-map`(`object`(Field("name", `string`[String](None, None), required = true)))
+      Json.schema[Map[Int, Foo9]] shouldEqual `int-map`(`object`(Field("name", `string`[String](None, None))))
     }
   }
 
@@ -197,16 +202,15 @@ object SchemaMacroSpec {
 
   case class Bar5(foo: Foo5)
 
-  case class Bar6(foo: Iterable[String])
+  case class Bar6(foo: List[String])
 
-  case class Bar7(foo: Iterable[Int])
+  case class Bar7(foo: List[Int])
 
   case class Bar8(foo: String) extends AnyVal
 
   case class Foo9(name: String)
 
   case class Bar9(
-    seq: Seq[String] = Seq.empty,
     set: Set[Int] = Set(1, 5, 9),
     list: List[Boolean] = List(true, false),
     vector: Vector[Long] = Vector(9L, 7L),
