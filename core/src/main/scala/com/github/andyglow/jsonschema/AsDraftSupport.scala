@@ -8,12 +8,15 @@ import com.github.andyglow.json.Value._
 
 trait AsDraftSupport {
 
-  def apply(x: json.Schema[_]): obj = {
+  def apply(x: json.Schema[_]): obj = apply(x, includeType = true)
+
+  def apply(x: json.Schema[_], includeType: Boolean): obj = {
     val (validations, pp) = inferValidations(x)
     val specifics         = inferSpecifics.lift((pp, x)) getOrElse obj()
     val base              = x match {
       case _: `ref`[_] | _: `oneof`[_] => obj()
-      case _                           => obj("type" -> x.jsonType)
+      case _ if includeType            => obj("type" -> x.jsonType)
+      case _                           => obj()
     }
 
     base ++ validations ++ specifics
@@ -68,11 +71,42 @@ trait AsDraftSupport {
   }
 
   def mkOneOf(pp: Option[ValidationDef[_, _]], x: `oneof`[_]): obj = {
-    val subTypesSeq = x.subTypes.toArray
-    obj(
-      "oneOf" -> `arr`(
-        apply(subTypesSeq.head),
-        subTypesSeq.tail.toSeq.map(apply): _*))
+    val subTypesSeq = x.subTypes.toSeq
+    val tpe = subTypesSeq.head.jsonType
+    val sameType = subTypesSeq.tail.foldLeft(true) { case (agg, t) => agg && (t.jsonType == tpe) }
+    if (sameType) {
+      obj(
+        "type"  -> `str`(tpe),
+        "oneOf" -> `arr`(
+          apply(subTypesSeq.head, includeType = false),
+          subTypesSeq.tail.map(t => apply(t, includeType = false)): _*))
+    } else
+      obj(
+        "oneOf" -> `arr`(
+          apply(subTypesSeq.head),
+          subTypesSeq.tail.map(apply): _*))
+  }
+
+  def mkAllOf(pp: Option[ValidationDef[_, _]], x: `allof`[_]): obj = {
+    val subTypesSeq = x.subTypes.toSeq
+    val tpe = subTypesSeq.head.jsonType
+    val sameType = subTypesSeq.tail.foldLeft(true) { case (agg, t) => agg && (t.jsonType == tpe) }
+    if (sameType) {
+      obj(
+        "type"  -> `str`(tpe),
+        "allOf" -> `arr`(
+          apply(subTypesSeq.head, includeType = false),
+          subTypesSeq.tail.map(t => apply(t, includeType = false)): _*))
+    } else
+      obj(
+        "allOf" -> `arr`(
+          apply(subTypesSeq.head),
+          subTypesSeq.tail.map(apply): _*))
+  }
+
+
+  def mkNot(pp: Option[ValidationDef[_, _]], x: `not`[_]): obj = {
+    obj("not" -> apply(x.tpe, includeType = false))
   }
 
   def mkRef(pp: Option[ValidationDef[_, _]], x: `ref`[_]): obj = {
@@ -89,6 +123,8 @@ trait AsDraftSupport {
     case (pp, `set`(comp))           => mkSet(pp, comp)
     case (pp, x: `enum`[_])          => mkEnum(pp, x)
     case (pp, x: `oneof`[_])         => mkOneOf(pp, x)
+    case (pp, x: `allof`[_])         => mkAllOf(pp, x)
+    case (pp, x: `not`[_])           => mkNot(pp, x)
     case (pp, x: `ref`[_])           => mkRef(pp, x)
   }
 

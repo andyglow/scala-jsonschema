@@ -6,7 +6,15 @@ import com.github.andyglow.jsonschema.AsValue
 import json.schema.Version.Draft04
 
 
-final case class ValidationDef[S, V](validation: Validation[S, V], value: V, json: Value)
+final case class ValidationDef[S, V](validation: Validation[S, V], value: V, json: Value) {
+
+  override def canEqual(that: Any): Boolean = that.isInstanceOf[ValidationDef[_, _]]
+
+  override def equals(that: Any): Boolean = that match {
+    case that: ValidationDef[_, _] => getClass == that.getClass && validation == that.validation && json == that.json
+    case _ => false
+  }
+}
 
 sealed abstract class Validation[S, V]()(implicit conv: V => Value) extends Product {
 

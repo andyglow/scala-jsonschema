@@ -1,0 +1,1 @@
+- const type => https://json-schema.org/understanding-json-schema/reference/generic.html#constant-values

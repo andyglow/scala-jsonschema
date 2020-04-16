@@ -1,17 +1,13 @@
 package com.github.andyglow.jsonschema
 
 import cats.data._
-import com.github.andyglow.json.ToValue
 import json.Schema
-import json.Schema.ValidationBound.mk
 import json.Schema.`object`._
 import json.Schema._
-import json.Validation.`minItems`
-import json.schema.Predef
+import json.Validation._
 import org.scalatest._
 import org.scalatest.Matchers._
-
-import scala.languageFeature.implicitConversions
+import CatsSupport._
 
 
 class CatsSupportSpec extends WordSpec {
@@ -23,8 +19,8 @@ class CatsSupportSpec extends WordSpec {
 
       "be exposed as object" in {
         nelEventSchema shouldBe `object`(
-          Field("id", `string`(None, None)),
-          Field("arr", `array`(`string`(None, None))))
+          Field("id", `string`()),
+          Field("arr", `array`[String, NonEmptyList](`string`()).withValidation(`minItems` := 1)))
       }
     }
 
@@ -32,8 +28,8 @@ class CatsSupportSpec extends WordSpec {
 
       "be exposed as object" in {
         nevEventSchema shouldBe `object`(
-          Field("id", `string`(None, None)),
-          Field("arr", `array`(`string`(None, None))))
+          Field("id", `string`()),
+          Field("arr", `array`[String, NonEmptyVector](`string`()).withValidation(`minItems` := 1)))
       }
     }
 
@@ -41,8 +37,8 @@ class CatsSupportSpec extends WordSpec {
 
       "be exposed as object" in {
         nesEventSchema shouldBe `object`(
-          Field("id", `string`(None, None)),
-          Field("arr", `array`(`string`(None, None))))
+          Field("id", `string`()),
+          Field("arr", `array`[String, NonEmptySet](`string`()).withValidation(`minItems` := 1)))
       }
     }
 
@@ -50,17 +46,8 @@ class CatsSupportSpec extends WordSpec {
 
       "be exposed as object" in {
         necEventSchema shouldBe `object`(
-          Field("id", `string`(None, None)),
-          Field("arr", `array`(`string`(None, None))))
-      }
-    }
-
-    "NonEmptyStream" should {
-
-      "be exposed as object" in {
-        nestEventSchema shouldBe `object`(
-          Field("id", `string`(None, None)),
-          Field("arr", `array`(`string`(None, None))))
+          Field("id", `string`()),
+          Field("arr", `array`[String, NonEmptyChain](`string`()).withValidation(`minItems` := 1)))
       }
     }
 
@@ -68,8 +55,8 @@ class CatsSupportSpec extends WordSpec {
 
       "be exposed as object" in {
         nesmEventSchema shouldBe `object`(
-          Field("id", `string`(None, None)),
-          Field("data", `string-map`(`string`(None, None))))
+          Field("id", `string`()),
+          Field("data" , `string-map`[String, NonEmptyMap](`string`()).withValidation(`minProperties` := 1)))
       }
     }
 
@@ -77,8 +64,8 @@ class CatsSupportSpec extends WordSpec {
 
       "be exposed as object" in {
         neimEventSchema shouldBe `object`(
-          Field("id", `string`(None, None)),
-          Field("data", `int-map`(`string`(None, None))))
+          Field("id", `string`()),
+          Field("data", `int-map`[String, NonEmptyMap](`string`()).withValidation(`minProperties` := 1)))
       }
     }
 
@@ -86,14 +73,13 @@ class CatsSupportSpec extends WordSpec {
 
       "be exposed as object" in {
         oneAndListEventSchema shouldBe `object`(
-          Field("x", `array`(`integer`)))
+          Field("x", `array`[Int, ({type Z[T] = OneAnd[List, T]})#Z](`integer`).withValidation(`minItems` := 1)))
       }
     }
   }
 }
 
 object CatsSupportSpec {
-  import CatsSupport._
 
   case class NonEmptyListEvent(id: String, arr: NonEmptyList[String])
   lazy val nelEventSchema: Schema[NonEmptyListEvent] = json.Json.schema[NonEmptyListEvent]
@@ -112,9 +98,6 @@ object CatsSupportSpec {
 
   case class NonEmptyIntMapEvent(id: String, data: NonEmptyMap[Int, String])
   lazy val neimEventSchema: Schema[NonEmptyIntMapEvent] = json.Json.schema[NonEmptyIntMapEvent]
-
-  case class NonEmptyStreamEvent(id: String, arr: NonEmptyStream[String])
-  lazy val nestEventSchema: Schema[NonEmptyStreamEvent] = json.Json.schema[NonEmptyStreamEvent]
 
   case class OneAndListEvent(x: OneAnd[List, Int])
   lazy val oneAndListEventSchema: Schema[OneAndListEvent] = json.Json.schema[OneAndListEvent]

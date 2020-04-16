@@ -6,7 +6,7 @@ import json.Schema._
 import json.Validation._
 import json.schema.Predef
 
-trait LowPriorityCatsSupport {
+trait LowPriorityCatsSupport extends ScalaVersionSpecificLowPriorityCatsSupport {
   import ValidationBound.mk
 
   // bounds
@@ -14,7 +14,6 @@ trait LowPriorityCatsSupport {
   implicit def nelVB[X]: ValidationBound[NonEmptyList[X], Iterable[_]] = mk[NonEmptyList[X], Iterable[_]]
   implicit def nevVB[X]: ValidationBound[NonEmptyVector[X], Iterable[_]] = mk[NonEmptyVector[X], Iterable[_]]
   implicit def nesVB[X]: ValidationBound[NonEmptySet[X], Iterable[_]] = mk[NonEmptySet[X], Iterable[_]]
-//  implicit def nestVB[X]: ValidationBound[NonEmptyStream[X], Iterable[_]] = mk[NonEmptyStream[X], Iterable[_]]
   implicit def necVB[X]: ValidationBound[NonEmptyChain[X], Iterable[_]] = mk[NonEmptyChain[X], Iterable[_]]
   implicit def nemStrVB[X]: ValidationBound[NonEmptyMap[String, X], Map[_, _]] = mk[NonEmptyMap[String, X], Map[_, _]]
   implicit def nemIntVB[X]: ValidationBound[NonEmptyMap[Int, X], Map[_, _]] = mk[NonEmptyMap[Int, X], Map[_, _]]
@@ -26,15 +25,13 @@ trait LowPriorityCatsSupport {
 
   implicit def chainSchemaFromPredef[T](implicit p: Predef[T]): Predef[Chain[T]] = mkNEx[T, Chain](p.schema)
 
-  implicit def oneAndSchemaFromPredef[F[_], T](implicit p: Predef[T], _1: Predef[F[T]]): Predef[OneAnd[F, T]] = Predef(`array`[T, ({type Z[X] = OneAnd[F, X]})#Z](p.schema).withValidation(`minItems` := 1))
+  implicit def oneAndSchemaFromPredef[F[_], T](implicit p: Predef[T], evidence$1: Predef[F[T]]): Predef[OneAnd[F, T]] = Predef(`array`[T, ({type Z[X] = OneAnd[F, X]})#Z](p.schema).withValidation(`minItems` := 1))
 
   implicit def nelSchemaFromPredef[T](implicit p: Predef[T]): Predef[NonEmptyList[T]] = mkNEx[T, NonEmptyList](p.schema)
 
   implicit def nevSchemaFromPredef[T](implicit p: Predef[T]): Predef[NonEmptyVector[T]] = mkNEx[T, NonEmptyVector](p.schema)
 
   implicit def nesSchemaFromPredef[T](implicit p: Predef[T]): Predef[NonEmptySet[T]] = mkNEx[T, NonEmptySet](p.schema)
-
-  implicit def nestSchemaFromPredef[T](implicit p: Predef[T]): Predef[NonEmptyStream[T]] = mkNEx[T, NonEmptyStream](p.schema)
 
   implicit def necSchemaFromPredef[T](implicit p: Predef[T]): Predef[NonEmptyChain[T]] = mkNEx[T, NonEmptyChain](p.schema)
 
@@ -43,7 +40,7 @@ trait LowPriorityCatsSupport {
   implicit def nemIntSchemaFromPredef[T](implicit p: Predef[T]): Predef[NonEmptyMap[Int, T]] = mkNEIM(p.schema)
 }
 
-object CatsSupport extends LowPriorityCatsSupport {
+object CatsSupport extends LowPriorityCatsSupport with ScalaVersionSpecificCatsSupport {
 
   implicit def chainSchema[T](implicit ss: Schema[T]): Predef[Chain[T]] = mkNEx[T, Chain](ss)
 
@@ -54,8 +51,6 @@ object CatsSupport extends LowPriorityCatsSupport {
   implicit def nevSchema[T](implicit ss: Schema[T]): Predef[NonEmptyVector[T]] = mkNEx[T, NonEmptyVector](ss)
 
   implicit def nesSchema[T](implicit ss: Schema[T]): Predef[NonEmptySet[T]] = mkNEx[T, NonEmptySet](ss)
-
-//  implicit def nestSchema[T](implicit ss: Schema[T]): Predef[NonEmptyStream[T]] = mkNEx[T, NonEmptyStream](ss)
 
   implicit def necSchema[T](implicit ss: Schema[T]): Predef[NonEmptyChain[T]] = mkNEx[T, NonEmptyChain](ss)
 

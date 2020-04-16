@@ -124,22 +124,18 @@ class AsDraft04Spec extends WordSpec {
       asDraft04(`oneof`(Set(
         `object`(
           Field("foo", `string`[String](None, None)),
-          Field("bar", `integer`, required = false)
-        ),
+          Field("bar", `integer`, required = false)),
         `object`(
-          Field("foo", `string`[String](None, None))
-        )
-      ))) shouldEqual obj(
+          Field("foo", `string`[String](None, None)))))) shouldEqual obj(
+        "type" -> "object",
         "oneOf" -> arr(
           obj(
-            "type" -> "object",
             "additionalProperties" -> false,
             "required" -> arr("foo"),
             "properties" -> obj(
               "foo" -> obj("type" -> "string"),
               "bar" -> obj("type" -> "integer"))),
           obj(
-            "type" -> "object",
             "additionalProperties" -> false,
             "required" -> arr("foo"),
             "properties" -> obj(

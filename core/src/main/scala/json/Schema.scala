@@ -30,6 +30,11 @@ sealed trait Schema[+T] extends Product {
 
   def refName: Option[String] = _refName
 
+  // NOTE: `.toSeq` is required for scala 2.13
+  // otherwise we'll see
+  // type mismatch;
+  //  [error]  found   : Seq[json.ValidationDef[_, _]] (in scala.collection)
+  //  [error]  required: Seq[json.ValidationDef[_, _]] (in scala.collection.immutable)
   def validations: Seq[ValidationDef[_, _]] = _validations.toSeq
 
   override def toString: String = {
@@ -44,6 +49,18 @@ sealed trait Schema[+T] extends Product {
       sb.append("#")
       sb.append(refName)
     }
+    if (validations.nonEmpty) {
+      sb.append(" {")
+      var f = true
+      validations foreach { v =>
+        if (!f) sb.append(", ")
+        sb.append(v.validation)
+        sb.append(":=")
+        sb.append(v.json)
+        f = false
+      }
+      sb.append("}")
+    }
 
     sb.toString
   }
@@ -57,35 +74,173 @@ sealed trait Schema[+T] extends Product {
 
     copy
   }
+
+  override def canEqual(that: Any): Boolean = that.isInstanceOf[Schema[_]] // && getClass == that.getClass
+
+  override def equals(obj: Any): Boolean = obj match {
+    case s: Schema[_] =>
+      s.canEqual(this) &&
+      this.refName == s.refName &&
+      // compare collections disregarding order
+      this.validations.forall(s.validations.contains) &&
+      s.validations.forall(this.validations.contains)
+
+    case _ => false
+  }
 }
 
 object Schema {
 
-  sealed case class `boolean`() extends Schema[Boolean] { def mkCopy() = new `boolean`() }
+  sealed case class `boolean`() extends Schema[Boolean] {
+    def mkCopy() = new `boolean`()
+    override def canEqual(that: Any): Boolean = that.isInstanceOf[`boolean`]
+  }
   final object `boolean` extends `boolean`()
 
-  sealed case class `integer`() extends Schema[Int] { def mkCopy() = new `integer`() }
+  sealed case class `integer`() extends Schema[Int] {
+    def mkCopy() = new `integer`()
+    override def canEqual(that: Any): Boolean = that.isInstanceOf[`integer`]
+  }
   final object `integer` extends `integer`
 
-  final case class `number`[T : Numeric]() extends Schema[T] { def mkCopy() = new `number`[T]() }
+  final case class `number`[T: Numeric]() extends Schema[T] {
+    def mkCopy() = new `number`[T]()
+    override def canEqual(that: Any): Boolean = that.isInstanceOf[`number`[_]]
+  }
 
-  final case class `string`[T](format: Option[`string`.Format], pattern: Option[String]) extends Schema[T] { def mkCopy() = new `string`[T](format, pattern) }
+  final case class `string`[T](
+    format: Option[`string`.Format],
+    pattern: Option[String]) extends Schema[T] {
+    def mkCopy() = new `string`[T](format, pattern)
+    override def canEqual(that: Any): Boolean = that.isInstanceOf[`string`[_]]
+    override def equals(obj: Any): Boolean = obj match {
+      case `string`(f, p) => format == f && pattern == p && super.equals(obj)
+      case _ => false
+    }
+  }
 
-  final case class `set`[T, C[_]](componentType: Schema[T]) extends Schema[C[T]] { override def jsonType = "array"; def mkCopy() = new `set`[T, C](componentType) }
+  final case class `set`[T, C[_]](
+    componentType: Schema[T]) extends Schema[C[T]] {
+    override def jsonType = "array"
+    def mkCopy() = new `set`[T, C](componentType)
+    override def canEqual(that: Any): Boolean = that match {
+      case `set`(_) => true
+      case _ => false
+    }
+    override def equals(obj: Any): Boolean = obj match {
+      case `set`(c) => componentType == c && super.equals(obj)
+      case _ => false
+    }
+  }
 
-  final case class `array`[T, C[_]](componentType: Schema[T]) extends Schema[C[T]] { def mkCopy() = new `array`[T, C](componentType) }
+  final case class `array`[T, C[_]](
+    componentType: Schema[T]) extends Schema[C[T]] {
+    def mkCopy() = new `array`[T, C](componentType)
+    override def canEqual(that: Any): Boolean = that match {
+      case `array`(_) => true
+      case _ => false
+    }
+    override def equals(obj: Any): Boolean = obj match {
+      case `array`(c) => componentType == c && super.equals(obj)
+      case _ => false
+    }
+  }
 
-  final case class `string-map`[T, C[_ <: String, _]](valueType: Schema[T]) extends Schema[C[String, T]] { override def jsonType = "object"; def mkCopy() = new `string-map`[T, C](valueType) }
+  final case class `string-map`[T, C[_ <: String, _]](
+    valueType: Schema[T]) extends Schema[C[String, T]] {
+    override def jsonType = "object"
+    def mkCopy() = new `string-map`[T, C](valueType)
+    override def canEqual(that: Any): Boolean = that match {
+      case `string-map`(_) => true
+      case _ => false
+    }
+    override def equals(obj: Any): Boolean = obj match {
+      case `string-map`(c) => valueType == c && super.equals(obj)
+      case _ => false
+    }
+  }
 
-  final case class `int-map`[T, C[_ <: Int, _]](valueType: Schema[T]) extends Schema[C[Int, T]] { override def jsonType = "object"; def mkCopy() = new `int-map`[T, C](valueType) }
+  final case class `int-map`[T, C[_ <: Int, _]](
+    valueType: Schema[T]) extends Schema[C[Int, T]] {
+    override def jsonType = "object"
+    def mkCopy() = new `int-map`[T, C](valueType)
+    override def canEqual(that: Any): Boolean = that match {
+      case `int-map`(_) => true
+      case _ => false
+    }
+    override def equals(obj: Any): Boolean = obj match {
+      case `int-map`(c) => valueType == c && super.equals(obj)
+      case _ => false
+    }
+  }
 
-  final case class `object`[T](fields: Set[`object`.Field[_]]) extends Schema[T] { def mkCopy() = new `object`[T](fields) }
+  final case class `object`[T](
+    fields: Set[`object`.Field[_]]) extends Schema[T] {
+    def mkCopy() = new `object`[T](fields)
+    override def canEqual(that: Any): Boolean = that.isInstanceOf[`object`[_]]
+    override def equals(obj: Any): Boolean = obj match {
+      case `object`(f) => fields == f && super.equals(obj)
+      case _ => false
+    }
+  }
 
-  final case class `enum`[T](values: Set[Value]) extends Schema[T] { def mkCopy() = new `enum`[T](values) }
+  final case class `enum`[T](
+    values: Set[Value]) extends Schema[T] {
+    def mkCopy() = new `enum`[T](values)
+    override def canEqual(that: Any): Boolean = that.isInstanceOf[`enum`[_]]
+    override def equals(obj: Any): Boolean = obj match {
+      case `enum`(v) => values == v && super.equals(obj)
+      case _ => false
+    }
+  }
 
-  final case class `oneof`[T](subTypes: Set[Schema[_]]) extends Schema[T] { def mkCopy() = new `oneof`[T](subTypes) }
+  final case class `oneof`[T](
+    subTypes: Set[Schema[_]]) extends Schema[T] {
+    def mkCopy() = new `oneof`[T](subTypes)
+    override def canEqual(that: Any): Boolean = that.isInstanceOf[`oneof`[_]]
+    override def equals(obj: Any): Boolean = obj match {
+      case `oneof`(s) => subTypes == s && super.equals(obj)
+      case _ => false
+    }
+  }
 
-  final case class `ref`[T](sig: String, tpe: Schema[_]) extends Schema[T] { override def jsonType: String = s"$$ref"; def mkCopy() = new `ref`[T](sig, tpe) }
+  final case class `allof`[T](
+    subTypes: Set[Schema[_]]) extends Schema[T] {
+    override def jsonType: String = subTypes.head.jsonType
+    def mkCopy() = new `allof`[T](subTypes)
+    override def canEqual(that: Any): Boolean = that.isInstanceOf[`allof`[_]]
+    override def equals(obj: Any): Boolean = obj match {
+      case `allof`(s) => subTypes == s && super.equals(obj)
+      case _ => false
+    }
+  }
+
+  final case class `not`[T](
+    tpe: Schema[T]) extends Schema[T] {
+    override def jsonType: String = tpe.jsonType
+    def mkCopy() = new `not`[T](tpe)
+
+    override def canEqual(that: Any): Boolean = that.isInstanceOf[`not`[_]]
+    override def equals(obj: Any): Boolean = obj match {
+      case `not`(t) => tpe == t && super.equals(obj)
+      case _ => false
+    }
+  }
+
+  final case class `ref`[T](
+    sig: String,
+    tpe: Schema[_]) extends Schema[T] {
+    override def jsonType: String = s"$$ref"
+    def mkCopy() = new `ref`[T](sig, tpe)
+    override def canEqual(that: Any): Boolean = that.isInstanceOf[`ref`[_]]
+    override def equals(obj: Any): Boolean = obj match {
+      case `ref`(s, t) => sig == s && tpe == t && super.equals(obj)
+      case _ => false
+    }
+  }
+
+  // TODO
+  // final case class `const`[T](tpe: Schema[_], value: Value) extends Schema[T] { override def jsonType: String = tpe.jsonType }
 
   @implicitNotFound("Implicit not found: ValidationBound[${F}, ${T}]. Some of validations doesn't match schema type")
   trait ValidationBound[F, T] {

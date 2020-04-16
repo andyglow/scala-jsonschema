@@ -15,9 +15,29 @@ lazy val commonSettings = Seq(
 
   organizationName := "andyglow",
 
-  scalaVersion := "2.12.10",
+  scalaVersion := "2.11.12",
 
   crossScalaVersions := Seq("2.11.12", "2.12.10", "2.13.1"),
+
+  Compile / unmanagedSourceDirectories ++= {
+    val bd = baseDirectory.value
+    def extraDirs(suffix: String): Seq[File] = Seq(bd / "src" / "main" / s"scala$suffix")
+    CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, y)) if y <= 12 => extraDirs("-2.12-")
+      case Some((2, y)) if y >= 13 => extraDirs("-2.13+")
+      case _                       => Nil
+    }
+  },
+
+  Test / unmanagedSourceDirectories ++= {
+    val bd = baseDirectory.value
+    def extraDirs(suffix: String): Seq[File] = Seq(bd / "src" / "test" / s"scala$suffix")
+    CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, y)) if y <= 12 => extraDirs("-2.12-")
+      case Some((2, y)) if y >= 13 => extraDirs("-2.13+")
+      case _                       => Nil
+    }
+  },
 
   scalacOptions ++= {
     val options = Seq(
@@ -27,6 +47,7 @@ lazy val commonSettings = Seq(
       "-deprecation",
       "-Xfatal-warnings",
       "-Xlint",
+      "-Ywarn-unused-import",
       "-Yno-adapted-args",
       "-Ywarn-dead-code",
       "-Ywarn-numeric-widen",
@@ -39,11 +60,14 @@ lazy val commonSettings = Seq(
     CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, 12)) => options.map {
         case "-Xlint"               => "-Xlint:-unused,_"
-        case "-Ywarn-unused-import" => "-Ywarn-unused:imports,-patvars,-privates,-locals,-params,-implicits"
+        case "-Ywarn-unused-import" => "-Ywarn-unused:imports,-patvars,-privates,-locals,-implicits"
         case other                  => other
       }
       case Some((2, n)) if n >= 13  => options.filterNot { opt =>
         opt == "-Yno-adapted-args" || opt == "-Xfuture"
+      }.map {
+        case "-Ywarn-unused-import" => "-Ywarn-unused:imports,-patvars,-privates,-locals,-implicits"
+        case other                  => other
       } :+ "-Xsource:2.13"
       case _             => options
     }
@@ -205,7 +229,30 @@ lazy val `cats` = { project in file("modules/cats") }.dependsOn(core, api).setti
 
   name := "scala-jsonschema-cats",
 
-  libraryDependencies += "org.typelevel" %% "cats-core" % "2.0.0"
+  libraryDependencies += {
+    val catsV = CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, 11)) => "2.0.0"
+      case _             => "2.1.1"
+    }
+
+    "org.typelevel" %% "cats-core" % catsV
+  }
+)
+
+
+lazy val `refined` = { project in file("modules/refined") }.dependsOn(core, api).settings(
+  commonSettings,
+
+  name := "scala-jsonschema-refined",
+
+  libraryDependencies += {
+    val refinedV = CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, 11)) => "0.9.12"
+      case _             => "0.9.13"
+    }
+
+    "eu.timepit" %% "refined" % refinedV
+  }
 )
 
 lazy val parser = { project in file("modules/parser") }.dependsOn(core % "compile->compile;test->test", api).settings(
@@ -220,6 +267,7 @@ lazy val root = { project in file(".") }.aggregate(
   api,
   parser,
   `joda-time`,
+  `cats`,
   `play-json`,
   `circe-json`,
   `spray-json`,

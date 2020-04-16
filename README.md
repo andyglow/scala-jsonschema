@@ -30,6 +30,8 @@ libraryDependencies ++= Seq(
   "com.github.andyglow" %% "scala-jsonschema-joda-time" % <version>,         // <-- optional
   // cats support
   "com.github.andyglow" %% "scala-jsonschema-cats" % <version>,              // <-- optional
+  // refined support
+  "com.github.andyglow" %% "scala-jsonschema-refined" % <version>,           // <-- optional
   // zero-dependency json and jsonschema parser
   "com.github.andyglow" %% "scala-jsonschema-parser" % <version>             // <-- optional
 )
@@ -86,8 +88,44 @@ Inspired by Coursera Autoschema but uses `Scala Macros` instead of `Java Reflect
         - `cats.data.NonEmptySet`
         - `cats.data.NonEmptyChain`
         - `cats.data.NonEmptyMap`
-        - `cats.data.NonEmptyStream`
+        - `cats.data.NonEmptyStream` (for scala 2.11, 2.12)
+        - `cats.data.NonEmptyLazyList` (for scala 2.13)
         - `cats.data.OneAnd`
+    - with Refined module imported you can refine original types wiith these
+        - boolean
+            - `eu.timepit.refined.boolean.And`
+            - `eu.timepit.refined.boolean.Or`
+            - `eu.timepit.refined.boolean.Not`
+        - string
+            - `eu.timepit.refined.collection.Size`
+            - `eu.timepit.refined.collection.MinSize`
+            - `eu.timepit.refined.collection.MaxSize`
+            - `eu.timepit.refined.collection.Empty`
+            - `eu.timepit.refined.string.Uuid`
+            - `eu.timepit.refined.string.Uri`
+            - `eu.timepit.refined.string.Url`
+            - `eu.timepit.refined.string.IPv4`
+            - `eu.timepit.refined.string.IPv6`
+            - `eu.timepit.refined.string.Xml`
+            - `eu.timepit.refined.string.StartsWith`
+            - `eu.timepit.refined.string.EndsWith`
+            - `eu.timepit.refined.string.MatchesRegex`
+        - number
+            - `eu.timepit.refined.numeric.Positive`
+            - `eu.timepit.refined.numeric.Negative`
+            - `eu.timepit.refined.numeric.NonPositive`
+            - `eu.timepit.refined.numeric.NonNegative`
+            - `eu.timepit.refined.numeric.Greather`
+            - `eu.timepit.refined.numeric.Less`
+            - `eu.timepit.refined.numeric.GreaterEqual`
+            - `eu.timepit.refined.numeric.LessEqual`
+            - `eu.timepit.refined.numeric.Divisable`
+        - collection
+            - `eu.timepit.refined.collection.Size`
+            - `eu.timepit.refined.collection.MinSize`
+            - `eu.timepit.refined.collection.MaxSize`
+            - `eu.timepit.refined.collection.Empty`
+            
 - Misc
     - `java.util.UUID`
     - `java.net.URL`

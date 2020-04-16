@@ -1,7 +1,6 @@
 package com.github.andyglow
 
 import org.scalatest.Matchers.fail
-import com.github.andyglow.scalamigration._
 import scala.util.Try
 
 
