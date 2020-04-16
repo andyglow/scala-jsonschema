@@ -3,7 +3,7 @@ package com.github.andyglow.jsonschema.refined
 import scala.reflect.macros.blackbox
 
 private[jsonschema] trait HasLog { this: HasContext =>
-  val debugEnabled = true
+  val debugEnabled = false
 
   val dbg: String => Unit = if (debugEnabled) c.info(c.enclosingPosition, _, force = true) else _ => ()
 
