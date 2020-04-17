@@ -12,8 +12,8 @@ class AsDraft07(val v: Draft07) extends AsValue with AsDraftSupport {
     val base = obj(
       f"$$schema"   -> v.uri,
       f"$$id"       -> v.id,
-      "description" -> v.description,
-      "title"       -> v.title)
+      "description" -> x.description,
+      "title"       -> x.title)
 
     val definitions = inferDefinitions(x)
 

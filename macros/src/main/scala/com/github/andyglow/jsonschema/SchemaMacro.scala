@@ -1,8 +1,10 @@
 package com.github.andyglow.jsonschema
 
 import com.github.andyglow.json.ToValue
+import com.github.andyglow.scaladoc.{Scaladoc, SlowParser}
 
 import scala.reflect.NameTransformer
+import scala.reflect.internal.util.NoSourceFile
 import scala.reflect.macros.blackbox
 import scala.util.control.NonFatal
 
@@ -16,7 +18,7 @@ object SchemaMacro {
     c.Expr[json.schema.Predef[T]](q"_root_.json.schema.Predef($schema)")
   }
 
-  def impl[T : c.WeakTypeTag](c: blackbox.Context): c.Expr[json.Schema[T]] = {
+  def impl[T: c.WeakTypeTag](c: blackbox.Context): c.Expr[json.Schema[T]] = {
     import c.universe._
 
     val jsonPkg     = q"_root_.json"
@@ -30,6 +32,23 @@ object SchemaMacro {
     val schemaTypeConstructor = typeOf[json.Schema[_]].typeConstructor
     val predefTypeConstructor = typeOf[json.schema.Predef[_]].typeConstructor
 
+    def getTypeScaladoc(tpe: Type): Option[Scaladoc] = {
+      import com.github.andyglow.scalamigration._
+
+      val pos = tpe.typeSymbol.pos
+      pos.source match {
+        case NoSourceFile => None
+        case src =>
+          val str = new String(src.content, 0, src.lineToOffset(pos.line - 1)).trim
+          if (str.endsWith("*/")) {
+            val start = str.lastIndexOf("/**")
+            if (start >= 0) {
+              SlowParser.parse(str.substring(start)).opt
+            } else None
+          } else None
+      }
+    }
+
     def resolveGenericType(x: Type, from: List[Symbol], to: List[Type]): Type = {
       try x.substituteTypes(from, to) catch {
         case NonFatal(_) =>
@@ -40,11 +59,6 @@ object SchemaMacro {
                |""".stripMargin)
       }
     }
-
-    //    implicit class TreeOps(private val x: Tree) {
-//
-//      def fold[A](ifEmpty: => A)(fn: Tree => A): A = if (x.isEmpty) ifEmpty else fn(x)
-//    }
 
     object SealedEnum {
 
@@ -253,19 +267,28 @@ object SchemaMacro {
       }
 
       def gen(fieldMap: Seq[CaseClass.Field], tpe: Type, stack: List[Type]): Tree = {
+        val scaladoc = getTypeScaladoc(tpe)
+        val objDescr = scaladoc flatMap { _.description }
         val obj = q"$schemaObj.`object`"
         val fields = fieldMap map { f =>
           val name      = f.name.decodedName.toString
           val jsonType  = resolve(f.effectiveTpe, if (f.isOption) stack else tpe +: stack)
-
-          f.default map { d =>
+          val fDescr    = scaladoc flatMap { _.param(name) }
+          val tree = f.default map { d =>
             q"$obj.Field.fromJson[${f.effectiveTpe}](name = $name, tpe = $jsonType, required = ${ !f.isOption && !f.hasDefault }, default = $d)"
           } getOrElse {
             q"$obj.Field[${f.effectiveTpe}](name = $name, tpe = $jsonType, required = ${ !f.isOption && !f.hasDefault })"
           }
+          fDescr match {
+            case Some(descr) => q"$tree.withDescription(Some($descr))"
+            case None => tree
+          }
         }
 
-        q"$obj[$tpe](..$fields)"
+        objDescr match {
+          case Some(descr) => q"$obj[$tpe](..$fields).copy(description = Some($descr))"
+          case _           => q"$obj[$tpe](..$fields)"
+        }
       }
     }
 
@@ -333,11 +356,46 @@ object SchemaMacro {
     }
 
     object Implicit {
+      final val LF = '\u000A'
+      final val CR = '\u000D'
 
       sealed trait ImplicitSchema
       case class FromPredef(x: Tree) extends ImplicitSchema
       case class FromSchema(x: Tree) extends ImplicitSchema
       case object NotFound extends ImplicitSchema
+
+      // FIXME: this method is pretty ugly
+      //   it is trying to handle situation like this
+      //   {{{
+      //     case class CC(a: String)
+      //     implicit val aSchema: Schema[CC] = Json.schema[CC]
+      //   }}}
+      //   in this case `inferImplicitValue` returns a self-reference
+      //   which turns out to be resolved as `null` eventually
+      //
+      //   So this method take a line of a source code where our def-macro is used and
+      //   see if it is assignment and it assigns to variable returned by `inferImplicitValue`
+      //
+      def isSelfRef(x: Tree): Boolean = x match {
+        case x @ Select(This(_), TermName(field)) =>
+          val pos = x.pos
+          pos.source match {
+            case NoSourceFile => false
+            case src =>
+              val end = src.lineToOffset(pos.line)
+              var start = end - 2
+              while ({
+                val c = src.content(start)
+                c != CR && c != LF
+              }) start = start - 1
+
+              val str = new String(src.content, start, pos.point - start)
+              if (str.contains(field) && str.contains("=") && str.contains("implicit")) true
+              else false
+          }
+        case _ => false
+      }
+
 
       def getOrElse(tpe: Type, gen: => Tree): Tree = {
         // def debug(msg: String): Unit = c.info(c.enclosingPosition, msg, force = true)
@@ -363,6 +421,7 @@ object SchemaMacro {
                 case EmptyTree  => NotFound
                 case x          => FromPredef(q"$x.schema")
               }
+            case x if isSelfRef(x) => NotFound
             case x => FromSchema(x)
           }
         }

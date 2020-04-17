@@ -8,6 +8,10 @@ import scala.annotation.implicitNotFound
 sealed trait Schema[+T] extends Product {
   import Schema._
 
+  private var _title: Option[String] = None
+
+  private var _description: Option[String] = None
+
   private var _refName: Option[String] = None
 
   private var _validations: collection.Seq[ValidationDef[_, _]] = Seq.empty
@@ -27,6 +31,10 @@ sealed trait Schema[+T] extends Product {
     copy._refName = Some(refName)
     copy
   }
+
+  def description: Option[String] = _description
+
+  def title: Option[String] = _title
 
   def refName: Option[String] = _refName
 
@@ -62,15 +70,23 @@ sealed trait Schema[+T] extends Product {
       sb.append("}")
     }
 
+    _description foreach { x => sb.append(" description=`").append(x).append('`') }
+    _title foreach { x => sb.append(" title=`").append(x).append('`') }
+
     sb.toString
   }
 
   protected def mkCopy(): Schema[T]
 
-  def copy(): Schema[T] = {
+  def copy(
+    description: Option[String] = this._description,
+    title: Option[String] = this._title): Schema[T] = {
+
     val copy = mkCopy()
     copy._refName = this._refName
     copy._validations = this._validations
+    copy._description = description
+    copy._title = title
 
     copy
   }
@@ -116,6 +132,17 @@ object Schema {
     override def equals(obj: Any): Boolean = obj match {
       case `string`(f, p) => format == f && pattern == p && super.equals(obj)
       case _ => false
+    }
+
+    override def toString: String = {
+      val sb = new StringBuilder
+      format foreach { x => sb.append("fmt=").append(x.productPrefix) }
+      pattern foreach { x => if(sb.nonEmpty) sb.append(", "); sb.append("pat=`").append(x).append('`') }
+      if (sb.isEmpty) {
+        "string"
+      } else {
+        s"string($sb)"
+      }
     }
   }
 
@@ -303,7 +330,8 @@ object Schema {
       val name: String,
       val tpe: Schema[T],
       val required: Boolean,
-      val default: Option[Value]) {
+      val default: Option[Value],
+      val description: Option[String]) {
 
       def canEqual(that: Any): Boolean = that.isInstanceOf[Field[T]]
 
@@ -319,15 +347,18 @@ object Schema {
       override def hashCode: Int = name.hashCode
 
       override def toString: String = {
-        val extra = (required, default) match {
+        var extra = (required, default) match {
           case (true, None)     => " /R"
           case (false, None)    => ""
           case (true, Some(v))  => s" /R /$v"
           case (false, Some(v)) => s" /$v"
         }
+        description foreach { x => extra = extra + s" description=`$x`"}
 
         s"$name: ${tpe}$extra"
       }
+
+      def withDescription(x: Option[String]): Field[T] = new Field(name, tpe, required, default, x)
     }
 
     final object Field {
@@ -336,7 +367,7 @@ object Schema {
         name: String,
         tpe: Schema[T]): Field[T] = {
 
-        new Field(name, tpe, required = true, default = None)
+        new Field(name, tpe, required = true, default = None, description = None)
       }
 
       def apply[T](
@@ -344,7 +375,7 @@ object Schema {
         tpe: Schema[T],
         required: Boolean): Field[T] = {
 
-        new Field(name, tpe, required, default = None)
+        new Field(name, tpe, required, default = None, description = None)
       }
 
       def apply[T: ToValue](
@@ -353,7 +384,7 @@ object Schema {
         required: Boolean,
         default: T): Field[T] = {
 
-        new Field(name, tpe, required, Some(ToValue(default)))
+        new Field(name, tpe, required, Some(ToValue(default)), description = None)
       }
 
       def fromJson[T](
@@ -362,7 +393,7 @@ object Schema {
         required: Boolean,
         default: Option[Value]): Field[T] = {
 
-        new Field(name, tpe, required, default)
+        new Field(name, tpe, required, default, description = None)
       }
     }
 

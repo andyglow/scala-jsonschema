@@ -6,6 +6,17 @@ import scala.util.control.NonFatal
 
 object scalamigration {
 
+  implicit class SpecificStringOps(private val x: String) extends AnyVal {
+
+    // in order to not clash with different versions of scala as well as jdk
+    @inline def asLines: Iterator[String] = x.linesWithSeparators map { _.stripLineEnd }
+  }
+
+  implicit class EitherOps[L, R](private val x: Either[L, R]) extends AnyVal {
+
+    @inline def opt: Option[R] = x.right.toOption
+  }
+
   implicit class MapMigOps[K, V](private val x: Map[K, V]) extends AnyVal {
 
     @inline def mapV[V2](f: V => V2): Map[K, V2] =

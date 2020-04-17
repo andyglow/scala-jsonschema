@@ -28,9 +28,10 @@ trait AsDraftSupport {
 
   def mkObj(pp: Option[ValidationDef[_, _]], x: `object`[_]): obj = {
     val props = x.fields.map { field =>
-      val d = field.default map { d => obj("default" -> d) } getOrElse obj()
+      val default = field.default map { d => obj("default" -> d) } getOrElse obj()
+      val description = field.description map { d => obj("description" -> d) } getOrElse obj()
 
-      field.name -> ( d ++ apply(field.tpe))
+      field.name -> ( default ++ apply(field.tpe) ++ description )
     }.toMap
 
     val required = x.fields collect {

@@ -1,3 +1,15 @@
+- **0.2.7-M1**
+  - Add initial code for supporting #18. Use scaladoc for descriptions. 
+    Added support for case classes and fields.
+  - todo:
+    - add scaladoc support for sum types
+    - here is some problem. comments live in source files and get erased after compilation, so resulted bytecode 
+      doesn't have this info and thus schemas derived from such models won't have descriptions.
+      this might probably be solved by packing scaladocs into annotations by macro or compiler plugin and
+      have those reused my SchemaMacro. Here is an example of something like this: 
+      https://medium.com/@takezoe/a-compiler-plugin-makes-scaladoc-readable-at-runtime-aecbebccb794 
+- **0.2.6**
+  - hot-fix release. disable mistakingly left enabled debug mode for Refined macro
 - **0.2.5**
   - Improve Schema matching. 
     Since now Ref and Validations are taken into an account during schema comparision.

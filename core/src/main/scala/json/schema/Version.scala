@@ -7,25 +7,17 @@ sealed trait Version {
 
 object Version {
 
-  final case class Draft04(
-    title: Option[String] = None,
-    description: Option[String] = None) extends Version {
+  final case class Draft04() extends Version {
 
     val uri: String = "http://json-schema.org/draft-04/schema#"
   }
 
-  final case class Draft06(
-    title: Option[String] = None,
-    description: Option[String] = None,
-    id: String) extends Version {
+  final case class Draft06(id: String) extends Version {
 
     val uri: String = "http://json-schema.org/draft-06/schema#"
   }
 
-  final case class Draft07(
-    title: Option[String] = None,
-    description: Option[String] = None,
-    id: String) extends Version {
+  final case class Draft07(id: String) extends Version {
 
     val uri: String = "http://json-schema.org/draft-07/schema#"
   }

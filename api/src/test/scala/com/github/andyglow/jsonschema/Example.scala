@@ -29,6 +29,17 @@ object ExampleMsg {
 
   case class Car(name: String, manufacturer: Company)
 
+  /** Super Person
+    *
+    * @param firstName First
+    * @param middleName Middle
+    * @param lastName Last
+    * @param gender Gender
+    * @param birthDay Birth dat
+    * @param company Company
+    * @param cars Cars owned
+    * @param active Is Active or not
+    */
   case class Person(
     firstName: String,
     middleName: Option[String],
@@ -50,5 +61,5 @@ object ExampleJsonSchema {
 
   implicit val carJsonType: json.Schema[Car] = Json.schema[Car]
 
-  implicit val personJsonType: json.Schema[Person] = Json.schema[Person]
+  val personJsonType: json.Schema[Person] = Json.schema[Person]
 }

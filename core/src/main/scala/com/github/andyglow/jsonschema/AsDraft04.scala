@@ -8,8 +8,8 @@ class AsDraft04(val v: Draft04) extends AsValue with AsDraftSupport {
   def schema(x: json.Schema[_]): obj = {
     val base = obj(
       f"$$schema"   -> v.uri,
-      "description" -> v.description,
-      "title"       -> v.title)
+      "description" -> x.description,
+      "title"       -> x.title)
 
     val definitions = inferDefinitions(x)
 
