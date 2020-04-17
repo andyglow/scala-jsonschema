@@ -1,9 +1,8 @@
 package com.github.andyglow.jsonschema.refined
 
 import eu.timepit.refined.api.Refined
-
-import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
+
 
 class RefinedMacro(val c: blackbox.Context) extends Logic {
   import c.universe._

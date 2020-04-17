@@ -2,8 +2,6 @@ package com.github.andyglow.jsonschema.refined
 
 import eu.timepit.refined._
 
-import scala.reflect.macros.blackbox
-
 
 private[jsonschema] trait Extractors { this: HasLog with AST with HasContext =>
   import Pred._

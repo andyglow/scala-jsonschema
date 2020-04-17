@@ -1,6 +1,5 @@
 package com.github.andyglow.jsonschema.refined
 
-import scala.reflect.macros.blackbox
 
 private[jsonschema] trait HasLog { this: HasContext =>
   val debugEnabled = false

@@ -1,6 +1,5 @@
 package com.github.andyglow.jsonschema.refined
 
-import scala.reflect.macros.blackbox
 
 private[jsonschema] trait AST { this: Math with HasContext with HasLog =>
   import c.universe._
