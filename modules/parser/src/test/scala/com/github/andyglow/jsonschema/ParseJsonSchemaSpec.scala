@@ -3,13 +3,15 @@ package com.github.andyglow.jsonschema
 import com.github.andyglow.json.{ParseJson, Value}
 import json.Schema
 import org.scalatest._
-import org.scalatest.Matchers._
+import matchers.should.Matchers._
 import com.github.andyglow.testsupport._
 import com.github.andyglow.scalamigration._
 import scala.util.Try
+import org.scalatest.matchers
+import org.scalatest.funsuite.AnyFunSuite
 
 
-class ParseJsonSchemaSpec extends FunSuite {
+class ParseJsonSchemaSpec extends AnyFunSuite {
   import Schema._
 
   test("string") {

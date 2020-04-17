@@ -1,10 +1,12 @@
 package com.github.andyglow.scaladoc
 
 import org.scalatest._
-import org.scalatest.Matchers._
+import matchers.should.Matchers._
+import org.scalatest.matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 
-class SlowParserSpec extends WordSpec {
+class SlowParserSpec extends AnyWordSpec {
   import SlowParser._
 
   "SlowParser" should {

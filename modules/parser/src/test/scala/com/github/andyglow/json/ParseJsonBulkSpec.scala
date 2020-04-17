@@ -4,9 +4,10 @@ import org.scalatest._
 
 import scala.io.Source
 import scala.util.{Failure, Success}
+import org.scalatest.funsuite.AnyFunSuite
 
 
-class ParseJsonBulkSpec extends FunSuite {
+class ParseJsonBulkSpec extends AnyFunSuite {
 
   lazy val examples = Source.fromInputStream(classOf[ParseJsonBulkSpec].getResourceAsStream("/examples"))
 

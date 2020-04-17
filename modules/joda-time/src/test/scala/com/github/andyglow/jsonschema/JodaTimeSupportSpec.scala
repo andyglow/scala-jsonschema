@@ -4,12 +4,14 @@ import json.Schema._
 import json.Schema.`string`.Format._
 import json.Schema.`object`.Field
 import org.joda.time._
-import org.scalatest.Matchers._
+import matchers.should.Matchers._
 import org.scalatest.{time => _, _}
 import json._
+import org.scalatest.matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 
-class JodaTimeSupportSpec extends WordSpec {
+class JodaTimeSupportSpec extends AnyWordSpec {
   import JodaTimeSupportSpec._
 
   "JodaTimeSupport" when {

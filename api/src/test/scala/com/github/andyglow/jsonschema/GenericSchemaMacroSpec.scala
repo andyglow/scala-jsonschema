@@ -6,10 +6,12 @@ import json.Json
 import json.Schema._
 import json.Schema.`object`.Field
 import org.scalatest._
-import org.scalatest.Matchers._
+import matchers.should.Matchers._
+import org.scalatest.matchers
+import org.scalatest.funsuite.AnyFunSuite
 
 
-class GenericSchemaMacroSpec extends FunSuite {
+class GenericSchemaMacroSpec extends AnyFunSuite {
 
   test("generic case class") {
     Json.schema[GenericCC[Int]] shouldEqual `object`(

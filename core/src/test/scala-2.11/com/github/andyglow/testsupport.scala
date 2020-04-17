@@ -1,8 +1,9 @@
 package com.github.andyglow
 
-import org.scalatest.Matchers.fail
+import matchers.should.Matchers.fail
 import com.github.andyglow.scalamigration._
 import scala.util.Try
+import org.scalatest.matchers
 
 
 object testsupport {
