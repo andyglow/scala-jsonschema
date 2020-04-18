@@ -2,10 +2,12 @@ package com.github.andyglow.jsonschema
 
 import json.{Json, Schema}
 import json.Schema._
-import org.scalatest.Matchers._
+import matchers.should.Matchers._
 import org.scalatest._
+import org.scalatest.matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class SchemaMacroSpec extends WordSpec {
+class SchemaMacroSpec extends AnyWordSpec {
   import SchemaMacroSpec._
 
   "Schema" should {

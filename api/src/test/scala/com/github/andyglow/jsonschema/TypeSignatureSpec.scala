@@ -2,9 +2,11 @@ package com.github.andyglow.jsonschema
 
 import json.Json
 import org.scalatest._
-import org.scalatest.Matchers._
+import matchers.should.Matchers._
+import org.scalatest.matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class TypeSignatureSpec extends WordSpec {
+class TypeSignatureSpec extends AnyWordSpec {
   import TypeSignatureSpec._
 
   "Json.sig" should {

@@ -1,12 +1,14 @@
 package com.example.unrelated
 
 import org.scalatest._
-import org.scalatest.Matchers._
+import matchers.should.Matchers._
+import org.scalatest.matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 /** This spec checks that the macro works even when names from
   * `com.github.andyglow.jsonschema` are not in scope.
   */
-class SchemaMacroNamesSpec extends WordSpec {
+class SchemaMacroNamesSpec extends AnyWordSpec {
 
   "Schema" should {
 

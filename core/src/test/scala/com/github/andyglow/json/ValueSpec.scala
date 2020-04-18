@@ -1,10 +1,12 @@
 package com.github.andyglow.json
 
 import org.scalatest._
-import org.scalatest.Matchers._
+import matchers.should.Matchers._
 import Value._
+import org.scalatest.matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class ValueSpec extends WordSpec {
+class ValueSpec extends AnyWordSpec {
 
   "Value" when {
 

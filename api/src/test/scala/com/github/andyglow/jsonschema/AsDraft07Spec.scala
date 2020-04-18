@@ -4,11 +4,13 @@ import com.github.andyglow.json.Value._
 import com.github.andyglow.jsonschema.JsonMatchers._
 import json.Schema._
 import json.schema.Version._
-import org.scalatest.Matchers._
+import matchers.should.Matchers._
 import org.scalatest._
+import org.scalatest.matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 
-class AsDraft07Spec extends WordSpec {
+class AsDraft07Spec extends AnyWordSpec {
 
   "AsValue.schema" should {
 

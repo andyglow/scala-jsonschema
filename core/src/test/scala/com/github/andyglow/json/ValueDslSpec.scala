@@ -1,11 +1,12 @@
 package com.github.andyglow.json
 
-import org.scalatest.PropSpec
 import org.scalatest.prop.TableDrivenPropertyChecks._
 import com.github.andyglow.json.Value._
-import org.scalatest.Matchers._
+import matchers.should.Matchers._
+import org.scalatest.matchers
+import org.scalatest.propspec.AnyPropSpec
 
-class ValueDslSpec extends PropSpec {
+class ValueDslSpec extends AnyPropSpec {
 
   val some: Option[String] = Some("15")
 

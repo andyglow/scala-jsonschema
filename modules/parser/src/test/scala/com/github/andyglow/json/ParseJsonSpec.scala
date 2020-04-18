@@ -1,11 +1,13 @@
 package com.github.andyglow.json
 
-import org.scalatest.Matchers._
+import matchers.should.Matchers._
 import org.scalatest._
 import com.github.andyglow.testsupport._
+import org.scalatest.matchers
+import org.scalatest.funsuite.AnyFunSuite
 
 
-class ParseJsonSpec extends FunSuite {
+class ParseJsonSpec extends AnyFunSuite {
   import Value._
 
   test("null") { ParseJson("null").value shouldBe `null` }
