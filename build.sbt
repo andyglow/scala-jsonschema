@@ -243,8 +243,6 @@ lazy val `cats` = { project in file("modules/cats") }.dependsOn(core, api).setti
 lazy val `refined` = { project in file("modules/refined") }.dependsOn(core, api).settings(
   commonSettings,
 
-  scalacOptions in (ScalaUnidoc, unidoc) += "-Ymacro-expand:none",
-
   name := "scala-jsonschema-refined",
 
   libraryDependencies += {
@@ -263,10 +261,8 @@ lazy val parser = { project in file("modules/parser") }.dependsOn(core % "compil
   name := "scala-jsonschema-parser"
 )
 
-import com.typesafe.sbt.SbtGit.GitKeys._
-
 lazy val root = { project in file(".") }
-  .enablePlugins(ScalaUnidocPlugin, GhpagesPlugin)
+  .enablePlugins(ParadoxPlugin, ParadoxMaterialThemePlugin)
   .aggregate(
     core,
     macros,
@@ -292,10 +288,4 @@ lazy val root = { project in file(".") }
     publishArtifact := false,
 
     aggregate in update := false,
-
-    siteSubdirName in ScalaUnidoc := "latest/api",
-
-    addMappingsToSiteDir(mappings in (ScalaUnidoc, packageDoc), siteSubdirName in ScalaUnidoc),
-
-    gitRemoteRepo := "git@github.com:andyglow/scala-jsonschema.git"
   )
