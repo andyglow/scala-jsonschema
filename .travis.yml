@@ -9,7 +9,7 @@ scala:
    - 2.12.8
    - 2.13.1
 
-jdk: oraclejdk8
+jdk: openjdk11
 
 cache:
   directories:
