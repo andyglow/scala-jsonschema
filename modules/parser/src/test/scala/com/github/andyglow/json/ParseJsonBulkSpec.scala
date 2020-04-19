@@ -1,7 +1,5 @@
 package com.github.andyglow.json
 
-import org.scalatest._
-
 import scala.io.Source
 import scala.util.{Failure, Success}
 import org.scalatest.funsuite.AnyFunSuite

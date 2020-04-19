@@ -1,14 +1,12 @@
 package com.github.andyglow.jsonschema
 
-import org.scalatest._
-import matchers.should.Matchers._
 import org.scalatest.prop.TableDrivenPropertyChecks._
 import com.github.andyglow.json.Value._
 import com.github.andyglow.jsonschema.model.UserProfile
 import io.circe._
 import json.schema.Version.Draft04
 import org.scalactic.Equality
-import org.scalatest.matchers
+import org.scalatest.matchers.should.Matchers._
 import org.scalatest.propspec.AnyPropSpec
 
 class AsCirceSpec extends AnyPropSpec {

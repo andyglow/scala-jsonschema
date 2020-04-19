@@ -4,9 +4,7 @@ import com.github.andyglow.json.Value._
 import com.github.andyglow.jsonschema.JsonMatchers._
 import json.Schema._
 import json.schema.Version._
-import matchers.should.Matchers._
-import org.scalatest._
-import org.scalatest.matchers
+import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpec
 
 

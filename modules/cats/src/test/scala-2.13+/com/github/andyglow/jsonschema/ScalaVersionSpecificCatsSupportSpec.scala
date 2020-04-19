@@ -5,12 +5,12 @@ import json.Schema
 import json.Schema.`object`._
 import json.Schema._
 import json.Validation._
-import org.scalatest._
-import org.scalatest.Matchers._
+import org.scalatest.matchers.should.Matchers._
+import org.scalatest.wordspec.AnyWordSpec
 import CatsSupport._
 
 
-class ScalaVersionSpecificCatsSupportSpec extends WordSpec {
+class ScalaVersionSpecificCatsSupportSpec extends AnyWordSpec {
   import ScalaVersionSpecificCatsSupportSpec._
 
   "CatsSupportSpec" when {

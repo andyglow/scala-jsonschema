@@ -1,8 +1,6 @@
 package com.example.unrelated
 
-import org.scalatest._
-import matchers.should.Matchers._
-import org.scalatest.matchers
+import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpec
 
 /** This spec checks that the macro works even when names from

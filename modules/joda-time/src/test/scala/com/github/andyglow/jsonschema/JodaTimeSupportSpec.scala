@@ -4,10 +4,8 @@ import json.Schema._
 import json.Schema.`string`.Format._
 import json.Schema.`object`.Field
 import org.joda.time._
-import matchers.should.Matchers._
-import org.scalatest.{time => _, _}
 import json._
-import org.scalatest.matchers
+import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpec
 
 

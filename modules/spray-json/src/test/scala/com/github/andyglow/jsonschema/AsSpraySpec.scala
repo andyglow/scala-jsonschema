@@ -1,15 +1,13 @@
 package com.github.andyglow.jsonschema
 
 import com.github.andyglow.json.Value
-import org.scalatest._
-import matchers.should.Matchers._
 import org.scalatest.prop.TableDrivenPropertyChecks._
 import com.github.andyglow.json.Value._
 import com.github.andyglow.jsonschema.model.UserProfile
 import json.schema.Version.Draft04
 import org.scalactic.Equality
 import spray.json._
-import org.scalatest.matchers
+import org.scalatest.matchers.should.Matchers._
 import org.scalatest.propspec.AnyPropSpec
 
 class AsSpraySpec extends AnyPropSpec {

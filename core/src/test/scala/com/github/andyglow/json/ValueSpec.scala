@@ -1,9 +1,7 @@
 package com.github.andyglow.json
 
-import org.scalatest._
-import matchers.should.Matchers._
 import Value._
-import org.scalatest.matchers
+import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpec
 
 class ValueSpec extends AnyWordSpec {

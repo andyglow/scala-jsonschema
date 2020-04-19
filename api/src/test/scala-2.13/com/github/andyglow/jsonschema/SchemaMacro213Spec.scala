@@ -2,10 +2,10 @@ package com.github.andyglow.jsonschema
 
 import json.Json
 import json.Schema.{`number`, `object`, `oneof`}
-import org.scalatest._
-import org.scalatest.Matchers._
+import org.scalatest.matchers.should.Matchers._
+import org.scalatest.wordspec.AnyWordSpec
 
-class SchemaMacro213Spec extends WordSpec {
+class SchemaMacro213Spec extends AnyWordSpec {
   import SchemaMacro213Spec._
 
   "generate schema for Sealed Trait subclasses defined inside of another object" in {

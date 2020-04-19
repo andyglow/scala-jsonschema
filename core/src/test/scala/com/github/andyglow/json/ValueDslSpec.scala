@@ -2,8 +2,7 @@ package com.github.andyglow.json
 
 import org.scalatest.prop.TableDrivenPropertyChecks._
 import com.github.andyglow.json.Value._
-import matchers.should.Matchers._
-import org.scalatest.matchers
+import org.scalatest.matchers.should.Matchers._
 import org.scalatest.propspec.AnyPropSpec
 
 class ValueDslSpec extends AnyPropSpec {

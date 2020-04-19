@@ -1,10 +1,8 @@
 package com.github.andyglow.json
 
 import com.github.andyglow.json.Value._
-import org.scalatest._
-import matchers.should.Matchers._
 import org.scalatest.prop.TableDrivenPropertyChecks._
-import org.scalatest.matchers
+import org.scalatest.matchers.should.Matchers._
 import org.scalatest.propspec.AnyPropSpec
 
 class JsonFormatterSpec extends AnyPropSpec {

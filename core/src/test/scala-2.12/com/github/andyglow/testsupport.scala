@@ -1,6 +1,6 @@
 package com.github.andyglow
 
-import org.scalatest.Matchers.fail
+import org.scalatest.matchers.should.Matchers.fail
 import scala.util.Try
 
 

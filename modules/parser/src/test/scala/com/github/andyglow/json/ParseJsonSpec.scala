@@ -1,9 +1,7 @@
 package com.github.andyglow.json
 
-import matchers.should.Matchers._
-import org.scalatest._
 import com.github.andyglow.testsupport._
-import org.scalatest.matchers
+import org.scalatest.matchers.should.Matchers._
 import org.scalatest.funsuite.AnyFunSuite
 
 

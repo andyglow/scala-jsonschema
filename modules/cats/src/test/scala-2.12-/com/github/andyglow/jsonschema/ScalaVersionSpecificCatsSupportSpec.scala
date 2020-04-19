@@ -5,10 +5,8 @@ import json.Schema
 import json.Schema.`object`._
 import json.Schema._
 import json.Validation._
-import org.scalatest._
-import matchers.should.Matchers._
 import CatsSupport._
-import org.scalatest.matchers
+import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpec
 
 

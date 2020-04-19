@@ -7,9 +7,7 @@ import com.github.andyglow.jsonschema.JsonMatchers._
 import json.Json
 import json.Schema._
 import json.schema.Version.Draft04
-import matchers.should.Matchers._
-import org.scalatest._
-import org.scalatest.matchers
+import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpec
 
 

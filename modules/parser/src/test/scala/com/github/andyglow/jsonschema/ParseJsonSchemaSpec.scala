@@ -2,12 +2,10 @@ package com.github.andyglow.jsonschema
 
 import com.github.andyglow.json.{ParseJson, Value}
 import json.Schema
-import org.scalatest._
-import matchers.should.Matchers._
 import com.github.andyglow.testsupport._
 import com.github.andyglow.scalamigration._
 import scala.util.Try
-import org.scalatest.matchers
+import org.scalatest.matchers.should.Matchers._
 import org.scalatest.funsuite.AnyFunSuite
 
 

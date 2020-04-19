@@ -5,9 +5,7 @@ import java.time.LocalDateTime
 import json.Json
 import json.Schema._
 import json.Schema.`object`.Field
-import org.scalatest._
-import matchers.should.Matchers._
-import org.scalatest.matchers
+import org.scalatest.matchers.should.Matchers._
 import org.scalatest.funsuite.AnyFunSuite
 
 
