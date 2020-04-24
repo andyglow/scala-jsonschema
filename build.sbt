@@ -221,7 +221,7 @@ lazy val `joda-time` = { project in file("modules/joda-time") }.dependsOn(core, 
 
   name := "scala-jsonschema-joda-time",
 
-  libraryDependencies += "joda-time" % "joda-time" % "2.10.5"
+  libraryDependencies += "joda-time" % "joda-time" % "2.10.6"
 )
 
 lazy val `cats` = { project in file("modules/cats") }.dependsOn(core, api).settings(
