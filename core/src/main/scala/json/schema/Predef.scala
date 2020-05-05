@@ -27,7 +27,8 @@ trait LowPriorityPredefs {
 }
 object Predef extends LowPriorityPredefs {
   implicit val strS: Predef[String]                            = Predef(`string`[String]())
-  implicit val chrS: Predef[Character]                         = Predef(`string`("^[.\\s]$").withValidation(`minLength` := 1, `maxLength` := 1))
+  implicit val chrS: Predef[Char]                              = Predef(`string`("^[.\\s]$").withValidation(`minLength` := 1, `maxLength` := 1))
+  implicit val jchrS: Predef[Character]                        = Predef(`string`("^[.\\s]$").withValidation(`minLength` := 1, `maxLength` := 1))
   implicit val boolS: Predef[Boolean]                          = Predef(`boolean`)
   implicit val byteS: Predef[Byte]                             = Predef(`number`[Byte]())
   implicit val shortS: Predef[Short]                           = Predef(`number`[Short]())

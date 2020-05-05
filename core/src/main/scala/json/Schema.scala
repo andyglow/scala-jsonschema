@@ -19,7 +19,7 @@ sealed trait Schema[+T] extends Product {
   def jsonType: String = productPrefix
 
   def withValidation[TT >: T, B](v: ValidationDef[B, _], vs: ValidationDef[B, _]*)(implicit bound: ValidationBound[TT, B]): Schema[T] = {
-    val copy = this.copy()
+    val copy = this.duplicate()
     copy._validations = (v +: vs).foldLeft(_validations) {
       case (agg, v) => bound.append(agg, v)
     }
@@ -27,7 +27,7 @@ sealed trait Schema[+T] extends Product {
   }
 
   def apply(refName: String): Schema[T] = {
-    val copy = this.copy()
+    val copy = this.duplicate()
     copy._refName = Some(refName)
     copy
   }
@@ -78,7 +78,7 @@ sealed trait Schema[+T] extends Product {
 
   protected def mkCopy(): Schema[T]
 
-  def copy(
+  def duplicate(
     description: Option[String] = this._description,
     title: Option[String] = this._title): Schema[T] = {
 
@@ -203,12 +203,22 @@ object Schema {
 
   final case class `object`[T](
     fields: Set[`object`.Field[_]]) extends Schema[T] {
-    def mkCopy() = new `object`[T](fields)
+    import `object`._
+
+    def mkCopy(): Schema[T] = copy()
     override def canEqual(that: Any): Boolean = that.isInstanceOf[`object`[_]]
     override def equals(obj: Any): Boolean = obj match {
       case `object`(f) => fields == f && super.equals(obj)
       case _ => false
     }
+
+    def dropField(pred: Field[_] => Boolean): `object`[T] = copy(fields = this.fields.filterNot(pred))
+    def withField(f: Field[_]): `object`[T] = copy(fields = fields + f)
+    def withFieldsUpdated(pf: PartialFunction[Field[_], Field[_]]): `object`[T] = copy(
+      fields = fields collect {
+        case f if pf isDefinedAt f => pf(f)
+        case f                     => f
+      })
   }
 
   final case class `enum`[T](

@@ -286,7 +286,7 @@ object SchemaMacro {
         }
 
         objDescr match {
-          case Some(descr) => q"$obj[$tpe](..$fields).copy(description = Some($descr))"
+          case Some(descr) => q"$obj[$tpe](..$fields).duplicate(description = Some($descr))"
           case _           => q"$obj[$tpe](..$fields)"
         }
       }
