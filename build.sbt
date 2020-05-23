@@ -119,7 +119,7 @@ lazy val commonSettings = Seq(
     commitNextVersion,
     ReleaseStep(action = Command.process("sonatypeReleaseAll", _), enableCrossBuild = true),
     pushChanges),
-  
+
   libraryDependencies += "org.scalatest" %% "scalatest" % "3.1.2" % Test
 )
 
@@ -243,6 +243,8 @@ lazy val `cats` = { project in file("modules/cats") }.dependsOn(core, api).setti
 lazy val `refined` = { project in file("modules/refined") }.dependsOn(core, api).settings(
   commonSettings,
 
+  scalacOptions -= "-Ywarn-unused-import",
+
   name := "scala-jsonschema-refined",
 
   libraryDependencies += {
@@ -270,6 +272,7 @@ lazy val root = { project in file(".") }
     parser,
     `joda-time`,
     `cats`,
+    `refined`,
     `play-json`,
     `circe-json`,
     `spray-json`,

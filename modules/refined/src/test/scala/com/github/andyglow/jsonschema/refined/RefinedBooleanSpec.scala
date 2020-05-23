@@ -1,20 +1,20 @@
 package com.github.andyglow.jsonschema.refined
 
+
 import eu.timepit.refined._
 import eu.timepit.refined.api._
 import eu.timepit.refined.numeric._
-import eu.timepit.refined.string._
 import eu.timepit.refined.boolean._
 import json.Json.schema
 import json.Schema._
 import json.Validation._
-import org.scalatest.Matchers.{ not => _, _ }
-import org.scalatest._
+import org.scalatest.matchers.should.Matchers.{ not => _, _ }
+import org.scalatest.funsuite.AnyFunSuite
 
 import com.github.andyglow.jsonschema.RefinedSupport._
 
 
-class RefinedBooleanSpec extends FunSuite {
+class RefinedBooleanSpec extends AnyFunSuite {
 
   test("not") {
     schema[Refined[Int, Not[GreaterEqual[W.`2`.T]]]] shouldBe `number`[Int].withValidation(`exclusiveMaximum` := 2)
