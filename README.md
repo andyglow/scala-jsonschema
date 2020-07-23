@@ -134,6 +134,9 @@ Inspired by Coursera Autoschema but uses `Scala Macros` instead of `Java Reflect
     - String Map (eg. `Map[String, T]`)
     - Int Map (eg. `Map[Int, T]`)
     - `Iterable[T]`
+- Selects -> treat as oneOf
+    - Either (Can nest. eg: Either[String,OneOf[Foo, Bar]])
+    - com.github.andyglow.json.OneOf (Can nest and _X alias. eg: OneOf._3[String, Foo, Bar])
 - Sealed Trait hierarchy of case objects (Enums)
 - Case Classes
     - default value
@@ -459,6 +462,109 @@ and expect
   }
 }
 ``` 
+
+
+### Use Either and OneOf
+```scala
+case class Foo(name: String)
+
+case class Bar(firstName: String, lastName: String)
+
+case class FooBar(
+  foo: Either[String, Foo],
+  bar: OneOf._3[String, Bar, Foo]
+)
+
+```
+
+Then you can do
+```scala
+import json._
+import com.github.andyglow.json.OneOf
+import json.schema.Version._
+
+
+implicit val fooBarSchema: json.Schema[FooBar] = Json.schema[FooBar]
+
+println(
+  JsonFormatter.format(
+    AsValue.schema(fooBarSchema),
+    Draft07("foobar")
+  )
+)
+``` 
+
+and expect
+```json
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "foobar",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "foo": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name"
+          ]
+        }
+      ]
+    },
+    "bar": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "firstName": {
+              "type": "string"
+            },
+            "lastName": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "firstName",
+            "lastName"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name"
+          ]
+        }
+      ]
+    }
+  },
+  "required": [
+    "foo",
+    "bar"
+  ]
+}
+``` 
+
+
 
 ## Validation
 It is also possible to add specific validation rules to our schemas.

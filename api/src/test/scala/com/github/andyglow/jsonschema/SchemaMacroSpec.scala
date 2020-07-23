@@ -186,7 +186,7 @@ class SchemaMacroSpec extends AnyWordSpec {
         Json.schema[Foo5],
         Json.schema[FooBar1],
         Json.schema[FooBar2],
-        Json.schema[AnyFooBar1],
+        Json.schema[AnyFooBar1]
       ))
       Json.schema[OneOf._9[Foo1,Foo2,Foo3,Foo4,Foo5,FooBar1,FooBar2,AnyFooBar1,AnyFooBar2]] shouldEqual `oneof`(Set(
         Json.schema[Foo1],
