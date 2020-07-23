@@ -144,8 +144,11 @@ object SchemaMacro {
 
     object OneOfClasses {
       def unapply(tpe: Type): Option[Set[Type]] = {
-        if(tpe <:< typeOf[OneOf[_,_]] ||
-        tpe <:< typeOf[Either[_,_]]) {
+        if (tpe <:< typeOf[OneOf[_,_]] ||
+            tpe <:< typeOf[Either[_,_]]) {
+          Some(tpe.typeArgs.foldLeft(Set[Type]())( (set, t) => {
+            set ++ recursiveMatch(t)
+          }))
           Some(tpe.typeArgs.flatMap(t => recursiveMatch(t)).toSet)
         } else {
           None
@@ -153,9 +156,11 @@ object SchemaMacro {
       }
 
       def recursiveMatch(tpe: Type): Set[Type] = {
-        if(tpe <:< typeOf[OneOf[_,_]]||
-          tpe <:< typeOf[Either[_,_]]) {
-          recursiveMatch(tpe.typeArgs(0)) ++ recursiveMatch(tpe.typeArgs(1))
+        if (tpe <:< typeOf[OneOf[_,_]]||
+            tpe <:< typeOf[Either[_,_]]) {
+          tpe.typeArgs.foldLeft(Set[Type]())( (set, t) => {
+            set ++ recursiveMatch(t)
+          })
         } else {
           Set(tpe)
         }
