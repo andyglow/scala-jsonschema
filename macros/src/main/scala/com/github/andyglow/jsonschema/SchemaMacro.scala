@@ -147,19 +147,19 @@ object SchemaMacro {
         if (tpe <:< typeOf[OneOf[_,_]] ||
             tpe <:< typeOf[Either[_,_]]) {
           Some(tpe.typeArgs.foldLeft(Set[Type]())( (set, t) => {
-            set ++ recursiveMatch(t)
+            set ++ flattenNest(t)
           }))
-          Some(tpe.typeArgs.flatMap(t => recursiveMatch(t)).toSet)
+          Some(tpe.typeArgs.flatMap(t => flattenNest(t)).toSet)
         } else {
           None
         }
       }
 
-      def recursiveMatch(tpe: Type): Set[Type] = {
+      def flattenNest(tpe: Type): Set[Type] = {
         if (tpe <:< typeOf[OneOf[_,_]]||
             tpe <:< typeOf[Either[_,_]]) {
           tpe.typeArgs.foldLeft(Set[Type]())( (set, t) => {
-            set ++ recursiveMatch(t)
+            set ++ flattenNest(t)
           })
         } else {
           Set(tpe)
