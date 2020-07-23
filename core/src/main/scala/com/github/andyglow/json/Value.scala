@@ -64,7 +64,7 @@ object Value {
 
     def prepend(el: Value): arr = this.+:(el)
 
-    override def toString: String = value map {_.toString} mkString ("[", ", ", "]")
+    override def toString: String = value.map( _.toString).mkString("[", ", ", "]")
   }
 
   object arr {
@@ -139,7 +139,7 @@ object Value {
       case _           => false
     }
 
-    override def toString = value map { case (k, v) => s""""$k": ${v.toString}"""} mkString ("{", ", ", "}")
+    override def toString = value.map({ case (k, v) => s""""$k": ${v.toString}"""}).mkString("{", ", ", "}")
   }
 
   object obj {

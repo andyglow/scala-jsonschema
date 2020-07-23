@@ -9,7 +9,7 @@ class ParseJsonBulkSpec extends AnyFunSuite {
 
   lazy val examples = Source.fromInputStream(classOf[ParseJsonBulkSpec].getResourceAsStream("/examples"))
 
-  examples.getLines foreach { name =>
+  examples.getLines().foreach { name =>
     def run(expect: Boolean) = {
       val is = classOf[ParseJsonBulkSpec].getResourceAsStream("/" + name)
       val json = Source.fromInputStream(is).mkString

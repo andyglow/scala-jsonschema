@@ -1,5 +1,6 @@
 package com.github.andyglow.jsonschema
 
+import com.github.andyglow.json.OneOf
 import json.{Json, Schema}
 import json.Schema._
 import org.scalatest.matchers.should.Matchers._
@@ -43,8 +44,8 @@ class SchemaMacroSpec extends AnyWordSpec {
       Json.schema[Bar9] shouldEqual `object`(
         Field("set"     , `set`(`integer`), required = false, default = Set(1, 5, 9)),
         Field("list"    , `array`(`boolean`), required = false, default = List(true, false)),
-        Field("vector"  , `array`(`number`[Long]), required = false, default = Vector(9, 7)),
-        Field("strMap"  , `string-map`(`number`[Double]), required = false, default = Map("foo" -> .12)),
+        Field("vector"  , `array`(`number`[Long]()), required = false, default = Vector(9, 7)),
+        Field("strMap"  , `string-map`(`number`[Double]()), required = false, default = Map("foo" -> .12)),
         Field("intMap"  , `int-map`(`string`[String](None, None)), required = false, default = Map(1 -> "1", 2 -> "2")))
     }
 
@@ -98,6 +99,107 @@ class SchemaMacroSpec extends AnyWordSpec {
       Json.schema[FooBar] shouldEqual `oneof`(Set(
         `object`(Field("foo", `number`[Double]())),
         `object`(Field("bar", `number`[Double]()))))
+    }
+
+
+    "generate schema for OneOf" in {
+
+      Json.schema[OneOf[String,Int]] shouldEqual `oneof`(Set(
+        Schema.`string`(),
+        Schema.`integer`()
+      ))
+    }
+
+    "generate schema for Either" in {
+
+      Json.schema[Either[String,Int]] shouldEqual `oneof`(Set(
+        Schema.`string`(),
+        Schema.`integer`()
+      ))
+    }
+
+    "generate schema for nested OneOfs and Eithers" in {
+
+      Json.schema[OneOf[Either[String,Double],OneOf[Boolean, Int]]] shouldEqual `oneof`(Set(
+        Schema.`string`(),
+        Schema.`number`[Double](),
+        Schema.`boolean`(),
+        Schema.`integer`()
+      ))
+      Json.schema[Either[Either[String,Double],OneOf[Boolean, Int]]] shouldEqual `oneof`(Set(
+        Schema.`string`(),
+        Schema.`number`[Double](),
+        Schema.`boolean`(),
+        Schema.`integer`()
+      ))
+      Json.schema[OneOf._3[Either[String,Double],OneOf[Boolean, Int], Foo1]] shouldEqual `oneof`(Set(
+        Schema.`string`(),
+        Schema.`number`[Double](),
+        Schema.`boolean`(),
+        Schema.`integer`(),
+        Json.schema[Foo1]
+      ))
+    }
+
+    "generate schema for nested OneOf._X" in {
+
+      Json.schema[OneOf._3[Foo1,Foo2,Foo3]] shouldEqual `oneof`(Set(
+        Json.schema[Foo1],
+        Json.schema[Foo2],
+        Json.schema[Foo3]
+      ))
+      Json.schema[OneOf._4[Foo1,Foo2,Foo3,Foo4]] shouldEqual `oneof`(Set(
+        Json.schema[Foo1],
+        Json.schema[Foo2],
+        Json.schema[Foo3],
+        Json.schema[Foo4]
+      ))
+      Json.schema[OneOf._5[Foo1,Foo2,Foo3,Foo4,Foo5]] shouldEqual `oneof`(Set(
+        Json.schema[Foo1],
+        Json.schema[Foo2],
+        Json.schema[Foo3],
+        Json.schema[Foo4],
+        Json.schema[Foo5]
+      ))
+      Json.schema[OneOf._6[Foo1,Foo2,Foo3,Foo4,Foo5,FooBar1]] shouldEqual `oneof`(Set(
+        Json.schema[Foo1],
+        Json.schema[Foo2],
+        Json.schema[Foo3],
+        Json.schema[Foo4],
+        Json.schema[Foo5],
+        Json.schema[FooBar1]
+      ))
+      Json.schema[OneOf._7[Foo1,Foo2,Foo3,Foo4,Foo5,FooBar1,FooBar2]] shouldEqual `oneof`(Set(
+        Json.schema[Foo1],
+        Json.schema[Foo2],
+        Json.schema[Foo3],
+        Json.schema[Foo4],
+        Json.schema[Foo5],
+        Json.schema[FooBar1],
+        Json.schema[FooBar2]
+      ))
+      Json.schema[OneOf._8[Foo1,Foo2,Foo3,Foo4,Foo5,FooBar1,FooBar2,AnyFooBar1]] shouldEqual `oneof`(Set(
+        Json.schema[Foo1],
+        Json.schema[Foo2],
+        Json.schema[Foo3],
+        Json.schema[Foo4],
+        Json.schema[Foo5],
+        Json.schema[FooBar1],
+        Json.schema[FooBar2],
+        Json.schema[AnyFooBar1],
+      ))
+      Json.schema[OneOf._9[Foo1,Foo2,Foo3,Foo4,Foo5,FooBar1,FooBar2,AnyFooBar1,AnyFooBar2]] shouldEqual `oneof`(Set(
+        Json.schema[Foo1],
+        Json.schema[Foo2],
+        Json.schema[Foo3],
+        Json.schema[Foo4],
+        Json.schema[Foo5],
+        Json.schema[FooBar1],
+        Json.schema[FooBar2],
+        Json.schema[AnyFooBar1],
+        Json.schema[AnyFooBar2]
+      ))
+
     }
 
     "generate schema for Multi Level Sealed Trait subclasses" in {

@@ -198,7 +198,7 @@ class AsDraft04Spec extends AnyWordSpec {
       import json.Validation._
 
       "string" in {
-        val schema1 = Json.schema[String] withValidation (
+        val schema1 = Json.schema[String].withValidation (
           `maxLength` := 20,
           `minLength` := 15,
           `pattern`   := "[a-z]+")
@@ -208,7 +208,7 @@ class AsDraft04Spec extends AnyWordSpec {
 
       def numCase[T: Numeric](schema: json.Schema[T], t: String = "number")(implicit bound: ValidationBound[T, Number]): Unit = {
         asDraft04 {
-          schema withValidation (
+          schema.withValidation (
             `maximum` := 20,
             `minimum` := 15,
             `exclusiveMinimum` := 3,
@@ -234,7 +234,7 @@ class AsDraft04Spec extends AnyWordSpec {
 
       def arrCase[T](schema: json.Schema[T])(implicit bound: ValidationBound[T, Iterable[_]]): Unit = {
         asDraft04 {
-          schema withValidation (
+          schema.withValidation (
             `maxItems` := 20,
             `minItems` := 15)
         } should containJson(
@@ -254,7 +254,7 @@ class AsDraft04Spec extends AnyWordSpec {
 
       "map" in {
         asDraft04 {
-          Json.schema[Map[String, String]] withValidation (
+          Json.schema[Map[String, String]].withValidation (
             `patternProperties` := "^[a-z]*$",
             `maxProperties`     := 10,
             `minProperties`     := 4)

@@ -31,16 +31,16 @@ class GenericSchemaMacroSpec extends AnyFunSuite {
     Json.schema[DoubleGenericCCWithDefaults[Long]] shouldEqual `object`(
       Field("str", `string`(), required = false, "abc"),
       Field("gen", `object`(
-        Field("head", `number`[Long]),
-        Field("tail", `array`(`number`[Long])))))
+        Field("head", `number`[Long]()),
+        Field("tail", `array`(`number`[Long]())))))
   }
 
   test("generic case class with generic nesting and defaults defined externally") {
     Json.schema[DoubleGenericCCWithPredefinedDefaults[Long]] shouldEqual `object`(
       Field("str", `string`(), required = false, "some-str"),
       Field("gen", `object`(
-        Field("head", `number`[Long]),
-        Field("tail", `array`(`number`[Long])))))
+        Field("head", `number`[Long]()),
+        Field("tail", `array`(`number`[Long]())))))
   }
 }
 

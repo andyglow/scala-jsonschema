@@ -1,6 +1,6 @@
 package com.github.andyglow.jsonschema
 
-import com.github.andyglow.json.ToValue
+import com.github.andyglow.json.{OneOf, ToValue}
 import com.github.andyglow.scaladoc.{Scaladoc, SlowParser}
 
 import scala.reflect.NameTransformer
@@ -31,6 +31,7 @@ object SchemaMacro {
     val setTpe                = weakTypeOf[Set[_]]
     val schemaTypeConstructor = typeOf[json.Schema[_]].typeConstructor
     val predefTypeConstructor = typeOf[json.schema.Predef[_]].typeConstructor
+
 
     def getTypeScaladoc(tpe: Type): Option[Scaladoc] = {
       import com.github.andyglow.scalamigration._
@@ -135,6 +136,37 @@ object SchemaMacro {
         val trees = subTypes collect {
           case CaseClass(fields)     => CaseClass.gen(fields, tpe, stack)
           case ValueClass(innerType) => ValueClass.gen(innerType, tpe, stack)
+        }
+
+        q"$schemaObj.`oneof`[$tpe]($trees)"
+      }
+    }
+
+    object OneOfClasses {
+      def unapply(tpe: Type): Option[Set[Type]] = {
+        if(tpe <:< typeOf[OneOf[_,_]] ||
+        tpe <:< typeOf[Either[_,_]]) {
+          Some(tpe.typeArgs.flatMap(t => recursiveMatch(t)).toSet)
+        } else {
+          None
+        }
+      }
+
+      def recursiveMatch(tpe: Type): Set[Type] = {
+        if(tpe <:< typeOf[OneOf[_,_]]||
+          tpe <:< typeOf[Either[_,_]]) {
+          recursiveMatch(tpe.typeArgs(0)) ++ recursiveMatch(tpe.typeArgs(1))
+        } else {
+          Set(tpe)
+        }
+      }
+
+      def gen(tpe: Type, subTypes: Set[Type], stack: List[Type]): Tree = {
+
+        val trees = subTypes collect {
+          case CaseClass(fields)     => CaseClass.gen(fields, tpe, stack)
+          case ValueClass(innerType) => ValueClass.gen(innerType, tpe, stack)
+          case t => { resolve(t, Nil)}
         }
 
         q"$schemaObj.`oneof`[$tpe]($trees)"
@@ -442,6 +474,7 @@ object SchemaMacro {
         case x if x <:< typeOf[Map[Int, _]]     => IntMap.gen(x, stack)
         case x if x <:< typeOf[Array[_]]        => Arr.gen(x, stack)
         case x if x <:< typeOf[Iterable[_]]     => Arr.gen(x, stack)
+        case OneOfClasses(subTypes)             => OneOfClasses.gen(tpe, subTypes, stack)
         case SealedEnum(names)                  => SealedEnum.gen(tpe, names)
         case SealedClasses(subTypes)            => SealedClasses.gen(tpe, subTypes, stack)
         case CaseClass(fields)                  => CaseClass.gen(fields, tpe, stack)
