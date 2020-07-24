@@ -15,17 +15,18 @@ object OneOf {
 }
 
 /**
-  * Useful for array values which usually passed only one element.
+  * Useful for array values which is usually passed only one element.
   *
   * OK patterns
   * names: "tom"
   * names: ["tom","bob"]
   *
   * And when you want to decode, you can do as such.
-  * eg: Circe
+  * # For Circe
   * implicit def singleOrListDecoder = = new Decoder[SingleOrList[String]] {
   *   override def apply(c: HCursor) = {
-  *     c.as[String].map(s => Seq(s)) orElse c.as[Seq[String]]
+  *     (c.as[String].map(s => Seq(s)) orElse c.as[Seq[String]])
+  *       .map(values => SingleOrList(values))
   *   }
   * }
   *

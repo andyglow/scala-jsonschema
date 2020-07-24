@@ -149,7 +149,6 @@ object SchemaMacro {
           Some(tpe.typeArgs.foldLeft(Set[Type]())( (set, t) => {
             set ++ flattenNest(t)
           }))
-          Some(tpe.typeArgs.flatMap(t => flattenNest(t)).toSet)
         } else {
           None
         }
