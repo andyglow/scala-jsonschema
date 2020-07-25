@@ -382,11 +382,12 @@ object SchemaMacro {
           pos.source match {
             case NoSourceFile => false
             case src =>
-              val end = src.lineToOffset(pos.line)
+              val end = src.lineToOffset(src.offsetToLine(pos.point))
               var start = end - 2
+
               while ({
-                val c = src.content(start)
-                c != CR && c != LF
+                !src.isLineBreak(start) &&
+                  !src.isEndOfLine(start)
               }) start = start - 1
 
               val str = new String(src.content, start, pos.point - start)
