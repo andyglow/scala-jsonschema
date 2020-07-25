@@ -120,7 +120,7 @@ lazy val commonSettings = Seq(
     ReleaseStep(action = Command.process("sonatypeReleaseAll", _), enableCrossBuild = true),
     pushChanges),
   
-  libraryDependencies += "org.scalatest" %% "scalatest" % "3.1.2" % Test
+  libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.0" % Test
 )
 
 
@@ -268,6 +268,7 @@ lazy val root = { project in file(".") }
     macros,
     api,
     parser,
+    refined,
     `joda-time`,
     `cats`,
     `play-json`,
