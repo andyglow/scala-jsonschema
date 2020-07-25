@@ -1,7 +1,7 @@
 package com.github.andyglow.jsonschema.refined
 
-import org.scalatest._
-import org.scalatest.Matchers._
+import org.scalatest.matchers.should.Matchers._
+import org.scalatest.funsuite._
 import json.Json.schema
 import json.Schema._
 import json.Validation._
@@ -11,7 +11,7 @@ import eu.timepit.refined.api._
 import eu.timepit.refined.numeric._
 
 
-class RefinedNumbersSpec extends FunSuite {
+class RefinedNumbersSpec extends AnyFunSuite {
 
   test("int positive") {
       schema[Int Refined Positive] shouldBe `number`[Int].withValidation(`exclusiveMinimum` := 0)

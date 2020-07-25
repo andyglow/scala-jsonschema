@@ -7,13 +7,13 @@ import eu.timepit.refined._
 import json.Json.schema
 import json.Schema._
 import json.Validation._
-import org.scalatest.Matchers._
-import org.scalatest._
+import org.scalatest.matchers.should.Matchers._
+import org.scalatest.funsuite._
 
 import com.github.andyglow.jsonschema.RefinedSupport._
 
 
-class RefinedCollectionsSpec extends FunSuite {
+class RefinedCollectionsSpec extends AnyFunSuite {
 
   test("size") {
     schema[List[Int] Refined Size[W.`12`.T]] shouldBe `array`[Int, List](`integer`).withValidation( `minItems` := 12, `maxItems` := 12 )

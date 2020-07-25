@@ -246,10 +246,12 @@ private[jsonschema] trait AST { this: Math with HasContext with HasLog =>
 
     object Outside {
 
-      def unapply(tuple: (Pred, Pred)): Option[(NumericPred, NumericPred)] = tuple match {
-        case (l: Ge, r: Le) if l.vv > r.vv => Some((l, r))
-        case (l: Le, r: Ge) if l.vv < r.vv => Some((r, l))
-        case _                             => None
+      def unapply(tuple: (Pred, Pred)): Option[(NumericPred, NumericPred)] = {
+        tuple match {
+          case (l: Ge, r: Le) if l.vv > r.vv => Some((l, r))
+          case (l: Le, r: Ge) if l.vv < r.vv => Some((l, r))
+          case _                             => None
+        }
       }
     }
   }

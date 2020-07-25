@@ -7,13 +7,13 @@ import eu.timepit.refined.collection._
 import json.Json.schema
 import json.Schema._
 import json.Validation._
-import org.scalatest.Matchers._
-import org.scalatest._
+import org.scalatest.matchers.should.Matchers._
+import org.scalatest.funsuite._
 
 import com.github.andyglow.jsonschema.RefinedSupport._
 
 
-class RefinedStringsSpec extends FunSuite {
+class RefinedStringsSpec extends AnyFunSuite {
   import `string`._
 
   test("uuid") {

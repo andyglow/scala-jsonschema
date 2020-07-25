@@ -252,6 +252,18 @@ lazy val `refined` = { project in file("modules/refined") }.dependsOn(core, api)
     }
 
     "eu.timepit" %% "refined" % refinedV
+  },
+
+  // mute unused imports because otherwise IN TESTS it complains on
+  // unused `import com.github.andyglow.jsonschema.RefinedSupport._`
+  // which is not true
+  scalacOptions in Test -= {
+    CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, 11))           => "-Ywarn-unused-import"
+      case Some((2, 12))           => "-Ywarn-unused:imports,-patvars,-privates,-locals,-implicits"
+      case Some((2, n)) if n >= 13 => "-Ywarn-unused:imports,-patvars,-privates,-locals,-implicits"
+      case _                       => ""
+    }
   }
 )
 
