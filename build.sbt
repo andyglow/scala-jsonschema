@@ -268,6 +268,7 @@ lazy val root = { project in file(".") }
     macros,
     api,
     parser,
+    refined,
     `joda-time`,
     `cats`,
     `play-json`,
