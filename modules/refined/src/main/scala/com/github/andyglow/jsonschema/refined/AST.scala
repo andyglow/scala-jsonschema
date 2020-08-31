@@ -72,6 +72,10 @@ private[jsonschema] trait AST { this: Math with HasContext with HasLog =>
       override def tree = q"""`string`[$t] withValidation ( `contentMediaType` := "text/xml", `contentEncoding` := "utf8" )"""
     }
 
+    case class Trimmed(t: Type) extends Pred {
+      override def tree = q"""`string`[$t]("^(?!\\s)[\\S ]*(?<!\\s)$$")"""
+    }
+
     // -------
     // NUMERIC
     // -------

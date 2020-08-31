@@ -101,6 +101,7 @@ Inspired by Coursera Autoschema but uses `Scala Macros` instead of `Java Reflect
             - `eu.timepit.refined.collection.MinSize`
             - `eu.timepit.refined.collection.MaxSize`
             - `eu.timepit.refined.collection.Empty`
+            - `eu.timepit.refined.collection.NonEmpty`
             - `eu.timepit.refined.string.Uuid`
             - `eu.timepit.refined.string.Uri`
             - `eu.timepit.refined.string.Url`
@@ -110,6 +111,7 @@ Inspired by Coursera Autoschema but uses `Scala Macros` instead of `Java Reflect
             - `eu.timepit.refined.string.StartsWith`
             - `eu.timepit.refined.string.EndsWith`
             - `eu.timepit.refined.string.MatchesRegex`
+            - `eu.timepit.refined.string.Trimmed`
         - number
             - `eu.timepit.refined.numeric.Positive`
             - `eu.timepit.refined.numeric.Negative`
@@ -125,6 +127,7 @@ Inspired by Coursera Autoschema but uses `Scala Macros` instead of `Java Reflect
             - `eu.timepit.refined.collection.MinSize`
             - `eu.timepit.refined.collection.MaxSize`
             - `eu.timepit.refined.collection.Empty`
+            - `eu.timepit.refined.collection.NonEmpty`
             
 - Misc
     - `java.util.UUID`

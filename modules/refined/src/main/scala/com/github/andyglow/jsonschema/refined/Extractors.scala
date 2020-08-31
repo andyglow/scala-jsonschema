@@ -17,6 +17,7 @@ private[jsonschema] trait Extractors { this: HasLog with AST with HasContext =>
   private lazy val sMaxSize = smbOf[collection.MaxSize[_]]
   private lazy val sSize = smbOf[collection.Size[_]]
   private lazy val sEmpty = smbOf[collection.Empty]
+  private lazy val sNonEmpty = smbOf[collection.NonEmpty]
 
   // string
   private lazy val sUUID = smbOf[string.Uuid]
@@ -28,6 +29,7 @@ private[jsonschema] trait Extractors { this: HasLog with AST with HasContext =>
   private lazy val sIPv4 = smbOf[string.IPv4]
   private lazy val sIPv6 = smbOf[string.IPv6]
   private lazy val sXML = smbOf[string.Xml]
+  private lazy val sTrimmed = smbOf[string.Trimmed]
 
   // numeric
   private lazy val sPositive = smbOf[numeric.Positive]
@@ -87,6 +89,7 @@ private[jsonschema] trait Extractors { this: HasLog with AST with HasContext =>
             val v = p match {
               // collection
               case TypeRef(_, `sEmpty`        , _)                    => Some(Size(t, Size.Def.Const(0)))
+              case TypeRef(_, `sNonEmpty`     , _)                    => Some(Size(t, Size.Def.Min(1)))
               case TypeRef(_, `sMinSize`      , List(C(v: Int)))      => Some(Size(t, Size.Def.Min(v)))
               case TypeRef(_, `sMaxSize`      , List(C(v: Int)))      => Some(Size(t, Size.Def.Max(v)))
               case TypeRef(_, `sSize`         , List(Ex(pp)))         => pp.norm match {
@@ -104,6 +107,7 @@ private[jsonschema] trait Extractors { this: HasLog with AST with HasContext =>
               case TypeRef(_, `sIPv4`         , _)                    => Some(IPv4(t))
               case TypeRef(_, `sIPv6`         , _)                    => Some(IPv6(t))
               case TypeRef(_, `sXML`          , _)                    => Some(XML(t))
+              case TypeRef(_, `sTrimmed`      , _)                    => Some(Trimmed(t))
               // numeric
               case TypeRef(_, `sPositive`     , _)                    => Some(Pos(t))
               case TypeRef(_, `sNonPositive`  , _)                    => Some(Not(Pos(t)))

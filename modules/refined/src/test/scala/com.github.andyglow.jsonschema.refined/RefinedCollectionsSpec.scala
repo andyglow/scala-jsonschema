@@ -33,5 +33,6 @@ class RefinedCollectionsSpec extends AnyFunSuite {
 
   test("non-empty") {
     schema[List[Int] Refined Not[Empty]] shouldBe `array`[Int, List](`integer`).withValidation( `minItems` := 1 )
+    schema[List[Int] Refined NonEmpty] shouldBe `array`[Int, List](`integer`).withValidation( `minItems` := 1 )
   }
 }

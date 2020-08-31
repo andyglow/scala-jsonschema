@@ -16,6 +16,14 @@ import com.github.andyglow.jsonschema.RefinedSupport._
 class RefinedStringsSpec extends AnyFunSuite {
   import `string`._
 
+  test("non-empty") {
+    schema[String Refined NonEmpty] shouldBe `string`().withValidation( `minLength` := 1 )
+  }
+
+  test("trimmed") {
+    schema[String Refined Trimmed] shouldBe `string`("""^(?!\s)[\S ]*(?<!\s)$""")
+  }
+
   test("uuid") {
     schema[String Refined Uuid] shouldBe `string`("^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$")
   }
