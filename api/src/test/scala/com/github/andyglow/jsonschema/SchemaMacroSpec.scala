@@ -91,6 +91,8 @@ class SchemaMacroSpec extends AnyWordSpec {
       Color.Blue
 
       Json.schema[Color] shouldEqual `enum`(Set("Red", "Green", "Blue"))
+
+      Json.schema[Map[Color, String]] shouldEqual `string-map`[Color, String, Map](`string`()).withValidation(`patternProperties` := "^(?:Red|Green|Blue)$")
     }
 
     "generate schema for Sealed Trait subclasses" in {
