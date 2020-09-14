@@ -32,6 +32,8 @@ libraryDependencies ++= Seq(
   "com.github.andyglow" %% "scala-jsonschema-cats" % <version>,              // <-- optional
   // refined support
   "com.github.andyglow" %% "scala-jsonschema-refined" % <version>,           // <-- optional
+  // enumeratum support
+  "com.github.andyglow" %% "scala-jsonschema-enumeratum" % <version>,        // <-- optional
   // zero-dependency json and jsonschema parser
   "com.github.andyglow" %% "scala-jsonschema-parser" % <version>             // <-- optional
 )
@@ -51,8 +53,10 @@ Inspired by Coursera Autoschema but uses `Scala Macros` instead of `Java Reflect
 - Treats `Option` as optional fields
 - As well as treats fields with `default values` as optional
 - Any `Iterable` will be treated as `array`
-- Pluggable Joda-Time Support
-- Pluggable Cats Support
+- Pluggable [Joda-Time](https://github.com/JodaOrg/joda-time) Support
+- Pluggable [Cats](https://github.com/typelevel/cats) Support
+- Pluggable [Refined](https://github.com/fthomas/refined) Support
+- Pluggable [Enumeratum](https://github.com/lloydmeta/enumeratum) Support
 - Supports generic data types
 
 ### Types supported out of the box
@@ -76,59 +80,61 @@ Inspired by Coursera Autoschema but uses `Scala Macros` instead of `Java Reflect
     - `java.time.LocalDate`
     - `java.sql.Time`
     - `java.time.LocalTime`
-    - with JodaTime module imported
-        - `org.joda.time.Instant`
-        - `org.joda.time.DateTime`
-        - `org.joda.time.LocalDateTime`
-        - `org.joda.time.LocalDate`
-        - `org.joda.time.LocalTime`
-    - with Cats module imported
-        - `cats.data.NonEmptyList`
-        - `cats.data.NonEmptyVector`
-        - `cats.data.NonEmptySet`
-        - `cats.data.NonEmptyChain`
-        - `cats.data.NonEmptyMap`
-        - `cats.data.NonEmptyStream` (for scala 2.11, 2.12)
-        - `cats.data.NonEmptyLazyList` (for scala 2.13)
-        - `cats.data.OneAnd`
-    - with Refined module imported you can refine original types wiith these
-        - boolean
-            - `eu.timepit.refined.boolean.And`
-            - `eu.timepit.refined.boolean.Or`
-            - `eu.timepit.refined.boolean.Not`
-        - string
-            - `eu.timepit.refined.collection.Size`
-            - `eu.timepit.refined.collection.MinSize`
-            - `eu.timepit.refined.collection.MaxSize`
-            - `eu.timepit.refined.collection.Empty`
-            - `eu.timepit.refined.collection.NonEmpty`
-            - `eu.timepit.refined.string.Uuid`
-            - `eu.timepit.refined.string.Uri`
-            - `eu.timepit.refined.string.Url`
-            - `eu.timepit.refined.string.IPv4`
-            - `eu.timepit.refined.string.IPv6`
-            - `eu.timepit.refined.string.Xml`
-            - `eu.timepit.refined.string.StartsWith`
-            - `eu.timepit.refined.string.EndsWith`
-            - `eu.timepit.refined.string.MatchesRegex`
-            - `eu.timepit.refined.string.Trimmed`
-        - number
-            - `eu.timepit.refined.numeric.Positive`
-            - `eu.timepit.refined.numeric.Negative`
-            - `eu.timepit.refined.numeric.NonPositive`
-            - `eu.timepit.refined.numeric.NonNegative`
-            - `eu.timepit.refined.numeric.Greather`
-            - `eu.timepit.refined.numeric.Less`
-            - `eu.timepit.refined.numeric.GreaterEqual`
-            - `eu.timepit.refined.numeric.LessEqual`
-            - `eu.timepit.refined.numeric.Divisable`
-        - collection
-            - `eu.timepit.refined.collection.Size`
-            - `eu.timepit.refined.collection.MinSize`
-            - `eu.timepit.refined.collection.MaxSize`
-            - `eu.timepit.refined.collection.Empty`
-            - `eu.timepit.refined.collection.NonEmpty`
-            
+- with JodaTime module imported
+    - `org.joda.time.Instant`
+    - `org.joda.time.DateTime`
+    - `org.joda.time.LocalDateTime`
+    - `org.joda.time.LocalDate`
+    - `org.joda.time.LocalTime`
+- with Cats module imported
+    - `cats.data.NonEmptyList`
+    - `cats.data.NonEmptyVector`
+    - `cats.data.NonEmptySet`
+    - `cats.data.NonEmptyChain`
+    - `cats.data.NonEmptyMap`
+    - `cats.data.NonEmptyStream` (for scala 2.11, 2.12)
+    - `cats.data.NonEmptyLazyList` (for scala 2.13)
+    - `cats.data.OneAnd`
+- with Refined module imported you can refine original types with these
+    - boolean
+        - `eu.timepit.refined.boolean.And`
+        - `eu.timepit.refined.boolean.Or`
+        - `eu.timepit.refined.boolean.Not`
+    - string
+        - `eu.timepit.refined.collection.Size`
+        - `eu.timepit.refined.collection.MinSize`
+        - `eu.timepit.refined.collection.MaxSize`
+        - `eu.timepit.refined.collection.Empty`
+        - `eu.timepit.refined.collection.NonEmpty`
+        - `eu.timepit.refined.string.Uuid`
+        - `eu.timepit.refined.string.Uri`
+        - `eu.timepit.refined.string.Url`
+        - `eu.timepit.refined.string.IPv4`
+        - `eu.timepit.refined.string.IPv6`
+        - `eu.timepit.refined.string.Xml`
+        - `eu.timepit.refined.string.StartsWith`
+        - `eu.timepit.refined.string.EndsWith`
+        - `eu.timepit.refined.string.MatchesRegex`
+        - `eu.timepit.refined.string.Trimmed`
+    - number
+        - `eu.timepit.refined.numeric.Positive`
+        - `eu.timepit.refined.numeric.Negative`
+        - `eu.timepit.refined.numeric.NonPositive`
+        - `eu.timepit.refined.numeric.NonNegative`
+        - `eu.timepit.refined.numeric.Greather`
+        - `eu.timepit.refined.numeric.Less`
+        - `eu.timepit.refined.numeric.GreaterEqual`
+        - `eu.timepit.refined.numeric.LessEqual`
+        - `eu.timepit.refined.numeric.Divisable`
+    - collection
+        - `eu.timepit.refined.collection.Size`
+        - `eu.timepit.refined.collection.MinSize`
+        - `eu.timepit.refined.collection.MaxSize`
+        - `eu.timepit.refined.collection.Empty`
+        - `eu.timepit.refined.collection.NonEmpty`
+- with Enumeratum module enabled
+    - `enums` based on `EnumEntry`/`Enum`            
+    - `enums` based on `ValueEnumEntry`/`ValueEnum`            
 - Misc
     - `java.util.UUID`
     - `java.net.URL`
@@ -609,5 +615,6 @@ val fooSchema: ujson.Value = Json.schema[Foo].asU(Draft04())
 ``` 
 
 ## TODO
+- derive some descriptive information from scaladoc
 - support of self-referenced case classes
 - support for case classes defined locally (problem comes from inability to locate companion in this case)

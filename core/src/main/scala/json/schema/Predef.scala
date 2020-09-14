@@ -20,7 +20,7 @@ import json.Validation._
   * @param schema
   * @tparam T
   */
-final case class Predef[+T](schema: Schema[T]) extends AnyVal
+final case class Predef[T](schema: Schema[T]) extends AnyVal
 
 trait LowPriorityPredefs {
 //  implicit def iterableS[F[_], T](implicit p: Predef[T], ev0: F[T] <:< Iterable[T]): Predef[F[T]] = Predef(`array`[T, F](p.schema))

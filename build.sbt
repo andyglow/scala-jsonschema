@@ -15,9 +15,9 @@ lazy val commonSettings = Seq(
 
   organizationName := "andyglow",
 
-  scalaVersion := "2.11.12",
+  scalaVersion := "2.12.11",
 
-  crossScalaVersions := Seq("2.11.12", "2.12.10", "2.13.1"),
+  crossScalaVersions := Seq("2.11.12", "2.12.11", "2.13.2"),
 
   Compile / unmanagedSourceDirectories ++= {
     val bd = baseDirectory.value
@@ -129,8 +129,8 @@ lazy val core = { project in file("core") }.settings(
 
   name := "scala-jsonschema-core",
 
-  libraryDependencies ++= Seq(
-    (scalaVersion apply ("org.scala-lang" % "scala-reflect" % _ % Compile)).value.withSources.withJavadoc)
+//  libraryDependencies ++= Seq(
+//    (scalaVersion apply ("org.scala-lang" % "scala-reflect" % _ % Compile)).value.withSources.withJavadoc)
 )
 
 lazy val macros = project in file("macros") dependsOn core settings (
@@ -253,6 +253,7 @@ lazy val `refined` = { project in file("modules/refined") }.dependsOn(core, api)
 
     "eu.timepit" %% "refined" % refinedV
   },
+  libraryDependencies += (scalaVersion apply ("org.scala-lang" % "scala-reflect" % _ % Compile)).value.withSources.withJavadoc,
 
   // mute unused imports because otherwise IN TESTS it complains on
   // unused `import com.github.andyglow.jsonschema.RefinedSupport._`
@@ -273,6 +274,15 @@ lazy val parser = { project in file("modules/parser") }.dependsOn(core % "compil
   name := "scala-jsonschema-parser"
 )
 
+lazy val enumeratum = { project in file("modules/enumeratum") }.dependsOn(core, api).settings(
+  commonSettings,
+
+  name := "scala-jsonschema-enumeratum",
+
+  libraryDependencies += "com.beachape" %% "enumeratum" % "1.6.1",
+  libraryDependencies += (scalaVersion apply ("org.scala-lang" % "scala-reflect" % _ % Compile)).value.withSources.withJavadoc
+)
+
 lazy val root = { project in file(".") }
   .enablePlugins(ParadoxPlugin, ParadoxMaterialThemePlugin)
   .aggregate(
@@ -281,6 +291,7 @@ lazy val root = { project in file(".") }
     api,
     parser,
     refined,
+    enumeratum,
     `joda-time`,
     `cats`,
     `play-json`,

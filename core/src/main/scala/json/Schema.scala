@@ -230,6 +230,9 @@ object Schema {
       case _ => false
     }
   }
+  final object `enum` {
+    def of[T](x: Value, xs: Value*): `enum`[T] = new `enum`[T]((x +: xs).toSet)
+  }
 
   final case class `oneof`[T](
     subTypes: Set[Schema[_]]) extends Schema[T] {

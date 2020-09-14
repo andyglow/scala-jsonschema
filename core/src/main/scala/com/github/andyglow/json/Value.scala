@@ -35,6 +35,8 @@ object Value {
 
   object num {
 
+    def apply(x: Byte): num = new num(x)
+
     def apply(x: Int): num = new num(x)
 
     def apply(x: Long): num = new num(x)
