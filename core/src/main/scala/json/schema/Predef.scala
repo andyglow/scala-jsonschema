@@ -57,7 +57,7 @@ object Predef extends LowPriorityPredefs {
   implicit def vectorS[T](implicit p: Predef[T]): Predef[Vector[T]] = Predef(`array`[T, Vector](p.schema))
   implicit def strMapS[K, V](implicit p: Predef[V], keyP: KeyPattern[K]): Predef[Map[K, V]] = Predef {
     val schema = `dictionary`[K, V, Map](p.schema)
-    if (keyP == `dictionary`.KeyPattern.StringRE) schema else {
+    if (keyP == `dictionary`.KeyPattern.StringKeyPattern) schema else {
       schema withValidation (Validation.`patternProperties` := keyP.pattern)
     }
   }

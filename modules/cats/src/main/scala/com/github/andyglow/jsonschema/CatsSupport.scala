@@ -22,7 +22,7 @@ trait LowPriorityCatsSupport extends ScalaVersionSpecificLowPriorityCatsSupport 
   protected def mkNEx[T, C[_]](schema: Schema[T])(implicit b: ValidationBound[C[T], Iterable[_]]) = Predef(`array`[T, C](schema).withValidation(`minItems` := 1))
   protected def mkNESM[K, V](vSchema: Schema[V], keyP: KeyPattern[K])(implicit b: ValidationBound[NonEmptyMap[K, V], Map[_, _]]) = Predef {
     val schema = `dictionary`[K, V, NonEmptyMap](vSchema).withValidation(`minProperties` := 1)
-    if (keyP == `dictionary`.KeyPattern.StringRE) schema else {
+    if (keyP == `dictionary`.KeyPattern.StringKeyPattern) schema else {
       schema.withValidation(`patternProperties` := keyP.pattern)
     }
   }
