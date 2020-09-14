@@ -186,14 +186,19 @@ object Schema {
     }
   }
   final object `dictionary` {
-    abstract class MapKeyPattern[T](val pattern: String)
-    final object MapKeyPattern {
-      implicit final object StringRE extends MapKeyPattern[String]("^.*$")
-      implicit final object CharRE extends MapKeyPattern[Char]("^.{1}$")
-      implicit final object IntRE extends MapKeyPattern[Int]("^[0-9]+$")
-      implicit final object LongRE extends MapKeyPattern[Long]("^[0-9]+$")
-      // enums
-      // ^(?:aaa|bbb|ccc)$
+    abstract class KeyPattern[T](val pattern: String)
+    final object KeyPattern {
+      def mk[T](pattern: String): KeyPattern[T] = new KeyPattern[T](pattern) {}
+      def forEnum[T](vals: Iterable[String]): KeyPattern[T] = {
+        require(vals.nonEmpty)
+        mk[T](vals.toList.distinct.sorted.mkString("^(?:", "|", ")$"))
+      }
+      implicit final object StringKeyPattern extends KeyPattern[String]("^.*$")
+      implicit final object CharKeyPattern extends KeyPattern[Char]("^.{1}$")
+      implicit final object ByteKeyPattern extends KeyPattern[Byte]("^[0-9]+$")
+      implicit final object ShortKeyPattern extends KeyPattern[Short]("^[0-9]+$")
+      implicit final object IntKeyPattern extends KeyPattern[Int]("^[0-9]+$")
+      implicit final object LongKeyPattern extends KeyPattern[Long]("^[0-9]+$")
     }
   }
 

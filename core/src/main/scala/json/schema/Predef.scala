@@ -5,7 +5,7 @@ import java.util.UUID
 
 import json.{Schema, Validation}
 import json.Schema._
-import json.Schema.`dictionary`.MapKeyPattern
+import json.Schema.`dictionary`.KeyPattern
 import json.Schema.`string`.Format
 import json.Validation._
 
@@ -55,9 +55,9 @@ object Predef extends LowPriorityPredefs {
   implicit def setS[T](implicit p: Predef[T]): Predef[Set[T]] = Predef(`set`[T, Set](p.schema))
   implicit def listS[T](implicit p: Predef[T]): Predef[List[T]] = Predef(`array`[T, List](p.schema))
   implicit def vectorS[T](implicit p: Predef[T]): Predef[Vector[T]] = Predef(`array`[T, Vector](p.schema))
-  implicit def strMapS[K, V](implicit p: Predef[V], keyP: MapKeyPattern[K]): Predef[Map[K, V]] = Predef {
+  implicit def strMapS[K, V](implicit p: Predef[V], keyP: KeyPattern[K]): Predef[Map[K, V]] = Predef {
     val schema = `dictionary`[K, V, Map](p.schema)
-    if (keyP == `dictionary`.MapKeyPattern.StringRE) schema else {
+    if (keyP == `dictionary`.KeyPattern.StringRE) schema else {
       schema withValidation (Validation.`patternProperties` := keyP.pattern)
     }
   }
