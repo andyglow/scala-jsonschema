@@ -154,7 +154,7 @@ class AsDraft04Spec extends AnyWordSpec {
     }
 
     "emit Map[String, _]" in {
-      asDraft04(`string-map`(`string`[String](None, None))) shouldEqual obj(
+      asDraft04(`dictionary`(`string`[String](None, None))) shouldEqual obj(
         "type" -> "object",
         "patternProperties" -> obj(
           "^.*$" -> obj(

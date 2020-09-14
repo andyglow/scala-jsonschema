@@ -2,7 +2,7 @@ package com.github.andyglow.jsonschema
 
 import com.github.andyglow.json.ToValue
 import com.github.andyglow.scaladoc.{Scaladoc, SlowParser}
-import json.Schema.`string-map`.MapKeyPattern
+import json.Schema.`dictionary`.MapKeyPattern
 
 import scala.reflect.NameTransformer
 import scala.reflect.internal.util.NoSourceFile
@@ -28,13 +28,13 @@ object SchemaMacro {
     val validationObj = q"$jsonPkg.Validation"
 
     val subject               = weakTypeOf[T]
-    val optionTpe             = weakTypeOf[Option[_]]
-    val toValueTpe            = weakTypeOf[ToValue[_]]
-    val setTpe                = weakTypeOf[Set[_]]
-    val mapTpe                = weakTypeOf[Map[_, _]]
+    val optionTypeCons        = weakTypeOf[Option[_]]
+    val toValueTypeCons       = weakTypeOf[ToValue[_]]
+    val setTypeCons           = weakTypeOf[Set[_]]
+    val mapTypeCons           = weakTypeOf[Map[_, _]]
     val schemaTypeConstructor = typeOf[json.Schema[_]].typeConstructor
     val predefTypeConstructor = typeOf[json.schema.Predef[_]].typeConstructor
-    val mapKeyPattern         = typeOf[MapKeyPattern[_]]
+    val mapKeyPatternTypeCons = typeOf[MapKeyPattern[_]]
 
     def getTypeScaladoc(tpe: Type): Option[Scaladoc] = {
       import com.github.andyglow.scalamigration._
@@ -64,38 +64,51 @@ object SchemaMacro {
       }
     }
 
+    sealed trait SealedEnumGen {
+      def gen(tpe: Type): Tree
+    }
+    final object SealedEnumGen {
+      final case class FromNames(names: Set[String]) extends SealedEnumGen  {
+        def gen(tpe: Type): Tree = {
+          val trees = names map { i => q"$intJsonPkg.Value.str($i)" }
+          new FromTrees(trees).gen(tpe)
+        }
+      }
+      final case class FromTrees(trees: Set[Tree]) extends SealedEnumGen {
+        def gen(tpe: Type): Tree = {
+          q"$schemaObj.`enum`[$tpe]($trees)"
+        }
+      }
+    }
+
     object SealedEnum {
 
-      def unapply(tpe: Type): Option[Set[Tree]] = {
+      def unapply(tpe: Type): Option[SealedEnumGen] = {
 
         if (tpe.typeSymbol.isClass && tpe.typeSymbol.asClass.isSealed) {
           val instances = tpe.typeSymbol.asClass.knownDirectSubclasses
           val toValueTree = c.inferImplicitValue(
-            appliedType(toValueTpe, tpe),
+            appliedType(toValueTypeCons, tpe),
             silent = true,
             withMacrosDisabled = true)
 
           if (instances forall { i => val c = i.asClass; c.isModuleClass}) {
             if (toValueTree.nonEmpty) {
-              Some(instances collect {
+              Some(SealedEnumGen.FromTrees(instances collect {
                 case i: ClassSymbol =>
                   val caseObj = i.owner.asClass.toType.decls.find { d =>
                     d.name == i.name.toTermName
                   } getOrElse NoSymbol
 
                   q"$toValueTree($caseObj)"
-              })
+              }))
             } else {
-              Some(instances map { i => q"$intJsonPkg.Value.str(${i.name.decodedName.toString})" })
+              Some(SealedEnumGen.FromNames(instances map { i => i.name.decodedName.toString }))
             }
           } else
             None
         } else
           None
-      }
-
-      def gen(tpe: Type, symbols: Set[Tree]): Tree = {
-        q"$schemaObj.`enum`[$tpe]($symbols)"
       }
     }
 
@@ -207,9 +220,9 @@ object SchemaMacro {
         def toField(fieldSym: TermSymbol, i: Int): Field = {
           val name        = NameTransformer.decode(fieldSym.name.toString)
           val fieldTpe    = fieldSym.typeSignature.dealias // In(tpe).dealias
-          val isOption    = fieldTpe <:< optionTpe
+          val isOption    = fieldTpe <:< optionTypeCons
           val hasDefault  = fieldSym.isParamWithDefault
-          val toV         = c.inferImplicitValue(appliedType(toValueTpe, fieldTpe))
+          val toV         = c.inferImplicitValue(appliedType(toValueTypeCons, fieldTpe))
           val default     = if (hasDefault) {
             val getter = TermName("apply$default$" + (i + 1))
             if (toV.nonEmpty) Some(q"Some($toV($subjectCompanion.$getter))") else {
@@ -320,36 +333,39 @@ object SchemaMacro {
           case q"""$c[$t](..$args)""" => q"$c[$tpe](..$args)"
           case x => val st = appliedType(schemaTypeConstructor, tpe); q"$x.asInstanceOf[$st]"
         }
-//        println(s"VC.gen ${tpe} [${innerType}] => ${show(x)} => ${show(z)}")
         z
       }
     }
 
-    case class StringMapGen(tpe: Type, keyType: Type, valueType: Type, keyPattern: Tree) {
+    case class DictionaryGen(tpe: Type, keyType: Type, valueType: Type, keyPattern: Tree) {
       private val stringKey = keyType <:< typeOf[String]
 
       def gen(stack: List[Type]): Tree = {
         val valueJsonType = resolve(valueType, tpe +: stack)
-        val tree = q"""$schemaObj.`string-map`[$keyType, $valueType, ${tpe.typeConstructor}]($valueJsonType)"""
+        val tree = q"""$schemaObj.`dictionary`[$keyType, $valueType, ${tpe.typeConstructor}]($valueJsonType)"""
         val effectiveTree = if (!stringKey) {
-          q"""$tree withValidation ($validationObj.patternProperties := $keyPattern.pattern)"""
+          q"""$tree withValidation ($validationObj.patternProperties := $keyPattern)"""
         } else tree
 
         effectiveTree
       }
     }
 
-    object StringMap {
+    object Dictionary {
 
-      def unapply(x: Type): Option[StringMapGen] = {
-        if (x <:< mapTpe) {
+      def unapply(x: Type): Option[DictionaryGen] = {
+        if (x <:< mapTypeCons) {
           val keyType = x.typeArgs.head
           val valueType = x.typeArgs.tail.head
-          val t = appliedType(mapKeyPattern, keyType)
-
-          c.inferImplicitValue(t) match {
-            case EmptyTree => None
-            case t         => Some(StringMapGen(x, keyType, valueType, t))
+          c.inferImplicitValue(appliedType(mapKeyPatternTypeCons, keyType)) match {
+            case EmptyTree         =>
+              keyType match {
+                case SealedEnum(SealedEnumGen.FromNames(names)) =>
+                  val pattern = names.mkString("^(?:", "|", ")$")
+                  Some(DictionaryGen(x, keyType, valueType, q"$pattern"))
+                case _                                          => None
+              }
+            case mapKeyPatternTree => Some(DictionaryGen(x, keyType, valueType, q"$mapKeyPatternTree.pattern"))
           }
         } else {
           None
@@ -362,7 +378,7 @@ object SchemaMacro {
       def gen(tpe: Type, stack: List[Type]): Tree = {
         val componentType     = tpe.typeArgs.head
         val componentJsonType = resolve(componentType, tpe +: stack)
-        val isSet             = tpe <:< setTpe
+        val isSet             = tpe <:< setTypeCons
 
         if (isSet)
           q"""$schemaObj.`set`[$componentType, ${tpe.typeConstructor}]($componentJsonType)"""
@@ -455,10 +471,10 @@ object SchemaMacro {
       if (stack contains tpe) c.error(c.enclosingPosition, s"cyclic dependency for $tpe")
 
       def genTree: Tree = tpe match {
-        case StringMap(g)                       => g.gen(stack)
+        case Dictionary(g)                       => g.gen(stack)
         case x if x <:< typeOf[Array[_]]        => Arr.gen(x, stack)
         case x if x <:< typeOf[Iterable[_]]     => Arr.gen(x, stack)
-        case SealedEnum(names)                  => SealedEnum.gen(tpe, names)
+        case SealedEnum(g)                      => g.gen(tpe)
         case SealedClasses(subTypes)            => SealedClasses.gen(tpe, subTypes, stack)
         case CaseClass(fields)                  => CaseClass.gen(fields, tpe, stack)
         case ValueClass(innerType)              => ValueClass.gen(innerType, tpe, stack)

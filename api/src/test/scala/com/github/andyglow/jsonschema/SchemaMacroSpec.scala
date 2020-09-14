@@ -45,8 +45,8 @@ class SchemaMacroSpec extends AnyWordSpec {
         Field("set"     , `set`(`integer`), required = false, default = Set(1, 5, 9)),
         Field("list"    , `array`(`boolean`), required = false, default = List(true, false)),
         Field("vector"  , `array`(`number`[Long]), required = false, default = Vector(9, 7)),
-        Field("strMap"  , `string-map`(`number`[Double]), required = false, default = Map("foo" -> .12)),
-        Field("intMap"  , `string-map`[Int, String, Map](`string`[String](None, None)).withValidation(`patternProperties` := "^[0-9]+$"), required = false, default = Map(1 -> "1", 2 -> "2")))
+        Field("strMap"  , `dictionary`(`number`[Double]), required = false, default = Map("foo" -> .12)),
+        Field("intMap"  , `dictionary`[Int, String, Map](`string`[String](None, None)).withValidation(`patternProperties` := "^[0-9]+$"), required = false, default = Map(1 -> "1", 2 -> "2")))
     }
 
     "generate references for implicitly defined dependencies" in {
@@ -91,6 +91,8 @@ class SchemaMacroSpec extends AnyWordSpec {
       Color.Blue
 
       Json.schema[Color] shouldEqual `enum`(Set("Red", "Green", "Blue"))
+
+      Json.schema[Map[Color, String]] shouldEqual `dictionary`[Color, String, Map](`string`()).withValidation(`patternProperties` := "^(?:Red|Green|Blue)$")
     }
 
     "generate schema for Sealed Trait subclasses" in {
@@ -166,25 +168,25 @@ class SchemaMacroSpec extends AnyWordSpec {
     "generate schema for Map[String, _]" in {
       import `object`.Field
 
-      Json.schema[Map[String, String]] shouldEqual `string-map`(`string`[String](None, None))
+      Json.schema[Map[String, String]] shouldEqual `dictionary`(`string`[String](None, None))
 
-      Json.schema[Map[String, Int]] shouldEqual `string-map`(`integer`)
+      Json.schema[Map[String, Int]] shouldEqual `dictionary`(`integer`)
 
-      Json.schema[Map[String, Foo9]] shouldEqual `string-map`[String, Foo9, Map](`object`(Field("name", `string`[String](None, None))))
+      Json.schema[Map[String, Foo9]] shouldEqual `dictionary`[String, Foo9, Map](`object`(Field("name", `string`[String](None, None))))
     }
 
     "generate schema for Map[_: MapKeyPattern, _]" in {
       import `object`.Field
 
-      Json.schema[Map[Long, Long]] shouldEqual `string-map`[Long, Long, Map](`number`[Long]).withValidation(`patternProperties` := "^[0-9]+$")
+      Json.schema[Map[Long, Long]] shouldEqual `dictionary`[Long, Long, Map](`number`[Long]).withValidation(`patternProperties` := "^[0-9]+$")
 
-      Json.schema[Map[Char, Long]] shouldEqual `string-map`[Char, Long, Map](`number`[Long]).withValidation(`patternProperties` := "^.{1}$")
+      Json.schema[Map[Char, Long]] shouldEqual `dictionary`[Char, Long, Map](`number`[Long]).withValidation(`patternProperties` := "^.{1}$")
 
-      Json.schema[Map[Int, String]] shouldEqual `string-map`[Int, String, Map](`string`[String](None, None)).withValidation(`patternProperties` := "^[0-9]+$")
+      Json.schema[Map[Int, String]] shouldEqual `dictionary`[Int, String, Map](`string`[String](None, None)).withValidation(`patternProperties` := "^[0-9]+$")
 
-      Json.schema[Map[Int, Int]] shouldEqual `string-map`[Int, Int, Map](`integer`).withValidation(`patternProperties` := "^[0-9]+$")
+      Json.schema[Map[Int, Int]] shouldEqual `dictionary`[Int, Int, Map](`integer`).withValidation(`patternProperties` := "^[0-9]+$")
 
-      Json.schema[Map[Int, Foo9]] shouldEqual `string-map`[Int, Foo9, Map](`object`(Field("name", `string`[String](None, None)))).withValidation(`patternProperties` := "^[0-9]+$")
+      Json.schema[Map[Int, Foo9]] shouldEqual `dictionary`[Int, Foo9, Map](`object`(Field("name", `string`[String](None, None)))).withValidation(`patternProperties` := "^[0-9]+$")
     }
   }
 }

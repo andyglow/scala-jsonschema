@@ -173,19 +173,19 @@ object Schema {
     }
   }
 
-  final case class `string-map`[K, V, C[_, _]](valueType: Schema[V]) extends Schema[C[K, V]] {
+  final case class `dictionary`[K, V, C[_, _]](valueType: Schema[V]) extends Schema[C[K, V]] {
     override def jsonType = "object"
-    def mkCopy() = new `string-map`[K, V, C](valueType)
+    def mkCopy() = new `dictionary`[K, V, C](valueType)
     override def canEqual(that: Any): Boolean = that match {
-      case `string-map`(_) => true
-      case _ => false
+      case `dictionary`(_) => true
+      case _               => false
     }
     override def equals(obj: Any): Boolean = obj match {
-      case `string-map`(c) => valueType == c && super.equals(obj)
-      case _ => false
+      case `dictionary`(c) => valueType == c && super.equals(obj)
+      case _               => false
     }
   }
-  final object `string-map` {
+  final object `dictionary` {
     abstract class MapKeyPattern[T](val pattern: String)
     final object MapKeyPattern {
       implicit final object StringRE extends MapKeyPattern[String]("^.*$")

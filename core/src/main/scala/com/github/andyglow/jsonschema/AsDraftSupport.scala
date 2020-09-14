@@ -112,9 +112,9 @@ trait AsDraftSupport {
 
   val inferSpecifics: PartialFunction[(Option[ValidationDef[_, _]], json.Schema[_]), obj] = {
     case (pp, x: `string`[_])        => mkStr(pp, x)
-    case (pp, x: `object`[_])        => mkObj(pp, x)
-    case (pp, `string-map`(comp))    => mkStrMap(pp, comp)
-    case (pp, `array`(comp))         => mkArr(pp, comp)
+    case (pp, x: `object`[_])     => mkObj(pp, x)
+    case (pp, `dictionary`(comp)) => mkStrMap(pp, comp)
+    case (pp, `array`(comp))      => mkArr(pp, comp)
     case (pp, `set`(comp))           => mkSet(pp, comp)
     case (pp, x: `enum`[_])          => mkEnum(pp, x)
     case (pp, x: `oneof`[_])         => mkOneOf(pp, x)
