@@ -173,10 +173,9 @@ object Schema {
     }
   }
 
-  final case class `string-map`[T, C[_ <: String, _]](
-    valueType: Schema[T]) extends Schema[C[String, T]] {
+  final case class `string-map`[K, V, C[_, _]](valueType: Schema[V]) extends Schema[C[K, V]] {
     override def jsonType = "object"
-    def mkCopy() = new `string-map`[T, C](valueType)
+    def mkCopy() = new `string-map`[K, V, C](valueType)
     override def canEqual(that: Any): Boolean = that match {
       case `string-map`(_) => true
       case _ => false
@@ -186,18 +185,15 @@ object Schema {
       case _ => false
     }
   }
-
-  final case class `int-map`[T, C[_ <: Int, _]](
-    valueType: Schema[T]) extends Schema[C[Int, T]] {
-    override def jsonType = "object"
-    def mkCopy() = new `int-map`[T, C](valueType)
-    override def canEqual(that: Any): Boolean = that match {
-      case `int-map`(_) => true
-      case _ => false
-    }
-    override def equals(obj: Any): Boolean = obj match {
-      case `int-map`(c) => valueType == c && super.equals(obj)
-      case _ => false
+  final object `string-map` {
+    abstract class MapKeyPattern[T](val pattern: String)
+    final object MapKeyPattern {
+      implicit final object StringRE extends MapKeyPattern[String]("^.*$")
+      implicit final object CharRE extends MapKeyPattern[Char]("^.{1}$")
+      implicit final object IntRE extends MapKeyPattern[Int]("^[0-9]+$")
+      implicit final object LongRE extends MapKeyPattern[Long]("^[0-9]+$")
+      // enums
+      // ^(?:aaa|bbb|ccc)$
     }
   }
 

@@ -1,6 +1,7 @@
 package com.github.andyglow.jsonschema
 
 import json._
+import json.Validation._
 import json.Schema._
 import json.Schema.`object`.Field
 
@@ -17,7 +18,7 @@ class CRLFSourceSpec extends AnyFunSuite {
       Field("list"    , `array`(`boolean`), required = false, default = List(true, false)),
       Field("vector"  , `array`(`number`[Long]), required = false, default = Vector(9, 7)),
       Field("strMap"  , `string-map`(`number`[Double]), required = false, default = Map("foo" -> .12)),
-      Field("intMap"  , `int-map`(`string`[String](None, None)), required = false, default = Map(1 -> "1", 2 -> "2")))
+      Field("intMap"  , `string-map`[Int, String, Map](`string`[String](None, None)).withValidation(`patternProperties` := "^[0-9]+$"), required = false, default = Map(1 -> "1", 2 -> "2")))
   }
 
 }

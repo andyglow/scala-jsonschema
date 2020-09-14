@@ -3,6 +3,7 @@ package com.github.andyglow.jsonschema
 import cats.data._
 import json.Schema
 import json.Schema._
+import json.Schema.`string-map`.MapKeyPattern
 import json.Validation._
 import json.schema.Predef
 
@@ -15,13 +16,16 @@ trait LowPriorityCatsSupport extends ScalaVersionSpecificLowPriorityCatsSupport 
   implicit def nevVB[X]: ValidationBound[NonEmptyVector[X], Iterable[_]] = mk[NonEmptyVector[X], Iterable[_]]
   implicit def nesVB[X]: ValidationBound[NonEmptySet[X], Iterable[_]] = mk[NonEmptySet[X], Iterable[_]]
   implicit def necVB[X]: ValidationBound[NonEmptyChain[X], Iterable[_]] = mk[NonEmptyChain[X], Iterable[_]]
-  implicit def nemStrVB[X]: ValidationBound[NonEmptyMap[String, X], Map[_, _]] = mk[NonEmptyMap[String, X], Map[_, _]]
-  implicit def nemIntVB[X]: ValidationBound[NonEmptyMap[Int, X], Map[_, _]] = mk[NonEmptyMap[Int, X], Map[_, _]]
+  implicit def nemStrVB[K, V]: ValidationBound[NonEmptyMap[K, V], Map[_, _]] = mk[NonEmptyMap[K, V], Map[_, _]]
   implicit def oneAndVB[F[_], X]: ValidationBound[OneAnd[F, X], Iterable[_]] = mk[OneAnd[F, X], Iterable[_]]
 
   protected def mkNEx[T, C[_]](schema: Schema[T])(implicit b: ValidationBound[C[T], Iterable[_]]) = Predef(`array`[T, C](schema).withValidation(`minItems` := 1))
-  protected def mkNESM[T](schema: Schema[T])(implicit b: ValidationBound[NonEmptyMap[String, T], Map[_, _]]) = Predef(`string-map`[T, NonEmptyMap](schema).withValidation(`minProperties` := 1))
-  protected def mkNEIM[T](schema: Schema[T])(implicit b: ValidationBound[NonEmptyMap[Int, T], Map[_, _]]) = Predef(`int-map`[T, NonEmptyMap](schema).withValidation(`minProperties` := 1))
+  protected def mkNESM[K, V](vSchema: Schema[V], keyP: MapKeyPattern[K])(implicit b: ValidationBound[NonEmptyMap[K, V], Map[_, _]]) = Predef {
+    val schema = `string-map`[K, V, NonEmptyMap](vSchema).withValidation(`minProperties` := 1)
+    if (keyP == `string-map`.MapKeyPattern.StringRE) schema else {
+      schema.withValidation(`patternProperties` := keyP.pattern)
+    }
+  }
 
   implicit def chainSchemaFromPredef[T](implicit p: Predef[T]): Predef[Chain[T]] = mkNEx[T, Chain](p.schema)
 
@@ -35,9 +39,7 @@ trait LowPriorityCatsSupport extends ScalaVersionSpecificLowPriorityCatsSupport 
 
   implicit def necSchemaFromPredef[T](implicit p: Predef[T]): Predef[NonEmptyChain[T]] = mkNEx[T, NonEmptyChain](p.schema)
 
-  implicit def nemStrSchemaFromPredef[T](implicit p: Predef[T]): Predef[NonEmptyMap[String, T]] = mkNESM(p.schema)
-
-  implicit def nemIntSchemaFromPredef[T](implicit p: Predef[T]): Predef[NonEmptyMap[Int, T]] = mkNEIM(p.schema)
+  implicit def nemStrSchemaFromPredef[K, V](implicit p: Predef[V], keyP: MapKeyPattern[K]): Predef[NonEmptyMap[K, V]] = mkNESM(p.schema, keyP)
 }
 
 object CatsSupport extends LowPriorityCatsSupport with ScalaVersionSpecificCatsSupport {
@@ -54,7 +56,6 @@ object CatsSupport extends LowPriorityCatsSupport with ScalaVersionSpecificCatsS
 
   implicit def necSchema[T](implicit ss: Schema[T]): Predef[NonEmptyChain[T]] = mkNEx[T, NonEmptyChain](ss)
 
-  implicit def nemStrSchema[T](implicit ss: Schema[T]): Predef[NonEmptyMap[String, T]] = mkNESM(ss)
+  implicit def nemStrSchema[K, V](implicit ss: Schema[V], keyP: MapKeyPattern[K]): Predef[NonEmptyMap[K, V]] = mkNESM(ss, keyP)
 
-  implicit def nemIntSchema[T](implicit ss: Schema[T]): Predef[NonEmptyMap[Int, T]] = mkNEIM(ss)
 }

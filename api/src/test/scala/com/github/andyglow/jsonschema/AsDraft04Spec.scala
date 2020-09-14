@@ -161,14 +161,6 @@ class AsDraft04Spec extends AnyWordSpec {
             "type" -> "string")))
     }
 
-    "emit Map[Int, _]" in {
-      asDraft04(`int-map`(`string`[String](None, None))) shouldEqual obj(
-        "type" -> "object",
-        "patternProperties" -> obj(
-          "^[0-9]*$" -> obj(
-            "type" -> "string")))
-    }
-
     "emit Object" in {
       import `object`.Field
 

@@ -280,7 +280,6 @@ lazy val enumeratum = { project in file("modules/enumeratum") }.dependsOn(core, 
   name := "scala-jsonschema-enumeratum",
 
   libraryDependencies += "com.beachape" %% "enumeratum" % "1.6.1",
-  libraryDependencies += (scalaVersion apply ("org.scala-lang" % "scala-reflect" % _ % Compile)).value.withSources.withJavadoc
 )
 
 lazy val root = { project in file(".") }

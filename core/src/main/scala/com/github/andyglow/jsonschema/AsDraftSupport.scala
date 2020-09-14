@@ -50,11 +50,6 @@ trait AsDraftSupport {
       pattern -> apply(comp)))
   }
 
-  def mkIntMap(pp: Option[ValidationDef[_, _]], comp: Schema[_]): obj = {
-    obj("patternProperties" -> obj(
-      "^[0-9]*$" -> apply(comp)))
-  }
-
   def mkArr(pp: Option[ValidationDef[_, _]], comp: Schema[_]): obj = {
     obj("items" -> apply(comp))
   }
@@ -119,7 +114,6 @@ trait AsDraftSupport {
     case (pp, x: `string`[_])        => mkStr(pp, x)
     case (pp, x: `object`[_])        => mkObj(pp, x)
     case (pp, `string-map`(comp))    => mkStrMap(pp, comp)
-    case (pp, `int-map`(comp))       => mkIntMap(pp, comp)
     case (pp, `array`(comp))         => mkArr(pp, comp)
     case (pp, `set`(comp))           => mkSet(pp, comp)
     case (pp, x: `enum`[_])          => mkEnum(pp, x)
