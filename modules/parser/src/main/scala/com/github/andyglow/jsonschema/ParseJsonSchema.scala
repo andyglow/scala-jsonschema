@@ -80,8 +80,8 @@ object ParseJsonSchema {
 
     def makeObj = x.value.obj("patternProperties") match {
       case Some(obj(fields)) if fields.nonEmpty && fields.head._2.isInstanceOf[obj] =>
-        val (k, v: obj) = fields.head
-        makeType(v) map { x => `string-map`[Any, Any, scala.collection.immutable.Map](x).withValidation(`patternProperties` := k) }
+        val (k, v) = fields.head
+        makeType(v.asInstanceOf[obj]) map { x => `string-map`[Any, Any, scala.collection.immutable.Map](x).withValidation(`patternProperties` := k) }
       case _ =>
         val required = x.value.set("required") map { _ collect { case str(x) => x } } getOrElse Set.empty
         x.value.obj("properties").map { _.value }.toSuccess("properties is not defined") flatMap { props =>

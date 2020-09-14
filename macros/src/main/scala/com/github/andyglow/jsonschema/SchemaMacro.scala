@@ -325,7 +325,7 @@ object SchemaMacro {
       }
     }
 
-    case class StringMap(tpe: Type, keyType: Type, valueType: Type, keyPattern: Tree) {
+    case class StringMapGen(tpe: Type, keyType: Type, valueType: Type, keyPattern: Tree) {
       private val stringKey = keyType <:< typeOf[String]
 
       def gen(stack: List[Type]): Tree = {
@@ -341,7 +341,7 @@ object SchemaMacro {
 
     object StringMap {
 
-      def unapply(x: Type): Option[StringMap] = {
+      def unapply(x: Type): Option[StringMapGen] = {
         if (x <:< mapTpe) {
           val keyType = x.typeArgs.head
           val valueType = x.typeArgs.tail.head
@@ -349,7 +349,7 @@ object SchemaMacro {
 
           c.inferImplicitValue(t) match {
             case EmptyTree => None
-            case t         => Some(StringMap(x, keyType, valueType, t))
+            case t         => Some(StringMapGen(x, keyType, valueType, t))
           }
         } else {
           None
