@@ -2,6 +2,7 @@ package com.github.andyglow.jsonschema
 
 import json._
 import Schema._
+import Validation._
 import enumeratum._
 import enumeratum.values._
 import enumeratum.EnumEntry._
@@ -17,42 +18,52 @@ class EnumeratumSupportSpec extends AnyWordSpec {
 
     "support EnumEntry based enums" in {
       Json.schema[E0] shouldBe `enum`.of("AaAa", "BbBb", "CcCc")
+      Json.schema[Map[E0, String]] shouldBe `dictionary`[E0, String, Map](`string`()).withValidation(`patternProperties` := "^(?:AaAa|BbBb|CcCc)$")
     }
 
     "support EnumEntry based enums names overridden" in {
       Json.schema[E1] shouldBe `enum`.of("a", "b", "c")
+      Json.schema[Map[E1, String]] shouldBe `dictionary`[E1, String, Map](`string`()).withValidation(`patternProperties` := "^(?:a|b|c)$")
     }
 
     "support EnumEntry based enums with *case mixed in" in {
       Json.schema[E2] shouldBe `enum`.of("aa-aa", "bb-bb", "cc-cc")
+      Json.schema[Map[E2, String]] shouldBe `dictionary`[E2, String, Map](`string`()).withValidation(`patternProperties` := "^(?:aa-aa|bb-bb|cc-cc)$")
     }
 
     "support IntEnumEntry" in {
       Json.schema[IntV] shouldBe `enum`.of[Int](0, 1, 2)
+      Json.schema[Map[IntV, String]] shouldBe `dictionary`[IntV, String, Map](`string`()).withValidation(`patternProperties` := "^(?:0|1|2)$")
     }
 
     "support LongEnumEntry" in {
       Json.schema[LongV] shouldBe `enum`.of[Long](0L, 1L, 2L)
+      Json.schema[Map[LongV, String]] shouldBe `dictionary`[LongV, String, Map](`string`()).withValidation(`patternProperties` := "^(?:0|1|2)$")
     }
 
     "support ByteEnumEntry" in {
       Json.schema[ByteV] shouldBe `enum`.of[Byte](0, 1, 2)
+      Json.schema[Map[ByteV, String]] shouldBe `dictionary`[ByteV, String, Map](`string`()).withValidation(`patternProperties` := "^(?:0|1|2)$")
     }
 
     "support ShortEnumEntry" in {
       Json.schema[ShortV] shouldBe `enum`.of[Short](0, 1, 2)
+      Json.schema[Map[ShortV, String]] shouldBe `dictionary`[ShortV, String, Map](`string`()).withValidation(`patternProperties` := "^(?:0|1|2)$")
     }
 
     "support CharEnumEntry" in {
       Json.schema[CharV] shouldBe `enum`.of[String]("a", "b", "c")
+      Json.schema[Map[CharV, String]] shouldBe `dictionary`[CharV, String, Map](`string`()).withValidation(`patternProperties` := "^(?:a|b|c)$")
     }
 
     "support StringEnumEntry" in {
       Json.schema[StringV] shouldBe `enum`.of[String]("a1", "b2", "c3")
+      Json.schema[Map[StringV, String]] shouldBe `dictionary`[StringV, String, Map](`string`()).withValidation(`patternProperties` := "^(?:a1|b2|c3)$")
     }
 
     "support StringEnumEntry with Alias enabled" in {
       Json.schema[StringVWithAlias] shouldBe `enum`.of[String]("q", "z")
+      Json.schema[Map[StringVWithAlias, String]] shouldBe `dictionary`[StringVWithAlias, String, Map](`string`()).withValidation(`patternProperties` := "^(?:q|z)$")
     }
   }
 }

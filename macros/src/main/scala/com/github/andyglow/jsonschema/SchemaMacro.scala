@@ -2,7 +2,7 @@ package com.github.andyglow.jsonschema
 
 import com.github.andyglow.json.ToValue
 import com.github.andyglow.scaladoc.{Scaladoc, SlowParser}
-import json.Schema.`dictionary`.MapKeyPattern
+import json.Schema.`dictionary`.KeyPattern
 
 import scala.reflect.NameTransformer
 import scala.reflect.internal.util.NoSourceFile
@@ -34,7 +34,7 @@ object SchemaMacro {
     val mapTypeCons           = weakTypeOf[Map[_, _]]
     val schemaTypeConstructor = typeOf[json.Schema[_]].typeConstructor
     val predefTypeConstructor = typeOf[json.schema.Predef[_]].typeConstructor
-    val mapKeyPatternTypeCons = typeOf[MapKeyPattern[_]]
+    val mapKeyPatternTypeCons = typeOf[KeyPattern[_]]
 
     def getTypeScaladoc(tpe: Type): Option[Scaladoc] = {
       import com.github.andyglow.scalamigration._
