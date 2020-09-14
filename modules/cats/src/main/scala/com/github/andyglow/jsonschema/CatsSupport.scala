@@ -3,7 +3,7 @@ package com.github.andyglow.jsonschema
 import cats.data._
 import json.Schema
 import json.Schema._
-import json.Schema.`string-map`.MapKeyPattern
+import json.Schema.`dictionary`.MapKeyPattern
 import json.Validation._
 import json.schema.Predef
 
@@ -21,8 +21,8 @@ trait LowPriorityCatsSupport extends ScalaVersionSpecificLowPriorityCatsSupport 
 
   protected def mkNEx[T, C[_]](schema: Schema[T])(implicit b: ValidationBound[C[T], Iterable[_]]) = Predef(`array`[T, C](schema).withValidation(`minItems` := 1))
   protected def mkNESM[K, V](vSchema: Schema[V], keyP: MapKeyPattern[K])(implicit b: ValidationBound[NonEmptyMap[K, V], Map[_, _]]) = Predef {
-    val schema = `string-map`[K, V, NonEmptyMap](vSchema).withValidation(`minProperties` := 1)
-    if (keyP == `string-map`.MapKeyPattern.StringRE) schema else {
+    val schema = `dictionary`[K, V, NonEmptyMap](vSchema).withValidation(`minProperties` := 1)
+    if (keyP == `dictionary`.MapKeyPattern.StringRE) schema else {
       schema.withValidation(`patternProperties` := keyP.pattern)
     }
   }

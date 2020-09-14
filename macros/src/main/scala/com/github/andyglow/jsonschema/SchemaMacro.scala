@@ -2,7 +2,7 @@ package com.github.andyglow.jsonschema
 
 import com.github.andyglow.json.ToValue
 import com.github.andyglow.scaladoc.{Scaladoc, SlowParser}
-import json.Schema.`string-map`.MapKeyPattern
+import json.Schema.`dictionary`.MapKeyPattern
 
 import scala.reflect.NameTransformer
 import scala.reflect.internal.util.NoSourceFile
@@ -337,12 +337,12 @@ object SchemaMacro {
       }
     }
 
-    case class StringMapGen(tpe: Type, keyType: Type, valueType: Type, keyPattern: Tree) {
+    case class DictionaryGen(tpe: Type, keyType: Type, valueType: Type, keyPattern: Tree) {
       private val stringKey = keyType <:< typeOf[String]
 
       def gen(stack: List[Type]): Tree = {
         val valueJsonType = resolve(valueType, tpe +: stack)
-        val tree = q"""$schemaObj.`string-map`[$keyType, $valueType, ${tpe.typeConstructor}]($valueJsonType)"""
+        val tree = q"""$schemaObj.`dictionary`[$keyType, $valueType, ${tpe.typeConstructor}]($valueJsonType)"""
         val effectiveTree = if (!stringKey) {
           q"""$tree withValidation ($validationObj.patternProperties := $keyPattern)"""
         } else tree
@@ -351,9 +351,9 @@ object SchemaMacro {
       }
     }
 
-    object StringMap {
+    object Dictionary {
 
-      def unapply(x: Type): Option[StringMapGen] = {
+      def unapply(x: Type): Option[DictionaryGen] = {
         if (x <:< mapTypeCons) {
           val keyType = x.typeArgs.head
           val valueType = x.typeArgs.tail.head
@@ -362,10 +362,10 @@ object SchemaMacro {
               keyType match {
                 case SealedEnum(SealedEnumGen.FromNames(names)) =>
                   val pattern = names.mkString("^(?:", "|", ")$")
-                  Some(StringMapGen(x, keyType, valueType, q"$pattern"))
+                  Some(DictionaryGen(x, keyType, valueType, q"$pattern"))
                 case _                                          => None
               }
-            case mapKeyPatternTree => Some(StringMapGen(x, keyType, valueType, q"$mapKeyPatternTree.pattern"))
+            case mapKeyPatternTree => Some(DictionaryGen(x, keyType, valueType, q"$mapKeyPatternTree.pattern"))
           }
         } else {
           None
@@ -471,7 +471,7 @@ object SchemaMacro {
       if (stack contains tpe) c.error(c.enclosingPosition, s"cyclic dependency for $tpe")
 
       def genTree: Tree = tpe match {
-        case StringMap(g)                       => g.gen(stack)
+        case Dictionary(g)                       => g.gen(stack)
         case x if x <:< typeOf[Array[_]]        => Arr.gen(x, stack)
         case x if x <:< typeOf[Iterable[_]]     => Arr.gen(x, stack)
         case SealedEnum(g)                      => g.gen(tpe)
