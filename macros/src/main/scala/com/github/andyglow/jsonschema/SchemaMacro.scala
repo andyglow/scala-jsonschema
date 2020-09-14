@@ -2,6 +2,7 @@ package com.github.andyglow.jsonschema
 
 import com.github.andyglow.json.ToValue
 import com.github.andyglow.scaladoc.{Scaladoc, SlowParser}
+import json.Schema.`string-map`.MapKeyPattern
 
 import scala.reflect.NameTransformer
 import scala.reflect.internal.util.NoSourceFile
@@ -21,16 +22,19 @@ object SchemaMacro {
   def impl[T: c.WeakTypeTag](c: blackbox.Context): c.Expr[json.Schema[T]] = {
     import c.universe._
 
-    val jsonPkg     = q"_root_.json"
-    val intJsonPkg  = q"_root_.com.github.andyglow.json"
-    val schemaObj   = q"$jsonPkg.Schema"
+    val jsonPkg       = q"_root_.json"
+    val intJsonPkg    = q"_root_.com.github.andyglow.json"
+    val schemaObj     = q"$jsonPkg.Schema"
+    val validationObj = q"$jsonPkg.Validation"
 
     val subject               = weakTypeOf[T]
     val optionTpe             = weakTypeOf[Option[_]]
     val toValueTpe            = weakTypeOf[ToValue[_]]
     val setTpe                = weakTypeOf[Set[_]]
+    val mapTpe                = weakTypeOf[Map[_, _]]
     val schemaTypeConstructor = typeOf[json.Schema[_]].typeConstructor
     val predefTypeConstructor = typeOf[json.schema.Predef[_]].typeConstructor
+    val mapKeyPattern         = typeOf[MapKeyPattern[_]]
 
     def getTypeScaladoc(tpe: Type): Option[Scaladoc] = {
       import com.github.andyglow.scalamigration._
@@ -321,23 +325,35 @@ object SchemaMacro {
       }
     }
 
-    object IntMap {
+    case class StringMap(tpe: Type, keyType: Type, valueType: Type, keyPattern: Tree) {
+      private val stringKey = keyType <:< typeOf[String]
 
-      def gen(tpe: Type, stack: List[Type]): Tree = {
-        val componentType = tpe.typeArgs.tail.head
-        val componentJsonType = resolve(componentType, tpe +: stack)
+      def gen(stack: List[Type]): Tree = {
+        val valueJsonType = resolve(valueType, tpe +: stack)
+        val tree = q"""$schemaObj.`string-map`[$keyType, $valueType, ${tpe.typeConstructor}]($valueJsonType)"""
+        val effectiveTree = if (!stringKey) {
+          q"""$tree withValidation ($validationObj.patternProperties := $keyPattern.pattern)"""
+        } else tree
 
-        q"""$schemaObj.`int-map`[$componentType, ${tpe.typeConstructor}]($componentJsonType)"""
+        effectiveTree
       }
     }
 
     object StringMap {
 
-      def gen(tpe: Type, stack: List[Type]): Tree = {
-        val componentType = tpe.typeArgs.tail.head
-        val componentJsonType = resolve(componentType, tpe +: stack)
+      def unapply(x: Type): Option[StringMap] = {
+        if (x <:< mapTpe) {
+          val keyType = x.typeArgs.head
+          val valueType = x.typeArgs.tail.head
+          val t = appliedType(mapKeyPattern, keyType)
 
-        q"""$schemaObj.`string-map`[$componentType, ${tpe.typeConstructor}]($componentJsonType)"""
+          c.inferImplicitValue(t) match {
+            case EmptyTree => None
+            case t         => Some(StringMap(x, keyType, valueType, t))
+          }
+        } else {
+          None
+        }
       }
     }
 
@@ -439,8 +455,7 @@ object SchemaMacro {
       if (stack contains tpe) c.error(c.enclosingPosition, s"cyclic dependency for $tpe")
 
       def genTree: Tree = tpe match {
-        case x if x <:< typeOf[Map[String, _]]  => StringMap.gen(x, stack)
-        case x if x <:< typeOf[Map[Int, _]]     => IntMap.gen(x, stack)
+        case StringMap(g)                       => g.gen(stack)
         case x if x <:< typeOf[Array[_]]        => Arr.gen(x, stack)
         case x if x <:< typeOf[Iterable[_]]     => Arr.gen(x, stack)
         case SealedEnum(names)                  => SealedEnum.gen(tpe, names)

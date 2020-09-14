@@ -56,7 +56,7 @@ class CatsSupportSpec extends AnyWordSpec {
       "be exposed as object" in {
         nesmEventSchema shouldBe `object`(
           Field("id", `string`()),
-          Field("data" , `string-map`[String, NonEmptyMap](`string`()).withValidation(`minProperties` := 1)))
+          Field("data" , `string-map`[String, String, NonEmptyMap](`string`()).withValidation(`minProperties` := 1)))
       }
     }
 
@@ -65,7 +65,7 @@ class CatsSupportSpec extends AnyWordSpec {
       "be exposed as object" in {
         neimEventSchema shouldBe `object`(
           Field("id", `string`()),
-          Field("data", `int-map`[String, NonEmptyMap](`string`()).withValidation(`minProperties` := 1)))
+          Field("data", `string-map`[Int, String, NonEmptyMap](`string`()).withValidation(`minProperties` := 1, `patternProperties` := "^[0-9]+$")))
       }
     }
 
