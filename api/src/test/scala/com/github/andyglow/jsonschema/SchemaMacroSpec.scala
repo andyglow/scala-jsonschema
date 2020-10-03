@@ -146,29 +146,6 @@ class SchemaMacroSpec extends AnyWordSpec {
           Field("name", `string`[String](None, None)),
           Field("bar" , `integer`))))
     }
-//
-//    "generate schema for case class that includes another case class with default" in {
-//      import `object`.Field
-//
-//      Json.schema[Bar10] shouldEqual `object`(
-//        Field(
-//          "foo",
-//          `object`(
-//            Field("name", `string`[String](None, None)),
-//            Field("bar" , `integer`))))
-//    }
-//
-//    "generate schema for case class that includes an option of another case class with default" in {
-//      import `object`.Field
-//
-//      Json.schema[Bar11] shouldEqual `object`(
-//        Field(
-//          "foo",
-//          `object`(
-//            Field("name", `string`[String](None, None)),
-//            Field("bar" , `integer`)),
-//          required = false))
-//    }
 
     "generate schema for case class using collection of string" in {
       import `object`.Field
@@ -244,10 +221,6 @@ object SchemaMacroSpec {
     vector: Vector[Long] = Vector(9L, 7L),
     strMap: Map[String, Double] = Map("foo" -> .12),
     intMap: Map[Int, String] = Map(1 -> "1", 2 -> "2"))
-
-//  case class Bar10(foo: Foo5 = Foo5("foo", 21))
-//  case class Bar11(foo: Option[Foo5] = None)
-
 
 }
 

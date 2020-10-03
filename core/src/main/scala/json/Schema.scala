@@ -8,6 +8,8 @@ import scala.annotation.implicitNotFound
 sealed trait Schema[+T] extends Product {
   import Schema._
 
+  type Self <: Schema[T]
+
   private var _title: Option[String] = None
 
   private var _description: Option[String] = None
@@ -18,7 +20,7 @@ sealed trait Schema[+T] extends Product {
 
   def jsonType: String = productPrefix
 
-  def withValidation[TT >: T, B](v: ValidationDef[B, _], vs: ValidationDef[B, _]*)(implicit bound: ValidationBound[TT, B]): Schema[T] = {
+  def withValidation[TT >: T, B](v: ValidationDef[B, _], vs: ValidationDef[B, _]*)(implicit bound: ValidationBound[TT, B]): Self = {
     val copy = this.duplicate()
     copy._validations = (v +: vs).foldLeft(_validations) {
       case (agg, v) => bound.append(agg, v)
@@ -26,7 +28,7 @@ sealed trait Schema[+T] extends Product {
     copy
   }
 
-  def apply(refName: String): Schema[T] = {
+  def apply(refName: String): Self = {
     val copy = this.duplicate()
     copy._refName = Some(refName)
     copy
@@ -76,11 +78,11 @@ sealed trait Schema[+T] extends Product {
     sb.toString
   }
 
-  protected def mkCopy(): Schema[T]
+  protected def mkCopy(): Self
 
   def duplicate(
     description: Option[String] = this._description,
-    title: Option[String] = this._title): Schema[T] = {
+    title: Option[String] = this._title): Self = {
 
     val copy = mkCopy()
     copy._refName = this._refName
@@ -108,18 +110,21 @@ sealed trait Schema[+T] extends Product {
 object Schema {
 
   sealed case class `boolean`() extends Schema[Boolean] {
+    type Self = `boolean`
     def mkCopy() = new `boolean`()
     override def canEqual(that: Any): Boolean = that.isInstanceOf[`boolean`]
   }
   final object `boolean` extends `boolean`()
 
   sealed case class `integer`() extends Schema[Int] {
+    type Self = `integer`
     def mkCopy() = new `integer`()
     override def canEqual(that: Any): Boolean = that.isInstanceOf[`integer`]
   }
   final object `integer` extends `integer`
 
   final case class `number`[T: Numeric]() extends Schema[T] {
+    type Self = `number`[T]
     def mkCopy() = new `number`[T]()
     override def canEqual(that: Any): Boolean = that.isInstanceOf[`number`[_]]
   }
@@ -127,6 +132,7 @@ object Schema {
   final case class `string`[T](
     format: Option[`string`.Format],
     pattern: Option[String]) extends Schema[T] {
+    type Self = `string`[T]
     def mkCopy() = new `string`[T](format, pattern)
     override def canEqual(that: Any): Boolean = that.isInstanceOf[`string`[_]]
     override def equals(obj: Any): Boolean = obj match {
@@ -148,6 +154,7 @@ object Schema {
 
   final case class `set`[T, C[_]](
     componentType: Schema[T]) extends Schema[C[T]] {
+    type Self = `set`[T, C]
     override def jsonType = "array"
     def mkCopy() = new `set`[T, C](componentType)
     override def canEqual(that: Any): Boolean = that match {
@@ -162,6 +169,7 @@ object Schema {
 
   final case class `array`[T, C[_]](
     componentType: Schema[T]) extends Schema[C[T]] {
+    type Self = `array`[T, C]
     def mkCopy() = new `array`[T, C](componentType)
     override def canEqual(that: Any): Boolean = that match {
       case `array`(_) => true
@@ -174,6 +182,7 @@ object Schema {
   }
 
   final case class `dictionary`[K, V, C[_, _]](valueType: Schema[V]) extends Schema[C[K, V]] {
+    type Self = `dictionary`[K, V, C]
     override def jsonType = "object"
     def mkCopy() = new `dictionary`[K, V, C](valueType)
     override def canEqual(that: Any): Boolean = that match {
@@ -205,8 +214,8 @@ object Schema {
   final case class `object`[T](
     fields: Set[`object`.Field[_]]) extends Schema[T] {
     import `object`._
-
-    def mkCopy(): Schema[T] = copy()
+    type Self = `object`[T]
+    def mkCopy() = copy()
     override def canEqual(that: Any): Boolean = that.isInstanceOf[`object`[_]]
     override def equals(obj: Any): Boolean = obj match {
       case `object`(f) => fields == f && super.equals(obj)
@@ -224,6 +233,7 @@ object Schema {
 
   final case class `enum`[T](
     values: Set[Value]) extends Schema[T] {
+    type Self = `enum`[T]
     def mkCopy() = new `enum`[T](values)
     override def canEqual(that: Any): Boolean = that.isInstanceOf[`enum`[_]]
     override def equals(obj: Any): Boolean = obj match {
@@ -237,6 +247,7 @@ object Schema {
 
   final case class `oneof`[T](
     subTypes: Set[Schema[_]]) extends Schema[T] {
+    type Self = `oneof`[T]
     def mkCopy() = new `oneof`[T](subTypes)
     override def canEqual(that: Any): Boolean = that.isInstanceOf[`oneof`[_]]
     override def equals(obj: Any): Boolean = obj match {
@@ -247,6 +258,7 @@ object Schema {
 
   final case class `allof`[T](
     subTypes: Set[Schema[_]]) extends Schema[T] {
+    type Self = `allof`[T]
     override def jsonType: String = subTypes.head.jsonType
     def mkCopy() = new `allof`[T](subTypes)
     override def canEqual(that: Any): Boolean = that.isInstanceOf[`allof`[_]]
@@ -258,9 +270,9 @@ object Schema {
 
   final case class `not`[T](
     tpe: Schema[T]) extends Schema[T] {
+    type Self = `not`[T]
     override def jsonType: String = tpe.jsonType
     def mkCopy() = new `not`[T](tpe)
-
     override def canEqual(that: Any): Boolean = that.isInstanceOf[`not`[_]]
     override def equals(obj: Any): Boolean = obj match {
       case `not`(t) => tpe == t && super.equals(obj)
@@ -271,6 +283,7 @@ object Schema {
   final case class `ref`[T](
     sig: String,
     tpe: Schema[_]) extends Schema[T] {
+    type Self = `ref`[T]
     override def jsonType: String = s"$$ref"
     def mkCopy() = new `ref`[T](sig, tpe)
     override def canEqual(that: Any): Boolean = that.isInstanceOf[`ref`[_]]

@@ -15,11 +15,49 @@ object SchemaMacro {
   def implPredef[T : c.WeakTypeTag](c: blackbox.Context): c.Expr[json.schema.Predef[T]] = {
     import c.universe._
 
-    val schema = impl[T](c)
+    val schema = impl[T, json.Schema](c)
     c.Expr[json.schema.Predef[T]](q"_root_.json.schema.Predef($schema)")
   }
 
-  def impl[T: c.WeakTypeTag](c: blackbox.Context): c.Expr[json.Schema[T]] = {
+  def implSchema[T : c.WeakTypeTag](c: blackbox.Context): c.Expr[json.Schema[T]] = {
+//    import c.universe._
+
+    impl[T, json.Schema](c)
+  }
+
+  def implObject[T : c.WeakTypeTag](c: blackbox.Context)(descriptions: c.Expr[(String, String)]*): c.Expr[json.Schema.`object`[T]] = {
+    import c.universe._
+    val tpe = weakTypeOf[T]
+    val symbol = tpe.typeSymbol
+
+    if (symbol.isClass) {
+      val clazz = symbol.asClass
+      if (clazz.isCaseClass) {
+        if (clazz.isDerivedValueClass) {
+          c.abort(c.enclosingPosition, "Json.objectSchema can't be used against value classes")
+        } else {
+          def fromTree(x: Tree): String = x match {
+            case Literal(Constant(v: String)) => v
+            case _                            => c.abort(c.enclosingPosition, """only constant Strings are allowed in Description specification. Example: "id" -> "Record ID", ... """)
+          }
+          val descrs = descriptions.map { d =>
+            d.tree match {
+              // case "key" -> "val"
+              case Apply(TypeApply(Select(Apply(TypeApply(Select(Select(Ident(TermName("scala")), TermName("Predef")), TermName("ArrowAssoc")), List(TypeTree())), List(k)), TermName("$minus$greater")), List(TypeTree())), List(v)) => (fromTree(k), fromTree(v))
+              // case ("key" -> "val")
+              case Apply(TypeApply(Select(Select(Ident(TermName("scala")), TermName("Tuple2")), TermName("apply")), List(TypeTree(), TypeTree())), List(k, v))                                                                        => (fromTree(k), fromTree(v))
+            }
+          }.toMap
+
+          impl[T, json.Schema.`object`](c, Some(descrs))
+        }
+      } else
+        c.abort(c.enclosingPosition, "Json.objectSchema can't be used against non-case classes")
+    } else
+      c.abort(c.enclosingPosition, "Json.objectSchema can be used only against case classes")
+  }
+
+  private def impl[T: c.WeakTypeTag, S[_]](c: blackbox.Context, descriptions: Option[Map[String, String]] = None): c.Expr[S[T]] = {
     import c.universe._
 
     val jsonPkg       = q"_root_.json"
@@ -158,6 +196,24 @@ object SchemaMacro {
       }
     }
 
+    case class CaseClass(tpe: Type, fields: Seq[CaseClass.Field]) {
+
+      def annotations = tpe.typeSymbol.asClass.annotations
+
+      def title: Option[String] =
+        annotations
+          .map(_.tree)
+          .filter(_.tpe <:< typeOf[json.schema.title])
+          .collectFirst { case Apply(_, List(Literal(Constant(text: String)))) => text }
+
+      def description: Option[String] =
+        annotations
+          .map(_.tree)
+          .filter(_.tpe <:< typeOf[json.schema.description])
+          .collectFirst { case Apply(_, List(Literal(Constant(text: String)))) => text }
+
+    }
+
     object CaseClass {
 
       // TODO: add support for case classes defined in method body
@@ -204,7 +260,8 @@ object SchemaMacro {
 
       def fieldMap(tpe: Type): Seq[Field] = {
 
-        val annotationMap = tpe.decls.collect {
+        // old implementation of annotation extractor
+        def annotations0 = tpe.decls.collect {
 
           case s: MethodSymbol if s.isCaseAccessor =>
             // workaround: force loading annotations
@@ -213,6 +270,15 @@ object SchemaMacro {
 
             s.name.toString.trim -> s.accessed.annotations
         }.toMap
+
+        // new implementation of annotation extractor
+        def annotations1 = tpe.typeSymbol.asClass.primaryConstructor.typeSignature.paramLists.headOption flatMap { paramList: List[Symbol] =>
+          Some(paramList.collect {
+            case s => s.name.toString.trim -> s.annotations
+          }.toMap)
+        } getOrElse Map.empty
+
+        val annotationMap = annotations0 ++ annotations1
 
         val subjectCompanionSym = tpe.typeSymbol
         val subjectCompanion    = lookupCompanionOf(subjectCompanionSym)
@@ -270,27 +336,46 @@ object SchemaMacro {
         fields getOrElse Seq.empty
       }
 
-      def unapply(tpe: Type): Option[Seq[CaseClass.Field]] = {
+      def unapply(tpe: Type): Option[CaseClass] = {
         val symbol = tpe.typeSymbol
 
         if (symbol.isClass) {
           val clazz = symbol.asClass
           if (clazz.isCaseClass) {
-            if (clazz.isDerivedValueClass) None else Some(fieldMap(tpe))
+            if (clazz.isDerivedValueClass) None else Some(CaseClass(tpe, fieldMap(tpe)))
           } else
             None
         } else
           None
       }
 
-      def gen(fieldMap: Seq[CaseClass.Field], tpe: Type, stack: List[Type]): Tree = {
+      def gen(cc: CaseClass, tpe: Type, stack: List[Type]): Tree = {
+        val fieldMap = cc.fields
+        // check if all descriptions specified immediately in method call matches field names
+        if (stack.isEmpty) descriptions foreach { descriptions =>
+          descriptions.keySet foreach { k =>
+            if (!fieldMap.exists(_.name.decodedName.toString == k))
+              c.abort(c.enclosingPosition, s"unknown field: $k. ${show(tpe)} fields are: ${fieldMap.map(_.name.decodedName.toString).mkString(", ")}")
+          }
+        }
         val scaladoc = getTypeScaladoc(tpe)
-        val objDescr = scaladoc flatMap { _.description }
+        val objTitle = cc.title
+        val objDescr = scaladoc flatMap { _.description } orElse cc.description
         val obj = q"$schemaObj.`object`"
         val fields = fieldMap map { f =>
           val name      = f.name.decodedName.toString
           val jsonType  = resolve(f.effectiveTpe, if (f.isOption) stack else tpe +: stack)
-          val fDescr    = scaladoc flatMap { _.param(name) }
+          val fDescr    = {
+            def fromScaladoc   = scaladoc flatMap { _.param(name) }
+            def fromAnnotation = f.annotations
+              .map(_.tree)
+              .filter(_.tpe <:< typeOf[json.schema.description])
+              .collectFirst { case Apply(_, List(Literal(Constant(text: String)))) => text }
+            def fromSpec       = if (stack.isEmpty) descriptions flatMap { _.get(name) } else None
+
+            fromSpec orElse fromScaladoc orElse fromAnnotation
+          }
+
           val tree = f.default map { d =>
             q"$obj.Field.fromJson[${f.effectiveTpe}](name = $name, tpe = $jsonType, required = ${ !f.isOption && !f.hasDefault }, default = $d)"
           } getOrElse {
@@ -302,9 +387,11 @@ object SchemaMacro {
           }
         }
 
-        objDescr match {
-          case Some(descr) => q"$obj[$tpe](..$fields).duplicate(description = Some($descr))"
-          case _           => q"$obj[$tpe](..$fields)"
+        (objDescr, objTitle) match {
+          case (Some(descr), Some(title)) => q"$obj[$tpe](..$fields).duplicate(description = Some($descr), title = Some($title))"
+          case (_, Some(title))           => q"$obj[$tpe](..$fields).duplicate(title = Some($title))"
+          case (Some(descr), _)           => q"$obj[$tpe](..$fields).duplicate(description = Some($descr))"
+          case _                          => q"$obj[$tpe](..$fields)"
         }
       }
     }
@@ -492,6 +579,6 @@ object SchemaMacro {
     if (c.settings.contains("print-jsonschema-code"))
      c.info(c.enclosingPosition, show(out), force = false)
 
-    c.Expr[json.Schema[T]](out)
+    c.Expr[S[T]](out)
   }
 }
