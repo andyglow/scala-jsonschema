@@ -6,7 +6,19 @@ import upickle.default._
 
 object UserProfileJson {
 
+  // OptionPickler
+  // https://www.lihaoyi.com/upickle/#uJson
+  // by default u-json treats scala options as json arrays
+  // this makes it use standard notion
+  implicit def OptionWriterOverride[T: Writer]: Writer[Option[T]] =
+    implicitly[Writer[T]].comap[Option[T]] {
+      case None => null.asInstanceOf[T]
+      case Some(x) => x
+    }
+
   implicit val CredentialsW: Writer[Credentials] = macroW[Credentials]
+
+  implicit val NotesW: Writer[Notes] = macroW[Notes]
 
   implicit val BetaFeatureW: Writer[BetaFeature] = new Writer[BetaFeature] {
     override def write0[V](

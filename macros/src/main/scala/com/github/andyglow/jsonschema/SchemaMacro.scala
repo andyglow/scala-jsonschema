@@ -226,7 +226,7 @@ object SchemaMacro {
           val default     = if (hasDefault) {
             val getter = TermName("apply$default$" + (i + 1))
             if (toV.nonEmpty) Some(q"Some($toV($subjectCompanion.$getter))") else {
-              c.error(c.enclosingPosition, s"Can't infer a json value for $name")
+              c.error(c.enclosingPosition, s"Can't infer a json value for '$name': $fieldTpe")
               None
             }
           } else
@@ -471,7 +471,7 @@ object SchemaMacro {
       if (stack contains tpe) c.error(c.enclosingPosition, s"cyclic dependency for $tpe")
 
       def genTree: Tree = tpe match {
-        case Dictionary(g)                       => g.gen(stack)
+        case Dictionary(g)                      => g.gen(stack)
         case x if x <:< typeOf[Array[_]]        => Arr.gen(x, stack)
         case x if x <:< typeOf[Iterable[_]]     => Arr.gen(x, stack)
         case SealedEnum(g)                      => g.gen(tpe)

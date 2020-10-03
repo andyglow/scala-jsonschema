@@ -7,6 +7,8 @@ object UserProfileJson extends DefaultJsonProtocol {
 
   implicit val CredentialsW: JsonWriter[Credentials] = jsonFormat2(Credentials)
 
+  implicit val NotesW: JsonFormat[Notes] = jsonFormat2(Notes)
+
   implicit val BetaFeatureW: JsonWriter[BetaFeature] = new JsonWriter[BetaFeature] {
     override def write(o: BetaFeature): JsValue = o match {
       case F0  => JsString("feature-0-name")

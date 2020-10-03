@@ -7,6 +7,8 @@ object UserProfileJson {
 
   implicit val CredentialsW: Writes[Credentials] = Json.writes[Credentials]
 
+  implicit val NotesW: Writes[Notes] = Json.writes[Notes]
+
   implicit val BetaFeatureW: Writes[BetaFeature] = new Writes[BetaFeature] {
     override def writes(o: BetaFeature): JsValue = o match {
       case F0  => JsString("feature-0-name")

@@ -51,7 +51,14 @@ class AsPlaySpec extends AnyPropSpec{
                                               "properties" -> Json.obj(
                                                 "login"         -> Json.obj("type" -> "string"),
                                                 "password"      -> Json.obj("type" -> "string")),
-                                              "default" -> Json.obj("login" -> "anonymous", "password" -> "-"))),
+                                              "default" -> Json.obj("login" -> "anonymous", "password" -> "-")),
+        "notes"                   -> Json.obj("type" -> "object",
+                                              "additionalProperties" -> false,
+                                              "required"   -> Json.arr("head", "tail"),
+                                              "properties" -> Json.obj(
+                                                "head"         -> Json.obj("type" -> "string"),
+                                                "tail"        -> Json.obj("type" -> "array", "items" -> Json.obj("type" -> "string"))),
+                                              "default" -> Json.obj("head" -> "initial note", "tail" -> Json.arr()))),
       "required"              -> Json.arr("age", "lastName", "firstName"))
   }
 }
