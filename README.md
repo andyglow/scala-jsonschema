@@ -718,10 +718,10 @@ Example:
 import json._
 
 /** My perfect class
-*
-* @param a A Param
-* @param b B Param
-*/
+ * 
+ * @param a A Param
+ * @param b B Param
+ */
 case class Model(a: String, b: Int)
 val schema = Json.objectSchema[Model]()
 ```
