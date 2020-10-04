@@ -105,6 +105,10 @@ sealed trait Schema[+T] extends Product {
 
     case _ => false
   }
+
+  def withDescription(x: String): Self = duplicate(description = Some(x))
+
+  def withTitle(x: String): Self = duplicate(title = Some(x))
 }
 
 object Schema {
