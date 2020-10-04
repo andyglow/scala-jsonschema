@@ -138,7 +138,7 @@ class SchemaMacroSpec extends AnyWordSpec {
 //        `oneof`(Set(`string`[String](None, None), `integer`)))
 //    }
 
-    "generate schema for case class using another case class" in {
+    "generate schema for case class that includes another case class" in {
       import `object`.Field
 
       Json.schema[Bar5] shouldEqual `object`(

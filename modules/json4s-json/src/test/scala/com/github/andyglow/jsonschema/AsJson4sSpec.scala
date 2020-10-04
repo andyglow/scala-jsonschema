@@ -15,7 +15,7 @@ class AsJson4sSpec extends AnyPropSpec{
   import UserProfileJson._
 
   private val examples = Table[Value, JValue](
-    ("json"                           , "PlayJson"),
+    ("json"                           , "Json4S"),
     (`null`                           , JNull),
     (`true`                           , JBool(true)),
     (`false`                          , JBool(false)),
@@ -30,8 +30,17 @@ class AsJson4sSpec extends AnyPropSpec{
     forAll(examples) { (internal, play) => AsJson4s(internal) shouldEqual play }
   }
 
+
+  property("AsCirce escapes") {
+    import org.json4s.native.JsonMethods._
+
+    val jobj = AsJson4s(obj(""""quoted-key"""" -> "\n\t'val\""))
+    compact(render(jobj)) shouldBe """{"\"quoted-key\"":"\n\t'val\""}"""
+  }
+
   property("Check Schema.asJson4s") {
     import AsJson4s._
+    import org.json4s.DefaultJsonFormats._
 
     json.Json.schema[UserProfile].asJson4s(Draft04()) shouldEqual JObject(
       f"$$schema"             -> JString("http://json-schema.org/draft-04/schema#"),
@@ -51,7 +60,15 @@ class AsJson4sSpec extends AnyPropSpec{
                                               "properties" -> JObject(
                                                 "login"         -> JObject("type" -> JString("string")),
                                                 "password"      -> JObject("type" -> JString("string"))),
-                                              "default" -> JObject("login" -> JString("anonymous"), "password" -> JString("-")))),
+                                              "default" -> JObject("login" -> JString("anonymous"), "password" -> JString("-"))),
+        "notes"                  -> JObject("type" -> JString("object"),
+                                              "additionalProperties" -> JBool.False,
+                                              "required"   -> JArray(List(JString("head"), JString("tail"))),
+                                              "properties" -> JObject(
+                                                "head"         -> JObject("type" -> JString("string")),
+                                                "tail"         -> JObject("type" -> JString("array"), "items" -> JObject("type" -> JString("string")))),
+                                              "default" -> JObject("head" -> JString("initial note"), "tail" -> JArray(Nil)))
+      ),
       "required"              -> JArray(List(JString("age"), JString("lastName"), JString("firstName"))))
   }
 }

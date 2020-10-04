@@ -30,6 +30,11 @@ class AsUSpec extends AnyPropSpec {
     forAll(examples) { (internal, u) => AsU(internal) shouldEqual u }
   }
 
+  property("AsU escapes") {
+    val jobj = AsU(obj(""""quoted-key"""" -> "\n\t'val\""))
+    jobj.render() shouldBe """{"\"quoted-key\"":"\n\t'val\""}"""
+  }
+
   property("Check Schema.asU draft-04") {
     import AsU._
 
@@ -154,7 +159,14 @@ class AsUSpec extends AnyPropSpec {
           "properties" -> ujson.Obj(
             "login"         -> ujson.Obj("type" -> "string"),
             "password"      -> ujson.Obj("type" -> "string")),
-          "default" -> ujson.Obj("login" -> "anonymous", "password" -> "-"))),
+          "default" -> ujson.Obj("login" -> "anonymous", "password" -> "-")),
+        "notes"                  -> ujson.Obj("type" -> "object",
+          "additionalProperties" -> false,
+          "required"   -> ujson.Arr("head", "tail"),
+          "properties" -> ujson.Obj(
+            "head"         -> ujson.Obj("type" -> "string"),
+            "tail"         -> ujson.Obj("type" -> "array", "items" -> ujson.Obj("type" -> "string"))),
+          "default" -> ujson.Obj("head" -> "initial note", "tail" -> ujson.Arr()))),
       "required"              -> ujson.Arr("age", "lastName", "firstName"))
   }
 }

@@ -8,4 +8,5 @@ case class UserProfile(
   enabledFeatures: Set[BetaFeature] = Set(F0, F1),
   active: Active = On,
   credentials: Credentials = Credentials("anonymous", "-"),
-  role: Role = Role.User)
+  role: Role = Role.User,
+  notes: Option[Notes] = Some(Notes("initial note", Nil)))

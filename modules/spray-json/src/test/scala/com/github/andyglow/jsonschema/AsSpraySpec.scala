@@ -30,6 +30,11 @@ class AsSpraySpec extends AnyPropSpec {
     forAll(examples) { (internal, spray) => AsSpray(internal) shouldEqual spray }
   }
 
+  property("AsSpray escapes") {
+    val jobj = AsSpray(obj(""""quoted-key"""" -> "\n\t'val\""))
+    jobj.compactPrint shouldBe """{"\"quoted-key\"":"\n\t'val\""}"""
+  }
+
   property("Check Schema.asSpray") {
     import AsSpray._
 
@@ -51,7 +56,16 @@ class AsSpraySpec extends AnyPropSpec {
                                               "properties" -> JsObject(
                                                 "login"         -> JsObject("type" -> JsString("string")),
                                                 "password"      -> JsObject("type" -> JsString("string"))),
-                                              "default" -> JsObject("login" -> JsString("anonymous"), "password" -> JsString("-")))),
+                                              "default" -> JsObject("login" -> JsString("anonymous"), "password" -> JsString("-"))),
+        "notes"                   -> JsObject("type" -> JsString("object"),
+                                              "additionalProperties" -> JsFalse,
+                                              "required"   -> JsArray(JsString("head"), JsString("tail")),
+                                              "properties" -> JsObject(
+                                                "head"         -> JsObject("type" -> JsString("string")),
+                                                "tail"         -> JsObject("type" -> JsString("array"), "items" -> JsObject("type" -> JsString("string")))),
+                                              "default" -> JsObject("head" -> JsString("initial note"), "tail" -> JsArray()))
+
+      ),
       "required"              -> JsArray(JsString("age"), JsString("lastName"), JsString("firstName")))
   }
 }

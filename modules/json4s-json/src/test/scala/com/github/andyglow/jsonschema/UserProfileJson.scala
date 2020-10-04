@@ -12,6 +12,12 @@ object UserProfileJson {
       "password"  -> JString(o.password))
   }
 
+  implicit val NotesW: Writer[Notes] = new Writer[Notes] {
+    override def write(o: Notes): JValue = JObject(
+      "head"  -> JString(o.head),
+      "tail"  -> JArray(o.tail map JString.apply))
+  }
+
   implicit val BetaFeatureW: Writer[BetaFeature] = new Writer[BetaFeature] {
     override def write(o: BetaFeature): JValue = o match {
       case F0  => JString("feature-0-name")

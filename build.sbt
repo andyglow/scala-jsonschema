@@ -15,7 +15,7 @@ lazy val commonSettings = Seq(
 
   organizationName := "andyglow",
 
-  scalaVersion := "2.12.11",
+  scalaVersion := "2.11.12",
 
   crossScalaVersions := Seq("2.11.12", "2.12.11", "2.13.2"),
 
@@ -195,7 +195,9 @@ lazy val `json4s-json` = { project in file("modules/json4s-json") }.dependsOn(co
 
   name := "scala-jsonschema-json4s-json",
 
-  libraryDependencies += "org.json4s" %% "json4s-core" % "3.6.10"
+  libraryDependencies ++= Seq(
+    "org.json4s" %% "json4s-core" % "3.6.9",
+    "org.json4s" %% "json4s-native" % "3.6.9" % Test)
 )
 
 lazy val `u-json` = { project in file("modules/u-json") }.dependsOn(core, api % "compile->compile;test->test").settings(

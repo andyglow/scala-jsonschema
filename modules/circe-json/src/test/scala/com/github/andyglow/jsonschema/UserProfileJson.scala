@@ -9,6 +9,8 @@ object UserProfileJson {
 
   implicit val CredentialsW: Encoder[Credentials] = deriveEncoder[Credentials]
 
+  implicit val NotesW: Encoder[Notes] = deriveEncoder[Notes]
+
   implicit val BetaFeatureW: Encoder[BetaFeature] = new Encoder[BetaFeature] {
     override def apply(o: BetaFeature): Json = o match {
       case F0  => Json.fromString("feature-0-name")

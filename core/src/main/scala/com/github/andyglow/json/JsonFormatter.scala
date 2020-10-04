@@ -28,7 +28,7 @@ class JsonFormatter(step: Int = 2) {
           }
 
           sb append i1
-          sb append s""""$name": """
+          sb append s""""${Escaped(name)}": """
           _format(value, sb, indent + step)
         }
 
@@ -55,8 +55,8 @@ class JsonFormatter(step: Int = 2) {
         sb append i0
         sb append "]"
 
-      case _            =>
-        sb append value.toString
+      case str(x)       => sb append s""""${Escaped(x)}""""
+      case _            => sb append value.toString
     }
   }
 }
