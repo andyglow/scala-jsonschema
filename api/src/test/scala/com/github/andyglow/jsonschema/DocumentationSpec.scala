@@ -2,13 +2,15 @@ package com.github.andyglow.jsonschema
 
 import com.github.andyglow.json.JsonFormatter
 import json._
-import json.schema.Version.Draft07
+import json.schema.Version.{Draft04, Draft07}
 import json.schema._
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec._
 
 class DocumentationSpec extends AnyWordSpec {
   import DocumentationSpec._
+
+  private val escapeCheck     = Json.objectSchema[EscapeCheck]()
 
   private val fromScaladoc    = Json.objectSchema[FromScaladoc]()
   private val fromAnnotations = Json.objectSchema[FromAnnotations]()
@@ -65,6 +67,34 @@ class DocumentationSpec extends AnyWordSpec {
       }
     }
   }
+
+  "quotes in descriptions" should {
+
+    "not brake resulting json" in {
+
+      JsonFormatter.format(AsValue.schema(escapeCheck, Draft04())) shouldBe
+        s"""{
+          |  "$$schema": "http://json-schema.org/draft-04/schema#",
+          |  "description": "My perfect class",
+          |  "type": "object",
+          |  "additionalProperties": false,
+          |  "properties": {
+          |    "a": {
+          |      "type": "string",
+          |      "description": "\\"A\\" Param"
+          |    },
+          |    "b": {
+          |      "type": "integer",
+          |      "description": "`B` Param"
+          |    }
+          |  },
+          |  "required": [
+          |    "a",
+          |    "b"
+          |  ]
+          |}""".stripMargin
+    }
+  }
 }
 
 object DocumentationSpec {
@@ -83,4 +113,11 @@ object DocumentationSpec {
     @description("B Param") b: Int)
 
   case class FromConfig(a: String, b: Int)
+
+  /** My perfect class
+    *
+    * @param a "A" Param
+    * @param b `B` Param
+    */
+  case class EscapeCheck(a: String, b: Int)
 }
