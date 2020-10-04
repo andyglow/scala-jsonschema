@@ -1,6 +1,8 @@
 package com.github.andyglow.jsonschema
 
+import com.github.andyglow.json.JsonFormatter
 import json._
+import json.schema.Version.Draft07
 import json.schema._
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec._
@@ -15,6 +17,13 @@ class DocumentationSpec extends AnyWordSpec {
                                   "b" -> "B Param"
                                 ) .withDescription("My perfect class")
                                   .withTitle("A Title")
+
+  private def printSchema[T](s: Schema[T]): Unit = {
+    val str = JsonFormatter.format(AsValue.schema(s, Draft07("foo-id")))
+    println(str)
+  }
+
+  printSchema(fromAnnotations)
 
   "description" should {
 
