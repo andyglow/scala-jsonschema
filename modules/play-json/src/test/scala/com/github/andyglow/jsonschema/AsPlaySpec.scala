@@ -30,6 +30,11 @@ class AsPlaySpec extends AnyPropSpec{
     forAll(examples) { (internal, play) => AsPlay(internal) shouldEqual play }
   }
 
+  property("AsPlay escapes") {
+    val jobj = AsPlay(obj(""""quoted-key"""" -> "\n\t'val\""))
+    Json.stringify(jobj) shouldBe """{"\"quoted-key\"":"\n\t'val\""}"""
+  }
+
   property("Check Schema.asPlay") {
     import AsPlay._
 

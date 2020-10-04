@@ -30,6 +30,14 @@ class AsJson4sSpec extends AnyPropSpec{
     forAll(examples) { (internal, play) => AsJson4s(internal) shouldEqual play }
   }
 
+
+  property("AsCirce escapes") {
+    import org.json4s.native.JsonMethods._
+
+    val jobj = AsJson4s(obj(""""quoted-key"""" -> "\n\t'val\""))
+    compact(render(jobj)) shouldBe """{"\"quoted-key\"":"\n\t'val\""}"""
+  }
+
   property("Check Schema.asJson4s") {
     import AsJson4s._
     import org.json4s.DefaultJsonFormats._

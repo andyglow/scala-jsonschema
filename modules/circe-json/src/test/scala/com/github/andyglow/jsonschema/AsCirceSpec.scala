@@ -29,6 +29,10 @@ class AsCirceSpec extends AnyPropSpec {
     forAll(examples) { (internal, circe) => AsCirce(internal) shouldEqual circe }
   }
 
+  property("AsCirce escapes") {
+    AsCirce(obj(""""quoted-key"""" -> "\n\t'val\"")).noSpaces shouldBe """{"\"quoted-key\"":"\n\t'val\""}"""
+  }
+
   property("Check Schema.asCirce") {
     import AsCirce._
 
