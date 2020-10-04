@@ -30,6 +30,11 @@ class AsSpraySpec extends AnyPropSpec {
     forAll(examples) { (internal, spray) => AsSpray(internal) shouldEqual spray }
   }
 
+  property("AsSpray escapes") {
+    val jobj = AsSpray(obj(""""quoted-key"""" -> "\n\t'val\""))
+    jobj.compactPrint shouldBe """{"\"quoted-key\"":"\n\t'val\""}"""
+  }
+
   property("Check Schema.asSpray") {
     import AsSpray._
 

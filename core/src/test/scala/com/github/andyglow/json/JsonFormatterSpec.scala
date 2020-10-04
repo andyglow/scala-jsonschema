@@ -47,4 +47,12 @@ class JsonFormatterSpec extends AnyPropSpec {
          |}""".stripMargin
   }
 
+  property("JsonFormatter should escape keys and string values") {
+    format(obj(
+      """"quoted-key"""" -> "\n\t'val\"")) shouldEqual
+      s"""{
+         |  "\\"quoted-key\\"": "\\n\\t'val\\""
+         |}""".stripMargin
+  }
+
 }

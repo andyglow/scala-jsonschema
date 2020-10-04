@@ -30,6 +30,11 @@ class AsUSpec extends AnyPropSpec {
     forAll(examples) { (internal, u) => AsU(internal) shouldEqual u }
   }
 
+  property("AsU escapes") {
+    val jobj = AsU(obj(""""quoted-key"""" -> "\n\t'val\""))
+    jobj.render() shouldBe """{"\"quoted-key\"":"\n\t'val\""}"""
+  }
+
   property("Check Schema.asU draft-04") {
     import AsU._
 
