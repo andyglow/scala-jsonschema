@@ -12,20 +12,18 @@ import scala.util.control.NonFatal
 
 object SchemaMacro {
 
-  def implPredef[T : c.WeakTypeTag](c: blackbox.Context): c.Expr[json.schema.Predef[T]] = {
+  def derivePredef[T : c.WeakTypeTag](c: blackbox.Context): c.Expr[json.schema.Predef[T]] = {
     import c.universe._
 
-    val schema = impl[T, json.Schema](c)
+    val schema = deriveInternal[T, json.Schema](c)
     c.Expr[json.schema.Predef[T]](q"_root_.json.schema.Predef($schema)")
   }
 
-  def implSchema[T : c.WeakTypeTag](c: blackbox.Context): c.Expr[json.Schema[T]] = {
-//    import c.universe._
-
-    impl[T, json.Schema](c)
+  def deriveSchema[T : c.WeakTypeTag](c: blackbox.Context): c.Expr[json.Schema[T]] = {
+    deriveInternal[T, json.Schema](c)
   }
 
-  def implObject[T : c.WeakTypeTag](c: blackbox.Context)(descriptions: c.Expr[(String, String)]*): c.Expr[json.Schema.`object`[T]] = {
+  def deriveObjectSchema[T : c.WeakTypeTag](c: blackbox.Context)(descriptions: c.Expr[(String, String)]*): c.Expr[json.Schema.`object`[T]] = {
     import c.universe._
     val tpe = weakTypeOf[T]
     val symbol = tpe.typeSymbol
@@ -41,15 +39,18 @@ object SchemaMacro {
             case _                            => c.abort(c.enclosingPosition, """only constant Strings are allowed in Description specification. Example: "id" -> "Record ID", ... """)
           }
           val descrs = descriptions.map { d =>
+            // c.info(c.enclosingPosition, "DESCR: " + showRaw(d.tree), force = true)
             d.tree match {
-              // case "key" -> "val"
+              // case "key" -> "val" // scala 2.12
               case Apply(TypeApply(Select(Apply(TypeApply(Select(Select(Ident(TermName("scala")), TermName("Predef")), TermName("ArrowAssoc")), List(TypeTree())), List(k)), TermName("$minus$greater")), List(TypeTree())), List(v)) => (fromTree(k), fromTree(v))
-              // case ("key" -> "val")
+              // case "key" -> "val" // scala 2.11
+              case Apply(TypeApply(Select(Apply(TypeApply(Select(Select(This(TypeName("scala")), TermName("Predef")), TermName("ArrowAssoc")), List(TypeTree())), List(k)), TermName("$minus$greater")), List(TypeTree())), List(v))  => (fromTree(k), fromTree(v))
+              // case ("key", "val")
               case Apply(TypeApply(Select(Select(Ident(TermName("scala")), TermName("Tuple2")), TermName("apply")), List(TypeTree(), TypeTree())), List(k, v))                                                                        => (fromTree(k), fromTree(v))
             }
           }.toMap
 
-          impl[T, json.Schema.`object`](c, Some(descrs))
+          deriveInternal[T, json.Schema.`object`](c, Some(descrs))
         }
       } else
         c.abort(c.enclosingPosition, "Json.objectSchema can't be used against non-case classes")
@@ -57,7 +58,7 @@ object SchemaMacro {
       c.abort(c.enclosingPosition, "Json.objectSchema can be used only against case classes")
   }
 
-  private def impl[T: c.WeakTypeTag, S[_]](c: blackbox.Context, descriptions: Option[Map[String, String]] = None): c.Expr[S[T]] = {
+  private def deriveInternal[T: c.WeakTypeTag, S[_]](c: blackbox.Context, descriptions: Option[Map[String, String]] = None): c.Expr[S[T]] = {
     import c.universe._
 
     val jsonPkg       = q"_root_.json"
@@ -196,7 +197,7 @@ object SchemaMacro {
       }
     }
 
-    case class CaseClass(tpe: Type, fields: Seq[CaseClass.Field]) {
+    final class CaseClass(val tpe: Type, val fields: Seq[CaseClass.Field]) {
 
       def annotations = tpe.typeSymbol.asClass.annotations
 
@@ -342,7 +343,7 @@ object SchemaMacro {
         if (symbol.isClass) {
           val clazz = symbol.asClass
           if (clazz.isCaseClass) {
-            if (clazz.isDerivedValueClass) None else Some(CaseClass(tpe, fieldMap(tpe)))
+            if (clazz.isDerivedValueClass) None else Some(new CaseClass(tpe, fieldMap(tpe)))
           } else
             None
         } else

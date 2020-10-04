@@ -9,14 +9,14 @@ import scala.language.experimental.macros
 
 object Json {
 
-  def schema[T]: Schema[T] = macro SchemaMacro.implSchema[T]
+  def schema[T]: Schema[T] = macro SchemaMacro.deriveSchema[T]
 
-  def objectSchema[T](descriptions: (String, String)*): `object`[T] = macro SchemaMacro.implObject[T]
+  def objectSchema[T](descriptions: (String, String)*): `object`[T] = macro SchemaMacro.deriveObjectSchema[T]
 
   def sig[T]: TypeSignature[T] = macro TypeSignatureMacro.impl[T]
 
   object auto {
 
-    implicit def derived[T]: Predef[T] = macro SchemaMacro.implPredef[T]
+    implicit def derived[T]: Predef[T] = macro SchemaMacro.derivePredef[T]
   }
 }
