@@ -12,8 +12,8 @@ import json.Validation._
 
 /** The idea behind Predef is a continuation of the idea about exposing
   * schemas that was found in implicit scope as `ref`. Namely, if schema
-  * is derived - it will be defined im-place inside of a json-schema, but
-  * if it's implicitly available - goint to be a `ref`.
+  * is derived - it will be defined in-place inside of a json-schema, but
+  * if it's implicitly available - going to be a `ref`.
   *
   * So Predef changes it by adding another class of implicitly
   * defined schemas which won't become a `ref`

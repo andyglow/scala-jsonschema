@@ -66,6 +66,42 @@ class AsPlaySpec extends AnyPropSpec{
                                               "default" -> Json.obj("head" -> "initial note", "tail" -> Json.arr()))),
       "required"              -> Json.arr("age", "lastName", "firstName"))
   }
+
+  property("Check Schema.asPlay (+ free notation, as schema/definition") {
+    import AsPlay._
+
+    implicit val metaSchema: json.Schema[JsObject] = json.Schema.`object`.Free[JsObject]()
+
+    json.Json.schema[Person].asPlay(Draft04()) shouldEqual Json.obj(
+      f"$$schema"             -> "http://json-schema.org/draft-04/schema#",
+      "type"                  -> "object",
+      "additionalProperties"  -> false,
+      "properties"            -> Json.obj(
+        "id"       -> Json.obj("type" -> "string"),
+        "name"     -> Json.obj("type" -> "string"),
+        "metadata" -> Json.obj(f"$$ref" -> "#/definitions/play.api.libs.json.JsObject")),
+     "required"   -> Json.arr("id", "name", "metadata"),
+     "definitions"            -> Json.obj(
+       "play.api.libs.json.JsObject" -> Json.obj(
+         "type" -> "object",
+         "additionalProperties"  -> true)))
+  }
+
+  property("Check Schema.asPlay (+ free notation, predef/inline") {
+    import AsPlay._
+
+    implicit val metaSchema: json.schema.Predef[JsObject] = json.schema.Predef(json.Schema.`object`.Free[JsObject]())
+
+    json.Json.schema[Person].asPlay(Draft04()) shouldEqual Json.obj(
+      f"$$schema"             -> "http://json-schema.org/draft-04/schema#",
+      "type"                  -> "object",
+      "additionalProperties"  -> false,
+      "properties"            -> Json.obj(
+        "id"       -> Json.obj("type" -> "string"),
+        "name"     -> Json.obj("type" -> "string"),
+        "metadata" -> Json.obj("type" -> "object", "additionalProperties"  -> true)),
+     "required"   -> Json.arr("id", "name", "metadata"))
+  }
 }
 
 
