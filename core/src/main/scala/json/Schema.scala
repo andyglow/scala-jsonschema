@@ -215,7 +215,7 @@ object Schema {
     }
   }
 
-  final case class `object`[T](
+  sealed case class `object`[T](
     fields: Set[`object`.Field[_]]) extends Schema[T] {
     import `object`._
     type Self = `object`[T]
@@ -356,6 +356,11 @@ object Schema {
   }
 
   final object `object` {
+
+    sealed trait Free { this: `object`[_] => }
+    final object Free {
+      def apply[T](): `object`[T] with Free = new `object`[T](Set.empty) with Free
+    }
 
     final class Field[T](
       val name: String,

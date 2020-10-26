@@ -225,6 +225,11 @@ object Value {
 
   implicit def convertValueField[T](x: (String, Value)): obj.field = obj.field.some(x._1, x._2)
 
+  implicit def convertOptValueField[T](x: (String, Option[Value])): obj.field = x match {
+    case (f, Some(v)) => obj.field.some(f, v)
+    case (_, None)    => obj.field.none
+  }
+
   implicit class IterableOps[T](val x: Iterable[T]) {
 
     def toArr(implicit elementAdapter: ValueAdapter[T]): arr = arr(x.map { elementAdapter adapt _ }.toSeq)

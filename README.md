@@ -508,6 +508,32 @@ Definition will look then like
 }
 ```
 
+## Free objects
+Sometimes you need to include some more relaxed structure like the json itself into your models.
+In such cases you want your final schema would contain something like this:
+```json
+{
+  "type": "object",
+  "additionalProperties": true
+}
+```   
+In order to get this, you can use `Schema.object.Free`. Like in this Play-Json based example:
+```scala
+import play.api.libs.json._
+
+// model
+case class Payload(id: String, name: String, metadata: JsObject)
+
+// metadata schema
+implicit val metaSchema: json.Schema[JsObject] = json.Schema.`object`.Free[JsObject]()
+
+// or alternatively define a metadata Predef in case you need this to not go to definition section of json-schema
+// implicit val metaPredef: json.schema.Predef[JsObject] = json.schema.Predef(json.Schema.`object`.Free[JsObject]())
+
+// person schema
+val personSchema: json.Schema[Person] = Json.schema[Person]
+``` 
+
 ## Joda Time
 Joda Time Support allows you to use joda-time classes within your models.
 Here is an example.
