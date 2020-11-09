@@ -45,7 +45,7 @@ lazy val commonSettings = Seq(
       "-feature",
       "-unchecked",
       "-deprecation",
-      "-Xfatal-warnings",
+//      "-Xfatal-warnings",
       "-Xlint",
       "-Ywarn-unused-import",
       "-Yno-adapted-args",

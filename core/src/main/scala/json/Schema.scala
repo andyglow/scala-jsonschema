@@ -297,6 +297,29 @@ object Schema {
     }
   }
 
+  final object `ref` {
+
+    def apply[T](tpe: Schema[_])(sig: => String): Schema[T] = tpe match {
+      case vc @ `value-class`(innerTpe) =>
+        vc.refName match {
+          case Some(refName) => `ref`(refName, innerTpe)
+          case None => `ref`(sig, innerTpe)
+        }
+      case _ => `ref`(sig, tpe)
+    }
+  }
+
+  final case class `value-class`[O, I](tpe: Schema[I]) extends Schema[O] {
+    type Self = `value-class`[O, I]
+    override def jsonType: String = tpe.jsonType
+    def mkCopy() = new `value-class`[O, I](tpe)
+    override def canEqual(that: Any): Boolean = that.isInstanceOf[`value-class`[_, _]]
+    override def equals(obj: Any): Boolean = obj match {
+      case `value-class`(t) => tpe == t && super.equals(obj)
+      case _ => false
+    }
+  }
+
   // TODO
   // final case class `const`[T](tpe: Schema[_], value: Value) extends Schema[T] { override def jsonType: String = tpe.jsonType }
 

@@ -162,7 +162,7 @@ class SchemaMacroSpec extends AnyWordSpec {
     }
 
     "generate schema for value class" in {
-      Json.schema[Bar8] shouldEqual `string`[String](None, None)
+      Json.schema[Bar8] shouldEqual `value-class`[Bar8, String](`string`())
     }
 
     "generate schema for Map[String, _]" in {

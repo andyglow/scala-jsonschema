@@ -112,6 +112,10 @@ trait AsDraftSupport {
     obj(f"$$ref" -> s"#/definitions/$ref")
   }
 
+  def mkValueClass(pp: Option[ValidationDef[_, _]], x: `value-class`[_, _]): obj = {
+    inferSpecifics.lift((pp, x.tpe)) getOrElse obj()
+  }
+
   val inferSpecifics: PartialFunction[(Option[ValidationDef[_, _]], json.Schema[_]), obj] = {
     case (pp, x: `string`[_])        => mkStr(pp, x)
     case (pp, x: `object`[_])        => mkObj(pp, x)
@@ -123,6 +127,7 @@ trait AsDraftSupport {
     case (pp, x: `allof`[_])         => mkAllOf(pp, x)
     case (pp, x: `not`[_])           => mkNot(pp, x)
     case (pp, x: `ref`[_])           => mkRef(pp, x)
+    case (pp, x: `value-class`[_, _])=> mkValueClass(pp, x)
   }
 
   def inferValidations(x: json.Schema[_]): (obj, Option[ValidationDef[_, _]]) = {
