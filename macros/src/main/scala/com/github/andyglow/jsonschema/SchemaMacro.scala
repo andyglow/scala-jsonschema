@@ -404,11 +404,8 @@ object SchemaMacro {
 
         if (symbol.isClass) {
           val clazz = symbol.asClass
-          if (clazz.isCaseClass) {
-            if (clazz.isDerivedValueClass) Some {
+          if (clazz.isCaseClass && clazz.isDerivedValueClass) Some {
               clazz.primaryConstructor.asMethod.paramLists.head.head.typeSignature
-            } else
-              None
           } else
             None
         } else
@@ -416,12 +413,14 @@ object SchemaMacro {
       }
 
       def gen(innerType: Type, tpe: Type, stack: List[Type]): Tree = {
-        val x = resolve(innerType, tpe +: stack)
-        val z = x match {
-          case q"""$c[$t](..$args)""" => q"$c[$tpe](..$args)"
-          case x => val st = appliedType(schemaTypeConstructor, tpe); q"$x.asInstanceOf[$st]"
+        resolve(innerType, tpe +: stack) match {
+          case q"""$c[$t](..$args)""" =>
+            q"$c[$tpe](..$args)"
+          case x =>
+            q"""$schemaObj.`value-class`[$tpe, $innerType]($x)"""
+//            val st = appliedType(schemaTypeConstructor, tpe)
+//            q"$x.asInstanceOf[$st]"
         }
-        z
       }
     }
 
@@ -550,7 +549,7 @@ object SchemaMacro {
         lookupSchema match {
           case NotFound      => gen
           case FromPredef(x) => x
-          case FromSchema(x) => q"""$schemaObj.`ref`[$tpe]($jsonPkg.Json.sig[$tpe].signature, $x)"""
+          case FromSchema(x) => q"""$schemaObj.`ref`[$tpe]($x)($jsonPkg.Json.sig[$tpe].signature)"""
         }
       }
     }

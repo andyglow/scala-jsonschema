@@ -4,7 +4,7 @@ import java.net.URI
 
 import com.github.andyglow.json.Value._
 import com.github.andyglow.jsonschema.JsonMatchers._
-import json.Json
+import json.{Json, Validation}
 import json.Schema._
 import json.schema.Version.Draft04
 import org.scalatest.matchers.should.Matchers._
@@ -144,7 +144,7 @@ class AsDraft04Spec extends AnyWordSpec {
               "foo" -> obj("type" -> "string")))))
     }
 
-    "emit OneOf for value classes" in {
+    "emit OneOf for sealed trait with value classes" in {
 
       asDraft04(`oneof`(Set(
         `string`[String](None, None),
@@ -153,6 +153,24 @@ class AsDraft04Spec extends AnyWordSpec {
         "oneOf" -> arr(
           obj("type" -> "string"),
           obj("type" -> "integer")))
+    }
+
+    "emit inner type for value class" in {
+      // basic
+      asDraft04(`value-class`(`integer`)) shouldEqual obj("type" -> "integer")
+
+      // complex
+      val value = asDraft04(`value-class`(`object`(
+        `object`.Field("id", `integer`.withValidation(Validation.`minimum` := 20)),
+        `object`.Field("name", `string`()))))
+
+      value shouldEqual obj(
+        "type" -> "object",
+        "additionalProperties" -> false,
+        "required" -> arr("id", "name"),
+        "properties" -> obj(
+          "id" -> obj("type" -> "integer", "minimum" -> 20),
+          "name" -> obj("type" -> "string")))
     }
 
     "emit Map[String, _]" in {
