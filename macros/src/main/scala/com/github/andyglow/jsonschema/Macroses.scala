@@ -72,8 +72,8 @@ class Macroses(val c: blackbox.Context) extends UContext
     val recursiveTypes = new RecursiveTypes
     implicit val ctx = new ResolutionContext(Nil, recursiveTypes.append)
     val out = {
-      val st = recursiveTypes
-        .substitute(resolve(tpe, ctx, specFD))
+      // val st = resolve(tpe, ctx, specFD)
+      val st = recursiveTypes.substitute(resolve(tpe, ctx, specFD))
       st.withExtra(st.extra.copy(title = typeDeco.title, description = typeDeco.description))
     }.tree
 

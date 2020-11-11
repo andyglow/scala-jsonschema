@@ -22,10 +22,7 @@ class AsDraft07(val v: Draft07) extends AsValue with AsDraftSupport {
     }
   }
 
-  override def mkRef(pp: Option[ValidationDef[_, _]], x: `ref`[_]): obj = {
-    val ref = x.tpe.refName getOrElse x.sig
-    obj(f"$$ref" -> s"#$ref")
-  }
+  override def buildRef(ref: String): String = s"#$ref"
 
   override def inferDefinition(x: `ref`[_]): (String, obj) = {
     val ref = x.tpe.refName getOrElse x.sig

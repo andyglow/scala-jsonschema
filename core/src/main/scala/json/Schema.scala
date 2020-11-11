@@ -93,6 +93,16 @@ sealed trait Schema[+T] extends Product {
     copy
   }
 
+  def withExtraFrom(x: Schema[_]): Self = {
+    val copy = mkCopy()
+    copy._refName = x._refName
+    copy._validations = x._validations
+    copy._description = x._description
+    copy._title = x._title
+
+    copy
+  }
+
   override def canEqual(that: Any): Boolean = that.isInstanceOf[Schema[_]] // && getClass == that.getClass
 
   override def equals(obj: Any): Boolean = obj match {
@@ -245,6 +255,9 @@ object Schema {
       case _ => false
     }
   }
+  final object `oneof` {
+    def of[T](x: Schema[_], xs: Schema[_]*): `oneof`[T] = new `oneof`[T]((x +: xs).toSet)
+  }
 
   final case class `allof`[T](
     subTypes: Set[Schema[_]]) extends Schema[T] {
@@ -256,6 +269,9 @@ object Schema {
       case `allof`(s) => subTypes == s && super.equals(obj)
       case _ => false
     }
+  }
+  final object `allof` {
+    def of[T](x: Schema[_], xs: Schema[_]*): `allof`[T] = new `allof`[T]((x +: xs).toSet)
   }
 
   final case class `not`[T](
@@ -281,11 +297,31 @@ object Schema {
       case `ref`(s, t) => sig == s && tpe == t && super.equals(obj)
       case _ => false
     }
+
+    override def apply(refName: String): `ref`[T] = {
+      def deepCopy(x: Schema[_]): Schema[_] = {
+        val y = x match {
+          case `object`(fields)          => new `object`(fields.map { f => f.copy(tpe = deepCopy(f.tpe)) })
+          case `array`(y, u)             => `array`(deepCopy(y), u)
+          case `dictionary`(y)           => `dictionary`(deepCopy(y))
+          case `oneof`(ys)               => `oneof`(ys map deepCopy)
+          case `allof`(ys)               => `allof`(ys map deepCopy)
+          case `not`(y)                  => `not`(deepCopy(y))
+          case `ref`(s, y)               => `ref`(s, deepCopy(y))
+          case `lazy-ref`(s) if s == sig => `lazy-ref`(refName)
+          case y                         => y
+        }
+        y withExtraFrom x
+      }
+
+      val copy = super.apply(refName)
+      copy.copy(sig = refName, tpe = deepCopy(copy.tpe))
+    }
   }
 
   final object `ref` {
 
-    def apply[T](tpe: Schema[_])(sig: => String): Schema[T] = tpe match {
+    def apply[T](tpe: Schema[_])(sig: => String): `ref`[T] = tpe match {
       case vc @ `value-class`(innerTpe) =>
         vc.refName match {
           case Some(refName) => `ref`(refName, innerTpe)
@@ -371,12 +407,12 @@ object Schema {
       def apply[T](): `object`[T] with Free = new `object`[T](Set.empty) with Free
     }
 
-    final class Field[T](
-      val name: String,
-      val tpe: Schema[T],
-      val required: Boolean,
-      val default: Option[Value],
-      val description: Option[String]) {
+    final case class Field[T](
+      name: String,
+      tpe: Schema[T],
+      required: Boolean,
+      default: Option[Value],
+      description: Option[String]) {
 
       def canEqual(that: Any): Boolean = that.isInstanceOf[Field[T]]
 
