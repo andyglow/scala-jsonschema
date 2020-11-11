@@ -2,7 +2,6 @@ package com.github.andyglow.jsonschema
 
 import com.github.andyglow.json.Value._
 import json.Schema._
-import json.ValidationDef
 import json.schema.Version._
 
 

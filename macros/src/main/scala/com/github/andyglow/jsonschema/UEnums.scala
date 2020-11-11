@@ -8,14 +8,14 @@ private[jsonschema] trait UEnums { this: UContext with UCommons =>
     // TODO: add support for enumeratum/scala enumerations
 
     def unapply(tpe: Type)(implicit ctx: ResolutionContext): Option[U.Enum] = {
-      Option.when (tpe.typeSymbol.isClass && tpe.typeSymbol.asClass.isSealed) {
+      Option.whenever (tpe.typeSymbol.isClass && tpe.typeSymbol.asClass.isSealed) {
         val instances = tpe.typeSymbol.asClass.knownDirectSubclasses
         val toValueTree = c.inferImplicitValue(
           appliedType(T.toValue, tpe),
           silent = true,
           withMacrosDisabled = true)
 
-        Option.when (instances forall { i => val c = i.asClass; c.isModuleClass}) {
+        Option.whenever (instances forall { i => val c = i.asClass; c.isModuleClass}) {
           if (toValueTree.nonEmpty) {
             val valueTrees = instances.toSeq collect {
               case i: ClassSymbol =>
