@@ -47,12 +47,14 @@ Inspired by Coursera Autoschema but uses `Scala Macros` instead of `Java Reflect
 
 ## Features
 - Supports Json Schema `draft-04`, `draft-06`, `draft-07`
+- Supports `case classes`
 - Supports `value classes`
 - Supports `sealed trait enums`
 - Supports `sealed trait case classes`
+- Supports `recursive types`
 - Treats `Option` as optional fields
 - As well as treats fields with `default values` as optional
-- Any `Iterable` will be treated as `array`
+- Any `Iterable` is treated as `array`
 - Pluggable [Joda-Time](https://github.com/JodaOrg/joda-time) Support
 - Pluggable [Cats](https://github.com/typelevel/cats) Support
 - Pluggable [Refined](https://github.com/fthomas/refined) Support
