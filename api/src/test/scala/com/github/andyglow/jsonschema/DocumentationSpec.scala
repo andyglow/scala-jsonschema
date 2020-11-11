@@ -14,18 +14,18 @@ class DocumentationSpec extends AnyWordSpec {
 
   private val fromScaladoc    = Json.objectSchema[FromScaladoc]()
   private val fromAnnotations = Json.objectSchema[FromAnnotations]()
-  private val fromConfig      = Json.objectSchema[FromConfig](
+  private val fromConfig      = Json.objectSchema[FromSpec](
                                   "a" -> "A Param",
                                   "b" -> "B Param"
                                 ) .withDescription("My perfect class")
                                   .withTitle("A Title")
 
-  private def printSchema[T](s: Schema[T]): Unit = {
-    val str = JsonFormatter.format(AsValue.schema(s, Draft07("foo-id")))
-    println(str)
-  }
-
-  printSchema(fromAnnotations)
+//  private def printSchema[T](s: Schema[T]): Unit = {
+//    val str = JsonFormatter.format(AsValue.schema(s, Draft07("foo-id")))
+//    println(str)
+//  }
+//
+//  printSchema(fromAnnotations)
 
   "description" should {
 
@@ -112,7 +112,7 @@ object DocumentationSpec {
     @description("A Param") a: String,
     @description("B Param") b: Int)
 
-  case class FromConfig(a: String, b: Int)
+  case class FromSpec(a: String, b: Int)
 
   /** My perfect class
     *

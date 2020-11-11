@@ -1,14 +1,12 @@
 package com.example.unrelated
 
-import com.github.andyglow.json.JsonFormatter
-import com.github.andyglow.jsonschema.AsValue
-import json.Schema
+import json.{Json, Schema}
 import json.schema.Version.Draft07
 
 object CommentsMain {
 
   private def printSchema[T](s: Schema[T]): Unit = {
-    val str = JsonFormatter.format(AsValue.schema(s, Draft07("foo-id")))
+    val str = Json.stringify(s, Draft07("foo-id"))
     println(str)
   }
 

@@ -87,7 +87,7 @@ class AsDraft04Spec extends AnyWordSpec {
     }
 
     "emit Set" in {
-      asDraft04(`set`[String, Set](`string`[String](None, None))) shouldEqual obj(
+      asDraft04(`array`[String, Set](`string`[String](None, None), unique = true)) shouldEqual obj(
         "type"        -> "array",
         "items"       -> obj("type" -> "string"),
         "uniqueItems" -> true)

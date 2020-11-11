@@ -15,6 +15,7 @@ case class Scaladoc(tags: List[Scaladoc.Tag]) {
   def withoutParam(name: String): Scaladoc = copy(tags = tags.filter { case Param(`name`, _) => false; case _ => true })
   def withParam(name: String, value: String): Scaladoc = withoutParam(name).copy(tags = tags :+ Param(name, value))
   def param(name: String): Option[String] = tags collectFirst { case Param(`name`, x) => x }
+  def paramMap: Map[String, String] = tags.collect { case Param(name, x) => (name, x) }.toMap
 
   def withoutTParam(name: String): Scaladoc = copy(tags = tags.filter { case TParam(`name`, _) => false; case _ => true })
   def withTParam(name: String, value: String): Scaladoc = withoutTParam(name).copy(tags = tags :+ TParam(name, value))

@@ -156,31 +156,17 @@ object Schema {
     }
   }
 
-  final case class `set`[T, C[_]](
-    componentType: Schema[T]) extends Schema[C[T]] {
-    type Self = `set`[T, C]
-    override def jsonType = "array"
-    def mkCopy() = new `set`[T, C](componentType)
-    override def canEqual(that: Any): Boolean = that match {
-      case `set`(_) => true
-      case _ => false
-    }
-    override def equals(obj: Any): Boolean = obj match {
-      case `set`(c) => componentType == c && super.equals(obj)
-      case _ => false
-    }
-  }
-
   final case class `array`[T, C[_]](
-    componentType: Schema[T]) extends Schema[C[T]] {
+    componentType: Schema[T],
+    unique: Boolean = false) extends Schema[C[T]] {
     type Self = `array`[T, C]
-    def mkCopy() = new `array`[T, C](componentType)
+    def mkCopy() = new `array`[T, C](componentType, unique)
     override def canEqual(that: Any): Boolean = that match {
-      case `array`(_) => true
-      case _ => false
+      case `array`(_, _) => true
+      case _             => false
     }
     override def equals(obj: Any): Boolean = obj match {
-      case `array`(c) => componentType == c && super.equals(obj)
+      case `array`(c, u) => u == unique && componentType == c && super.equals(obj)
       case _ => false
     }
   }
@@ -457,5 +443,12 @@ object Schema {
     }
 
     def apply[T](field: Field[_], xs: Field[_]*): `object`[T] = new `object`((field +: xs.toSeq).toSet)
+  }
+
+  // recursive-type marker. shouldn't be used for other purposes
+  final case class `lazy-ref`[T](sig: String) extends Schema[T] {
+    override type Self = `lazy-ref`[T]
+    override protected def mkCopy(): `lazy-ref`[T] = `lazy-ref`(sig)
+    override def jsonType: String = ??? // should never call this. instead calling code should interpret it as `ref`
   }
 }
