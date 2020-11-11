@@ -168,7 +168,7 @@ lazy val `spray-json` = { project in file("modules/spray-json") }.dependsOn(core
 
   name := "scala-jsonschema-spray-json",
 
-  libraryDependencies += "io.spray" %%  "spray-json" % "1.3.5"
+  libraryDependencies += "io.spray" %%  "spray-json" % "1.3.6"
 )
 
 lazy val `circe-json` = { project in file("modules/circe-json") }.dependsOn(core, api % "compile->compile;test->test").settings(
