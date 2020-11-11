@@ -110,7 +110,7 @@ private[jsonschema] trait UProductTypes { this: UContext with UCommons with USca
           val name = f.name.decodedName.toString
 
           // resolve the field type schema
-          val fieldSchema = resolve(f.effectiveTpe, if (f.isOption) ctx else ctx :+ tpe)
+          val fieldSchema = resolve(f.effectiveTpe, ctx :+ tpe)
 
           // description
           val description = fd.get(f.name.decodedName.toString)

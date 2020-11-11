@@ -50,7 +50,6 @@ private[jsonschema] trait UImplicits { this: UContext with UCommons with USignat
 
 
     def getOrElse(tpe: Type, gen: => SchemaType): SchemaType = {
-      // def debug(msg: String): Unit = c.info(c.enclosingPosition, msg, force = true)
 
       val sType = appliedType(T.schemaC, tpe) // .dealias.widen
       val pType = appliedType(T.predefC, tpe) // .dealias.widen

@@ -105,13 +105,15 @@ trait AsDraftSupport {
 
   def mkRef(pp: Option[ValidationDef[_, _]], x: `ref`[_]): obj = {
     val ref = x.tpe.refName getOrElse x.sig
-    obj(f"$$ref" -> s"#/definitions/$ref")
+    obj(f"$$ref" -> buildRef(ref))
   }
 
   def mkLazyRef(pp: Option[ValidationDef[_, _]], x: `lazy-ref`[_]): obj = {
     val ref = x.sig
-    obj(f"$$ref" -> s"#/definitions/$ref")
+    obj(f"$$ref" -> buildRef(ref))
   }
+
+  def buildRef(ref: String): String = s"#/definitions/$ref"
 
   def mkValueClass(pp: Option[ValidationDef[_, _]], x: `value-class`[_, _]): obj = {
     inferSpecifics.lift((pp, x.tpe, false)) getOrElse obj()
