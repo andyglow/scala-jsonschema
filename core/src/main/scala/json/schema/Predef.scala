@@ -51,11 +51,11 @@ object Predef extends LowPriorityPredefs {
   implicit val jsqlTimeS: Predef[java.sql.Time]                = Predef(`string`[java.sql.Time](Format.`time`))
   implicit val localTimeS: Predef[java.time.LocalTime]         = Predef(`string`[java.time.LocalTime](Format.`time`))
 
-  implicit def arrayS[T](implicit p: Predef[T]): Predef[Array[T]] = Predef(`array`[T, Array](p.schema))
-  implicit def setS[T](implicit p: Predef[T]): Predef[Set[T]] = Predef(`set`[T, Set](p.schema))
-  implicit def listS[T](implicit p: Predef[T]): Predef[List[T]] = Predef(`array`[T, List](p.schema))
-  implicit def vectorS[T](implicit p: Predef[T]): Predef[Vector[T]] = Predef(`array`[T, Vector](p.schema))
-  implicit def strMapS[K, V](implicit p: Predef[V], keyP: KeyPattern[K]): Predef[Map[K, V]] = Predef {
+  implicit def arrayS[T](implicit p: Predef[T]): Predef[Array[T]] = Predef(`array`[T, Array](p.schema, unique = false))
+  implicit def setS[T](implicit p: Predef[T]): Predef[Set[T]] = Predef(`array`[T, Set](p.schema, unique = true))
+  implicit def listS[T](implicit p: Predef[T]): Predef[List[T]] = Predef(`array`[T, List](p.schema, unique = false))
+  implicit def vectorS[T](implicit p: Predef[T]): Predef[Vector[T]] = Predef(`array`[T, Vector](p.schema, unique = false))
+  implicit def dictS[K, V](implicit p: Predef[V], keyP: KeyPattern[K]): Predef[Map[K, V]] = Predef {
     val schema = `dictionary`[K, V, Map](p.schema)
     if (keyP == `dictionary`.KeyPattern.StringKeyPattern) schema else {
       schema withValidation (Validation.`patternProperties` := keyP.pattern)

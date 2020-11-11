@@ -1,22 +1,28 @@
 package json
 
-import com.github.andyglow.jsonschema.{SchemaMacro, TypeSignature, TypeSignatureMacro}
+import com.github.andyglow.json.JsonFormatter
+import com.github.andyglow.jsonschema._
 import json.Schema.`object`
-import json.schema.Predef
+import json.schema.{Predef, Version}
+import json.schema.Version.Draft07
 
 import scala.language.experimental.macros
 
 
 object Json {
 
-  def schema[T]: Schema[T] = macro SchemaMacro.deriveSchema[T]
+  def schema[T]: Schema[T] = macro Macroses.deriveSchema[T]
 
-  def objectSchema[T](descriptions: (String, String)*): `object`[T] = macro SchemaMacro.deriveObjectSchema[T]
+  def objectSchema[T](decorations: (String, String)*): `object`[T] = macro Macroses.deriveObjectSchema[T]
 
-  def sig[T]: TypeSignature[T] = macro TypeSignatureMacro.impl[T]
+  def sig[T]: TypeSignature[T] = macro Macroses.deriveSignature[T]
 
   object auto {
 
-    implicit def derived[T]: Predef[T] = macro SchemaMacro.derivePredef[T]
+    implicit def derived[T]: Predef[T] = macro Macroses.derivePredef[T]
+  }
+
+  def stringify[T, V <: Version : AsValueBuilder](schema: Schema[T], version: V): String = {
+    JsonFormatter.format(AsValue.schema(schema, version))
   }
 }

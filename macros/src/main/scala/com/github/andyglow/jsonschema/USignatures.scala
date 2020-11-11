@@ -1,21 +1,13 @@
 package com.github.andyglow.jsonschema
 
-import scala.reflect.macros.blackbox
+
+private[jsonschema] trait USignatures { this: UContext =>
+  import c.universe._
 
 
-object TypeSignatureMacro {
+  def signature(tpe: Type): String = {
 
-  def impl[T: c.WeakTypeTag](c: blackbox.Context): c.Expr[TypeSignature[T]] = {
-    import c.universe._
-
-    c.Expr[TypeSignature[T]] { typeSig(c)(weakTypeOf[T]) }
-  }
-
-  private[jsonschema] def typeSig(c: blackbox.Context)(tpe: c.universe.Type): c.Tree = {
-    import c.universe._
-
-    def compute(tpe: c.universe.Type): String = {
-//      c.info(c.enclosingPosition, showRaw(tpe), force = true)
+    def compute(tpe: Type): String = {
 
       tpe match {
         case tpe: SingleType                                => tpe.typeSymbol.fullName
@@ -27,8 +19,6 @@ object TypeSignatureMacro {
       }
     }
 
-    val name = compute(tpe)
-
-    q"_root_.com.github.andyglow.jsonschema.TypeSignature[$tpe]($name)"
+    compute(tpe)
   }
 }

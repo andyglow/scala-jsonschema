@@ -75,7 +75,7 @@ object ParseJsonSchema {
       elementType <- x.value.obj("items").toSuccess("items is not defined") flatMap makeType
     } yield {
       val unique = x.value.bool("uniqueItems") getOrElse false
-      if (unique) `set`(elementType) else `array`(elementType)
+      `array`(elementType, unique = unique)
     }
 
     def makeObj = x.value.obj("patternProperties") match {

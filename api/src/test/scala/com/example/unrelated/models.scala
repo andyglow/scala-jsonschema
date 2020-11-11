@@ -9,7 +9,11 @@ object models {
     * @param a A Param
     * @param b B Param
     */
-  case class Foo(a: String, b: Int, c: Boolean, @description("some description") d: Map[String, String])
+  case class Foo(
+    a: String,
+    b: Int,
+    c: Boolean,
+    @description("some description") d: Map[String, String])
 
   @title("A Bar Title")
   @description("this is Bar. description")

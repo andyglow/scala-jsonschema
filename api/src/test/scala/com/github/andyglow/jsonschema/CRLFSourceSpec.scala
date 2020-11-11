@@ -14,7 +14,7 @@ class CRLFSourceSpec extends AnyFunSuite {
 
   test("support windows CRLF") {
     CC.ccSchema shouldEqual `object`(
-      Field("set"     , `set`(`integer`), required = false, default = Set(1, 5, 9)),
+      Field("set"     , `array`(`integer`, unique = true), required = false, default = Set(1, 5, 9)),
       Field("list"    , `array`(`boolean`), required = false, default = List(true, false)),
       Field("vector"  , `array`(`number`[Long]), required = false, default = Vector(9, 7)),
       Field("strMap"  , `dictionary`(`number`[Double]), required = false, default = Map("foo" -> .12)),
