@@ -7,7 +7,7 @@ private[jsonschema] trait UDictionaries { this: UContext with UCommons with UEnu
   class DictionaryExtractor {
 
     def unapply(tpe: Type)(implicit ctx: ResolutionContext): Option[U.Dict] = {
-      Option.when (tpe <:< T.map) {
+      Option.whenever (tpe <:< T.map) {
         val containerTpe  = tpe.typeConstructor
         val keyTpe        = tpe.typeArgs.head
         val valueTpe      = tpe.typeArgs.tail.head

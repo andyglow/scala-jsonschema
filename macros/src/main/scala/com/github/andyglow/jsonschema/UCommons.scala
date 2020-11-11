@@ -107,7 +107,7 @@ private[jsonschema] trait UCommons extends SchemaTypes with ULogging { this: UCo
   }
 
   implicit class OptionCompanionOps(val x: Option.type) {
-    def when[T](predicate: Boolean)(block: => Option[T]): Option[T] = if (predicate) block else None
+    def whenever[T](predicate: Boolean)(block: => Option[T]): Option[T] = if (predicate) block else None
   }
 
   implicit def asSome[T](x: T): Option[T] = Some(x)
