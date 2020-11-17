@@ -2,7 +2,7 @@ package com.github.andyglow.jsonschema
 
 import com.github.andyglow.json.JsonFormatter
 import json._
-import json.schema.Version.{Draft04, Draft07}
+import json.schema.Version._
 import json.schema._
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec._

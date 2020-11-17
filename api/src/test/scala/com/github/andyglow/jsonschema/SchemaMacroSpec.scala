@@ -1,7 +1,7 @@
 package com.github.andyglow.jsonschema
 
 import json.{Json, Schema}
-import json.Validation._
+import json.schema.validation.Instance._
 import json.Schema._
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpec
@@ -15,7 +15,7 @@ class SchemaMacroSpec extends AnyWordSpec {
       import `object`.Field
 
       val expected = `object`(
-        Field("name", `string`[String](None, None)),
+        Field("name", `string`[String]()),
         Field("bar" , `integer`))
 
       Json.schema[Foo1] shouldEqual expected
@@ -25,7 +25,7 @@ class SchemaMacroSpec extends AnyWordSpec {
       import `object`.Field
 
       Json.schema[Foo2] shouldEqual `object`(
-        Field("name", `string`[String](None, None), required = false),
+        Field("name", `string`[String](), required = false),
         Field("bar" , `integer`, required = false))
     }
 
@@ -33,7 +33,7 @@ class SchemaMacroSpec extends AnyWordSpec {
       import `object`.Field
 
       Json.schema[Foo3] shouldEqual `object`(
-        Field("name"    , `string`[String](None, None), required = false, default = "xxx"),
+        Field("name"    , `string`[String](), required = false, default = "xxx"),
         Field("bar"     , `integer`, required = false, default = 5),
         Field("active"  , `boolean`, required = false, default = true))
     }
@@ -46,7 +46,7 @@ class SchemaMacroSpec extends AnyWordSpec {
         Field("list"    , `array`(`boolean`), required = false, default = List(true, false)),
         Field("vector"  , `array`(`number`[Long]), required = false, default = Vector(9, 7)),
         Field("strMap"  , `dictionary`(`number`[Double]), required = false, default = Map("foo" -> .12)),
-        Field("intMap"  , `dictionary`[Int, String, Map](`string`[String](None, None)).withValidation(`patternProperties` := "^[0-9]+$"), required = false, default = Map(1 -> "1", 2 -> "2")))
+        Field("intMap"  , `dictionary`[Int, String, Map](`string`[String]()).withValidation(`patternProperties` := "^[0-9]+$"), required = false, default = Map(1 -> "1", 2 -> "2")))
     }
 
     "generate references for implicitly defined dependencies" in {
@@ -67,7 +67,7 @@ class SchemaMacroSpec extends AnyWordSpec {
             "component",
             `ref`[Compo1](
               "com.github.andyglow.jsonschema.SchemaMacroSpec.Compo1",
-              `string`[Compo1](None, None)),
+              `string`[Compo1]()),
             required = true))
       }
     }
@@ -108,10 +108,10 @@ class SchemaMacroSpec extends AnyWordSpec {
 
       Json.schema[MultiLevelSealedTraitRoot] shouldEqual `oneof`(Set(
         `object`(Field("a", `integer`)),
-        `object`(Field("b", `string`(None, None))),
+        `object`(Field("b", `string`())),
         `object`(Field("c", `boolean`)),
         `object`(Field("d", `number`[Double]())),
-        `object`(Field("e", `array`[String, List](`string`(None, None))))))
+        `object`(Field("e", `array`[String, List](`string`())))))
     }
 
     "generate schema for Sealed Trait subclasses defined inside of it's companion object" in {
@@ -135,7 +135,7 @@ class SchemaMacroSpec extends AnyWordSpec {
 //    "generate schema for Map which Sealed Values Family for values" in {
 //
 //      Json.schema[Map[String, AnyFooBar]] shouldEqual `string-map`[String, AnyFooBar, Map](
-//        `oneof`(Set(`string`[String](None, None), `integer`)))
+//        `oneof`(Set(`string`[String](), `integer`)))
 //    }
 
     "generate schema for case class that includes another case class" in {
@@ -143,7 +143,7 @@ class SchemaMacroSpec extends AnyWordSpec {
 
       Json.schema[Bar5] shouldEqual `object`(
         Field("foo", `object`(
-          Field("name", `string`[String](None, None)),
+          Field("name", `string`[String]()),
           Field("bar" , `integer`))))
     }
 
@@ -151,7 +151,7 @@ class SchemaMacroSpec extends AnyWordSpec {
       import `object`.Field
 
       Json.schema[Bar6] shouldEqual `object`(
-        Field("foo", `array`(`string`[String](None, None))))
+        Field("foo", `array`(`string`[String]())))
     }
 
     "generate schema for case class using collection of integers" in {
@@ -168,11 +168,11 @@ class SchemaMacroSpec extends AnyWordSpec {
     "generate schema for Map[String, _]" in {
       import `object`.Field
 
-      Json.schema[Map[String, String]] shouldEqual `dictionary`(`string`[String](None, None))
+      Json.schema[Map[String, String]] shouldEqual `dictionary`(`string`[String]())
 
       Json.schema[Map[String, Int]] shouldEqual `dictionary`(`integer`)
 
-      Json.schema[Map[String, Foo9]] shouldEqual `dictionary`[String, Foo9, Map](`object`(Field("name", `string`[String](None, None))))
+      Json.schema[Map[String, Foo9]] shouldEqual `dictionary`[String, Foo9, Map](`object`(Field("name", `string`[String]())))
     }
 
     "generate schema for Map[_: MapKeyPattern, _]" in {
@@ -182,11 +182,11 @@ class SchemaMacroSpec extends AnyWordSpec {
 
       Json.schema[Map[Char, Long]] shouldEqual `dictionary`[Char, Long, Map](`number`[Long]).withValidation(`patternProperties` := "^.{1}$")
 
-      Json.schema[Map[Int, String]] shouldEqual `dictionary`[Int, String, Map](`string`[String](None, None)).withValidation(`patternProperties` := "^[0-9]+$")
+      Json.schema[Map[Int, String]] shouldEqual `dictionary`[Int, String, Map](`string`[String]()).withValidation(`patternProperties` := "^[0-9]+$")
 
       Json.schema[Map[Int, Int]] shouldEqual `dictionary`[Int, Int, Map](`integer`).withValidation(`patternProperties` := "^[0-9]+$")
 
-      Json.schema[Map[Int, Foo9]] shouldEqual `dictionary`[Int, Foo9, Map](`object`(Field("name", `string`[String](None, None)))).withValidation(`patternProperties` := "^[0-9]+$")
+      Json.schema[Map[Int, Foo9]] shouldEqual `dictionary`[Int, Foo9, Map](`object`(Field("name", `string`[String]()))).withValidation(`patternProperties` := "^[0-9]+$")
     }
   }
 }

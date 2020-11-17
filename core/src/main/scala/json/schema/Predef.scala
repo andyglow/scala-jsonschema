@@ -3,11 +3,11 @@ package json.schema
 import java.net.{URI, URL}
 import java.util.UUID
 
-import json.{Schema, Validation}
+import json._
 import json.Schema._
 import json.Schema.`dictionary`.KeyPattern
 import json.Schema.`string`.Format
-import json.Validation._
+import json.schema.validation.Instance._
 
 
 /** The idea behind Predef is a continuation of the idea about exposing
@@ -28,8 +28,8 @@ trait LowPriorityPredefs {
 }
 object Predef extends LowPriorityPredefs {
   implicit val strS: Predef[String]                            = Predef(`string`[String]())
-  implicit val chrS: Predef[Char]                              = Predef(`string`("^[.\\s]$").withValidation(`minLength` := 1, `maxLength` := 1))
-  implicit val jchrS: Predef[Character]                        = Predef(`string`("^[.\\s]$").withValidation(`minLength` := 1, `maxLength` := 1))
+  implicit val chrS: Predef[Char]                              = Predef(`string`[Char]().withValidation(`minLength` := 1, `maxLength` := 1, `pattern` := "^[.\\s]$"))
+  implicit val jchrS: Predef[Character]                        = Predef(`string`[Character]().withValidation(`minLength` := 1, `maxLength` := 1, `pattern` := "^[.\\s]$"))
   implicit val boolS: Predef[Boolean]                          = Predef(`boolean`)
   implicit val byteS: Predef[Byte]                             = Predef(`number`[Byte]())
   implicit val shortS: Predef[Short]                           = Predef(`number`[Short]())
@@ -39,7 +39,7 @@ object Predef extends LowPriorityPredefs {
   implicit val longS: Predef[Long]                             = Predef(`number`[Long]())
   implicit val bigIntS: Predef[BigInt]                         = Predef(`number`[BigInt]())
   implicit val bigDecimalS: Predef[BigDecimal]                 = Predef(`number`[BigDecimal]())
-  implicit val uuidS: Predef[UUID]                             = Predef(`string`[UUID]("^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"))
+  implicit val uuidS: Predef[UUID]                             = Predef(`string`[UUID]().withValidation(`pattern` := "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"))
   implicit val uriS: Predef[URI]                               = Predef(`string`[URI](Format.`uri`))
   implicit val urlS: Predef[URL]                               = Predef(`string`[URL](Format.`uri`))
   implicit val juDateS: Predef[java.util.Date]                 = Predef(`string`[java.util.Date](Format.`date-time`))
@@ -58,7 +58,7 @@ object Predef extends LowPriorityPredefs {
   implicit def dictS[K, V](implicit p: Predef[V], keyP: KeyPattern[K]): Predef[Map[K, V]] = Predef {
     val schema = `dictionary`[K, V, Map](p.schema)
     if (keyP == `dictionary`.KeyPattern.StringKeyPattern) schema else {
-      schema withValidation (Validation.`patternProperties` := keyP.pattern)
+      schema withValidation (`patternProperties` := keyP.pattern)
     }
   }
 }

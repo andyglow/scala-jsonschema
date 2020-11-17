@@ -2,7 +2,7 @@ package com.github.andyglow.jsonschema
 
 import json._
 import Schema._
-import Validation._
+import schema.validation.Instance._
 import enumeratum._
 import enumeratum.values._
 import enumeratum.EnumEntry._

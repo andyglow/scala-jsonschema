@@ -6,7 +6,7 @@ import eu.timepit.refined.numeric._
 import eu.timepit.refined.boolean._
 import json.Json.schema
 import json.Schema._
-import json.Validation._
+import json.schema.validation.Instance._
 import org.scalatest.matchers.should.Matchers.{ not => _, _ }
 import org.scalatest.funsuite._
 

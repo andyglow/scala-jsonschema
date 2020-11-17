@@ -18,7 +18,7 @@ class ParseJsonSchemaSpec extends AnyFunSuite {
         | "type": "string"
         |}
       """.stripMargin
-    }.value shouldBe `string`(None, None)
+    }.value shouldBe `string`()
   }
 
   test("string: date") {
@@ -31,7 +31,7 @@ class ParseJsonSchemaSpec extends AnyFunSuite {
         | "format": "date"
         |}
       """.stripMargin
-    }.value shouldBe `string`(Some(`date`), None)
+    }.value shouldBe `string`(`date`)
   }
 
   test("string: time") {
@@ -44,7 +44,7 @@ class ParseJsonSchemaSpec extends AnyFunSuite {
         | "format": "time"
         |}
       """.stripMargin
-    }.value shouldBe `string`(Some(`time`), None)
+    }.value shouldBe `string`(`time`)
   }
 
   test("string: date-time") {
@@ -57,7 +57,7 @@ class ParseJsonSchemaSpec extends AnyFunSuite {
         | "format": "date-time"
         |}
       """.stripMargin
-    }.value shouldBe `string`(Some(`date-time`), None)
+    }.value shouldBe `string`(`date-time`)
   }
 
   test("string: uri") {
@@ -70,7 +70,7 @@ class ParseJsonSchemaSpec extends AnyFunSuite {
         | "format": "uri"
         |}
       """.stripMargin
-    }.value shouldBe `string`(Some(`uri`), None)
+    }.value shouldBe `string`(`uri`)
   }
 
   test("string: email") {
@@ -83,7 +83,7 @@ class ParseJsonSchemaSpec extends AnyFunSuite {
         | "format": "email"
         |}
       """.stripMargin
-    }.value shouldBe `string`(Some(`email`), None)
+    }.value shouldBe `string`(`email`)
   }
 
   test("string: hostname") {
@@ -96,7 +96,7 @@ class ParseJsonSchemaSpec extends AnyFunSuite {
         | "format": "hostname"
         |}
       """.stripMargin
-    }.value shouldBe `string`(Some(`hostname`), None)
+    }.value shouldBe `string`(`hostname`)
   }
 
   test("string: ipv4") {
@@ -109,7 +109,7 @@ class ParseJsonSchemaSpec extends AnyFunSuite {
         | "format": "ipv4"
         |}
       """.stripMargin
-    }.value shouldBe `string`(Some(`ipv4`), None)
+    }.value shouldBe `string`(`ipv4`)
   }
 
   test("string: ipv6") {
@@ -122,7 +122,7 @@ class ParseJsonSchemaSpec extends AnyFunSuite {
         | "format": "ipv6"
         |}
       """.stripMargin
-    }.value shouldBe `string`(Some(`ipv6`), None)
+    }.value shouldBe `string`(`ipv6`)
   }
 
   test("integer") {
@@ -161,7 +161,7 @@ class ParseJsonSchemaSpec extends AnyFunSuite {
         | }
         |}
       """.stripMargin
-    }.value shouldBe `array`(`string`(None, None))
+    }.value shouldBe `array`(`string`())
   }
 
   def parseType(x: String): Try[Schema[_]] =

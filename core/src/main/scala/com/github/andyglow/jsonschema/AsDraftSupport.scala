@@ -2,6 +2,7 @@ package com.github.andyglow.jsonschema
 
 import json._
 import json.Schema._
+import json.schema.{ validation => V }
 
 import com.github.andyglow.json.Value._
 
@@ -22,11 +23,10 @@ trait AsDraftSupport {
     base ++ validations ++ specifics
   }
 
-  def mkStr(pp: Option[ValidationDef[_, _]], x: `string`[_]): obj = obj(
-    ("format", x.format map { _.productPrefix }),
-    ("pattern", x.pattern))
+  def mkStr(pp: Option[V.Def[_, _]], x: `string`[_]): obj = obj(
+    ("format", x.format map { _.productPrefix }))
 
-  def mkObj(pp: Option[ValidationDef[_, _]], x: `object`[_]): obj = {
+  def mkObj(pp: Option[V.Def[_, _]], x: `object`[_]): obj = {
     val props = x.fields.map { field =>
       val default = field.default map { d => obj("default" -> d) } getOrElse obj()
       val description = field.description map { d => obj("description" -> d) } getOrElse obj()
@@ -46,25 +46,25 @@ trait AsDraftSupport {
       ("required"  , if (required.isEmpty) None else Some(arr(required.toSeq))))
   }
 
-  def mkDict(pp: Option[ValidationDef[_, _]], comp: Schema[_]): obj = {
+  def mkDict(pp: Option[V.Def[_, _]], comp: Schema[_]): obj = {
     val pattern = pp map { _.json.asInstanceOf[str].value } getOrElse "^.*$"
     obj("patternProperties" -> obj(
       pattern -> apply(comp, includeType = true, isRoot = false)))
   }
 
-  def mkArr(pp: Option[ValidationDef[_, _]], comp: Schema[_], unique: Boolean): obj = {
+  def mkArr(pp: Option[V.Def[_, _]], comp: Schema[_], unique: Boolean): obj = {
     obj(
       "items" -> apply(comp, includeType = true, isRoot = false),
       "uniqueItems" -> (if (unique) Some(true) else None))
   }
 
-  def mkEnum(pp: Option[ValidationDef[_, _]], x: `enum`[_]): obj = {
+  def mkEnum(pp: Option[V.Def[_, _]], x: `enum`[_]): obj = {
     obj(
       "type" -> "string",
       "enum" -> arr(x.values.toSeq))
   }
 
-  def mkOneOf(pp: Option[ValidationDef[_, _]], x: `oneof`[_], isRoot: Boolean): obj = {
+  def mkOneOf(pp: Option[V.Def[_, _]], x: `oneof`[_], isRoot: Boolean): obj = {
     val subTypesSeq = x.subTypes.toSeq
     val tpe = subTypesSeq.head.jsonType
     val sameType = subTypesSeq.tail.foldLeft(true) { case (agg, t) => agg && (t.jsonType == tpe) }
@@ -81,7 +81,7 @@ trait AsDraftSupport {
           subTypesSeq.tail.map(apply(_, includeType = true, isRoot = false)): _*))
   }
 
-  def mkAllOf(pp: Option[ValidationDef[_, _]], x: `allof`[_], isRoot: Boolean): obj = {
+  def mkAllOf(pp: Option[V.Def[_, _]], x: `allof`[_], isRoot: Boolean): obj = {
     val subTypesSeq = x.subTypes.toSeq
     val tpe = subTypesSeq.head.jsonType
     val sameType = subTypesSeq.tail.foldLeft(true) { case (agg, t) => agg && (t.jsonType == tpe) }
@@ -99,27 +99,27 @@ trait AsDraftSupport {
   }
 
 
-  def mkNot(pp: Option[ValidationDef[_, _]], x: `not`[_]): obj = {
+  def mkNot(pp: Option[V.Def[_, _]], x: `not`[_]): obj = {
     obj("not" -> apply(x.tpe, includeType = false, isRoot = false))
   }
 
-  def mkRef(pp: Option[ValidationDef[_, _]], x: `ref`[_]): obj = {
+  def mkRef(pp: Option[V.Def[_, _]], x: `ref`[_]): obj = {
     val ref = x.tpe.refName getOrElse x.sig
     obj(f"$$ref" -> buildRef(ref))
   }
 
-  def mkLazyRef(pp: Option[ValidationDef[_, _]], x: `lazy-ref`[_]): obj = {
+  def mkLazyRef(pp: Option[V.Def[_, _]], x: `lazy-ref`[_]): obj = {
     val ref = x.sig
     obj(f"$$ref" -> buildRef(ref))
   }
 
   def buildRef(ref: String): String = s"#/definitions/$ref"
 
-  def mkValueClass(pp: Option[ValidationDef[_, _]], x: `value-class`[_, _]): obj = {
+  def mkValueClass(pp: Option[V.Def[_, _]], x: `value-class`[_, _]): obj = {
     inferSpecifics.lift((pp, x.tpe, false)) getOrElse obj()
   }
 
-  val inferSpecifics: PartialFunction[(Option[ValidationDef[_, _]], json.Schema[_], Boolean), obj] = {
+  val inferSpecifics: PartialFunction[(Option[V.Def[_, _]], json.Schema[_], Boolean), obj] = {
     case (pp, x: `string`[_], _)           => mkStr(pp, x)
     case (pp, x: `object`[_], _)           => mkObj(pp, x)
     case (pp, `dictionary`(comp), _)       => mkDict(pp, comp)
@@ -133,8 +133,8 @@ trait AsDraftSupport {
     case (pp, x: `value-class`[_, _], _)   => mkValueClass(pp, x)
   }
 
-  def inferValidations(x: json.Schema[_]): (obj, Option[ValidationDef[_, _]]) = {
-    import Validation._
+  def inferValidations(x: json.Schema[_]): (obj, Option[V.Def[_, _]]) = {
+    import V.Instance._
 
     val pp = x.validations.find(_.validation == `patternProperties`)
     val validations = obj {

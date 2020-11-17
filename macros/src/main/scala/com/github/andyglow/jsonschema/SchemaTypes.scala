@@ -40,7 +40,7 @@ private[jsonschema] trait SchemaTypes { this: UContext with UCommons =>
     final case class Bool(extra: Extra = Extra()) extends SchemaType { type Self = Bool; def prefix = q"${N.Schema}.`boolean`()"; val tpe = typeOf[Boolean]; def withExtra(x: SchemaType.Extra) = copy(extra = x) }
     final case class Integer(extra: Extra = Extra()) extends SchemaType { type Self = Integer; def prefix = q"${N.Schema}.`integer`()"; val tpe = typeOf[Int]; def withExtra(x: SchemaType.Extra) = copy(extra = x) }
     final case class Number(tpe: Type, extra: Extra = Extra()) extends SchemaType { type Self = Number; def prefix = q"${N.Schema}.`number`[$tpe]()"; def withExtra(x: SchemaType.Extra) = copy(extra = x) }
-    final case class Str(tpe: Type, format: Tree, pattern: Tree, extra: Extra = Extra()) extends SchemaType { type Self = Str; def prefix = q"${N.Schema}.`string`[$tpe]($format, $pattern)"; def withExtra(x: SchemaType.Extra) = copy(extra = x) }
+    final case class Str(tpe: Type, format: Tree, extra: Extra = Extra()) extends SchemaType { type Self = Str; def prefix = q"${N.Schema}.`string`[$tpe]($format)"; def withExtra(x: SchemaType.Extra) = copy(extra = x) }
     final case class Arr(elementTpe: Type, containerTpe: Type, elementSchema: SchemaType, unique: Boolean, extra: Extra = Extra()) extends SchemaType { type Self = Arr; def prefix = q"${N.Schema}.`array`[$elementTpe, $containerTpe](${elementSchema.tree}, $unique)"; val tpe = appliedType(containerTpe, elementTpe); def withExtra(x: SchemaType.Extra) = copy(extra = x) }
     final case class Dict(keyTpe: Type, valueTpe: Type, containerTpe: Type, valueSchema: SchemaType, extra: Extra = Extra()) extends SchemaType { type Self = Dict; def prefix = q"${N.Schema}.`dictionary`[$keyTpe, $valueTpe, $containerTpe](${valueSchema.tree})"; val tpe = appliedType(containerTpe, List(keyTpe, valueTpe)); def withExtra(x: SchemaType.Extra) = copy(extra = x) }
     final case class Obj(tpe: Type, fields: Seq[Obj.Field], extra: Extra = Extra()) extends SchemaType { type Self = Obj; def prefix = q"${N.Schema}.`object`[$tpe](..${fields map { _.tree }})"; def withExtra(x: SchemaType.Extra) = copy(extra = x) }
@@ -85,7 +85,7 @@ private[jsonschema] trait SchemaTypes { this: UContext with UCommons =>
 //      case q"_root_.json.Schema.`boolean`()" => Some(Bool)
 //      case q"_root_.json.Schema.`integer`()" => Some(Integer)
 //      case q"_root_.json.Schema.`number`[$t]()" => Some(Number(t.tpe))
-//      case q"_root_.json.Schema.`string`[$t]($format, $pattern)" => Some(Str(t.tpe, format, pattern))
+//      case q"_root_.json.Schema.`string`[$t]($format)" => Some(Str(t.tpe, format))
 //      case q"_root_.json.Schema.`set`[$t, $c]($elementSchema)"   => unapply(elementSchema) map { ESet(t.tpe, c.tpe, _) }
 //      case q"_root_.json.Schema.`array`[$t, $c]($elementSchema)" => unapply(elementSchema) map { Arr(t.tpe, c.tpe, _) }
 //      case q"_root_.json.Schema.`dictionary`[$k, $v, $c]($valueSchema)" => unapply(valueSchema) map { Dict(k.tpe, v.tpe, c.tpe, _) }

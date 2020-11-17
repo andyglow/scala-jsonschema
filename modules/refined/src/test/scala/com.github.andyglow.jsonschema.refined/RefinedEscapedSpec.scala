@@ -6,6 +6,7 @@ import eu.timepit.refined.{string => _, _}
 import eu.timepit.refined.api._
 import eu.timepit.refined.string._
 import json.Json.schema
+import json.schema.validation.Instance._
 import json.Schema._
 import json.schema.Version.Draft04
 import org.scalatest.matchers.should.Matchers._
@@ -20,7 +21,7 @@ class RefinedEscapedSpec extends AnyFunSuite {
     val res = schema[String Refined MatchesRegex[W.`"""\\d{3}[- ]\\d{3}[- ]\\d{4}"""`.T]]
     def d04 = JsonFormatter.format(AsValue.schema(res, Draft04()))
 
-    res shouldBe `string`("\\d{3}[- ]\\d{3}[- ]\\d{4}")
+    res shouldBe `string`[String]().withValidation(`pattern` := "\\d{3}[- ]\\d{3}[- ]\\d{4}")
 
     d04 shouldBe
       s"""{

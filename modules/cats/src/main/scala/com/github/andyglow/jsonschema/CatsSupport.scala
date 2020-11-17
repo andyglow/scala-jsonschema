@@ -4,23 +4,24 @@ import cats.data._
 import json.Schema
 import json.Schema._
 import json.Schema.`dictionary`.KeyPattern
-import json.Validation._
+import json.schema.validation.Magnet
+import json.schema.validation.Instance._
 import json.schema.Predef
 
 trait LowPriorityCatsSupport extends ScalaVersionSpecificLowPriorityCatsSupport {
-  import ValidationBound.mk
+  import Magnet.mk
 
   // bounds
-  implicit def chainVB[X]: ValidationBound[Chain[X], Iterable[_]] = mk[Chain[X], Iterable[_]]
-  implicit def nelVB[X]: ValidationBound[NonEmptyList[X], Iterable[_]] = mk[NonEmptyList[X], Iterable[_]]
-  implicit def nevVB[X]: ValidationBound[NonEmptyVector[X], Iterable[_]] = mk[NonEmptyVector[X], Iterable[_]]
-  implicit def nesVB[X]: ValidationBound[NonEmptySet[X], Iterable[_]] = mk[NonEmptySet[X], Iterable[_]]
-  implicit def necVB[X]: ValidationBound[NonEmptyChain[X], Iterable[_]] = mk[NonEmptyChain[X], Iterable[_]]
-  implicit def nemStrVB[K, V]: ValidationBound[NonEmptyMap[K, V], Map[_, _]] = mk[NonEmptyMap[K, V], Map[_, _]]
-  implicit def oneAndVB[F[_], X]: ValidationBound[OneAnd[F, X], Iterable[_]] = mk[OneAnd[F, X], Iterable[_]]
+  implicit def chainVB[X]: Magnet[Chain[X], Iterable[_]] = mk[Chain[X], Iterable[_]]
+  implicit def nelVB[X]: Magnet[NonEmptyList[X], Iterable[_]] = mk[NonEmptyList[X], Iterable[_]]
+  implicit def nevVB[X]: Magnet[NonEmptyVector[X], Iterable[_]] = mk[NonEmptyVector[X], Iterable[_]]
+  implicit def nesVB[X]: Magnet[NonEmptySet[X], Iterable[_]] = mk[NonEmptySet[X], Iterable[_]]
+  implicit def necVB[X]: Magnet[NonEmptyChain[X], Iterable[_]] = mk[NonEmptyChain[X], Iterable[_]]
+  implicit def nemStrVB[K, V]: Magnet[NonEmptyMap[K, V], Map[_, _]] = mk[NonEmptyMap[K, V], Map[_, _]]
+  implicit def oneAndVB[F[_], X]: Magnet[OneAnd[F, X], Iterable[_]] = mk[OneAnd[F, X], Iterable[_]]
 
-  protected def mkNEx[T, C[_]](schema: Schema[T])(implicit b: ValidationBound[C[T], Iterable[_]]) = Predef(`array`[T, C](schema).withValidation(`minItems` := 1))
-  protected def mkNESM[K, V](vSchema: Schema[V], keyP: KeyPattern[K])(implicit b: ValidationBound[NonEmptyMap[K, V], Map[_, _]]) = Predef {
+  protected def mkNEx[T, C[_]](schema: Schema[T])(implicit b: Magnet[C[T], Iterable[_]]) = Predef(`array`[T, C](schema).withValidation(`minItems` := 1))
+  protected def mkNESM[K, V](vSchema: Schema[V], keyP: KeyPattern[K])(implicit b: Magnet[NonEmptyMap[K, V], Map[_, _]]) = Predef {
     val schema = `dictionary`[K, V, NonEmptyMap](vSchema).withValidation(`minProperties` := 1)
     if (keyP == `dictionary`.KeyPattern.StringKeyPattern) schema else {
       schema.withValidation(`patternProperties` := keyP.pattern)

@@ -16,7 +16,7 @@ class AsDraft07Spec extends AnyWordSpec {
       import `object`.Field
 
       val o = `object`(
-        Field("foo", `string`[String](None, None)),
+        Field("foo", `string`[String]()),
         Field("bar", `integer`, required = false),
         Field("baz", `ref`[Boolean]("scala.Boolean", `boolean`("my-bool"))))
 
