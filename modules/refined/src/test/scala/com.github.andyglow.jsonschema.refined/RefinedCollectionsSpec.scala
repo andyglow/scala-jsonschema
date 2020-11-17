@@ -6,7 +6,7 @@ import eu.timepit.refined.collection._
 import eu.timepit.refined._
 import json.Json.schema
 import json.Schema._
-import json.Validation._
+import json.schema.validation.Instance._
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.funsuite._
 

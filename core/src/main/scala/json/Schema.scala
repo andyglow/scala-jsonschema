@@ -1,12 +1,10 @@
 package json
 
-import com.github.andyglow.json.{ToValue, Value}
-
-import scala.annotation.implicitNotFound
+import com.github.andyglow.json._
+import json.schema.{ validation => V }
 
 
 sealed trait Schema[+T] extends Product {
-  import Schema._
 
   type Self <: Schema[T]
 
@@ -16,11 +14,11 @@ sealed trait Schema[+T] extends Product {
 
   private var _refName: Option[String] = None
 
-  private var _validations: collection.Seq[ValidationDef[_, _]] = Seq.empty
+  private var _validations: collection.Seq[V.Def[_, _]] = Seq.empty
 
   def jsonType: String = productPrefix
 
-  def withValidation[TT >: T, B](v: ValidationDef[B, _], vs: ValidationDef[B, _]*)(implicit bound: ValidationBound[TT, B]): Self = {
+  def withValidation[TT >: T, B](v: V.Def[B, _], vs: V.Def[B, _]*)(implicit bound: V.Magnet[TT, B]): Self = {
     val copy = this.duplicate()
     copy._validations = (v +: vs).foldLeft(_validations) {
       case (agg, v) => bound.append(agg, v)
@@ -45,7 +43,7 @@ sealed trait Schema[+T] extends Product {
   // type mismatch;
   //  [error]  found   : Seq[json.ValidationDef[_, _]] (in scala.collection)
   //  [error]  required: Seq[json.ValidationDef[_, _]] (in scala.collection.immutable)
-  def validations: Seq[ValidationDef[_, _]] = _validations.toSeq
+  def validations: Seq[V.Def[_, _]] = _validations.toSeq
 
   override def toString: String = {
     val sb = new StringBuilder
@@ -143,21 +141,18 @@ object Schema {
     override def canEqual(that: Any): Boolean = that.isInstanceOf[`number`[_]]
   }
 
-  final case class `string`[T](
-    format: Option[`string`.Format],
-    pattern: Option[String]) extends Schema[T] {
+  sealed case class `string`[T](format: Option[`string`.Format]) extends Schema[T] {
     type Self = `string`[T]
-    def mkCopy() = new `string`[T](format, pattern)
+    def mkCopy() = new `string`[T](format)
     override def canEqual(that: Any): Boolean = that.isInstanceOf[`string`[_]]
     override def equals(obj: Any): Boolean = obj match {
-      case `string`(f, p) => format == f && pattern == p && super.equals(obj)
+      case `string`(f) => format == f && super.equals(obj)
       case _ => false
     }
 
     override def toString: String = {
       val sb = new StringBuilder
       format foreach { x => sb.append("fmt=").append(x.productPrefix) }
-      pattern foreach { x => if(sb.nonEmpty) sb.append(", "); sb.append("pat=`").append(x).append('`') }
       if (sb.isEmpty) {
         "string"
       } else {
@@ -345,38 +340,11 @@ object Schema {
   // TODO
   // final case class `const`[T](tpe: Schema[_], value: Value) extends Schema[T] { override def jsonType: String = tpe.jsonType }
 
-  @implicitNotFound("Implicit not found: ValidationBound[${F}, ${T}]. Some of validations doesn't match schema type")
-  trait ValidationBound[F, T] {
-    def append(
-      seq: collection.Seq[ValidationDef[_, _]],
-      item: ValidationDef[T, _]): collection.Seq[ValidationDef[_, _]] = seq :+ item
-  }
-  object ValidationBound {
-    def mk[A, B]: ValidationBound[A, B] = new ValidationBound[A, B] {}
 
-    implicit def identity[X]: ValidationBound[X, X] = mk[X, X]
 
-    implicit def numeric[X: Numeric]: ValidationBound[X, Number] = mk[X, Number]
-
-    implicit def intMap[X]: ValidationBound[Map[Int, X], Map[Int, _]] = mk[Map[Int, X], Map[Int, _]]
-    implicit def stringMap[X]: ValidationBound[Map[String, X], Map[String, _]] = mk[Map[String, X], Map[String, _]]
-    implicit def map[K, V]: ValidationBound[Map[K, V], Map[_, _]] = mk[Map[K, V], Map[_, _]]
-
-    implicit def array[X]: ValidationBound[Array[X], Iterable[_]] = mk[Array[X], Iterable[_]]
-    implicit def iterable[X]: ValidationBound[Iterable[X], Iterable[_]] = mk[Iterable[X], Iterable[_]]
-//    implicit def seq[X]: ValidationBound[Seq[X], Iterable[_]] = mk[Seq[X], Iterable[_]]
-    implicit def list[X]: ValidationBound[List[X], Iterable[_]] = mk[List[X], Iterable[_]]
-    implicit def vector[X]: ValidationBound[Vector[X], Iterable[_]] = mk[Vector[X], Iterable[_]]
-    implicit def set[X]: ValidationBound[Set[X], Iterable[_]] = mk[Set[X], Iterable[_]]
-
-    implicit def chr: ValidationBound[String, Character] = mk[String, Character]
-  }
-
-  object `string` {
-
-    def apply[T](): `string`[T] = `string`[T](None, None)
-    def apply[T](pattern: String): `string`[T] = `string`[T](None, Some(pattern))
-    def apply[T](format: Format): `string`[T] = `string`[T](Some(format), None)
+  object `string` extends `string`[String](None) {
+    def apply[T](): `string`[T] = `string`[T](None)
+    def apply[T](format: Format): `string`[T] = `string`[T](Some(format))
 
     trait Format extends Product
 

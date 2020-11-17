@@ -49,31 +49,31 @@ private[jsonschema] trait AST { this: Math with HasContext with HasLog =>
     // STRING
     // ------
     case class IPv4(t: Type) extends Pred {
-      override def tree = q"`string`[$t](Some(`ipv4`), None)"
+      override def tree = q"`string`[$t](`ipv4`)"
     }
 
     case class IPv6(t: Type) extends Pred {
-      override def tree = q"`string`[$t](Some(`ipv6`), None)"
+      override def tree = q"`string`[$t](`ipv6`)"
     }
 
     case class MatchesRegex(t: Type, v: String) extends Pred {
-      override def tree = q"`string`[$t](None, Some($v))"
+      override def tree = q"`string`[$t]().withValidation(`pattern` := $v)"
     }
 
     case class URI(t: Type) extends Pred {
-      override def tree = q"`string`[$t](Some(`uri`), None)"
+      override def tree = q"`string`[$t](`uri`)"
     }
 
     case class UUID(t: Type) extends Pred {
-      override def tree = q"""`string`[$t](None, Some("^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$$"))"""
+      override def tree = q"""`string`[$t]() withValidation ( `pattern` := "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$$" )"""
     }
 
     case class XML(t: Type) extends Pred {
-      override def tree = q"""`string`[$t] withValidation ( `contentMediaType` := "text/xml", `contentEncoding` := "utf8" )"""
+      override def tree = q"""`string`[$t]() withValidation ( `contentMediaType` := "text/xml", `contentEncoding` := "utf8" )"""
     }
 
     case class Trimmed(t: Type) extends Pred {
-      override def tree = q"""`string`[$t]("^(?!\\s)[\\S ]*(?<!\\s)$$")"""
+      override def tree = q"""`string`[$t]() withValidation ( `pattern` := "^(?!\\s)[\\S ]*(?<!\\s)$$" )"""
     }
 
     // -------

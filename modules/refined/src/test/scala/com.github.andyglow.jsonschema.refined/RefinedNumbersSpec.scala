@@ -4,7 +4,7 @@ import org.scalatest.matchers.should.Matchers._
 import org.scalatest.funsuite._
 import json.Json.schema
 import json.Schema._
-import json.Validation._
+import json.schema.validation.Instance._
 import com.github.andyglow.jsonschema.RefinedSupport._
 import eu.timepit.refined._
 import eu.timepit.refined.api._

@@ -18,8 +18,8 @@ class JodaTimeSupportSpec extends AnyWordSpec {
 
       "be exposed as string/date-time" in {
         dateTimeEventSchema shouldBe `object`(
-          Field("id", `string`(None, None)),
-          Field("timestamp", ref("org.joda.time.DateTime", `string`(Some(`date-time`), None))))
+          Field("id", `string`[String]()),
+          Field("timestamp", ref("org.joda.time.DateTime", `string`(`date-time`))))
       }
     }
 
@@ -27,8 +27,8 @@ class JodaTimeSupportSpec extends AnyWordSpec {
 
       "be exposed as string/date-time" in {
         instantEventSchema shouldBe `object`(
-          Field("id", `string`(None, None)),
-          Field("timestamp", ref("org.joda.time.Instant", `string`(Some(`date-time`), None))))
+          Field("id", `string`[String]()),
+          Field("timestamp", ref("org.joda.time.Instant", `string`(`date-time`))))
       }
     }
 
@@ -36,8 +36,8 @@ class JodaTimeSupportSpec extends AnyWordSpec {
 
       "be exposed as string/date-time" in {
         localDateTimeEventSchema shouldBe `object`(
-          Field("id", `string`(None, None)),
-          Field("timestamp", ref("org.joda.time.LocalDateTime", `string`(Some(`date-time`), None))))
+          Field("id", `string`[String]()),
+          Field("timestamp", ref("org.joda.time.LocalDateTime", `string`(`date-time`))))
       }
     }
 
@@ -45,8 +45,8 @@ class JodaTimeSupportSpec extends AnyWordSpec {
 
       "be exposed as string/date" in {
         localDateEventSchema shouldBe `object`(
-          Field("id", `string`(None, None)),
-          Field("timestamp", ref("org.joda.time.LocalDate", `string`(Some(`date`), None))))
+          Field("id", `string`[String]()),
+          Field("timestamp", ref("org.joda.time.LocalDate", `string`(`date`))))
       }
     }
 
@@ -54,8 +54,8 @@ class JodaTimeSupportSpec extends AnyWordSpec {
 
       "be exposed as string/time" in {
         localTimeEventSchema shouldBe `object`(
-          Field("id", `string`(None, None)),
-          Field("timestamp", ref("org.joda.time.LocalTime", `string`(Some(`time`), None))))
+          Field("id", `string`[String]()),
+          Field("timestamp", ref("org.joda.time.LocalTime", `string`(`time`))))
       }
     }
   }

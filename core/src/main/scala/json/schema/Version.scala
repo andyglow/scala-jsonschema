@@ -7,6 +7,10 @@ sealed trait Version {
 
 object Version {
 
+  final case object Raw extends Version {
+    def uri = ???
+  }
+
   final case class Draft04() extends Version {
 
     val uri: String = "http://json-schema.org/draft-04/schema#"

@@ -30,7 +30,7 @@ class RefinedMacro(val c: blackbox.Context) extends Logic {
         import json.Schema._
         import `string`._
         import Format._
-        import json.Validation._
+        import json.schema.validation.Instance._
 
         $tree.asInstanceOf[json.Schema[$tt]]
       """)

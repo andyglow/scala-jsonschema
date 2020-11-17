@@ -11,6 +11,10 @@ trait AsValueBuilder[V <: Version] {
 
 trait LowPriorityAsValueBuilder {
 
+  implicit val pseudo: AsValueBuilder[Raw.type] = new AsValueBuilder[Raw.type] {
+    override def apply(v: Raw.type): AsValue = AsRaw
+  }
+
   implicit val draft04: AsValueBuilder[Draft04] = new AsValueBuilder[Draft04] {
     override def apply(v: Draft04): AsValue = new AsDraft04(v)
   }

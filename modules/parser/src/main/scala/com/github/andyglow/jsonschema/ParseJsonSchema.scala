@@ -5,7 +5,7 @@ import java.io.{ByteArrayInputStream, InputStream}
 import scala.collection._
 import com.github.andyglow.json.{ParseJson, Value}
 import json.Schema
-import json.Validation._
+import json.schema.validation.Instance._
 
 import scala.util.{Failure, Success, Try}
 
@@ -56,7 +56,8 @@ object ParseJsonSchema {
     }
 
     def makeStr = Success {
-      `string`(x.value.str("format") flatMap parseFormat, x.value.str("pattern"))
+      val str = `string`[String](x.value.str("format") flatMap parseFormat)
+      x.value.str("pattern").foldLeft(str) { case (str, p) => str.withValidation(`pattern` := p).asInstanceOf[`string`[String]]}
     }
 
     def makeBool = Success {

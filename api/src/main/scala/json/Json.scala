@@ -1,10 +1,8 @@
 package json
 
-import com.github.andyglow.json.JsonFormatter
 import com.github.andyglow.jsonschema._
 import json.Schema.`object`
 import json.schema.{Predef, Version}
-import json.schema.Version.Draft07
 
 import scala.language.experimental.macros
 
@@ -22,7 +20,5 @@ object Json {
     implicit def derived[T]: Predef[T] = macro Macroses.derivePredef[T]
   }
 
-  def stringify[T, V <: Version : AsValueBuilder](schema: Schema[T], version: V): String = {
-    JsonFormatter.format(AsValue.schema(schema, version))
-  }
+  def stringify[T, V <: Version : AsValueBuilder](schema: Schema[T], version: V): String = schema.stringify(version)
 }

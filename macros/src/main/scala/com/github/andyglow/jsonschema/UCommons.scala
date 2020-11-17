@@ -41,7 +41,7 @@ private[jsonschema] trait UCommons extends SchemaTypes with ULogging { this: UCo
     val Json       = q"$json.Json"
     val Schema     = q"$json.Schema"
     val Predef     = q"$json.schema.Predef"
-    val Validation = q"$json.Validation"
+    val Validation = q"$json.schema.validation.Instance"
     final object internal {
       private val prefix = q"_root_.com.github.andyglow"
       val json = q"$prefix.json"
