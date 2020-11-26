@@ -1,7 +1,8 @@
+- **0.7.2**
+  - scaladoc  
 - **0.7.1**
   - draft 2019-09 implemented
   - initial json-diff functionality added  
-  ...
 - **0.6.3**
   - fixed scala.None handling for the default values of case class parameters (scala 2.11 is not supported this kind of functionality)
 - **0.6.2**
@@ -12,7 +13,8 @@
   - added support for scala.Enumeration
   - default values won't be infered for scala.None
 - **0.6.0**
-  ...
+  - Add Recursive Types support
+- **0.5.1**
 - **0.2.7-M1**
   - Add initial code for supporting #18. Use scaladoc for descriptions. 
     Added support for case classes and fields.
@@ -24,7 +26,7 @@
       have those reused my SchemaMacro. Here is an example of something like this: 
       https://medium.com/@takezoe/a-compiler-plugin-makes-scaladoc-readable-at-runtime-aecbebccb794 
 - **0.2.6**
-  - hot-fix release. disable mistakingly left enabled debug mode for Refined macro
+  - hot-fix release. disable mistakenly left enabled debug mode for Refined macro
 - **0.2.5**
   - Improve Schema matching. 
     Since now Ref and Validations are taken into an account during schema comparision.

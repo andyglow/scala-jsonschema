@@ -1,9 +1,10 @@
-# Json
+# Json-Library Integrations
 
-The library uses its own Json model _com.github.andyglow.json.Value_ to represent Json Schema as JSON document.
-But project contains additionally several modules which could connect it with library of your choice.
+`scala-jsonschema` uses its own Json AST to represent Json Schema document as well as default values of case class fields.
+And Integration provide a bridge between Internal AST and AST of the json-library. 
 
 Currently supported:
+
 - Play Json
 - Spray Json
 - Circe

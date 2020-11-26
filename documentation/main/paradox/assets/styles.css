@@ -1,0 +1,6 @@
+.mdc-form-field > .mdc-checkbox { float: left }
+#dependency-selector { display: table; }
+.dependency-category { padding-right: 3em; padding-left: 1em; display: table-cell; }
+.dependency-category:not(:last-child) { border-right: 1px dotted #009688; }
+
+table > thead > tr > th:first-child { width: 30% !important }
