@@ -135,10 +135,16 @@ object Schema {
   }
   final object `integer` extends `integer`
 
-  final case class `number`[T: Numeric]() extends Schema[T] {
+  final class `number`[T: Numeric]() extends Schema[T] {
     type Self = `number`[T]
     def mkCopy() = new `number`[T]()
     override def canEqual(that: Any): Boolean = that.isInstanceOf[`number`[_]]
+    override def productElement(n: Int): Any = ???
+    override def productArity: Int = 0
+    override def productPrefix: String = "number"
+  }
+  final object `number` {
+    def apply[T: Numeric]: `number`[T] = new `number`[T]
   }
 
   sealed case class `string`[T](format: Option[`string`.Format]) extends Schema[T] {

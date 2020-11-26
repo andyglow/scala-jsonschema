@@ -9,15 +9,15 @@ class ParseJsonBulkSpec extends AnyFunSuite {
 
   lazy val examples = Source.fromInputStream(classOf[ParseJsonBulkSpec].getResourceAsStream("/examples"))
 
-  examples.getLines foreach { name =>
+  examples.getLines() foreach { name =>
     def run(expect: Boolean) = {
       val is = classOf[ParseJsonBulkSpec].getResourceAsStream("/" + name)
       val json = Source.fromInputStream(is).mkString
       ParseJson(json) match {
-        case Success(_) if expect  =>
         case Success(x) if !expect => fail(json + " should have fail, but: " + x)
-        case Failure(_) if !expect =>
         case Failure(x) if expect  => fail(json + " should have succeed", x)
+        case Success(_)            =>
+        case Failure(_)            =>
       }
     }
 

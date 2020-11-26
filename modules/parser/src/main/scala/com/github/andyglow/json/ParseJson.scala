@@ -20,6 +20,7 @@ object ParseJson {
       stack.headOption foreach {
         case arr: MutableValue.arr => arr += v
         case obj: MutableValue.obj if currentName != null => obj.update(currentName, v)
+        case _ =>
       }
     }
 

@@ -140,7 +140,7 @@ class ParseJsonSchemaSpec extends AnyFunSuite {
         | "type": "number",
         |}
       """.stripMargin
-    }.value shouldBe `number`[Int]()
+    }.value shouldBe `number`[Int]
   }
 
   test("boolean") {

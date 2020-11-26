@@ -13,8 +13,8 @@ class SchemaMacro212Spec extends AnyWordSpec {
     import `object`.Field
 
     Json.schema[NestedFooBar] shouldEqual `oneof`(Set(
-      `object`(Field("foo", `number`[Double]())),
-      `object`(Field("bar", `number`[Double]()))))
+      `object`(Field("foo", `number`[Double])),
+      `object`(Field("bar", `number`[Double]))))
   }
 }
 

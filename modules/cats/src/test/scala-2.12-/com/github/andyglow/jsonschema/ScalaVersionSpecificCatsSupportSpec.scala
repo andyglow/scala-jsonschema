@@ -4,7 +4,7 @@ import cats.data._
 import json.Schema
 import json.Schema.`object`._
 import json.Schema._
-import json.Validation._
+import json.schema.validation.Instance._
 import CatsSupport._
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpec

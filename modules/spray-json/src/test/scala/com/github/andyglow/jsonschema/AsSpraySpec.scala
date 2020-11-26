@@ -47,6 +47,7 @@ class AsSpraySpec extends AnyPropSpec {
         "middleName"              -> JsObject("type" -> JsString("string")),
         "lastName"                -> JsObject("type" -> JsString("string")),
         "age"                     -> JsObject("type" -> JsString("integer")),
+        "lastLoginMs"             -> JsObject("type" -> JsString("number")),
         "role"                    -> JsObject("type" -> JsString("string"), "default" -> JsString("e-user"), "enum" -> JsArray(JsString("e-admin"), JsString("e-manager"), JsString("e-user"))),
         "active"                  -> JsObject("type" -> JsString("string"), "default" -> JsString("On"), "enum" -> JsArray(JsString("On"), JsString("Off"), JsString("Suspended"))),
         "enabledFeatures"         -> JsObject("type" -> JsString("array"), "uniqueItems" -> JsTrue, "default" -> JsArray(JsString("feature-0-name"), JsString("feature-1-name")), "items" -> JsObject("type" -> JsString("string"), "enum" -> JsArray(JsString("feature-0-name"), JsString("feature-1-name"), JsString("feature-2-name")))),

@@ -7,11 +7,12 @@ import com.github.andyglow.scalamigration._
 import json.schema.Version
 import upickle.default._
 
+
 object AsU {
 
   def apply[T](value: T)(implicit a: Adapter[T]): a.P = a.adapt(value)
 
-  implicit class SchemaOps[T](val x: Schema[T]) extends AnyVal {
+  implicit class UJsonSchemaOps[T](val x: Schema[T]) extends AnyVal {
 
     def asU[V <: Version](v: V)(implicit asValue: AsValueBuilder[V]): ujson.Obj = AsU(AsValue.schema(x, v))
   }

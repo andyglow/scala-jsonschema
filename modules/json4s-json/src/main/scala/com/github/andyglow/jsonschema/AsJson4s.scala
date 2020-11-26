@@ -13,7 +13,7 @@ object AsJson4s {
 
   def apply[T](value: T)(implicit a: Adapter[T]): a.P = a.adapt(value)
 
-  implicit class SchemaOps[T](val x: Schema[T]) extends AnyVal {
+  implicit class Json4sSchemaOps[T](val x: Schema[T]) extends AnyVal {
 
     def asJson4s[V <: Version](v: V)(implicit asValue: AsValueBuilder[V]): JObject =
       AsJson4s(AsValue.schema(x, v))

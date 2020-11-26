@@ -33,21 +33,21 @@ class DocumentationSpec extends AnyWordSpec {
 
       "specified in scaladoc" in {
         fromScaladoc.description shouldBe Some("My perfect class")
-        fromScaladoc.fields.flatMap(f => f.description map { d => f.name -> d }).toMap should contain only (
+        fromScaladoc.fields.flatMap(f => f.description map { d => f.name -> d }) should contain.only(
           "a" -> "A Param",
           "b" -> "B Param")
       }
 
       "specified in annotations" in {
         fromAnnotations.description shouldBe Some("My perfect class")
-        fromAnnotations.fields.flatMap(f => f.description map { d => f.name -> d }).toMap should contain only (
+        fromAnnotations.fields.flatMap(f => f.description map { d => f.name -> d }) should contain.only(
           "a" -> "A Param",
           "b" -> "B Param")
       }
 
       "specified in config" in {
         fromConfig.description shouldBe Some("My perfect class")
-        fromConfig.fields.flatMap(f => f.description map { d => f.name -> d }).toMap should contain only (
+        fromConfig.fields.flatMap(f => f.description map { d => f.name -> d }) should contain.only(
           "a" -> "A Param",
           "b" -> "B Param")
       }

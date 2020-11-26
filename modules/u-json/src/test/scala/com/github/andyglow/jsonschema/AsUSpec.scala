@@ -150,6 +150,7 @@ class AsUSpec extends AnyPropSpec {
         "middleName"              -> ujson.Obj("type" -> "string"),
         "lastName"                -> ujson.Obj("type" -> "string"),
         "age"                     -> ujson.Obj("type" -> "integer"),
+        "lastLoginMs"             -> ujson.Obj("type" -> "number"),
         "role"                    -> ujson.Obj("type" -> "string", "default" -> "e-user", "enum" -> ujson.Arr("e-admin","e-manager","e-user")),
         "active"                  -> ujson.Obj("type" -> "string", "default" -> "On", "enum" -> ujson.Arr("On", "Off", "Suspended")),
         "enabledFeatures"         -> ujson.Obj("type" -> "array", "uniqueItems" -> true, "default" -> ujson.Arr("feature-0-name", "feature-1-name"), "items" -> ujson.Obj("type" -> "string", "enum" -> ujson.Arr("feature-0-name", "feature-1-name", "feature-2-name"))),

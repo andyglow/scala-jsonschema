@@ -99,8 +99,8 @@ class SchemaMacroSpec extends AnyWordSpec {
       import `object`.Field
 
       Json.schema[FooBar] shouldEqual `oneof`(Set(
-        `object`(Field("foo", `number`[Double]())),
-        `object`(Field("bar", `number`[Double]()))))
+        `object`(Field("foo", `number`[Double])),
+        `object`(Field("bar", `number`[Double]))))
     }
 
     "generate schema for Multi Level Sealed Trait subclasses" in {
@@ -110,7 +110,7 @@ class SchemaMacroSpec extends AnyWordSpec {
         `object`(Field("a", `integer`)),
         `object`(Field("b", `string`())),
         `object`(Field("c", `boolean`)),
-        `object`(Field("d", `number`[Double]())),
+        `object`(Field("d", `number`[Double])),
         `object`(Field("e", `array`[String, List](`string`())))))
     }
 
@@ -118,8 +118,8 @@ class SchemaMacroSpec extends AnyWordSpec {
       import `object`.Field
 
       Json.schema[FooBarInsideCompanion] shouldEqual `oneof`(Set(
-        `object`(Field("foo", `number`[Double]())),
-        `object`(Field("bar", `number`[Double]()))))
+        `object`(Field("foo", `number`[Double])),
+        `object`(Field("bar", `number`[Double]))))
     }
 
 
