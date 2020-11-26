@@ -51,6 +51,7 @@ class AsJson4sSpec extends AnyPropSpec{
         "middleName"              -> JObject("type" -> JString("string")),
         "lastName"                -> JObject("type" -> JString("string")),
         "age"                     -> JObject("type" -> JString("integer")),
+        "lastLoginMs"             -> JObject("type" -> JString("number")),
         "role"                    -> JObject("type" -> JString("string"), "default" -> JString("e-user"), "enum" -> JArray(List(JString("e-admin"), JString("e-manager"), JString("e-user")))),
         "active"                  -> JObject("type" -> JString("string"), "default" -> JString("On"), "enum" -> JArray(List(JString("On"), JString("Off"), JString("Suspended")))),
         "enabledFeatures"         -> JObject("type" -> JString("array"), "uniqueItems" -> JBool.True, "default" -> JArray(List(JString("feature-0-name"), JString("feature-1-name"))), "items" -> JObject("type" -> JString("string"), "enum" -> JArray(List(JString("feature-0-name"), JString("feature-1-name"), JString("feature-2-name"))))),

@@ -77,7 +77,7 @@ class AsDraft04Spec extends AnyWordSpec {
     }
 
     "emit Number" in {
-      asDraft04(`number`[Double]()) shouldEqual obj("type" -> "number")
+      asDraft04(`number`[Double]) shouldEqual obj("type" -> "number")
     }
 
     "emit Integer" in {
@@ -103,7 +103,7 @@ class AsDraft04Spec extends AnyWordSpec {
 
       asDraft04(`array`(`integer`)) shouldEqual obj("type" -> "array", "items" -> obj("type" -> "integer"))
 
-      asDraft04(`array`(`number`[Int]())) shouldEqual obj("type" -> "array", "items" -> obj("type" -> "number"))
+      asDraft04(`array`(`number`[Int])) shouldEqual obj("type" -> "array", "items" -> obj("type" -> "number"))
 
       asDraft04(`array`(`boolean`)) shouldEqual obj("type" -> "array", "items" -> obj("type" -> "boolean"))
 
@@ -211,7 +211,7 @@ class AsDraft04Spec extends AnyWordSpec {
     "handle validations" when {
 
       "string" in {
-        val schema1 = Json.schema[String] withValidation (
+        val schema1 = Json.schema[String].withValidation(
           `maxLength` := 20,
           `minLength` := 15,
           `pattern`   := "[a-z]+")
@@ -221,7 +221,7 @@ class AsDraft04Spec extends AnyWordSpec {
 
       def numCase[T: Numeric](schema: json.Schema[T], t: String = "number")(implicit bound: V.Magnet[T, Number]): Unit = {
         asDraft04 {
-          schema withValidation (
+          schema.withValidation(
             `maximum` := 20,
             `minimum` := 15,
             `exclusiveMinimum` := 3,
@@ -247,7 +247,7 @@ class AsDraft04Spec extends AnyWordSpec {
 
       def arrCase[T](schema: json.Schema[T])(implicit bound: V.Magnet[T, Iterable[_]]): Unit = {
         asDraft04 {
-          schema withValidation (
+          schema.withValidation(
             `maxItems` := 20,
             `minItems` := 15)
         } should containJson(
@@ -267,7 +267,7 @@ class AsDraft04Spec extends AnyWordSpec {
 
       "map" in {
         asDraft04 {
-          Json.schema[Map[String, String]] withValidation (
+          Json.schema[Map[String, String]].withValidation (
             `patternProperties` := "^[a-z]*$",
             `maxProperties`     := 10,
             `minProperties`     := 4)
@@ -283,7 +283,7 @@ class AsDraft04Spec extends AnyWordSpec {
       "value class" in {
         asDraft04 {
           implicit val vb = V.Magnet.mk[ValueClass, String]
-          Json.schema[ValueClass] withValidation (
+          Json.schema[ValueClass].withValidation(
             `pattern` := "^[a-z]*$")
         } shouldBe obj(
           "type" -> "string",

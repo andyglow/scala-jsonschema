@@ -15,9 +15,9 @@ lazy val commonSettings = Seq(
 
   organizationName := "andyglow",
 
-  scalaVersion := "2.13.2",
+  scalaVersion := "2.12.12",
 
-  crossScalaVersions := Seq("2.11.12", "2.12.11", "2.13.2"),
+  crossScalaVersions := Seq("2.11.12", "2.12.12", "2.13.4"),
 
   Compile / unmanagedSourceDirectories ++= {
     val bd = baseDirectory.value
@@ -127,10 +127,7 @@ lazy val commonSettings = Seq(
 lazy val core = { project in file("core") }.settings(
   commonSettings,
 
-  name := "scala-jsonschema-core",
-
-//  libraryDependencies ++= Seq(
-//    (scalaVersion apply ("org.scala-lang" % "scala-reflect" % _ % Compile)).value.withSources.withJavadoc)
+  name := "scala-jsonschema-core"
 )
 
 lazy val macros = project in file("macros") dependsOn core settings (
@@ -284,8 +281,85 @@ lazy val enumeratum = { project in file("modules/enumeratum") }.dependsOn(core, 
   libraryDependencies += "com.beachape" %% "enumeratum" % "1.6.1",
 )
 
+lazy val docs = { project in file("documentation") }
+  .enablePlugins(
+    // - variable substitution
+    // - snippets evaluation
+    MdocPlugin,
+    // - markdown -> html
+    ParadoxPlugin,
+    // material design theme
+    ParadoxMaterialThemePlugin,
+    // paradox integration with sbt-site
+    ParadoxSitePlugin,
+    // publishing to GitHub Pages
+    GhpagesPlugin)
+  .dependsOn(api, `joda-time`)
+  .settings(
+    commonSettings,
+
+    mdocIn := baseDirectory.value / "main" / "paradox",
+
+    mdocVariables := Map("VERSION" -> version.value, "SCALA_VERSION" -> scalaVersion.value),
+
+    paradoxProperties ++= Map(
+      "project.name" -> "Scala JsonSchema",
+      "github.base_url" -> "https://github.com/andyglow/scala-jsonschema"),
+
+    Compile / paradox / sourceDirectory := mdocOut.value,
+
+    git.remoteRepo := scmInfo.value.get.connection,
+
+    Compile / paradoxMaterialTheme ~= {
+      _.withCustomStylesheet("assets/styles.css")
+    },
+
+    Compile / paradoxMaterialTheme ~= {
+      _.withCustomJavaScript("assets/dependencies.js")
+    },
+
+    //#color
+    Compile / paradoxMaterialTheme ~= {
+      _.withColor("teal", "indigo")
+    }
+    //#color
+    ,
+    //#repository
+    Compile / paradoxMaterialTheme ~= {
+      _.withRepository(uri("https://github.com/andyglow/scala-jsonschema"))
+    }
+    //#repository
+    ,
+    //#social
+    Compile / paradoxMaterialTheme ~= {
+      _.withSocial(
+        uri("https://github.com/andyglow"))
+    }
+    //#social
+    ,
+    //#language
+    Compile / paradoxMaterialTheme ~= {
+      _.withLanguage(java.util.Locale.ENGLISH)
+    }
+    //#language
+    ,
+    //#analytics
+//    Compile / paradoxMaterialTheme ~= {
+//      _.withGoogleAnalytics("UA-107934279-1") // Remember to change this!
+//    }
+    //#analytics
+//    ,
+    //#copyright
+    Compile / paradoxMaterialTheme ~= {
+      _.withCopyright("""
+        Inspired by <a href="https://github.com/coursera/autoschema">AutoSchema</a>
+        by <a href="https://github.com/coursera">Coursera</a>
+      """)
+    }
+    //#copyright
+  )
+
 lazy val root = { project in file(".") }
-  .enablePlugins(ParadoxPlugin, ParadoxMaterialThemePlugin)
   .aggregate(
     core,
     macros,
@@ -312,5 +386,9 @@ lazy val root = { project in file(".") }
 
     publishArtifact := false,
 
-    aggregate in update := false,
+    aggregate in update := false
   )
+
+addCommandAlias("makeDocs", ";docs/mdoc;docs/makeSite")
+addCommandAlias("publishDocs", ";makeDocs;ghpagesPushSite")
+//ParadoxMaterialThemePlugin.paradoxMaterialThemeSettings(Paradox)

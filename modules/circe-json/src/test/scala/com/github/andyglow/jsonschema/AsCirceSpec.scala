@@ -45,6 +45,7 @@ class AsCirceSpec extends AnyPropSpec {
         "middleName"              -> Json.obj("type" -> Json.fromString("string")),
         "lastName"                -> Json.obj("type" -> Json.fromString("string")),
         "age"                     -> Json.obj("type" -> Json.fromString("integer")),
+        "lastLoginMs"             -> Json.obj("type" -> Json.fromString("number")),
         "role"                    -> Json.obj("type" -> Json.fromString("string"), "default" -> Json.fromString("e-user"), "enum" -> Json.arr(Json.fromString("e-admin"), Json.fromString("e-manager"), Json.fromString("e-user"))),
         "active"                  -> Json.obj("type" -> Json.fromString("string"), "default" -> Json.fromString("On"), "enum" -> Json.arr(Json.fromString("On"), Json.fromString("Off"), Json.fromString("Suspended"))),
         "enabledFeatures"         -> Json.obj("type" -> Json.fromString("array"), "uniqueItems" -> Json.True, "default" -> Json.arr(Json.fromString("feature-0-name"), Json.fromString("feature-1-name")), "items" -> Json.obj("type" -> Json.fromString("string"), "enum" -> Json.arr(Json.fromString("feature-0-name"), Json.fromString("feature-1-name"), Json.fromString("feature-2-name")))),

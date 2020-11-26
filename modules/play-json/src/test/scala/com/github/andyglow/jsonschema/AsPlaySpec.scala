@@ -47,6 +47,7 @@ class AsPlaySpec extends AnyPropSpec{
         "middleName"              -> Json.obj("type" -> "string"),
         "lastName"                -> Json.obj("type" -> "string"),
         "age"                     -> Json.obj("type" -> "integer"),
+        "lastLoginMs"             -> Json.obj("type" -> "number"),
         "role"                    -> Json.obj("type" -> "string", "default" -> "e-user", "enum" -> Json.arr("e-admin","e-manager","e-user")),
         "active"                  -> Json.obj("type" -> "string", "default" -> "On", "enum" -> Json.arr("On", "Off", "Suspended")),
         "enabledFeatures"         -> Json.obj("type" -> "array", "uniqueItems" -> true, "default" -> Json.arr("feature-0-name", "feature-1-name"), "items" -> Json.obj("type" -> "string", "enum" -> Json.arr("feature-0-name", "feature-1-name", "feature-2-name"))),
@@ -117,6 +118,7 @@ object AsPlaySpec {
       case JsString(a) if b.isInstanceOf[JsString] => b.asInstanceOf[JsString].value == a
       case a: JsArray => jsArrEq.areEqual(a, b)
       case a: JsObject => jsObjEq.areEqual(a, b)
+      case _ => false
     }
   }
 

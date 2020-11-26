@@ -18,12 +18,12 @@ private[jsonschema] trait AST { this: Math with HasContext with HasLog =>
     case class Size(t: Type, d: Size.Def) extends Pred {
       import Size.Def._
       override def tree = d match {
-        case Min(v) if t =:= typeOf[String]    => q"json.Json.schema[$t] withValidation ( `minLength` := $v )"
-        case Min(v)                            => q"json.Json.schema[$t] withValidation ( `minItems` := $v )"
-        case Max(v) if t =:= typeOf[String]    => q"json.Json.schema[$t] withValidation ( `maxLength` := $v )"
-        case Max(v)                            => q"json.Json.schema[$t] withValidation ( `maxItems` := $v )"
-        case Const(v) if t =:= typeOf[String]  => q"json.Json.schema[$t] withValidation ( `minLength` := $v, `maxLength` := $v )"
-        case Const(v)                          => q"json.Json.schema[$t] withValidation ( `minItems` := $v, `maxItems` := $v )"
+        case Min(v) if t =:= typeOf[String]    => q"json.Json.schema[$t].withValidation( `minLength` := $v )"
+        case Min(v)                            => q"json.Json.schema[$t].withValidation( `minItems` := $v )"
+        case Max(v) if t =:= typeOf[String]    => q"json.Json.schema[$t].withValidation( `maxLength` := $v )"
+        case Max(v)                            => q"json.Json.schema[$t].withValidation( `maxItems` := $v )"
+        case Const(v) if t =:= typeOf[String]  => q"json.Json.schema[$t].withValidation( `minLength` := $v, `maxLength` := $v )"
+        case Const(v)                          => q"json.Json.schema[$t].withValidation( `minItems` := $v, `maxItems` := $v )"
       }
     }
     object Size {
@@ -95,7 +95,7 @@ private[jsonschema] trait AST { this: Math with HasContext with HasLog =>
     case class Divisable(t: Type, v: Any) extends Pred {
       override def tree = {
         val vv = v.asInstanceOf[Number].doubleValue()
-        q"`number`[$t]() withValidation ( `multipleOf` := $vv )"
+        q"`number`[$t].withValidation( `multipleOf` := $vv )"
       }
     }
 
@@ -108,10 +108,10 @@ private[jsonschema] trait AST { this: Math with HasContext with HasLog =>
 
       override def tree: Tree = {
         (min.inclusive, max.inclusive) match {
-          case (true , true)  => q"`number`[$t]() withValidation ( `minimum` := ${min.vv}, `maximum` := ${max.vv} )"
-          case (true , false) => q"`number`[$t]() withValidation ( `minimum` := ${min.vv}, `exclusiveMaximum` := ${max.vv} )"
-          case (false, true)  => q"`number`[$t]() withValidation ( `exclusiveMinimum` := ${min.vv}, `maximum` := ${max.vv} )"
-          case (false, false) => q"`number`[$t]() withValidation ( `exclusiveMinimum` := ${min.vv}, `exclusiveMaximum` := ${max.vv} )"
+          case (true , true)  => q"`number`[$t].withValidation( `minimum` := ${min.vv}, `maximum` := ${max.vv} )"
+          case (true , false) => q"`number`[$t].withValidation( `minimum` := ${min.vv}, `exclusiveMaximum` := ${max.vv} )"
+          case (false, true)  => q"`number`[$t].withValidation( `exclusiveMinimum` := ${min.vv}, `maximum` := ${max.vv} )"
+          case (false, false) => q"`number`[$t].withValidation( `exclusiveMinimum` := ${min.vv}, `exclusiveMaximum` := ${max.vv} )"
         }
         // TODO: if minv == maxv => const
       }
@@ -121,8 +121,8 @@ private[jsonschema] trait AST { this: Math with HasContext with HasLog =>
       def asSize: Size.Def = Size.Def.Min(vv.toInt)
       override def tree = {
         inclusive match {
-          case true  => q"`number`[$t]() withValidation ( `minimum` := $vv )"
-          case false => q"`number`[$t]() withValidation ( `exclusiveMinimum` := $vv )"
+          case true  => q"`number`[$t].withValidation( `minimum` := $vv )"
+          case false => q"`number`[$t].withValidation( `exclusiveMinimum` := $vv )"
         }
       }
 
@@ -143,8 +143,8 @@ private[jsonschema] trait AST { this: Math with HasContext with HasLog =>
       def asSize: Size.Def = Size.Def.Max(vv.toInt)
       override def tree = {
         inclusive match {
-          case true  => q"`number`[$t]() withValidation ( `maximum` := $vv )"
-          case false => q"`number`[$t]() withValidation ( `exclusiveMaximum` := $vv )"
+          case true  => q"`number`[$t].withValidation( `maximum` := $vv )"
+          case false => q"`number`[$t].withValidation( `exclusiveMaximum` := $vv )"
         }
       }
 
@@ -202,7 +202,7 @@ private[jsonschema] trait AST { this: Math with HasContext with HasLog =>
           case (l: Ge, r: Ge)    => l min r
           case (l: Le, r: Le)    => l max r
           case Outside(min, max) => Not(Bounded(t, min, max))
-          case Inside(_, _)      => Naked(l.t, q"`number`[${l.t}]()")
+          case Inside(_, _)      => Naked(l.t, q"`number`[${l.t}]")
           case (l, r)            => OneOf(t, ::(l, r :: Nil))
         }
 

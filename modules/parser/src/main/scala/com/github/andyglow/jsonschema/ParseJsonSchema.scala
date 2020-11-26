@@ -69,7 +69,7 @@ object ParseJsonSchema {
     }
 
     def makeNum = Success {
-      `number`[Double]()
+      `number`[Double]
     }
 
     def makeArr = for {

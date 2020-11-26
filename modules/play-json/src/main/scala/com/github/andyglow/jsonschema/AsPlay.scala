@@ -11,7 +11,7 @@ object AsPlay {
 
   def apply[T](value: T)(implicit a: Adapter[T]): a.P = a.adapt(value)
 
-  implicit class SchemaOps[T](val x: Schema[T]) extends AnyVal {
+  implicit class PlayJsonSchemaOps[T](val x: Schema[T]) extends AnyVal {
 
     def asPlay[V <: Version](v: V)(implicit asValue: AsValueBuilder[V]): JsObject = AsPlay(AsValue.schema(x, v))
   }

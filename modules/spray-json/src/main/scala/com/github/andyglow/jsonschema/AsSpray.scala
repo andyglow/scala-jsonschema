@@ -12,7 +12,7 @@ object AsSpray {
 
   def apply[T](value: T)(implicit a: Adapter[T]): a.P = a.adapt(value)
 
-  implicit class SchemaOps[T](val x: Schema[T]) extends AnyVal {
+  implicit class SpraySchemaOps[T](val x: Schema[T]) extends AnyVal {
 
     def asSpray[V <: Version](v: V)(implicit asValue: AsValueBuilder[V]): JsObject = AsSpray(AsValue.schema(x, v))
   }

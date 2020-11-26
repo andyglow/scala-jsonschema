@@ -20,7 +20,7 @@ object AsCirce {
     case obj(x) => val map = x.toMap mapV AsCirce.apply; Json.obj(map.toSeq: _*)
   }
 
-  implicit class SchemaOps[T](val x: Schema[T]) extends AnyVal {
+  implicit class CirceSchemaOps[T](val x: Schema[T]) extends AnyVal {
 
     def asCirce[V <: Version](v: V)(implicit asValue: AsValueBuilder[V]): Json = AsCirce(AsValue.schema(x, v))
   }

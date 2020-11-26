@@ -49,13 +49,13 @@ class ValueSpec extends AnyWordSpec {
       "handle keys" in {
         obj(
           "foo" -> "foo",
-          "bar" -> "bar").keys should contain only("foo", "bar")
+          "bar" -> "bar").keys should contain.only("foo", "bar")
       }
 
       "handle values" in {
         obj(
           "foo" -> "foo",
-          "bar" -> "bar").values should contain only(str("foo"), str("bar"))
+          "bar" -> "bar").values should contain.only(str("foo"), str("bar"))
       }
 
       "handle value" in {
