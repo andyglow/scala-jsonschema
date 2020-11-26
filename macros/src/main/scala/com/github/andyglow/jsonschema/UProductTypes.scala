@@ -40,11 +40,16 @@ private[jsonschema] trait UProductTypes { this: UContext with UCommons with USca
       val fieldTpe    = fieldSym.typeSignature.dealias // In(tpe).dealias
       val isOption    = fieldTpe <:< T.option
       val hasDefault  = fieldSym.isParamWithDefault
-      val toV         = c.inferImplicitValue(appliedType(T.toValue, fieldTpe))
-      val default     = Some.when (hasDefault) {
-        val getter = TermName("apply$default$" + (i + 1))
-        if (toV.nonEmpty) q"Some($toV($subjectCompanion.$getter))" else {
-          c.abort(c.enclosingPosition, s"Can't infer a json value for '$name': $fieldTpe")
+      val default     = Option.whenever (hasDefault) {
+        val defaultPath = (subjectCompanion.fullName + ".apply$default$" + (i + 1)).split('.')
+        val defaultDef  = defaultPath.tail.foldLeft[Tree](Ident(TermName(defaultPath.head))) { case (acc, x) => Select(acc, TermName(x)) }
+
+        val isNone = if (isOption) c.eval(c.Expr[Boolean](q"$defaultDef == scala.None")) else false
+        Some.when (!isNone) {
+          val toV = c.inferImplicitValue(appliedType(T.toValue, fieldTpe))
+          if (toV.nonEmpty) q"Some($toV($defaultDef))" else {
+            c.abort(c.enclosingPosition, s"Can't infer a json value for '$name': $fieldTpe")
+          }
         }
       }
 
