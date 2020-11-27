@@ -1,5 +1,8 @@
 # Scala JSON Schema
 [![Build Status](https://travis-ci.org/andyglow/scala-jsonschema.svg)](https://travis-ci.org/andyglow/scala-jsonschema)
+[![Build Status](https://cloud.drone.io/api/badges/andyglow/scala-jsonschema/status.svg)](https://cloud.drone.io/andyglow/scala-jsonschema)
+[![codecov](https://codecov.io/gh/andyglow/scala-jsonschema/branch/master/graph/badge.svg?token=e8E62N8PiJ)](https://codecov.io/gh/andyglow/scala-jsonschema)
+
 [![Coverage Status](https://coveralls.io/repos/github/andyglow/scala-jsonschema/badge.svg?branch=master)](https://coveralls.io/github/andyglow/scala-jsonschema?branch=master)
 ![](https://img.shields.io/static/v1.svg?label=Versions&message=-->&color=gray)
 [![mvn: 2.11](https://img.shields.io/badge/dynamic/json.svg?label=mvn%3A%202.11&query=%24.response.docs%5B0%5D.latestVersion&url=https%3A%2F%2Fsearch.maven.org%2Fsolrsearch%2Fselect%3Fq%3Dscala-jsonschema-core_2.13%26start%3D0%26rows%3D1)](https://search.maven.org/artifact/com.github.andyglow/scala-jsonschema-core_2.11/)
