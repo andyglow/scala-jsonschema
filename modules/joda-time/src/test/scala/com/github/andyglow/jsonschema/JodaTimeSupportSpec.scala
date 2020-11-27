@@ -18,7 +18,7 @@ class JodaTimeSupportSpec extends AnyWordSpec {
 
       "be exposed as string/date-time" in {
         dateTimeEventSchema shouldBe `object`(
-          Field("id", `string`[String]()),
+          Field("id", `string`),
           Field("timestamp", ref("org.joda.time.DateTime", `string`(`date-time`))))
       }
     }
@@ -27,7 +27,7 @@ class JodaTimeSupportSpec extends AnyWordSpec {
 
       "be exposed as string/date-time" in {
         instantEventSchema shouldBe `object`(
-          Field("id", `string`[String]()),
+          Field("id", `string`),
           Field("timestamp", ref("org.joda.time.Instant", `string`(`date-time`))))
       }
     }
@@ -36,7 +36,7 @@ class JodaTimeSupportSpec extends AnyWordSpec {
 
       "be exposed as string/date-time" in {
         localDateTimeEventSchema shouldBe `object`(
-          Field("id", `string`[String]()),
+          Field("id", `string`),
           Field("timestamp", ref("org.joda.time.LocalDateTime", `string`(`date-time`))))
       }
     }
@@ -45,7 +45,7 @@ class JodaTimeSupportSpec extends AnyWordSpec {
 
       "be exposed as string/date" in {
         localDateEventSchema shouldBe `object`(
-          Field("id", `string`[String]()),
+          Field("id", `string`),
           Field("timestamp", ref("org.joda.time.LocalDate", `string`(`date`))))
       }
     }
@@ -54,7 +54,7 @@ class JodaTimeSupportSpec extends AnyWordSpec {
 
       "be exposed as string/time" in {
         localTimeEventSchema shouldBe `object`(
-          Field("id", `string`[String]()),
+          Field("id", `string`),
           Field("timestamp", ref("org.joda.time.LocalTime", `string`(`time`))))
       }
     }

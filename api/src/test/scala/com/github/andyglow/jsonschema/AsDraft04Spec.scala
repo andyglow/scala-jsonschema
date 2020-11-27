@@ -21,12 +21,13 @@ class AsDraft04Spec extends AnyWordSpec {
     "emit Object" in {
       import `object`.Field
 
-      AsValue.schema(`object`(
-        Field("foo" , `string`[String]()),
-        Field("meta", `object`.Free[Any]()),
-        Field("bar" , `integer`, required = false),
-        Field("baz" , `ref`[Boolean]("scala.Boolean", `boolean`("my-bool")))
-      )("foo.bar.baz.Obj"), Draft04()) shouldEqual obj(
+      AsValue.schema(
+        `object`(
+          Field("foo" , `string`),
+          Field("meta", `object`.Free[Any]()),
+          Field("bar" , `integer`, required = false),
+          Field("baz" , `ref`[Boolean]("my-bool", `boolean`))),
+        Draft04()) shouldEqual obj(
       f"$$schema" -> "http://json-schema.org/draft-04/schema#",
       "type" -> "object",
       "additionalProperties" -> false,
@@ -47,7 +48,7 @@ class AsDraft04Spec extends AnyWordSpec {
     val asDraft04 = new AsDraft04(Draft04())
     
     "emit String" in {
-      asDraft04(`string`[String]()) shouldEqual obj("type" -> "string")
+      asDraft04(`string`[String]) shouldEqual obj("type" -> "string")
     }
 
     "emit String with Built in Format" in {
@@ -89,7 +90,7 @@ class AsDraft04Spec extends AnyWordSpec {
     }
 
     "emit Set" in {
-      asDraft04(`array`[String, Set](`string`[String](), unique = true)) shouldEqual obj(
+      asDraft04(`array`[String, Set](`string`[String], unique = true)) shouldEqual obj(
         "type"        -> "array",
         "items"       -> obj("type" -> "string"),
         "uniqueItems" -> true)
@@ -99,7 +100,7 @@ class AsDraft04Spec extends AnyWordSpec {
 
       // simple
 
-      asDraft04(`array`(`string`[String]())) shouldEqual obj("type" -> "array", "items" -> obj("type" -> "string"))
+      asDraft04(`array`(`string`[String])) shouldEqual obj("type" -> "array", "items" -> obj("type" -> "string"))
 
       asDraft04(`array`(`integer`)) shouldEqual obj("type" -> "array", "items" -> obj("type" -> "integer"))
 
@@ -113,7 +114,7 @@ class AsDraft04Spec extends AnyWordSpec {
       asDraft04(`array`(`string`[String](F.`email`))) shouldEqual obj("type" -> "array", "items" -> obj("type" -> "string", "format" -> "email"))
 
       // array of array
-      asDraft04(`array`(`array`(`string`[String]()))) shouldEqual obj("type" -> "array", "items" -> obj("type" -> "array", "items" -> obj("type" -> "string")))
+      asDraft04(`array`(`array`(`string`[String]))) shouldEqual obj("type" -> "array", "items" -> obj("type" -> "array", "items" -> obj("type" -> "string")))
     }
 
     "emit Enum" in {
@@ -127,10 +128,10 @@ class AsDraft04Spec extends AnyWordSpec {
 
       asDraft04(`oneof`(Set(
         `object`(
-          Field("foo", `string`[String]()),
+          Field("foo", `string`[String]),
           Field("bar", `integer`, required = false)),
         `object`(
-          Field("foo", `string`[String]()))))) shouldEqual obj(
+          Field("foo", `string`[String]))))) shouldEqual obj(
         "type" -> "object",
         "oneOf" -> arr(
           obj(
@@ -149,7 +150,7 @@ class AsDraft04Spec extends AnyWordSpec {
     "emit OneOf for sealed trait with value classes" in {
 
       asDraft04(`oneof`(Set(
-        `string`[String](),
+        `string`[String],
         `integer`))
       ) shouldEqual obj(
         "oneOf" -> arr(
@@ -164,7 +165,7 @@ class AsDraft04Spec extends AnyWordSpec {
       // complex
       val value = asDraft04(`value-class`(`object`(
         `object`.Field("id", `integer`.withValidation(`minimum` := 20)),
-        `object`.Field("name", `string`()))))
+        `object`.Field("name", `string`[String]))))
 
       value shouldEqual obj(
         "type" -> "object",
@@ -176,7 +177,7 @@ class AsDraft04Spec extends AnyWordSpec {
     }
 
     "emit Map[String, _]" in {
-      asDraft04(`dictionary`(`string`[String]())) shouldEqual obj(
+      asDraft04(`dictionary`(`string`[String])) shouldEqual obj(
         "type" -> "object",
         "patternProperties" -> obj(
           "^.*$" -> obj(
@@ -187,7 +188,7 @@ class AsDraft04Spec extends AnyWordSpec {
       import `object`.Field
 
       asDraft04(`object`(
-        Field("foo", `string`[String]()),
+        Field("foo", `string`[String]),
         Field("bar", `integer`, required = false),
         Field("baz", `boolean`, required = false)
       )) shouldEqual obj(
@@ -204,8 +205,8 @@ class AsDraft04Spec extends AnyWordSpec {
     "consider Ref if defined" in {
       asDraft04(
         `ref`[Boolean](
-          "scala.Boolean",
-          `boolean`("my-bool"))) shouldEqual obj(s"$$ref" -> "#/definitions/my-bool")
+          "my-bool",
+          `boolean`)) shouldEqual obj(s"$$ref" -> "#/definitions/my-bool")
     }
 
     "handle validations" when {

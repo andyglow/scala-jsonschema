@@ -16,6 +16,7 @@ trait AsDraftSupport {
     val specifics         = inferSpecifics.lift((pp, x, isRoot)) getOrElse obj()
     val base              = x match {
       case _: `ref`[_] | _: `allof`[_] | _: `oneof`[_] | _: `lazy-ref`[_] => obj()
+      case `value-class`(x)                                               => obj("type" -> x.jsonType)
       case _ if includeType                                               => obj("type" -> x.jsonType)
       case _                                                              => obj()
     }
@@ -104,7 +105,7 @@ trait AsDraftSupport {
   }
 
   def mkRef(pp: Option[V.Def[_, _]], x: `ref`[_]): obj = {
-    val ref = x.tpe.refName getOrElse x.sig
+    val ref = x.sig
     obj(f"$$ref" -> buildRef(ref))
   }
 
@@ -148,7 +149,7 @@ trait AsDraftSupport {
   }
 
   def inferDefinition(x: `ref`[_]): (String, obj) = {
-    val ref = x.tpe.refName getOrElse x.sig
+    val ref = x.sig
     ref -> apply(x.tpe, includeType = true, isRoot = false)
   }
 

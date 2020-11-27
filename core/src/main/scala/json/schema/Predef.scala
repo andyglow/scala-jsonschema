@@ -27,9 +27,9 @@ trait LowPriorityPredefs {
 //  implicit def iterableS[F[_], T](implicit p: Predef[T], ev0: F[T] <:< Iterable[T]): Predef[F[T]] = Predef(`array`[T, F](p.schema))
 }
 object Predef extends LowPriorityPredefs {
-  implicit val strS: Predef[String]                            = Predef(`string`[String]())
-  implicit val chrS: Predef[Char]                              = Predef(`string`[Char]().withValidation(`minLength` := 1, `maxLength` := 1, `pattern` := "^[.\\s]$"))
-  implicit val jchrS: Predef[Character]                        = Predef(`string`[Character]().withValidation(`minLength` := 1, `maxLength` := 1, `pattern` := "^[.\\s]$"))
+  implicit val strS: Predef[String]                            = Predef(`string`[String])
+  implicit val chrS: Predef[Char]                              = Predef(`string`[Char].withValidation(`minLength` := 1, `maxLength` := 1, `pattern` := "^[.\\s]$"))
+  implicit val jchrS: Predef[Character]                        = Predef(`string`[Character].withValidation(`minLength` := 1, `maxLength` := 1, `pattern` := "^[.\\s]$"))
   implicit val boolS: Predef[Boolean]                          = Predef(`boolean`)
   implicit val byteS: Predef[Byte]                             = Predef(`number`[Byte])
   implicit val shortS: Predef[Short]                           = Predef(`number`[Short])
@@ -39,7 +39,7 @@ object Predef extends LowPriorityPredefs {
   implicit val longS: Predef[Long]                             = Predef(`number`[Long])
   implicit val bigIntS: Predef[BigInt]                         = Predef(`number`[BigInt])
   implicit val bigDecimalS: Predef[BigDecimal]                 = Predef(`number`[BigDecimal])
-  implicit val uuidS: Predef[UUID]                             = Predef(`string`[UUID]().withValidation(`pattern` := "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"))
+  implicit val uuidS: Predef[UUID]                             = Predef(`string`[UUID].withValidation(`pattern` := "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"))
   implicit val uriS: Predef[URI]                               = Predef(`string`[URI](Format.`uri`))
   implicit val urlS: Predef[URL]                               = Predef(`string`[URL](Format.`uri`))
   implicit val juDateS: Predef[java.util.Date]                 = Predef(`string`[java.util.Date](Format.`date-time`))
