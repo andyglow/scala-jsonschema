@@ -24,7 +24,7 @@ class DefinitionsSpec extends AnyWordSpec {
 
       userS shouldBe `object`(
         Field("id"  , `ref`[UserId]("com.github.andyglow.jsonschema.DefinitionsSpec.UserId", `integer`)),
-        Field("name", `ref`[UserName]("com.github.andyglow.jsonschema.DefinitionsSpec.UserName", `string`())))
+        Field("name", `ref`[UserName]("com.github.andyglow.jsonschema.DefinitionsSpec.UserName", `string`)))
 
       AsValue.schema(userS, Version.Draft07(id = "users")) shouldBe obj(
         f"$$schema" -> "http://json-schema.org/draft-07/schema#",
@@ -45,14 +45,14 @@ class DefinitionsSpec extends AnyWordSpec {
     }
 
     "be exposed out of value-classes (custom names used)" in {
-      implicit val idS   = Json.schema[UserId]("user-id")
-      implicit val nameS = Json.schema[UserName]("user-name")
+      implicit val idS   = Json.schema[UserId] toDefinition "user-id"
+      implicit val nameS = Json.schema[UserName] toDefinition "user-name"
 
       val userS = Json.schema[User]
 
       userS shouldBe `object`(
         Field("id"  , `ref`[UserId]("user-id", `integer`)),
-        Field("name", `ref`[UserName]("user-name", `string`())))
+        Field("name", `ref`[UserName]("user-name", `string`)))
 
       AsValue.schema(userS, Version.Draft07(id = "users")) shouldBe obj(
         f"$$schema" -> "http://json-schema.org/draft-07/schema#",
@@ -80,7 +80,7 @@ class DefinitionsSpec extends AnyWordSpec {
 
       userS shouldBe `object`(
         Field("id"  , `ref`[UserId]("com.github.andyglow.jsonschema.DefinitionsSpec.UserId", `integer`)),
-        Field("name", `ref`[UserName]("com.github.andyglow.jsonschema.DefinitionsSpec.UserName", `string`())))
+        Field("name", `ref`[UserName]("com.github.andyglow.jsonschema.DefinitionsSpec.UserName", `string`)))
 
       AsValue.schema(userS, Version.Draft07(id = "users")) shouldBe obj(
         f"$$schema" -> "http://json-schema.org/draft-07/schema#",
@@ -101,14 +101,14 @@ class DefinitionsSpec extends AnyWordSpec {
     }
 
     "be exposed out of value-classes (custom names used, reverse order)" in {
-      implicit val nameS = Json.schema[UserName]("user-name")
-      implicit val idS   = Json.schema[UserId]("user-id")
+      implicit val nameS = Json.schema[UserName] toDefinition "user-name"
+      implicit val idS   = Json.schema[UserId] toDefinition "user-id"
 
       val userS = Json.schema[User]
 
       userS shouldBe `object`(
         Field("id"  , `ref`[UserId]("user-id", `integer`)),
-        Field("name", `ref`[UserName]("user-name", `string`())))
+        Field("name", `ref`[UserName]("user-name", `string`)))
 
       AsValue.schema(userS, Version.Draft07(id = "users")) shouldBe obj(
         f"$$schema" -> "http://json-schema.org/draft-07/schema#",

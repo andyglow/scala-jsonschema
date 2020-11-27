@@ -18,7 +18,7 @@ class ParseJsonSchemaSpec extends AnyFunSuite {
         | "type": "string"
         |}
       """.stripMargin
-    }.value shouldBe `string`()
+    }.value shouldBe `string`
   }
 
   test("string: date") {
@@ -161,7 +161,7 @@ class ParseJsonSchemaSpec extends AnyFunSuite {
         | }
         |}
       """.stripMargin
-    }.value shouldBe `array`(`string`())
+    }.value shouldBe `array`(`string`)
   }
 
   def parseType(x: String): Try[Schema[_]] =

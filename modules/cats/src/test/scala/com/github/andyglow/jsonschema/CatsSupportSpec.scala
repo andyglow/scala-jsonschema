@@ -19,8 +19,8 @@ class CatsSupportSpec extends AnyWordSpec {
 
       "be exposed as object" in {
         nelEventSchema shouldBe `object`(
-          Field("id", `string`()),
-          Field("arr", `array`[String, NonEmptyList](`string`()).withValidation(`minItems` := 1)))
+          Field("id", `string`),
+          Field("arr", `array`[String, NonEmptyList](`string`).withValidation(`minItems` := 1)))
       }
     }
 
@@ -28,8 +28,8 @@ class CatsSupportSpec extends AnyWordSpec {
 
       "be exposed as object" in {
         nevEventSchema shouldBe `object`(
-          Field("id", `string`()),
-          Field("arr", `array`[String, NonEmptyVector](`string`()).withValidation(`minItems` := 1)))
+          Field("id", `string`),
+          Field("arr", `array`[String, NonEmptyVector](`string`).withValidation(`minItems` := 1)))
       }
     }
 
@@ -37,8 +37,8 @@ class CatsSupportSpec extends AnyWordSpec {
 
       "be exposed as object" in {
         nesEventSchema shouldBe `object`(
-          Field("id", `string`()),
-          Field("arr", `array`[String, NonEmptySet](`string`()).withValidation(`minItems` := 1)))
+          Field("id", `string`),
+          Field("arr", `array`[String, NonEmptySet](`string`).withValidation(`minItems` := 1)))
       }
     }
 
@@ -46,8 +46,8 @@ class CatsSupportSpec extends AnyWordSpec {
 
       "be exposed as object" in {
         necEventSchema shouldBe `object`(
-          Field("id", `string`()),
-          Field("arr", `array`[String, NonEmptyChain](`string`()).withValidation(`minItems` := 1)))
+          Field("id", `string`),
+          Field("arr", `array`[String, NonEmptyChain](`string`).withValidation(`minItems` := 1)))
       }
     }
 
@@ -55,8 +55,8 @@ class CatsSupportSpec extends AnyWordSpec {
 
       "be exposed as object" in {
         nesmEventSchema shouldBe `object`(
-          Field("id", `string`()),
-          Field("data" , `dictionary`[String, String, NonEmptyMap](`string`()).withValidation(`minProperties` := 1)))
+          Field("id", `string`),
+          Field("data" , `dictionary`[String, String, NonEmptyMap](`string`).withValidation(`minProperties` := 1)))
       }
     }
 
@@ -64,8 +64,8 @@ class CatsSupportSpec extends AnyWordSpec {
 
       "be exposed as object" in {
         neimEventSchema shouldBe `object`(
-          Field("id", `string`()),
-          Field("data", `dictionary`[Int, String, NonEmptyMap](`string`()).withValidation(`minProperties` := 1, `patternProperties` := "^[0-9]+$")))
+          Field("id", `string`),
+          Field("data", `dictionary`[Int, String, NonEmptyMap](`string`).withValidation(`minProperties` := 1, `patternProperties` := "^[0-9]+$")))
       }
     }
 

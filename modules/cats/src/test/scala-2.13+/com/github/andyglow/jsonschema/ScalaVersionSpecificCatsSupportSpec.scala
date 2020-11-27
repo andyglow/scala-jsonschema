@@ -19,8 +19,8 @@ class ScalaVersionSpecificCatsSupportSpec extends AnyWordSpec {
 
       "be exposed as object" in {
         nellEventSchema shouldBe `object`(
-          Field("id", `string`()),
-          Field("arr", `array`[String, NonEmptyLazyList](`string`()).withValidation(`minItems` := 1)))
+          Field("id", `string`),
+          Field("arr", `array`[String, NonEmptyLazyList](`string`).withValidation(`minItems` := 1)))
       }
     }
   }

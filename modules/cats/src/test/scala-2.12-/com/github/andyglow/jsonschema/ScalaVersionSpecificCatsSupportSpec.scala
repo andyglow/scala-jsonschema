@@ -19,8 +19,8 @@ class ScalaVersionSpecificCatsSupportSpec extends AnyWordSpec {
 
       "be exposed as object" in {
         nestEventSchema shouldBe `object`(
-          Field("id", `string`()),
-          Field("arr", `array`[String, NonEmptyStream](`string`()).withValidation(`minItems` := 1)))
+          Field("id", `string`),
+          Field("arr", `array`[String, NonEmptyStream](`string`).withValidation(`minItems` := 1)))
       }
     }
   }

@@ -39,7 +39,7 @@ class AsUSpec extends AnyPropSpec {
     import AsU._
 
     implicit val ratingSchema = json.Json.schema[Rating]
-    ratingSchema.refName
+//    ratingSchema.refName
 
     json.Json.schema[User].asU(Draft04()) shouldEqual ujson.Obj(
       f"$$schema"             -> ujson.Str("http://json-schema.org/draft-04/schema#"),
@@ -72,7 +72,7 @@ class AsUSpec extends AnyPropSpec {
     import AsU._
 
     implicit val ratingSchema = json.Json.schema[Rating]
-    ratingSchema.refName
+//    ratingSchema.refName
 
     json.Json.schema[User].asU(Draft06(id = "http://models.org/userProfile.json")) shouldEqual ujson.Obj(
       f"$$schema"             -> ujson.Str("http://json-schema.org/draft-06/schema#"),
@@ -107,7 +107,7 @@ class AsUSpec extends AnyPropSpec {
     import AsU._
 
     implicit val ratingSchema = json.Json.schema[Rating]
-    ratingSchema.refName
+//    ratingSchema.refName
 
     json.Json.schema[User].asU(Draft07(id = "http://models.org/userProfile.json")) shouldEqual ujson.Obj(
       f"$$schema"             -> ujson.Str("http://json-schema.org/draft-07/schema#"),

@@ -18,7 +18,7 @@ class CRLFSourceSpec extends AnyFunSuite {
       Field("list"    , `array`(`boolean`), required = false, default = List(true, false)),
       Field("vector"  , `array`(`number`[Long]), required = false, default = Vector(9, 7)),
       Field("strMap"  , `dictionary`(`number`[Double]), required = false, default = Map("foo" -> .12)),
-      Field("intMap"  , `dictionary`[Int, String, Map](`string`[String]()).withValidation(`patternProperties` := "^[0-9]+$"), required = false, default = Map(1 -> "1", 2 -> "2")))
+      Field("intMap"  , `dictionary`[Int, String, Map](`string`[String]).withValidation(`patternProperties` := "^[0-9]+$"), required = false, default = Map(1 -> "1", 2 -> "2")))
   }
 
 }
