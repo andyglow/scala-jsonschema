@@ -15,7 +15,7 @@ lazy val commonSettings = Seq(
 
   organizationName := "andyglow",
 
-  scalaVersion := "2.12.12",
+  scalaVersion := "2.13.4",
 
   crossScalaVersions := Seq("2.11.12", "2.12.12", "2.13.4"),
 

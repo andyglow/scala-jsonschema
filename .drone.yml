@@ -3,18 +3,6 @@ type: docker
 name: scala-jsonschema
 
 steps:
-  - name: restore-cache
-    image: drillster/drone-volume-cache
-    volumes:
-      - name: cache
-        path: /cache
-    settings:
-      restore: true
-      mount:
-        - /drone/.ivy2/cache
-        - /drone/.coursier/cache
-        - /drone/.sbt
-
   - name: build
     image: andyglow/sbt:latest
     when:
@@ -23,8 +11,7 @@ steps:
       CODECOV_TOKEN:
         from_secret: codecov_token
     commands:
-      - export COURSIER_CACHE=/drone/.coursier/cache/v1
-      - export SBT_OPTS="-Dsbt.global.base=/drone/.sbt/1.0 -Dsbt.ivy.home=/drone/.ivy2"
+      - sbt +clean +test
       - sbt clean coverage test
       - sbt coverageAggregate
       - wget -O .codecov https://codecov.io/bash
@@ -48,14 +35,3 @@ steps:
           {{repo.name}}: build {{build.number}} failed. Fix please. {{build.link}}
         {{/success}}
 
-  - name: rebuild-cache
-    image: drillster/drone-volume-cache
-    volumes:
-      - name: cache
-        path: /cache
-    settings:
-      rebuild: true
-      mount:
-        - /drone/.ivy2/cache
-        - /drone/.coursier/cache
-        - /drone/.sbt
