@@ -26,8 +26,8 @@ private[jsonschema] trait URecursiveTypes { this: UContext with SchemaTypes with
       transformSchema(in) {
         case st if types.exists(_ =:= st.tpe) =>
           st match {
-            case _: Ref | _: LazyRef => st
-            case st                  => Ref(st.tpe, q"${signature(st.tpe)}", st)
+            case _: Def | _: Ref => st
+            case st              => Def(st.tpe, q"${signature(st.tpe)}", st)
           }
         case st => st
       }

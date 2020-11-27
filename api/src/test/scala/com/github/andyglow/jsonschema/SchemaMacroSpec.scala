@@ -65,7 +65,7 @@ class SchemaMacroSpec extends AnyWordSpec {
         schema shouldEqual `object`(
           Field(
             "component",
-            `ref`[Compo1](
+            `def`[Compo1](
               "com.github.andyglow.jsonschema.SchemaMacroSpec.Compo1",
               `string`[Compo1]),
             required = true))

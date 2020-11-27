@@ -18,7 +18,7 @@ class AsDraft07Spec extends AnyWordSpec {
       val o = `object`(
         Field("foo", `string`[String]),
         Field("bar", `integer`, required = false),
-        Field("baz", `ref`[Boolean]("my-bool", `boolean`)))
+        Field("baz", `def`[Boolean]("my-bool", `boolean`)))
 
       AsValue.schema(o, Draft07(id = "http://example.com/foobarbaz.json")) should containJson(obj(
       f"$$schema" -> "http://json-schema.org/draft-07/schema#",

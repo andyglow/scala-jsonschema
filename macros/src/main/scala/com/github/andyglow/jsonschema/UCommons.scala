@@ -59,7 +59,7 @@ private[jsonschema] trait UCommons extends SchemaTypes with ULogging { this: UCo
     val toValue       = weakTypeOf[ToValue[_]]
     val set           = weakTypeOf[Set[_]]
     val map           = weakTypeOf[Map[_, _]]
-    val lazyRef       = typeOf[json.Schema.`lazy-ref`[_]]
+    val lazyRef       = typeOf[json.Schema.`ref`[_]]
     val keyPattern    = typeOf[KeyPattern[_]]
     val schemaC       = typeOf[json.Schema[_]].typeConstructor
     val predefC       = typeOf[json.schema.Predef[_]].typeConstructor

@@ -88,7 +88,7 @@ sealed trait Schema[+T] {
   }
   def withDescription(x: String): Self = duplicate(description = Some(x))
   def withTitle(x: String): Self = duplicate(title = Some(x))
-  def toDefinition[TT >: T](sig: String): Schema.`ref`[TT] = Schema.`ref`(sig, this)
+  def toDefinition[TT >: T](sig: String): Schema.`def`[TT] = Schema.`def`(sig, this)
 }
 
 object Schema {
@@ -418,28 +418,28 @@ object Schema {
   }
 
   // +------------
-  // | Ref
+  // | Def
   // +---------------
   //
-  final case class `ref`[T](
+  final case class `def`[T](
     sig: String,
     tpe: Schema[_]) extends Schema[T] {
-    type Self = `ref`[T]
+    type Self = `def`[T]
     override def jsonType: String = s"$$ref"
-    def mkCopy() = new `ref`[T](sig, tpe)
-    override def canEqual(that: Any): Boolean = that.isInstanceOf[`ref`[_]]
+    def mkCopy() = new `def`[T](sig, tpe)
+    override def canEqual(that: Any): Boolean = that.isInstanceOf[`def`[_]]
     override def equals(obj: Any): Boolean = obj match {
-      case `ref`(s, t) => sig == s && tpe == t && super.equals(obj)
-      case _ => false
+      case `def`(s, t) => sig == s && tpe == t && super.equals(obj)
+      case _           => false
     }
     override def toString: String = ToString { sb =>
-      sb append "ref(signature = "
+      sb append "def(signature = "
       sb append sig
       sb append ", schema = "
       sb append tpe
       sb append ")"
     }
-    override def toDefinition[TT >: T](sig: String): `ref`[TT] = {
+    override def toDefinition[TT >: T](sig: String): `def`[TT] = {
       def deepCopy(x: Schema[_]): Schema[_] = {
         val y = x match {
           case `object`(fields)          => new `object`(fields.map { f => f.copy(tpe = deepCopy(f.tpe)) })
@@ -448,8 +448,8 @@ object Schema {
           case `oneof`(ys)               => `oneof`(ys map deepCopy)
           case `allof`(ys)               => `allof`(ys map deepCopy)
           case `not`(y)                  => `not`(deepCopy(y))
-          case `ref`(s, y)               => `ref`(s, deepCopy(y))
-          case `lazy-ref`(s) if s == sig => `lazy-ref`(sig)
+          case `def`(s, y)               => `def`(s, deepCopy(y))
+          case `ref`(s) if s == sig      => `ref`(sig)
           case y                         => y
         }
         y withExtraFrom x
@@ -459,11 +459,11 @@ object Schema {
     }
   }
 
-  final object `ref` {
-    def apply[T](tpe: Schema[_])(sig: => String): `ref`[T] = tpe match {
-      case `ref`(originalSig, innerTpe) => `ref`(originalSig, innerTpe)
-      case `value-class`(innerTpe)      => `ref`(sig, innerTpe)
-      case _                            => `ref`(sig, tpe)
+  final object `def` {
+    def apply[T](tpe: Schema[_])(sig: => String): `def`[T] = tpe match {
+      case `def`(originalSig, innerTpe) => `def`(originalSig, innerTpe)
+      case `value-class`(innerTpe)      => `def`(sig, innerTpe)
+      case _                            => `def`(sig, tpe)
     }
   }
 
@@ -486,7 +486,7 @@ object Schema {
       sb append tpe
       sb append ")"
     }
-    override def toDefinition[TT >: O](sig: String): `ref`[TT] = `ref`[TT](sig, tpe)
+    override def toDefinition[TT >: O](sig: String): `def`[TT] = `def`[TT](sig, tpe)
   }
 
   // +------------
@@ -494,12 +494,12 @@ object Schema {
   // +---------------
   // Pseudo member, doesn't have it's own representation in resulted schema
   //
-  final case class `lazy-ref`[T](sig: String) extends Schema[T] {
-    override type Self = `lazy-ref`[T]
-    override protected def mkCopy(): `lazy-ref`[T] = `lazy-ref`(sig)
+  final case class `ref`[T](sig: String) extends Schema[T] {
+    override type Self = `ref`[T]
+    override protected def mkCopy(): `ref`[T] = `ref`(sig)
     override def jsonType: String = ??? // should never call this. instead calling code should interpret it as `ref`
     override def toString: String = ToString { sb =>
-      sb append "lazy-ref("
+      sb append "ref("
       sb append sig
       sb append ")"
     }

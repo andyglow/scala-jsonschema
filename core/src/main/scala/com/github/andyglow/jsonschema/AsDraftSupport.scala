@@ -15,8 +15,8 @@ trait AsDraftSupport {
     val (validations, pp) = inferValidations(x)
     val specifics         = inferSpecifics.lift((pp, x, isRoot)) getOrElse obj()
     val base              = x match {
-      case _: `ref`[_] | _: `allof`[_] | _: `oneof`[_] | _: `lazy-ref`[_] => obj()
-      case `value-class`(x)                                               => obj("type" -> x.jsonType)
+      case _: `def`[_] | _: `allof`[_] | _: `oneof`[_] | _: `ref`[_] => obj()
+      case `value-class`(x)                                          => obj("type" -> x.jsonType)
       case _ if includeType                                               => obj("type" -> x.jsonType)
       case _                                                              => obj()
     }
@@ -104,12 +104,12 @@ trait AsDraftSupport {
     obj("not" -> apply(x.tpe, includeType = false, isRoot = false))
   }
 
-  def mkRef(pp: Option[V.Def[_, _]], x: `ref`[_]): obj = {
+  def mkRef(pp: Option[V.Def[_, _]], x: `def`[_]): obj = {
     val ref = x.sig
     obj(f"$$ref" -> buildRef(ref))
   }
 
-  def mkLazyRef(pp: Option[V.Def[_, _]], x: `lazy-ref`[_]): obj = {
+  def mkLazyRef(pp: Option[V.Def[_, _]], x: `ref`[_]): obj = {
     val ref = x.sig
     obj(f"$$ref" -> buildRef(ref))
   }
@@ -128,10 +128,10 @@ trait AsDraftSupport {
     case (pp, x: `enum`[_], _)             => mkEnum(pp, x)
     case (pp, x: `oneof`[_], isRoot)       => mkOneOf(pp, x, isRoot)
     case (pp, x: `allof`[_], isRoot)       => mkAllOf(pp, x, isRoot)
-    case (pp, x: `not`[_], _)              => mkNot(pp, x)
-    case (pp, x: `ref`[_], _)              => mkRef(pp, x)
-    case (pp, x: `lazy-ref`[_], _)         => mkLazyRef(pp, x)
-    case (pp, x: `value-class`[_, _], _)   => mkValueClass(pp, x)
+    case (pp, x: `not`[_], _)      => mkNot(pp, x)
+    case (pp, x: `def`[_], _) => mkRef(pp, x)
+    case (pp, x: `ref`[_], _) => mkLazyRef(pp, x)
+    case (pp, x: `value-class`[_, _], _) => mkValueClass(pp, x)
   }
 
   def inferValidations(x: json.Schema[_]): (obj, Option[V.Def[_, _]]) = {
@@ -148,14 +148,14 @@ trait AsDraftSupport {
     (validations, pp)
   }
 
-  def inferDefinition(x: `ref`[_]): (String, obj) = {
+  def inferDefinition(x: `def`[_]): (String, obj) = {
     val ref = x.sig
     ref -> apply(x.tpe, includeType = true, isRoot = false)
   }
 
   def inferDefinitions(x: Schema[_]): obj = {
-    def references(tpe: json.Schema[_]): Seq[`ref`[_]] = tpe match {
-      case x: `ref`[_]      => references(x.tpe) :+ x
+    def references(tpe: json.Schema[_]): Seq[`def`[_]] = tpe match {
+      case x: `def`[_]      => references(x.tpe) :+ x
       case x: `allof`[_]    => x.subTypes.toSeq flatMap references
       case x: `oneof`[_]    => x.subTypes.toSeq flatMap references
       case `array`(ref, _)  => references(ref)
