@@ -52,7 +52,8 @@ Inspired by Coursera Autoschema but uses `Scala Macros` instead of `Java Reflect
 - Supports `sealed trait enums`
 - Supports `sealed trait case classes`
 - Supports `recursive types`
-- Treats `Option` as optional fields
+- Supports `scala.Enumeration`
+- Treats `scaal.Option` as optional fields
 - As well as treats fields with `default values` as optional
 - Any `Iterable` is treated as `array`
 - Pluggable [Joda-Time](https://github.com/JodaOrg/joda-time) Support

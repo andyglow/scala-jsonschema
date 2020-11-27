@@ -1,3 +1,8 @@
+- **0.6.1**
+  - added support for scala.Enumeration
+  - default values won't be infered for scala.None
+- **0.6.0**
+  ...
 - **0.2.7-M1**
   - Add initial code for supporting #18. Use scaladoc for descriptions. 
     Added support for case classes and fields.
