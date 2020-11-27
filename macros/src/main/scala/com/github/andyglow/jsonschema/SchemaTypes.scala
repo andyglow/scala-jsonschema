@@ -49,8 +49,8 @@ private[jsonschema] trait SchemaTypes { this: UContext with UCommons =>
     final case class AllOf(tpe: Type, memberSchema: Seq[SchemaType], extra: Extra = Extra()) extends SchemaType { type Self = AllOf; def prefix = q"${N.Schema}.`allof`[$tpe](Set(..${memberSchema map { _.tree }}))"; def withExtra(x: SchemaType.Extra) = copy(extra = x) }
     final case class Not(tpe: Type, schema: SchemaType, extra: Extra = Extra()) extends SchemaType { type Self = Not; def prefix = q"${N.Schema}.`not`[$tpe](${schema.tree})"; def withExtra(x: SchemaType.Extra) = copy(extra = x) }
     final case class ValueClass(tpe: Type, innerTpe: Type, schema: SchemaType, extra: Extra = Extra()) extends SchemaType { type Self = ValueClass; def prefix = q"${N.Schema}.`value-class`[$tpe, $innerTpe](${schema.tree})"; def withExtra(x: SchemaType.Extra) = copy(extra = x) }
-    final case class Ref(tpe: Type, sig: Tree, schema: SchemaType, extra: Extra = Extra()) extends SchemaType { type Self = Ref; def prefix = q"${N.Schema}.`ref`[$tpe]($sig, ${schema.tree})"; def withExtra(x: SchemaType.Extra) = copy(extra = x) }
-    final case class LazyRef(tpe: Type, sig: Tree, extra: Extra = Extra()) extends SchemaType { type Self = LazyRef; def prefix = q"${N.Schema}.`lazy-ref`[$tpe]($sig)"; def withExtra(x: SchemaType.Extra) = copy(extra = x) }
+    final case class Def(tpe: Type, sig: Tree, schema: SchemaType, extra: Extra = Extra()) extends SchemaType { type Self = Def; def prefix = q"${N.Schema}.`def`[$tpe]($sig, ${schema.tree})"; def withExtra(x: SchemaType.Extra) = copy(extra = x) }
+    final case class Ref(tpe: Type, sig: Tree, extra: Extra = Extra()) extends SchemaType { type Self = Ref; def prefix = q"${N.Schema}.`ref`[$tpe]($sig)"; def withExtra(x: SchemaType.Extra) = copy(extra = x) }
     final case class `-from-tree-`(tpe: Type, prefix: Tree, extra: Extra = Extra()) extends SchemaType { type Self = `-from-tree-`; def withExtra(x: SchemaType.Extra) = copy(extra = x) }
     final object Obj {
       sealed trait Field {
@@ -104,14 +104,14 @@ private[jsonschema] trait SchemaTypes { this: UContext with UCommons =>
     import SchemaType._
 
     val out = in match {
-        case s: Arr         => s.copy(elementSchema = transformSchema(s.elementSchema)(pf))
-        case s: Dict        => s.copy(valueSchema = transformSchema(s.valueSchema)(pf))
-        case s: OneOf       => s.copy(memberSchema = s.memberSchema map { transformSchema(_)(pf) })
-        case s: AllOf       => s.copy(memberSchema = s.memberSchema map { transformSchema(_)(pf) })
-        case s: Not         => s.copy(schema = transformSchema(s.schema)(pf))
-        case s: Ref         => s.copy(schema = transformSchema(s.schema)(pf))
-        case s: ValueClass  => s.copy(schema = transformSchema(s.schema)(pf))
-        case s: Obj         => s.copy(fields = s.fields map { f =>
+        case s: Arr        => s.copy(elementSchema = transformSchema(s.elementSchema)(pf))
+        case s: Dict       => s.copy(valueSchema = transformSchema(s.valueSchema)(pf))
+        case s: OneOf      => s.copy(memberSchema = s.memberSchema map { transformSchema(_)(pf) })
+        case s: AllOf      => s.copy(memberSchema = s.memberSchema map { transformSchema(_)(pf) })
+        case s: Not        => s.copy(schema = transformSchema(s.schema)(pf))
+        case s: Def        => s.copy(schema = transformSchema(s.schema)(pf))
+        case s: ValueClass => s.copy(schema = transformSchema(s.schema)(pf))
+        case s: Obj        => s.copy(fields = s.fields map { f =>
           f.mapSchema(transformSchema(_)(pf))
         })
         case _              => in

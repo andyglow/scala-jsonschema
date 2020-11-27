@@ -23,8 +23,8 @@ class DefinitionsSpec extends AnyWordSpec {
       val userS = Json.schema[User]
 
       userS shouldBe `object`(
-        Field("id"  , `ref`[UserId]("com.github.andyglow.jsonschema.DefinitionsSpec.UserId", `integer`)),
-        Field("name", `ref`[UserName]("com.github.andyglow.jsonschema.DefinitionsSpec.UserName", `string`)))
+        Field("id"  , `def`[UserId]("com.github.andyglow.jsonschema.DefinitionsSpec.UserId", `integer`)),
+        Field("name", `def`[UserName]("com.github.andyglow.jsonschema.DefinitionsSpec.UserName", `string`)))
 
       AsValue.schema(userS, Version.Draft07(id = "users")) shouldBe obj(
         f"$$schema" -> "http://json-schema.org/draft-07/schema#",
@@ -51,8 +51,8 @@ class DefinitionsSpec extends AnyWordSpec {
       val userS = Json.schema[User]
 
       userS shouldBe `object`(
-        Field("id"  , `ref`[UserId]("user-id", `integer`)),
-        Field("name", `ref`[UserName]("user-name", `string`)))
+        Field("id"  , `def`[UserId]("user-id", `integer`)),
+        Field("name", `def`[UserName]("user-name", `string`)))
 
       AsValue.schema(userS, Version.Draft07(id = "users")) shouldBe obj(
         f"$$schema" -> "http://json-schema.org/draft-07/schema#",
@@ -79,8 +79,8 @@ class DefinitionsSpec extends AnyWordSpec {
       val userS = Json.schema[User]
 
       userS shouldBe `object`(
-        Field("id"  , `ref`[UserId]("com.github.andyglow.jsonschema.DefinitionsSpec.UserId", `integer`)),
-        Field("name", `ref`[UserName]("com.github.andyglow.jsonschema.DefinitionsSpec.UserName", `string`)))
+        Field("id"  , `def`[UserId]("com.github.andyglow.jsonschema.DefinitionsSpec.UserId", `integer`)),
+        Field("name", `def`[UserName]("com.github.andyglow.jsonschema.DefinitionsSpec.UserName", `string`)))
 
       AsValue.schema(userS, Version.Draft07(id = "users")) shouldBe obj(
         f"$$schema" -> "http://json-schema.org/draft-07/schema#",
@@ -107,8 +107,8 @@ class DefinitionsSpec extends AnyWordSpec {
       val userS = Json.schema[User]
 
       userS shouldBe `object`(
-        Field("id"  , `ref`[UserId]("user-id", `integer`)),
-        Field("name", `ref`[UserName]("user-name", `string`)))
+        Field("id"  , `def`[UserId]("user-id", `integer`)),
+        Field("name", `def`[UserName]("user-name", `string`)))
 
       AsValue.schema(userS, Version.Draft07(id = "users")) shouldBe obj(
         f"$$schema" -> "http://json-schema.org/draft-07/schema#",

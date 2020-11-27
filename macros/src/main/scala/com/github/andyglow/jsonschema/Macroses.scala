@@ -88,7 +88,7 @@ class Macroses(val c: blackbox.Context) extends UContext
     if (ctx contains tpe) {
       val sig = signature(tpe)
       ctx.onCycle(tpe)
-      U.LazyRef(tpe, q"$sig")
+      U.Ref(tpe, q"$sig")
     } else {
       implicit def _ctx    = ctx
       implicit def _specFD = specFD

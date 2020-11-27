@@ -26,7 +26,7 @@ class AsDraft04Spec extends AnyWordSpec {
           Field("foo" , `string`),
           Field("meta", `object`.Free[Any]()),
           Field("bar" , `integer`, required = false),
-          Field("baz" , `ref`[Boolean]("my-bool", `boolean`))),
+          Field("baz" , `def`[Boolean]("my-bool", `boolean`))),
         Draft04()) shouldEqual obj(
       f"$$schema" -> "http://json-schema.org/draft-04/schema#",
       "type" -> "object",
@@ -204,7 +204,7 @@ class AsDraft04Spec extends AnyWordSpec {
 
     "consider Ref if defined" in {
       asDraft04(
-        `ref`[Boolean](
+        `def`[Boolean](
           "my-bool",
           `boolean`)) shouldEqual obj(s"$$ref" -> "#/definitions/my-bool")
     }

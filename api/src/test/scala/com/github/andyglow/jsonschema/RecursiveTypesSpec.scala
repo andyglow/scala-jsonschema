@@ -43,32 +43,32 @@ class RecursiveTypesSpec extends AnyWordSpec {
       "product types. inner references root" in {
         import case1._
 
-        json.Json.schema[SList] shouldEqual `ref`(
+        json.Json.schema[SList] shouldEqual `def`(
           "com.github.andyglow.jsonschema.RecursiveTypesSpec.case1.SList",
           `object`(
             Field("head", `string`, required = true),
-            Field("tail", `lazy-ref`("com.github.andyglow.jsonschema.RecursiveTypesSpec.case1.SList"), required = false)))
+            Field("tail", `ref`("com.github.andyglow.jsonschema.RecursiveTypesSpec.case1.SList"), required = false)))
       }
 
       "product types. inner references root. specific ref-name" in {
         import case1._
 
-        json.Json.schema[SList].toDefinition("given-name") shouldEqual `ref`(
+        json.Json.schema[SList].toDefinition("given-name") shouldEqual `def`(
           "given-name",
           `object`(
             Field("head", `string`, required = true),
-            Field("tail", `lazy-ref`("given-name"), required = false)))
+            Field("tail", `ref`("given-name"), required = false)))
       }
 
       "sum types. inner references root" in {
         import case2._
 
-        json.Json.schema[Node] shouldEqual `ref`(
+        json.Json.schema[Node] shouldEqual `def`(
           "com.github.andyglow.jsonschema.RecursiveTypesSpec.case2.Node",
           `oneof`.of(
             `object`(
               Field("tag", `string`, required = true),
-              Field("children", `array`(`lazy-ref`("com.github.andyglow.jsonschema.RecursiveTypesSpec.case2.Node")), required = true)),
+              Field("children", `array`(`ref`("com.github.andyglow.jsonschema.RecursiveTypesSpec.case2.Node")), required = true)),
             `object`(
               Field("content", `string`, required = true))))
       }
@@ -78,11 +78,11 @@ class RecursiveTypesSpec extends AnyWordSpec {
 
         json.Json.schema[User] shouldEqual `object`(
           Field("id", `string`, required = true),
-          Field("friends", `ref`(
+          Field("friends", `def`(
             "com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList[scala.Predef.String]",
             `object`(
               Field("head", `string`, required = true),
-              Field("tail", `lazy-ref`("com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList[scala.Predef.String]"), required = false)))))
+              Field("tail", `ref`("com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList[scala.Predef.String]"), required = false)))))
       }
 
       "inner is explicitly given" in {
@@ -91,11 +91,11 @@ class RecursiveTypesSpec extends AnyWordSpec {
         implicit def llist[T](implicit t: Schema[T]): Schema[LList[T]] = json.Json.schema[LList[T]]
         json.Json.schema[User] shouldEqual `object`(
           Field("id", `string`, required = true),
-          Field("friends", `ref`(
+          Field("friends", `def`(
             "com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList[scala.Predef.String]",
             `object`(
               Field("head", `string`, required = true),
-              Field("tail", `lazy-ref`("com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList[scala.Predef.String]"), required = false)))))
+              Field("tail", `ref`("com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList[scala.Predef.String]"), required = false)))))
       }
     }
   }

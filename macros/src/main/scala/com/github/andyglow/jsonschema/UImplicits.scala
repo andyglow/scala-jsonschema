@@ -80,7 +80,7 @@ private[jsonschema] trait UImplicits { this: UContext with UCommons with USignat
       lookupSchema match {
         case NotFound      => gen
         case FromPredef(x) => U.`-from-tree-`(tpe, x)
-        case FromSchema(x) => U.`-from-tree-`(tpe, q"""${N.Schema}.`ref`[$tpe]($x)(${signature(tpe)})""")
+        case FromSchema(x) => U.`-from-tree-`(tpe, q"""${N.Schema}.`def`[$tpe]($x)(${signature(tpe)})""")
       }
     }
   }
