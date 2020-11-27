@@ -7,13 +7,13 @@ steps:
     image: drillster/drone-volume-cache
     volumes:
       - name: cache
-        path: /tmp/cache
+        path: /cache
     settings:
       restore: true
       mount:
-        - /root/.ivy2/cache
-        - /root/.coursier/cache
-        - /root/.sbt
+        - /drone/.ivy2/cache
+        - /drone/.coursier/cache
+        - /drone/.sbt
 
   - name: build
     image: andyglow/sbt:latest
@@ -50,10 +50,10 @@ steps:
     image: drillster/drone-volume-cache
     volumes:
       - name: cache
-        path: /tmp/cache
+        path: /cache
     settings:
       rebuild: true
       mount:
-        - /root/.ivy2/cache
-        - /root/.coursier/cache
-        - /root/.sbt
+        - /drone/.ivy2/cache
+        - /drone/.coursier/cache
+        - /drone/.sbt
