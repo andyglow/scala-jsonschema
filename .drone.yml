@@ -1,0 +1,59 @@
+kind: pipeline
+type: docker
+name: scala-jsonschema
+
+steps:
+  - name: restore-cache
+    image: drillster/drone-volume-cache
+    volumes:
+      - name: cache
+        path: /tmp/cache
+    settings:
+      restore: true
+      mount:
+        - /root/.ivy2/cache
+        - /root/.coursier/cache
+        - /root/.sbt
+
+  - name: build
+    image: andyglow/sbt:latest
+    when:
+      branch: master
+    environment:
+      CODECOV_TOKEN:
+        from_secret: codecov_token
+    commands:
+      - sbt clean coverage test
+      - sbt coverageAggregate
+      - wget -O .codecov https://codecov.io/bash
+      - chmod +x .codecov
+      - ./.codecov -X gcov -X coveragepy -X xcode -X gcovout
+
+  - name: notify
+    image: plugins/slack
+    when:
+      status: [ success, failure ]
+    settings:
+      webhook:
+        from_secret: slack_webhook_url
+      channel: builds
+      username: drone
+      link_names: true
+      template: >
+        {{#success build.status}}
+          {{repo.name}}: build {{build.number}} succeeded (spent {{since build.started}}). Good job.
+        {{else}}
+          {{repo.name}}: build {{build.number}} failed. Fix please. {{build.link}}
+        {{/success}}
+
+  - name: rebuild-cache
+    image: drillster/drone-volume-cache
+    volumes:
+      - name: cache
+        path: /tmp/cache
+    settings:
+      rebuild: true
+      mount:
+        - /root/.ivy2/cache
+        - /root/.coursier/cache
+        - /root/.sbt
