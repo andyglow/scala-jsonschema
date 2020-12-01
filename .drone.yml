@@ -2,8 +2,8 @@ kind: pipeline
 type: docker
 name: scala-jsonschema
 
-build_template: &build_template
-- image: andyglow/sbt:latest
+build_template: &build
+  image: andyglow/sbt:latest
   when:
     branch: master
   environment:
@@ -11,22 +11,22 @@ build_template: &build_template
       from_secret: codecov_token
 
 steps:
-- <<: *build_template
+- <<: *build
   name: build_213
   commands:
     - SCALA_VER=2.13 sbt clean test
 
-- <<: *build_template
+- <<: *build
   name: build_212
   commands:
     - SCALA_VER=2.12 sbt clean test
 
-- <<: *build_template
+- <<: *build
   name: build_211
   commands:
     - SCALA_VER=2.11 sbt clean test
 
-- <<: *build_template
+- <<: *build
   name: build_coverage
   depends_on:
     - build_213
