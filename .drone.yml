@@ -11,9 +11,10 @@ steps:
       CODECOV_TOKEN:
         from_secret: codecov_token
     commands:
-      - sbt +clean +test
-      - sbt clean coverage test
-      - sbt coverageAggregate
+      - SCALA_VER=2.11 sbt clean test
+      - SCALA_VER=2.12 sbt clean test
+      - SCALA_VER=2.13 sbt clean coverage test
+      - SCALA_VER=2.13 sbt coverageAggregate
       - wget -O .codecov https://codecov.io/bash
       - chmod +x .codecov
       - ./.codecov -X gcov -X coveragepy -X xcode -X gcovout

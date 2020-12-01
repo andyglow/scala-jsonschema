@@ -2,6 +2,7 @@ import xerial.sbt.Sonatype._
 import ReleaseTransformations._
 import scala.sys.process._
 
+
 // https://github.com/xerial/sbt-sonatype/issues/71
 publishTo in ThisBuild := sonatypePublishTo.value
 
@@ -15,9 +16,9 @@ lazy val commonSettings = Seq(
 
   organizationName := "andyglow",
 
-  scalaVersion := "2.13.4",
+  scalaVersion := ScalaVersions.value,
 
-  crossScalaVersions := Seq("2.11.12", "2.12.12", "2.13.4"),
+  crossScalaVersions := ScalaVersions.values,
 
   Compile / unmanagedSourceDirectories ++= {
     val bd = baseDirectory.value
