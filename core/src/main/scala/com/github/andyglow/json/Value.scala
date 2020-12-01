@@ -67,6 +67,19 @@ object Value {
     def prepend(el: Value): arr = this.+:(el)
 
     override def toString: String = value map {_.toString} mkString ("[", ", ", "]")
+
+    def contains(that: arr): Boolean = {
+      that.value.length == this.value.length &&
+        that.value.forall { thatV =>
+          this.value.exists { thisV =>
+            (thatV, thisV) match {
+              case (l: obj, r: obj) => l contains r
+              case (l: arr, r: arr) => l contains r
+              case _                => thisV == thatV
+            }
+          }
+        }
+    }
   }
 
   object arr {
@@ -126,11 +139,12 @@ object Value {
     def contains(other: obj): Boolean = {
       other.underlying forall { case (k, thatV) =>
           underlying.get(k) match {
-            case None => true
+            case None        => true // ???
             case Some(thisV) =>
               (thatV, thisV) match {
                 case (thisV: obj, thatV: obj) => thisV contains thatV
-                case _ => thatV == thisV
+                case (thisV: arr, thatV: arr) => thisV contains thatV
+                case _                        => thatV == thisV
               }
           }
       }

@@ -9,35 +9,50 @@ import com.github.andyglow.json.Value._
 
 trait AsDraftSupport {
 
-  def apply(x: json.Schema[_]): obj = apply(x, includeType = true, isRoot = true)
+  private type ParentSchema = Option[json.Schema[_]]
 
-  def apply(x: json.Schema[_], includeType: Boolean, isRoot: Boolean): obj = {
+  def apply(x: json.Schema[_]): obj = apply(x, None, includeType = true, isRoot = true)
+
+  def apply(x: json.Schema[_], parent: ParentSchema, includeType: Boolean, isRoot: Boolean): obj = {
     val (validations, pp) = inferValidations(x)
-    val specifics         = inferSpecifics.lift((pp, x, isRoot)) getOrElse obj()
+    val specifics         = inferSpecifics.lift((pp, x, parent, isRoot)) getOrElse obj()
     val base              = x match {
       case _: `def`[_] | _: `allof`[_] | _: `oneof`[_] | _: `ref`[_] => obj()
-      case `value-class`(x)                                          => obj("type" -> x.jsonType)
-      case _ if includeType                                               => obj("type" -> x.jsonType)
-      case _                                                              => obj()
+      case `value-class`(x) if includeType                           => obj("type" -> x.jsonType)
+      case _ if includeType                                          => obj("type" -> x.jsonType)
+      case _                                                         => obj()
     }
 
     base ++ validations ++ specifics
   }
 
-  def mkStr(pp: Option[V.Def[_, _]], x: `string`[_]): obj = obj(
+  def mkStr(vv: Option[V.Def[_, _]], x: `string`[_], par: ParentSchema): obj = obj(
     ("format", x.format map { _.productPrefix }))
 
-  def mkObj(pp: Option[V.Def[_, _]], x: `object`[_]): obj = {
-    val props = x.fields.map { field =>
-      val default = field.default map { d => obj("default" -> d) } getOrElse obj()
-      val description = field.description map { d => obj("description" -> d) } getOrElse obj()
-
-      field.name -> ( default ++ apply(field.tpe, includeType = true, isRoot = false) ++ description )
-    }.toMap
-
-    val required = x.fields collect {
-      case field if field.required => str(field.name)
+  def mkObj(vv: Option[V.Def[_, _]], x: `object`[_], par: ParentSchema): obj = {
+    val discriminatorField = par match {
+      case Some(`oneof`(_, f)) => f
+      case _                   => None
     }
+    val props = x.fields.map { field =>
+      val default     = field.default map { d => obj("default" -> d) } getOrElse obj()
+      val description = field.description map { d => obj("description" -> d) } getOrElse obj()
+      val tpe         = apply(field.tpe, Some(x), includeType = true, isRoot = false)
+
+      field.name -> (
+        default ++
+        tpe ++
+        description
+      )
+    }.toMap ++ discriminatorField.flatMap { df =>
+      for { dk <- x.discriminationKey } yield {
+        df -> obj("enum" -> arr(dk))
+      }
+    }
+
+    val required = x.fields.collect {
+      case field if field.required => str(field.name)
+    } ++ discriminatorField.map(str)
 
     val canHaveAdditionalProperties = x.isInstanceOf[`object`.Free]
 
@@ -47,42 +62,49 @@ trait AsDraftSupport {
       ("required"  , if (required.isEmpty) None else Some(arr(required.toSeq))))
   }
 
-  def mkDict(pp: Option[V.Def[_, _]], comp: Schema[_]): obj = {
-    val pattern = pp map { _.json.asInstanceOf[str].value } getOrElse "^.*$"
+  def mkDict(vv: Option[V.Def[_, _]], comp: Schema[_], par: ParentSchema): obj = {
+    val pattern = vv map { _.json.asInstanceOf[str].value } getOrElse "^.*$"
     obj("patternProperties" -> obj(
-      pattern -> apply(comp, includeType = true, isRoot = false)))
+      pattern -> apply(comp, Some(comp), includeType = true, isRoot = false)))
   }
 
-  def mkArr(pp: Option[V.Def[_, _]], comp: Schema[_], unique: Boolean): obj = {
+  def mkArr(vv: Option[V.Def[_, _]], comp: Schema[_], unique: Boolean, par: ParentSchema): obj = {
     obj(
-      "items" -> apply(comp, includeType = true, isRoot = false),
+      "items" -> apply(comp, par, includeType = true, isRoot = false),
       "uniqueItems" -> (if (unique) Some(true) else None))
   }
 
-  def mkEnum(pp: Option[V.Def[_, _]], x: `enum`[_]): obj = {
+  def mkEnum(vv: Option[V.Def[_, _]], x: `enum`[_], par: ParentSchema): obj = {
     obj(
       "type" -> "string",
       "enum" -> arr(x.values.toSeq))
   }
 
-  def mkOneOf(pp: Option[V.Def[_, _]], x: `oneof`[_], isRoot: Boolean): obj = {
+  def mkOneOf(vv: Option[V.Def[_, _]], x: `oneof`[_], isRoot: Boolean, par: ParentSchema): obj = {
     val subTypesSeq = x.subTypes.toSeq
-    val tpe = subTypesSeq.head.jsonType
-    val sameType = subTypesSeq.tail.foldLeft(true) { case (agg, t) => agg && (t.jsonType == tpe) }
+    val tpe = subTypesSeq.find {
+      case `def`(_, _) => false
+      case `ref`(_)    => false
+      case _           => true
+    }.map { _.jsonType }
+    val sameType = subTypesSeq.tail.foldLeft(tpe.isDefined) {
+      case (false, _) => false
+      case (true, t)  => t.jsonType == tpe.get
+    }
+    def rootType = tpe filter { _ => !isRoot } map { t => obj("type"  -> `str`(t)) } getOrElse obj()
     if (sameType) {
-      obj(
-        "type"  -> `str`(tpe),
+      rootType ++ obj(
         "oneOf" -> `arr`(
-          apply(subTypesSeq.head, includeType = false, isRoot = false),
-          subTypesSeq.tail.map(t => apply(t, includeType = false, isRoot = false)): _*))
+          apply(subTypesSeq.head, Some(x), includeType = false, isRoot = false),
+          subTypesSeq.tail.map(t => apply(t, Some(x), includeType = false, isRoot = false)): _*))
     } else
       obj(
         "oneOf" -> `arr`(
-          apply(subTypesSeq.head, includeType = true, isRoot = false),
-          subTypesSeq.tail.map(apply(_, includeType = true, isRoot = false)): _*))
+          apply(subTypesSeq.head, Some(x), includeType = true, isRoot = false),
+          subTypesSeq.tail.map(apply(_, Some(x), includeType = true, isRoot = false)): _*))
   }
 
-  def mkAllOf(pp: Option[V.Def[_, _]], x: `allof`[_], isRoot: Boolean): obj = {
+  def mkAllOf(vv: Option[V.Def[_, _]], x: `allof`[_], isRoot: Boolean, par: ParentSchema): obj = {
     val subTypesSeq = x.subTypes.toSeq
     val tpe = subTypesSeq.head.jsonType
     val sameType = subTypesSeq.tail.foldLeft(true) { case (agg, t) => agg && (t.jsonType == tpe) }
@@ -90,48 +112,48 @@ trait AsDraftSupport {
       obj(
         "type"  -> (if (!isRoot) Some(`str`(tpe)) else None),
         "allOf" -> `arr`(
-          apply(subTypesSeq.head, includeType = false, isRoot = false),
-          subTypesSeq.tail.map(t => apply(t, includeType = false, isRoot = false)): _*))
+          apply(subTypesSeq.head, Some(x), includeType = false, isRoot = false),
+          subTypesSeq.tail.map(t => apply(t, Some(x), includeType = false, isRoot = false)): _*))
     } else
       obj(
         "allOf" -> `arr`(
-          apply(subTypesSeq.head, includeType = true, isRoot = false),
-          subTypesSeq.tail.map(apply(_, includeType = true, isRoot = false)): _*))
+          apply(subTypesSeq.head, Some(x), includeType = true, isRoot = false),
+          subTypesSeq.tail.map(apply(_, Some(x), includeType = true, isRoot = false)): _*))
   }
 
 
-  def mkNot(pp: Option[V.Def[_, _]], x: `not`[_]): obj = {
-    obj("not" -> apply(x.tpe, includeType = false, isRoot = false))
+  def mkNot(vv: Option[V.Def[_, _]], x: `not`[_], par: ParentSchema): obj = {
+    obj("not" -> apply(x.tpe, Some(x), includeType = false, isRoot = false))
   }
 
-  def mkRef(pp: Option[V.Def[_, _]], x: `def`[_]): obj = {
+  def mkRef(vv: Option[V.Def[_, _]], x: `def`[_], par: ParentSchema): obj = {
     val ref = x.sig
     obj(f"$$ref" -> buildRef(ref))
   }
 
-  def mkLazyRef(pp: Option[V.Def[_, _]], x: `ref`[_]): obj = {
+  def mkLazyRef(vv: Option[V.Def[_, _]], x: `ref`[_], par: ParentSchema): obj = {
     val ref = x.sig
     obj(f"$$ref" -> buildRef(ref))
   }
 
   def buildRef(ref: String): String = s"#/definitions/$ref"
 
-  def mkValueClass(pp: Option[V.Def[_, _]], x: `value-class`[_, _]): obj = {
-    inferSpecifics.lift((pp, x.tpe, false)) getOrElse obj()
+  def mkValueClass(vv: Option[V.Def[_, _]], x: `value-class`[_, _], par: ParentSchema): obj = {
+    inferSpecifics.lift((vv, x.tpe, par, false)) getOrElse obj()
   }
 
-  val inferSpecifics: PartialFunction[(Option[V.Def[_, _]], json.Schema[_], Boolean), obj] = {
-    case (pp, x: `string`[_], _)           => mkStr(pp, x)
-    case (pp, x: `object`[_], _)           => mkObj(pp, x)
-    case (pp, `dictionary`(comp), _)       => mkDict(pp, comp)
-    case (pp, `array`(comp, unique), _)    => mkArr(pp, comp, unique)
-    case (pp, x: `enum`[_], _)             => mkEnum(pp, x)
-    case (pp, x: `oneof`[_], isRoot)       => mkOneOf(pp, x, isRoot)
-    case (pp, x: `allof`[_], isRoot)       => mkAllOf(pp, x, isRoot)
-    case (pp, x: `not`[_], _)      => mkNot(pp, x)
-    case (pp, x: `def`[_], _) => mkRef(pp, x)
-    case (pp, x: `ref`[_], _) => mkLazyRef(pp, x)
-    case (pp, x: `value-class`[_, _], _) => mkValueClass(pp, x)
+  val inferSpecifics: PartialFunction[(Option[V.Def[_, _]], json.Schema[_], ParentSchema, Boolean), obj] = {
+    case (vv, x: `string`[_], par, _)         => mkStr(vv, x, par)
+    case (vv, x: `object`[_], par, _)         => mkObj(vv, x, par)
+    case (vv, `dictionary`(comp), par, _)     => mkDict(vv, comp, par)
+    case (vv, `array`(comp, unique), par, _)  => mkArr(vv, comp, unique, par)
+    case (vv, x: `enum`[_], par, _)           => mkEnum(vv, x, par)
+    case (vv, x: `oneof`[_], par, isRoot)     => mkOneOf(vv, x, isRoot, par)
+    case (vv, x: `allof`[_], par, isRoot)     => mkAllOf(vv, x, isRoot, par)
+    case (vv, x: `not`[_], par, _)            => mkNot(vv, x, par)
+    case (vv, x: `def`[_], par, _)            => mkRef(vv, x, par)
+    case (vv, x: `ref`[_], par, _)            => mkLazyRef(vv, x, par)
+    case (vv, x: `value-class`[_, _], par, _) => mkValueClass(vv, x, par)
   }
 
   def inferValidations(x: json.Schema[_]): (obj, Option[V.Def[_, _]]) = {
@@ -150,7 +172,7 @@ trait AsDraftSupport {
 
   def inferDefinition(x: `def`[_]): (String, obj) = {
     val ref = x.sig
-    ref -> apply(x.tpe, includeType = true, isRoot = false)
+    ref -> apply(x.tpe, Some(x), includeType = true, isRoot = false)
   }
 
   def inferDefinitions(x: Schema[_]): obj = {

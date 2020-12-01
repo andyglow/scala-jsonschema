@@ -9,6 +9,7 @@ sealed trait Schema[+T] {
 
   private var _title: Option[String] = None
   private var _description: Option[String] = None
+  private var _discriminationKey: Option[String] = None
   private var _validations: collection.Seq[V.Def[_, _]] = Seq.empty
   def jsonType: String
   def withValidation[TT >: T, B](v: V.Def[B, _], vs: V.Def[B, _]*)(implicit bound: V.Magnet[TT, B]): Self = {
@@ -20,6 +21,7 @@ sealed trait Schema[+T] {
   }
   def description: Option[String] = _description
   def title: Option[String] = _title
+  def discriminationKey: Option[String] = _discriminationKey
 
   // NOTE: `.toSeq` is required for scala 2.13
   // otherwise we'll see
@@ -38,6 +40,7 @@ sealed trait Schema[+T] {
     def writeExtra(sb: StringBuilder): Unit = {
       _description foreach { x => sb.append(" description=`").append(x).append('`') }
       _title foreach { x => sb.append(" title=`").append(x).append('`') }
+      _discriminationKey foreach { x => sb.append(" discriminationKey=`").append(x).append('`') }
     }
     def writeValidations(sb: StringBuilder): Unit = {
       if (validations.nonEmpty) {
@@ -57,10 +60,12 @@ sealed trait Schema[+T] {
   protected def mkCopy(): Self
   def duplicate(
     description: Option[String] = this._description,
-    title: Option[String] = this._title): Self = {
+    title: Option[String] = this._title,
+    discriminationKey: Option[String] = this._discriminationKey): Self = {
 
     val copy = mkCopy()
     copy._validations = this._validations
+    copy._discriminationKey = discriminationKey
     copy._description = description
     copy._title = title
 
@@ -71,6 +76,7 @@ sealed trait Schema[+T] {
     copy._validations = x._validations
     copy._description = x._description
     copy._title = x._title
+    copy._discriminationKey = x._discriminationKey
 
     copy
   }
@@ -80,6 +86,7 @@ sealed trait Schema[+T] {
       s.canEqual(this) &&
       this.title == s.title &&
       this.description == s.description &&
+      this.discriminationKey == s.discriminationKey &&
       // compare collections disregarding order
       this.validations.forall(s.validations.contains) &&
       s.validations.forall(this.validations.contains)
@@ -88,6 +95,7 @@ sealed trait Schema[+T] {
   }
   def withDescription(x: String): Self = duplicate(description = Some(x))
   def withTitle(x: String): Self = duplicate(title = Some(x))
+  def withDiscriminationKey(x: String): Self = duplicate(discriminationKey = Some(x))
   def toDefinition[TT >: T](sig: String): Schema.`def`[TT] = Schema.`def`(sig, this)
   @deprecated("0.6.1", "will be removed in 1.0.0") def apply(refName: String): Schema[T] = toDefinition(refName)
 }
@@ -346,12 +354,13 @@ object Schema {
   // +---------------
   //
   final case class `oneof`[T](
-    subTypes: Set[Schema[_]]) extends Schema[T] {
+    subTypes: Set[Schema[_]],
+    discriminationField: Option[String] = None) extends Schema[T] {
     type Self = `oneof`[T]
-    def mkCopy() = new `oneof`[T](subTypes)
+    def mkCopy() = new `oneof`[T](subTypes, discriminationField)
     override def canEqual(that: Any): Boolean = that.isInstanceOf[`oneof`[_]]
     override def equals(obj: Any): Boolean = obj match {
-      case `oneof`(s) => subTypes == s && super.equals(obj)
+      case `oneof`(s, d) => subTypes == s && discriminationField == d && super.equals(obj)
       case _ => false
     }
     override def jsonType: String = "oneof"
@@ -362,11 +371,16 @@ object Schema {
         sb append ","
       }
       sb.setLength(sb.length - 1) // drop last comma
+      discriminationField foreach { f =>
+        sb append "| discriminationField="
+        sb append f
+      }
       sb append ")"
     }
+    def discriminatedBy(x: String): Self = new `oneof`[T](subTypes, Some(x))
   }
   final object `oneof` {
-    def of[T](x: Schema[_], xs: Schema[_]*): `oneof`[T] = new `oneof`[T]((x +: xs).toSet)
+    def of[T](x: Schema[_], xs: Schema[_]*): `oneof`[T] = new `oneof`[T]((x +: xs).toSet, None)
   }
 
   // +------------
@@ -426,7 +440,7 @@ object Schema {
     sig: String,
     tpe: Schema[_]) extends Schema[T] {
     type Self = `def`[T]
-    override def jsonType: String = s"$$ref"
+    override def jsonType: String = ??? // s"$$ref"
     def mkCopy() = new `def`[T](sig, tpe)
     override def canEqual(that: Any): Boolean = that.isInstanceOf[`def`[_]]
     override def equals(obj: Any): Boolean = obj match {
@@ -446,7 +460,7 @@ object Schema {
           case `object`(fields)          => new `object`(fields.map { f => f.copy(tpe = deepCopy(f.tpe)) })
           case `array`(y, u)             => `array`(deepCopy(y), u)
           case `dictionary`(y)           => `dictionary`(deepCopy(y))
-          case `oneof`(ys)               => `oneof`(ys map deepCopy)
+          case `oneof`(ys, df)               => `oneof`(ys map deepCopy, df)
           case `allof`(ys)               => `allof`(ys map deepCopy)
           case `not`(y)                  => `not`(deepCopy(y))
           case `def`(s, y)               => `def`(s, deepCopy(y))

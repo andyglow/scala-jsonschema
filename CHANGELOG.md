@@ -1,3 +1,7 @@
+- **0.6.2**
+  - added annotations for
+    - definition enforcement
+    - discriminator/discriminatorKey  
 - **0.6.1**
   - added support for scala.Enumeration
   - default values won't be infered for scala.None
