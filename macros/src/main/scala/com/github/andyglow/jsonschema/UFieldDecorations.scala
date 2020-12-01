@@ -55,7 +55,7 @@ trait UFieldDecorations { this: UContext with UCommons =>
       fields.flatMap { f =>
         val descr = f.annotations
           .map(_.tree)
-          .filter(_.tpe <:< T.decoration.description)
+          .filter(_.tpe <:< T.annotation.description)
           .collectFirst { case Apply(_, List(Literal(Constant(text: String)))) => text }
 
         descr map { (f.name.decodedName.toString, _) }

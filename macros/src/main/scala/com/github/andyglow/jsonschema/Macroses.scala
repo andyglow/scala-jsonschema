@@ -15,8 +15,9 @@ class Macroses(val c: blackbox.Context) extends UContext
   with UValueTypes
   with UProductTypes
   with USumTypes
-  with UTypeDecorations
-  with UFieldDecorations {
+  with UTypeAnnotations
+  with UFieldDecorations
+  with UScalaParsers {
 
   import c.universe._
 
@@ -67,14 +68,15 @@ class Macroses(val c: blackbox.Context) extends UContext
   private def deriveInternal[T: c.WeakTypeTag, S[_]](specFD: FieldDecorations = FieldDecorations.Empty): c.Expr[S[T]] = {
     val tpe = weakTypeOf[T]
 
-    val typeDeco = TypeDecoration(tpe)
+    val typeDeco = TypeAnnotations(tpe)
 
     val recursiveTypes = new RecursiveTypes
     implicit val ctx = new ResolutionContext(Nil, recursiveTypes.append)
     val out = {
-      // val st = resolve(tpe, ctx, specFD)
       val st = recursiveTypes.substitute(resolve(tpe, ctx, specFD))
-      st.withExtra(st.extra.copy(title = typeDeco.title, description = typeDeco.description))
+      st.withExtra(st.extra.copy(
+        title = typeDeco.texts.flatMap(_.title),
+        description = typeDeco.texts.flatMap(_.description)))
     }.tree
 
     // debug

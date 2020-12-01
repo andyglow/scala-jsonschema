@@ -2,7 +2,7 @@ package com.github.andyglow.jsonschema
 
 
 
-private[jsonschema] trait USumTypes { this: UContext with UCommons with UValueTypes with UProductTypes =>
+private[jsonschema] trait USumTypes { this: UContext with UCommons with UValueTypes with UProductTypes with UImplicits with UTypeAnnotations with USignatures =>
   import c.universe._
 
 
@@ -37,12 +37,49 @@ private[jsonschema] trait USumTypes { this: UContext with UCommons with UValueTy
 
     def resolve(tpe: Type)(implicit ctx: ResolutionContext): Option[U.OneOf] = {
       Some.when (isSealed(tpe)) {
-        val schemas = collectRecursively(tpe) map {
-          case ValueClass(st) => st
-          case CaseClass(st)  => st
-          case _              => c.abort(c.enclosingPosition, "") // TODO: proper error message
+        // get type annotation for the root type
+        // needed primarily for discriminator logic
+        val rootTA = TypeAnnotations(tpe)
+        val subTypes = collectRecursively(tpe)
+        val schemas = subTypes map { subTpe =>
+          val subSchema = Implicit.getOrElse(subTpe, subTpe match {
+            case ValueClass(st) => st
+            case CaseClass(st)  => st
+            case _              => c.abort(c.enclosingPosition, "Only case classes and value classes are supported candidates for sum type hierarchy")
+          })
+
+          // if discriminator is specified we need to make several checks
+          // 1. type must ne a product type
+          // 2. if discriminator isn't a phantom, product must contain specified field
+          rootTA.discriminator foreach { d =>
+            def validate(t: SchemaType): Unit = t match {
+              case o: SchemaType.Obj                     => if (!d.phantom && !o.fields.exists(_.name == d.field)) c.abort(c.enclosingPosition, s"Discriminator: Field '${d.field}' is not found in ${show(subTpe)}")
+              case SchemaType.ValueClass(_, _, inner, _) => validate(inner)
+              case _                                     => c.abort(c.enclosingPosition, "Discriminator: Only case classes and value classes are supported candidates for sum type hierarchy")
+            }
+
+            validate(subSchema)
+          }
+
+          // get hierarchy member type annotation
+          // for discriminator-key
+          val ta = TypeAnnotations(subTpe)
+
+          // apply discriminator key if required
+          val effectiveSubSchema = rootTA.discriminator.fold(subSchema) { d =>
+            val key = ta.discriminatorKey match {
+              case None                      => signature(subTpe)
+              case Some(DiscriminatorKey(x)) => x
+            }
+
+            subSchema.withExtra(subSchema.extra.copy(discriminationKey = Some(key)))
+          }
+
+          // if `definition` annotation is specified wrap the schema into `def`
+          ta.wrapIntoDefIfRequired(subTpe, effectiveSubSchema)
         }
-        U.OneOf(tpe, schemas)
+
+        U.OneOf(tpe, schemas, rootTA.discriminator.map(_.field))
       }
     }
 

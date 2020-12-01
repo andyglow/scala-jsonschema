@@ -1,9 +1,10 @@
 package com.github.andyglow.jsonschema
 
 import scala.reflect.NameTransformer
+import scala.reflect.internal.util.NoSourceFile
 
 
-private[jsonschema] trait UProductTypes { this: UContext with UCommons with UScaladocs with UFieldDecorations =>
+private[jsonschema] trait UProductTypes { this: UContext with UCommons with UScaladocs with UFieldDecorations with UScalaParsers =>
   import c.universe._
 
 
@@ -33,7 +34,7 @@ private[jsonschema] trait UProductTypes { this: UContext with UCommons with USca
     val annotationMap = fieldAnnotationMap(tpe)
 
     val subjectCompanionSym = tpe.typeSymbol
-    val subjectCompanion    = subjectCompanionSym.companion
+    val subjectCompanion    = subjectCompanionSym.asClass.companion.asModule
 
     def toField(fieldSym: TermSymbol, i: Int): Field = {
       val name        = NameTransformer.decode(fieldSym.name.toString)
@@ -41,13 +42,31 @@ private[jsonschema] trait UProductTypes { this: UContext with UCommons with USca
       val isOption    = fieldTpe <:< T.option
       val hasDefault  = fieldSym.isParamWithDefault
       val default     = Option.whenever (hasDefault) {
-        val defaultPath = (subjectCompanion.fullName + ".apply$default$" + (i + 1)).split('.')
-        val defaultDef  = defaultPath.tail.foldLeft[Tree](Ident(TermName(defaultPath.head))) { case (acc, x) => Select(acc, TermName(x)) }
+        val defaultGetterTree  = parseFCQN(subjectCompanion.fullName + ".apply$default$" + (i + 1))
+        val defaultGetterSym   = subjectCompanion.typeSignature.member(TermName(s"apply$$default$$${i+1}")).asTerm
+        // we don't want to infer default value for `scala.None`
+        val isNone = if (isOption) {
+          val effectiveDefaultGetterTree =
+            c.untypecheck {
+              c.typecheck {
+                if (defaultGetterSym.pos.source == NoSourceFile) {
+                  // for continuous compilation
+                  parseFCQN(tpe.typeSymbol.fullName + ".apply$default$" + (i + 1))
+                } else {
+                  // for full-rebuild
+                  val defaultGetterSym = subjectCompanion.typeSignature.member(TermName(s"apply$$default$$${i+1}")).asTerm
+                  // we are in hasDefault block, so default.get should be ok
+                  parseFCQN(parseParameter(defaultGetterSym).default.get)
+                }
+              }
+            }
 
-        val isNone = if (isOption) c.eval(c.Expr[Boolean](q"$defaultDef == scala.None")) else false
+            c.eval(c.Expr[Boolean](q"$effectiveDefaultGetterTree.isEmpty"))
+        } else false
+
         Some.when (!isNone) {
           val toV = c.inferImplicitValue(appliedType(T.toValue, fieldTpe))
-          if (toV.nonEmpty) q"Some($toV($defaultDef))" else {
+          if (toV.nonEmpty) q"Some($toV($defaultGetterTree))" else {
             c.abort(c.enclosingPosition, s"Can't infer a json value for '$name': $fieldTpe")
           }
         }
@@ -125,7 +144,7 @@ private[jsonschema] trait UProductTypes { this: UContext with UCommons with USca
             // if default value is specified
             U.Obj.Field.FromJson(f
               .effectiveTpe,
-              q"$name",
+              name,
               fieldSchema,
               q"${!f.isOption && !f.hasDefault}",
               default,
@@ -134,7 +153,7 @@ private[jsonschema] trait UProductTypes { this: UContext with UCommons with USca
             // if no default is specified
             U.Obj.Field.Apply(
               f.effectiveTpe,
-              q"$name",
+              name,
               fieldSchema,
               Some(q"${!f.isOption && !f.hasDefault}"),
               None,

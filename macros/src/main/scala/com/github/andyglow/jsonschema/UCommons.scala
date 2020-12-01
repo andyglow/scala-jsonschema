@@ -64,9 +64,12 @@ private[jsonschema] trait UCommons extends SchemaTypes with ULogging { this: UCo
     val schemaC       = typeOf[json.Schema[_]].typeConstructor
     val predefC       = typeOf[json.schema.Predef[_]].typeConstructor
 
-    object decoration {
+    object annotation {
       val title = typeOf[json.schema.title]
       val description = typeOf[json.schema.description]
+      val definition = typeOf[json.schema.definition]
+      val discriminator = typeOf[json.schema.discriminator]
+      val discriminatorKey = typeOf[json.schema.discriminatorKey]
     }
   }
 

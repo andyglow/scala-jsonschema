@@ -131,20 +131,22 @@ class AsDraft04Spec extends AnyWordSpec {
           Field("foo", `string`[String]),
           Field("bar", `integer`, required = false)),
         `object`(
-          Field("foo", `string`[String]))))) shouldEqual obj(
-        "type" -> "object",
-        "oneOf" -> arr(
-          obj(
-            "additionalProperties" -> false,
-            "required" -> arr("foo"),
-            "properties" -> obj(
-              "foo" -> obj("type" -> "string"),
-              "bar" -> obj("type" -> "integer"))),
-          obj(
-            "additionalProperties" -> false,
-            "required" -> arr("foo"),
-            "properties" -> obj(
-              "foo" -> obj("type" -> "string")))))
+          Field("foo", `string`[String]))))) should containJson {
+        obj(
+          "type" -> "object",
+          "oneOf" -> arr(
+            obj(
+              "additionalProperties" -> false,
+              "required" -> arr("foo"),
+              "properties" -> obj(
+                "foo" -> obj("type" -> "string"),
+                "bar" -> obj("type" -> "integer"))),
+            obj(
+              "additionalProperties" -> false,
+              "required" -> arr("foo"),
+              "properties" -> obj(
+                "foo" -> obj("type" -> "string")))))
+      }
     }
 
     "emit OneOf for sealed trait with value classes" in {
