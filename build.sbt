@@ -47,23 +47,22 @@ lazy val commonSettings = Seq(
       "-unchecked",
       "-deprecation",
 //      "-Xfatal-warnings",
-      "-Xlint",
-      "-Ywarn-unused-import",
-      "-Yno-adapted-args",
-      "-Ywarn-dead-code",
-      "-Ywarn-numeric-widen",
+//      "-Xlint",
+//      "-Ywarn-unused-import",
+//      "-Yno-adapted-args",
+//      "-Ywarn-dead-code",
+//      "-Ywarn-numeric-widen",
 //      "-Xlog-implicits",
 //      "-Ytyper-debug",
-      "-Xfuture",
+//      "-Xfuture",
       "-language:higherKinds")
 
     // WORKAROUND https://github.com/scala/scala/pull/5402
     CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, 12)) => options.map {
-        case "-Xlint"               => "-Xlint:-unused,_"
         case "-Ywarn-unused-import" => "-Ywarn-unused:imports,-patvars,-privates,-locals,-implicits"
         case other                  => other
-      }
+      } :+ "-Xlint:-unused,_"
       case Some((2, n)) if n >= 13  => options.filterNot { opt =>
         opt == "-Yno-adapted-args" || opt == "-Xfuture"
       }.map {
@@ -74,7 +73,7 @@ lazy val commonSettings = Seq(
     }
   },
 
-  scalacOptions in (Compile,doc) ++= Seq(
+  scalacOptions in (Compile, doc) ++= Seq(
     "-groups",
     "-implicits",
     "-no-link-warnings"),

@@ -106,17 +106,18 @@ private[jsonschema] trait UTypeAnnotations { this: UContext with UCommons with U
         annotations
           .map(_.tree)
           .filter(_.tpe <:< T.annotation.discriminator)
-          .map { x => c.info(c.enclosingPosition, "BipBip: \n" + showRaw(x) + "\n" + show(x), force = true); x }
+//          .map { x => c.info(c.enclosingPosition, "BipBip: \n" + showRaw(x) + "\n" + show(x), force = true); x }
           .collectFirst {
             case Apply(_, fieldTree :: phantomTree :: Nil) =>
               val field = fieldTree match {
                 case Literal(Constant(text: String))                    => text
-                case Ident(TermName("x$2"))                             => "type"
                 case Select(_, TermName("$lessinit$greater$default$1")) => "type"
+                case _                                                  => c.abort(c.enclosingPosition, "@discriminator annotation: please even if using call-by-name, use it in specified order. aka [field, phantom]")
               }
               val phantom = phantomTree match {
                 case Literal(Constant(v: Boolean))                      => v
                 case Select(_, TermName("$lessinit$greater$default$2")) => true
+                case _                                                  => c.abort(c.enclosingPosition, "@discriminator annotation: please even if using call-by-name, use it in specified order. aka [field, phantom]")
               }
 
               Discriminator(field, phantom)
