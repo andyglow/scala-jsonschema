@@ -7,12 +7,24 @@ import org.scalatest.funsuite.AnyFunSuite
 
 class ParseJsonBulkSpec extends AnyFunSuite {
 
-  lazy val examples = Source.fromInputStream(classOf[ParseJsonBulkSpec].getResourceAsStream("/examples"))
+  private lazy val clazz = classOf[ParseJsonBulkSpec]
+
+  // for running in parallel in drone
+  private def open(resourcePath: String, attempt: Int = 0): Source = {
+    Thread.sleep(attempt * 1000)
+    try {
+      Source.fromInputStream(clazz.getResourceAsStream(resourcePath))
+    } catch {
+      case _: Throwable if attempt < 5 =>
+        open(resourcePath, attempt + 1)
+    }
+  }
+
+  lazy val examples = open("/examples")
 
   examples.getLines() foreach { name =>
     def run(expect: Boolean) = {
-      val is = classOf[ParseJsonBulkSpec].getResourceAsStream("/" + name)
-      val json = Source.fromInputStream(is).mkString
+      val json = open("/" + name).mkString
       ParseJson(json) match {
         case Success(x) if !expect => fail(json + " should have fail, but: " + x)
         case Failure(x) if expect  => fail(json + " should have succeed", x)

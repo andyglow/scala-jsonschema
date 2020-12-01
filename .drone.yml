@@ -43,6 +43,8 @@ steps:
   image: plugins/slack
   when:
     status: [ success, failure ]
+  depends_on:
+    - build_coverage
   settings:
     webhook:
       from_secret: slack_webhook_url
