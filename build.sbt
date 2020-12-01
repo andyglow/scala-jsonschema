@@ -16,9 +16,9 @@ lazy val commonSettings = Seq(
 
   organizationName := "andyglow",
 
-  scalaVersion := ScalaVersions.value,
+  scalaVersion := ScalaVer.value.full,
 
-  crossScalaVersions := ScalaVersions.values,
+  crossScalaVersions := ScalaVer.values.map(_.full),
 
   Compile / unmanagedSourceDirectories ++= {
     val bd = baseDirectory.value
@@ -40,38 +40,7 @@ lazy val commonSettings = Seq(
     }
   },
 
-  scalacOptions ++= {
-    val options = Seq(
-      "-encoding", "UTF-8",
-      "-feature",
-      "-unchecked",
-      "-deprecation",
-//      "-Xfatal-warnings",
-//      "-Xlint",
-//      "-Ywarn-unused-import",
-//      "-Yno-adapted-args",
-//      "-Ywarn-dead-code",
-//      "-Ywarn-numeric-widen",
-//      "-Xlog-implicits",
-//      "-Ytyper-debug",
-//      "-Xfuture",
-      "-language:higherKinds")
-
-    // WORKAROUND https://github.com/scala/scala/pull/5402
-    CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, 12)) => options.map {
-        case "-Ywarn-unused-import" => "-Ywarn-unused:imports,-patvars,-privates,-locals,-implicits"
-        case other                  => other
-      } :+ "-Xlint:-unused,_"
-      case Some((2, n)) if n >= 13  => options.filterNot { opt =>
-        opt == "-Yno-adapted-args" || opt == "-Xfuture"
-      }.map {
-        case "-Ywarn-unused-import" => "-Ywarn-unused:imports,-patvars,-privates,-locals,-implicits"
-        case other                  => other
-      } :+ "-Xsource:2.13"
-      case _             => options
-    }
-  },
+  scalacOptions := CompilerOptions(ScalaVer.value),
 
   scalacOptions in (Compile, doc) ++= Seq(
     "-groups",
