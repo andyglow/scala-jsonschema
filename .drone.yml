@@ -2,38 +2,57 @@ kind: pipeline
 type: docker
 name: scala-jsonschema
 
-steps:
-  - name: build
-    image: andyglow/sbt:latest
-    when:
-      branch: master
-    environment:
-      CODECOV_TOKEN:
-        from_secret: codecov_token
-    commands:
-      - SCALA_VER=2.13 sbt clean coverage test
-      - SCALA_VER=2.13 sbt coverageAggregate
-      - SCALA_VER=2.13 sbt clean test
-      - SCALA_VER=2.12 sbt clean test
-      - SCALA_VER=2.11 sbt clean test
-      - wget -O .codecov https://codecov.io/bash
-      - chmod +x .codecov
-      - ./.codecov -X gcov -X coveragepy -X xcode -X gcovout
+build_template: &build_template
+- image: andyglow/sbt:latest
+  when:
+    branch: master
+  environment:
+    CODECOV_TOKEN:
+      from_secret: codecov_token
 
-  - name: notify
-    image: plugins/slack
-    when:
-      status: [ success, failure ]
-    settings:
-      webhook:
-        from_secret: slack_webhook_url
-      channel: builds
-      username: drone
-      link_names: true
-      template: >
-        {{#success build.status}}
-          {{repo.name}}: build {{build.number}} succeeded (spent {{since build.started}}). Good job.
-        {{else}}
-          {{repo.name}}: build {{build.number}} failed. Fix please. {{build.link}}
-        {{/success}}
+steps:
+- <<: *build_template
+  name: build_213
+  commands:
+    - SCALA_VER=2.13 sbt clean test
+
+- <<: *build_template
+  name: build_212
+  commands:
+    - SCALA_VER=2.12 sbt clean test
+
+- <<: *build_template
+  name: build_211
+  commands:
+    - SCALA_VER=2.11 sbt clean test
+
+- <<: *build_template
+  name: build_coverage
+  depends_on:
+    - build_213
+    - build_212
+    - build_211
+  commands:
+    - SCALA_VER=2.13 sbt clean coverage test
+    - SCALA_VER=2.13 sbt coverageAggregate
+    - wget -O .codecov https://codecov.io/bash
+    - chmod +x .codecov
+    - ./.codecov -X gcov -X coveragepy -X xcode -X gcovout
+
+- name: notify
+  image: plugins/slack
+  when:
+    status: [ success, failure ]
+  settings:
+    webhook:
+      from_secret: slack_webhook_url
+    channel: builds
+    username: drone
+    link_names: true
+    template: >
+      {{#success build.status}}
+        {{repo.name}}: build {{build.number}} succeeded (spent {{since build.started}}). Good job.
+      {{else}}
+        {{repo.name}}: build {{build.number}} failed. Fix please. {{build.link}}
+      {{/success}}
 
