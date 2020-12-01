@@ -57,6 +57,7 @@ local NotfyStep(name) = {
 //  BuildTpl("coverage", CoverageStep) + { depends_on: [ "build_2.13" ] },
 //]
 
+[
 {
   kind: "pipeline",
   type: "docker",
@@ -69,8 +70,8 @@ local NotfyStep(name) = {
       depends_on: [ "build_2.13", "build_2.12", "build_2.11" ]
     },
     NotfyStep("notify") + {
-          depends_on: [ "build_2.13", "build_2.12", "build_2.11" ]
-
+      depends_on: [ "coverage" ]
     }
   ]
 }
+]
