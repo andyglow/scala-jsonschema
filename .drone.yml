@@ -5,15 +5,17 @@
    "steps": [
       {
          "commands": [
-            "CI=Drone SCALA_VER=2.13 sbt clean test"
+            "sbt clean test"
          ],
          "environment": {
             "CODECOV_TOKEN": {
                "from_secret": "codecov_token"
-            }
+            },
+            "DRONE_WORKSPACE_PATH": "/drone/src/2.13",
+            "SCALA_VER": "2.13"
          },
          "image": "andyglow/sbt:latest",
-         "name": "build_2.13",
+         "name": "build: 2.13",
          "when": {
             "branch": "master"
          }
@@ -31,15 +33,17 @@
    "steps": [
       {
          "commands": [
-            "CI=Drone SCALA_VER=2.12 sbt clean test"
+            "sbt clean test"
          ],
          "environment": {
             "CODECOV_TOKEN": {
                "from_secret": "codecov_token"
-            }
+            },
+            "DRONE_WORKSPACE_PATH": "/drone/src/2.12",
+            "SCALA_VER": "2.12"
          },
          "image": "andyglow/sbt:latest",
-         "name": "build_2.12",
+         "name": "build: 2.12",
          "when": {
             "branch": "master"
          }
@@ -57,15 +61,17 @@
    "steps": [
       {
          "commands": [
-            "CI=Drone SCALA_VER=2.11 sbt clean test"
+            "sbt clean test"
          ],
          "environment": {
             "CODECOV_TOKEN": {
                "from_secret": "codecov_token"
-            }
+            },
+            "DRONE_WORKSPACE_PATH": "/drone/src/2.11",
+            "SCALA_VER": "2.11"
          },
          "image": "andyglow/sbt:latest",
-         "name": "build_2.11",
+         "name": "build: 2.11",
          "when": {
             "branch": "master"
          }
@@ -84,12 +90,12 @@
       "scala-jsonschema/2.11"
    ],
    "kind": "pipeline",
-   "name": "scala-jsonschema/finalize",
+   "name": "finalize",
    "steps": [
       {
          "commands": [
-            "CI=Drone SCALA_VER=2.13 sbt clean coverage test",
-            "CI=Drone SCALA_VER=2.13 sbt coverageAggregate",
+            "sbt clean coverage test",
+            "sbt coverageAggregate",
             "wget -O .codecov https://codecov.io/bash",
             "chmod +x .codecov",
             "./.codecov -X gcov -X coveragepy -X xcode -X gcovout"
@@ -97,12 +103,16 @@
          "environment": {
             "CODECOV_TOKEN": {
                "from_secret": "codecov_token"
-            }
+            },
+            "DRONE_WORKSPACE_PATH": "/drone/src/2.13",
+            "SCALA_VER": "2.13"
          },
          "image": "andyglow/sbt:latest",
          "name": "scoverage",
          "when": {
-            "branch": "master"
+            "status": [
+               "success"
+            ]
          }
       },
       {
@@ -128,9 +138,10 @@
          }
       }
    ],
-   "type": "docker",
-   "workspace": {
-      "path": "finalize"
-   }
+   "trigger": [
+      "success",
+      "failure"
+   ],
+   "type": "docker"
 }
 ...
