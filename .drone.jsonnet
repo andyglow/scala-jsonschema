@@ -80,7 +80,7 @@ local Notify(name) = {
     ],
     // makes pipeline trigger unconditionally
     trigger: [
-      "success", "failure"
+      { status: [ "success", "failure" ] }
     ]
   },
 ]
