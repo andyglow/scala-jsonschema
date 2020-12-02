@@ -171,12 +171,6 @@
          }
       }
    ],
-   "trigger": {
-      "status": [
-         "success",
-         "failure"
-      ]
-   },
    "type": "docker",
    "workspace": {
       "path": "2.13"

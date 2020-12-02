@@ -78,10 +78,6 @@ local Notify(name, ver) = {
       "scala-jsonschema/2.13",
       "scala-jsonschema/2.12",
       "scala-jsonschema/2.11"
-    ],
-    // makes pipeline trigger unconditionally
-    trigger: {
-      status: [ "success", "failure" ]
-    }
+    ]
   },
 ]

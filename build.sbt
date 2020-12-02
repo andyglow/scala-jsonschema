@@ -361,3 +361,14 @@ lazy val root = { project in file(".") }
 addCommandAlias("makeDocs", ";docs/mdoc;docs/makeSite")
 addCommandAlias("publishDocs", ";makeDocs;ghpagesPushSite")
 //ParadoxMaterialThemePlugin.paradoxMaterialThemeSettings(Paradox)
+
+lazy val buildInfo = taskKey[Unit]("Prints Build Info")
+buildInfo := {
+  val sb = new StringBuilder("*** BUILD INFO ***\n")
+  sb append s"- Scala: ${scalaVersion.value}"
+
+  streams.value.log.info(sb.toString)
+}
+
+Compile / compile := (Compile / compile).dependsOn(buildInfo).value
+Test / test := (Test / test).dependsOn(buildInfo).value
