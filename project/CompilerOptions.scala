@@ -3,7 +3,7 @@ object CompilerOptions {
   private val base = Seq(
     "-encoding", "UTF-8",
     "-feature",
-    "-unchecked",
+//    "-unchecked",
     "-deprecation",
     "-language:higherKinds")
 
