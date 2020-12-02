@@ -5,7 +5,7 @@
    "steps": [
       {
          "commands": [
-            "SCALA_VER=2.13 sbt clean test"
+            "CI=Drone SCALA_VER=2.13 sbt clean test"
          ],
          "environment": {
             "CODECOV_TOKEN": {
@@ -20,7 +20,7 @@
       },
       {
          "commands": [
-            "SCALA_VER=2.12 sbt clean test"
+            "CI=Drone SCALA_VER=2.12 sbt clean test"
          ],
          "environment": {
             "CODECOV_TOKEN": {
@@ -35,7 +35,7 @@
       },
       {
          "commands": [
-            "SCALA_VER=2.11 sbt clean test"
+            "CI=Drone SCALA_VER=2.11 sbt clean test"
          ],
          "environment": {
             "CODECOV_TOKEN": {
@@ -50,8 +50,8 @@
       },
       {
          "commands": [
-            "SCALA_VER=2.13 sbt clean coverage test",
-            "SCALA_VER=2.13 sbt coverageAggregate",
+            "CI=Drone SCALA_VER=2.13 sbt clean coverage test",
+            "CI=Drone SCALA_VER=2.13 sbt coverageAggregate",
             "wget -O .codecov https://codecov.io/bash",
             "chmod +x .codecov",
             "./.codecov -X gcov -X coveragepy -X xcode -X gcovout"

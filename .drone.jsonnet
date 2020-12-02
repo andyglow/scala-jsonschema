@@ -18,13 +18,13 @@ local BuildStepTpl(name) = {
 
 local BuildStep(ver) = BuildStepTpl("build_" + ver) + {
   commands: [
-    "SCALA_VER=" + ver + " sbt clean test"
+    "CI=Drone SCALA_VER=" + ver + " sbt clean test"
   ]
 };
 local CoverageStep(name) = BuildStepTpl(name) + {
   commands: [
-     "SCALA_VER=2.13 sbt clean coverage test",
-     "SCALA_VER=2.13 sbt coverageAggregate",
+     "CI=Drone SCALA_VER=2.13 sbt clean coverage test",
+     "CI=Drone SCALA_VER=2.13 sbt coverageAggregate",
      "wget -O .codecov https://codecov.io/bash",
      "chmod +x .codecov",
      "./.codecov -X gcov -X coveragepy -X xcode -X gcovout"

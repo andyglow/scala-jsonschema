@@ -9,11 +9,14 @@ class ParseJsonBulkSpec extends AnyFunSuite {
 
   private lazy val clazz = classOf[ParseJsonBulkSpec]
 
+  private lazy val isDrone = sys.env.get("CI").exists(_.toLowerCase == "drone")
+
   // for running in parallel in drone
   private def open(resourcePath: String, attempt: Int = 0): Source = {
     Thread.sleep(attempt * 1000)
     try {
-      Source.fromInputStream(clazz.getResourceAsStream(resourcePath))
+      if (isDrone) Source.fromFile("/drone/src/modules/parser/src/test/resources" + resourcePath)
+      else Source.fromInputStream(clazz.getResourceAsStream(resourcePath))
     } catch {
       case _: Throwable if attempt < 5 =>
         open(resourcePath, attempt + 1)
