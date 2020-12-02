@@ -15,9 +15,28 @@
             "SCALA_VER": "2.13"
          },
          "image": "andyglow/sbt:latest",
-         "name": "build: 2.13",
+         "name": "build",
          "when": {
             "branch": "master"
+         }
+      },
+      {
+         "image": "plugins/slack",
+         "name": "slack",
+         "settings": {
+            "channel": "builds",
+            "link_names": true,
+            "template": "{{#success build.status}}\n  {{repo.name}}: build {{build.number}} for ver 2.13 succeeded (spent {{since build.started}}). Good job. {{build.link}}\n{{else}}\n  {{repo.name}}: build {{build.number}} for ver 2.13 failed. Fix please. {{build.link}}\n{{/success}}\n",
+            "username": "drone",
+            "webhook": {
+               "from_secret": "slack_webhook_url"
+            }
+         },
+         "when": {
+            "status": [
+               "success",
+               "failure"
+            ]
          }
       }
    ],
@@ -43,9 +62,28 @@
             "SCALA_VER": "2.12"
          },
          "image": "andyglow/sbt:latest",
-         "name": "build: 2.12",
+         "name": "build",
          "when": {
             "branch": "master"
+         }
+      },
+      {
+         "image": "plugins/slack",
+         "name": "slack",
+         "settings": {
+            "channel": "builds",
+            "link_names": true,
+            "template": "{{#success build.status}}\n  {{repo.name}}: build {{build.number}} for ver 2.12 succeeded (spent {{since build.started}}). Good job. {{build.link}}\n{{else}}\n  {{repo.name}}: build {{build.number}} for ver 2.12 failed. Fix please. {{build.link}}\n{{/success}}\n",
+            "username": "drone",
+            "webhook": {
+               "from_secret": "slack_webhook_url"
+            }
+         },
+         "when": {
+            "status": [
+               "success",
+               "failure"
+            ]
          }
       }
    ],
@@ -71,9 +109,28 @@
             "SCALA_VER": "2.11"
          },
          "image": "andyglow/sbt:latest",
-         "name": "build: 2.11",
+         "name": "build",
          "when": {
             "branch": "master"
+         }
+      },
+      {
+         "image": "plugins/slack",
+         "name": "slack",
+         "settings": {
+            "channel": "builds",
+            "link_names": true,
+            "template": "{{#success build.status}}\n  {{repo.name}}: build {{build.number}} for ver 2.11 succeeded (spent {{since build.started}}). Good job. {{build.link}}\n{{else}}\n  {{repo.name}}: build {{build.number}} for ver 2.11 failed. Fix please. {{build.link}}\n{{/success}}\n",
+            "username": "drone",
+            "webhook": {
+               "from_secret": "slack_webhook_url"
+            }
+         },
+         "when": {
+            "status": [
+               "success",
+               "failure"
+            ]
          }
       }
    ],
@@ -110,31 +167,7 @@
          "image": "andyglow/sbt:latest",
          "name": "scoverage",
          "when": {
-            "status": [
-               "success"
-            ]
-         }
-      },
-      {
-         "depends_on": [
-            "scoverage"
-         ],
-         "image": "plugins/slack",
-         "name": "slack",
-         "settings": {
-            "channel": "builds",
-            "link_names": true,
-            "template": "{{#success build.status}}\n  {{repo.name}}: build {{build.number}} succeeded (spent {{since build.started}}). Good job. {{build.link}}\n{{else}}\n  {{repo.name}}: build {{build.number}} failed. Fix please. {{build.link}}\n{{/success}}\n",
-            "username": "drone",
-            "webhook": {
-               "from_secret": "slack_webhook_url"
-            }
-         },
-         "when": {
-            "status": [
-               "success",
-               "failure"
-            ]
+            "branch": "master"
          }
       }
    ],
@@ -144,6 +177,9 @@
          "failure"
       ]
    },
-   "type": "docker"
+   "type": "docker",
+   "workspace": {
+      "path": "2.13"
+   }
 }
 ...

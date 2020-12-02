@@ -4,21 +4,21 @@ local AbstractPipeline(name) = {
   name: name
 };
 
-local Pipeline(ver) = AbstractPipeline("scala-jsonschema/" + ver) {
-  kind: "pipeline",
-  type: "docker",
-  workspace: { path: ver }
+local Workspace(name) = {
+  workspace: { path: name }
 };
 
-local OneStepPipeline(ver, step) = Pipeline(ver) + {
+local WsPipeline(ver) = AbstractPipeline("scala-jsonschema/" + ver) + Workspace(ver);
+
+local Pipeline(ver, build, notify) = WsPipeline(ver) + {
   kind: "pipeline",
   type: "docker",
   name: "scala-jsonschema/" + ver,
-  steps: [ step ]
+  steps: [ build, notify ]
 };
 
 local BuildStep(ver) = {
-  name: "build: " + ver,
+  name: "build",
   image: "andyglow/sbt:latest",
   when: { "branch": "master" },
   environment: {
@@ -45,7 +45,15 @@ local Coverage(name, ver) = BuildStep(ver) + {
   ]
 };
 
-local Notify(name) = {
+local NotifyMessage = |||
+    {{#success build.status}}
+      {{repo.name}}: build {{build.number}} for ver %(ver)s succeeded (spent {{since build.started}}). Good job. {{build.link}}
+    {{else}}
+      {{repo.name}}: build {{build.number}} for ver %(ver)s failed. Fix please. {{build.link}}
+    {{/success}}
+|||;
+
+local Notify(name, ver) = {
   name: name,
   image: "plugins/slack",
   when: { status: [ "success", "failure" ] },
@@ -54,24 +62,17 @@ local Notify(name) = {
     channel: "builds",
     username: "drone",
     link_names: true,
-    template: |||
-    {{#success build.status}}
-      {{repo.name}}: build {{build.number}} succeeded (spent {{since build.started}}). Good job. {{build.link}}
-    {{else}}
-      {{repo.name}}: build {{build.number}} failed. Fix please. {{build.link}}
-    {{/success}}
-|||
+    template: NotifyMessage % { ver: ver }
   }
 };
 
 [
-  OneStepPipeline("2.13", SbtCleanTest("2.13")),
-  OneStepPipeline("2.12", SbtCleanTest("2.12")),
-  OneStepPipeline("2.11", SbtCleanTest("2.11")),
-  AbstractPipeline("finalize") + {
+  Pipeline("2.13", SbtCleanTest("2.13"), Notify("slack", "2.13")),
+  Pipeline("2.12", SbtCleanTest("2.12"), Notify("slack", "2.12")),
+  Pipeline("2.11", SbtCleanTest("2.11"), Notify("slack", "2.11")),
+  AbstractPipeline("finalize") + Workspace("2.13") + {
     steps: [
-      Coverage("scoverage", "2.13") + { when: { status: [ "success" ] } },
-      Notify("slack") + { depends_on: [ "scoverage" ] }
+      Coverage("scoverage", "2.13")
     ],
     depends_on: [
       "scala-jsonschema/2.13",
