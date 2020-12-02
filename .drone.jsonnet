@@ -79,8 +79,8 @@ local Notify(name) = {
       "scala-jsonschema/2.11"
     ],
     // makes pipeline trigger unconditionally
-    trigger: [
-      { status: [ "success", "failure" ] }
-    ]
+    trigger: {
+      status: [ "success", "failure" ]
+    }
   },
 ]

@@ -138,14 +138,12 @@
          }
       }
    ],
-   "trigger": [
-      {
-         "status": [
-            "success",
-            "failure"
-         ]
-      }
-   ],
+   "trigger": {
+      "status": [
+         "success",
+         "failure"
+      ]
+   },
    "type": "docker"
 }
 ...
