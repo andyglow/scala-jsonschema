@@ -99,7 +99,7 @@ lazy val core = { project in file("core") }.settings(
   name := "scala-jsonschema-core"
 )
 
-lazy val macros = project in file("macros") dependsOn core settings (
+lazy val macros = { project in file("macros") }.dependsOn(core).settings (
   commonSettings,
 
   name := "scala-jsonschema-macros",

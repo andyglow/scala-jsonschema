@@ -6,7 +6,7 @@ import com.github.andyglow.scaladoc.Scaladoc
 private[jsonschema] trait UTypeAnnotations { this: UContext with UCommons with UScaladocs with USignatures =>
   import c.universe._
 
-  final case class Texts(
+  case class Texts(
     title: Option[String],
     description: Option[String]) {
 
@@ -18,7 +18,7 @@ private[jsonschema] trait UTypeAnnotations { this: UContext with UCommons with U
       description = description orElse x.description)
   }
 
-  final object Texts {
+  object Texts {
 
     def fromScaladoc(scaladoc: Scaladoc): Texts = {
       Texts(None, scaladoc.description)
@@ -51,14 +51,14 @@ private[jsonschema] trait UTypeAnnotations { this: UContext with UCommons with U
   }
 
   sealed trait DefinitionKey
-  final object DefinitionKey {
-    final case object Infer extends DefinitionKey
-    final case class Defined(value: String) extends DefinitionKey
+  object DefinitionKey {
+    case object Infer extends DefinitionKey
+    case class Defined(value: String) extends DefinitionKey
   }
 
-  final case class Discriminator(field: String, phantom: Boolean)
+  case class Discriminator(field: String, phantom: Boolean)
 
-  final case class DiscriminatorKey(value: String)
+  case class DiscriminatorKey(value: String)
 
   case class TypeAnnotations(
     texts: Option[Texts],
@@ -84,7 +84,7 @@ private[jsonschema] trait UTypeAnnotations { this: UContext with UCommons with U
     }
   }
 
-  final object TypeAnnotations {
+  object TypeAnnotations {
 
     val Empty = TypeAnnotations(None, None, None, None)
 

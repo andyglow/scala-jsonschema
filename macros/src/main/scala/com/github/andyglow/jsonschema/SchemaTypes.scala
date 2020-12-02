@@ -5,7 +5,6 @@ private[jsonschema] trait SchemaTypes { this: UContext with UCommons =>
   import c.universe._
 
 
-
   sealed trait SchemaType {
     type Self <: SchemaType
 
@@ -27,29 +26,29 @@ private[jsonschema] trait SchemaTypes { this: UContext with UCommons =>
     }
   }
 
-  final object SchemaType {
-    final case class Extra(
+  object SchemaType {
+    case class Extra(
       validations: Seq[Tree] = Seq.empty,
       title: Option[String] = None,
       description: Option[String] = None,
       discriminationKey: Option[String] = None)
 
-    final case class Bool(extra: Extra = Extra()) extends SchemaType { type Self = Bool; def prefix = q"${N.Schema}.`boolean`()"; val tpe = typeOf[Boolean]; def withExtra(x: SchemaType.Extra) = copy(extra = x) }
-    final case class Integer(extra: Extra = Extra()) extends SchemaType { type Self = Integer; def prefix = q"${N.Schema}.`integer`()"; val tpe = typeOf[Int]; def withExtra(x: SchemaType.Extra) = copy(extra = x) }
-    final case class Number(tpe: Type, extra: Extra = Extra()) extends SchemaType { type Self = Number; def prefix = q"${N.Schema}.`number`[$tpe]()"; def withExtra(x: SchemaType.Extra) = copy(extra = x) }
-    final case class Str(tpe: Type, format: Tree, extra: Extra = Extra()) extends SchemaType { type Self = Str; def prefix = q"${N.Schema}.`string`[$tpe]($format)"; def withExtra(x: SchemaType.Extra) = copy(extra = x) }
-    final case class Arr(elementTpe: Type, containerTpe: Type, elementSchema: SchemaType, unique: Boolean, extra: Extra = Extra()) extends SchemaType { type Self = Arr; def prefix = q"${N.Schema}.`array`[$elementTpe, $containerTpe](${elementSchema.tree}, $unique)"; val tpe = appliedType(containerTpe, elementTpe); def withExtra(x: SchemaType.Extra) = copy(extra = x) }
-    final case class Dict(keyTpe: Type, valueTpe: Type, containerTpe: Type, valueSchema: SchemaType, extra: Extra = Extra()) extends SchemaType { type Self = Dict; def prefix = q"${N.Schema}.`dictionary`[$keyTpe, $valueTpe, $containerTpe](${valueSchema.tree})"; val tpe = appliedType(containerTpe, List(keyTpe, valueTpe)); def withExtra(x: SchemaType.Extra) = copy(extra = x) }
-    final case class Obj(tpe: Type, fields: Seq[Obj.Field], extra: Extra = Extra()) extends SchemaType { type Self = Obj; def prefix = q"${N.Schema}.`object`[$tpe](..${fields map { _.tree }})"; def withExtra(x: SchemaType.Extra) = copy(extra = x) }
-    final case class Enum(tpe: Type, values: Seq[Tree], /*duplicates values if created from strings*/names: Option[Seq[String]], extra: Extra = Extra()) extends SchemaType { type Self = Enum; def prefix = q"${N.Schema}.`enum`.of[$tpe](..$values)"; def withExtra(x: SchemaType.Extra) = copy(extra = x) }
-    final case class OneOf(tpe: Type, memberSchema: Seq[SchemaType], discriminatorField: Option[String], extra: Extra = Extra()) extends SchemaType { type Self = OneOf; def prefix = q"${N.Schema}.`oneof`[$tpe](Set(..${memberSchema map { _.tree }}), $discriminatorField)"; def withExtra(x: SchemaType.Extra) = copy(extra = x) }
-    final case class AllOf(tpe: Type, memberSchema: Seq[SchemaType], extra: Extra = Extra()) extends SchemaType { type Self = AllOf; def prefix = q"${N.Schema}.`allof`[$tpe](Set(..${memberSchema map { _.tree }}))"; def withExtra(x: SchemaType.Extra) = copy(extra = x) }
-    final case class Not(tpe: Type, schema: SchemaType, extra: Extra = Extra()) extends SchemaType { type Self = Not; def prefix = q"${N.Schema}.`not`[$tpe](${schema.tree})"; def withExtra(x: SchemaType.Extra) = copy(extra = x) }
-    final case class ValueClass(tpe: Type, innerTpe: Type, schema: SchemaType, extra: Extra = Extra()) extends SchemaType { type Self = ValueClass; def prefix = q"${N.Schema}.`value-class`[$tpe, $innerTpe](${schema.tree})"; def withExtra(x: SchemaType.Extra) = copy(extra = x) }
-    final case class Def(tpe: Type, sig: Tree, schema: SchemaType, extra: Extra = Extra()) extends SchemaType { type Self = Def; def prefix = q"${N.Schema}.`def`[$tpe]($sig, ${schema.tree})"; def withExtra(x: SchemaType.Extra) = copy(extra = x) }
-    final case class Ref(tpe: Type, sig: Tree, extra: Extra = Extra()) extends SchemaType { type Self = Ref; def prefix = q"${N.Schema}.`ref`[$tpe]($sig)"; def withExtra(x: SchemaType.Extra) = copy(extra = x) }
-    final case class `-from-tree-`(tpe: Type, prefix: Tree, extra: Extra = Extra()) extends SchemaType { type Self = `-from-tree-`; def withExtra(x: SchemaType.Extra) = copy(extra = x) }
-    final object Obj {
+    case class Bool(extra: Extra = Extra()) extends SchemaType { type Self = Bool; def prefix = q"${N.Schema}.`boolean`()"; val tpe = typeOf[Boolean]; def withExtra(x: SchemaType.Extra) = copy(extra = x) }
+    case class Integer(extra: Extra = Extra()) extends SchemaType { type Self = Integer; def prefix = q"${N.Schema}.`integer`()"; val tpe = typeOf[Int]; def withExtra(x: SchemaType.Extra) = copy(extra = x) }
+    case class Number(tpe: Type, extra: Extra = Extra()) extends SchemaType { type Self = Number; def prefix = q"${N.Schema}.`number`[$tpe]()"; def withExtra(x: SchemaType.Extra) = copy(extra = x) }
+    case class Str(tpe: Type, format: Tree, extra: Extra = Extra()) extends SchemaType { type Self = Str; def prefix = q"${N.Schema}.`string`[$tpe]($format)"; def withExtra(x: SchemaType.Extra) = copy(extra = x) }
+    case class Arr(elementTpe: Type, containerTpe: Type, elementSchema: SchemaType, unique: Boolean, extra: Extra = Extra()) extends SchemaType { type Self = Arr; def prefix = q"${N.Schema}.`array`[$elementTpe, $containerTpe](${elementSchema.tree}, $unique)"; val tpe = appliedType(containerTpe, elementTpe); def withExtra(x: SchemaType.Extra) = copy(extra = x) }
+    case class Dict(keyTpe: Type, valueTpe: Type, containerTpe: Type, valueSchema: SchemaType, extra: Extra = Extra()) extends SchemaType { type Self = Dict; def prefix = q"${N.Schema}.`dictionary`[$keyTpe, $valueTpe, $containerTpe](${valueSchema.tree})"; val tpe = appliedType(containerTpe, List(keyTpe, valueTpe)); def withExtra(x: SchemaType.Extra) = copy(extra = x) }
+    case class Obj(tpe: Type, fields: Seq[Obj.Field], extra: Extra = Extra()) extends SchemaType { type Self = Obj; def prefix = q"${N.Schema}.`object`[$tpe](..${fields map { _.tree }})"; def withExtra(x: SchemaType.Extra) = copy(extra = x) }
+    case class Enum(tpe: Type, values: Seq[Tree], /*duplicates values if created from strings*/names: Option[Seq[String]], extra: Extra = Extra()) extends SchemaType { type Self = Enum; def prefix = q"${N.Schema}.`enum`.of[$tpe](..$values)"; def withExtra(x: SchemaType.Extra) = copy(extra = x) }
+    case class OneOf(tpe: Type, memberSchema: Seq[SchemaType], discriminatorField: Option[String], extra: Extra = Extra()) extends SchemaType { type Self = OneOf; def prefix = q"${N.Schema}.`oneof`[$tpe](Set(..${memberSchema map { _.tree }}), $discriminatorField)"; def withExtra(x: SchemaType.Extra) = copy(extra = x) }
+    case class AllOf(tpe: Type, memberSchema: Seq[SchemaType], extra: Extra = Extra()) extends SchemaType { type Self = AllOf; def prefix = q"${N.Schema}.`allof`[$tpe](Set(..${memberSchema map { _.tree }}))"; def withExtra(x: SchemaType.Extra) = copy(extra = x) }
+    case class Not(tpe: Type, schema: SchemaType, extra: Extra = Extra()) extends SchemaType { type Self = Not; def prefix = q"${N.Schema}.`not`[$tpe](${schema.tree})"; def withExtra(x: SchemaType.Extra) = copy(extra = x) }
+    case class ValueClass(tpe: Type, innerTpe: Type, schema: SchemaType, extra: Extra = Extra()) extends SchemaType { type Self = ValueClass; def prefix = q"${N.Schema}.`value-class`[$tpe, $innerTpe](${schema.tree})"; def withExtra(x: SchemaType.Extra) = copy(extra = x) }
+    case class Def(tpe: Type, sig: Tree, schema: SchemaType, extra: Extra = Extra()) extends SchemaType { type Self = Def; def prefix = q"${N.Schema}.`def`[$tpe]($sig, ${schema.tree})"; def withExtra(x: SchemaType.Extra) = copy(extra = x) }
+    case class Ref(tpe: Type, sig: Tree, extra: Extra = Extra()) extends SchemaType { type Self = Ref; def prefix = q"${N.Schema}.`ref`[$tpe]($sig)"; def withExtra(x: SchemaType.Extra) = copy(extra = x) }
+    case class `-from-tree-`(tpe: Type, prefix: Tree, extra: Extra = Extra()) extends SchemaType { type Self = `-from-tree-`; def withExtra(x: SchemaType.Extra) = copy(extra = x) }
+    object Obj {
       sealed trait Field {
         protected def prefix: Tree
         val description: Option[String]
@@ -57,8 +56,8 @@ private[jsonschema] trait SchemaTypes { this: UContext with UCommons =>
         def mapSchema(fn: SchemaType => SchemaType): Field
         def name: String
       }
-      final object Field {
-        final case class Apply(tpe: Type, name: String, schema: SchemaType, required: Option[Tree], default: Option[Tree], description: Option[String]) extends Field {
+      object Field {
+        case class Apply(tpe: Type, name: String, schema: SchemaType, required: Option[Tree], default: Option[Tree], description: Option[String]) extends Field {
           def prefix = (required, default) match {
             case (Some(required), Some(default))  => q"${N.Schema}.`object`.Field[$tpe]($name, ${schema.tree}, $required, $default)"
             case (None, Some(default))            => q"${N.Schema}.`object`.Field[$tpe]($name, ${schema.tree}, false, $default)"
@@ -67,7 +66,7 @@ private[jsonschema] trait SchemaTypes { this: UContext with UCommons =>
           }
           def mapSchema(fn: SchemaType => SchemaType): Field = copy(schema = fn(schema))
         }
-        final case class FromJson(tpe: Type, name: String, schema: SchemaType, required: Tree, default: Tree, description: Option[String]) extends Field {
+        case class FromJson(tpe: Type, name: String, schema: SchemaType, required: Tree, default: Tree, description: Option[String]) extends Field {
           def prefix = q"${N.Schema}.`object`.Field.fromJson[$tpe]($name, ${schema.tree}, $required, $default)"
           def mapSchema(fn: SchemaType => SchemaType): Field = copy(schema = fn(schema))
         }
