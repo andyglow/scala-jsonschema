@@ -1,7 +1,7 @@
 ---
 {
    "kind": "pipeline",
-   "name": "scala-jsonschema",
+   "name": "scala-jsonschema/2.13",
    "steps": [
       {
          "commands": [
@@ -17,7 +17,15 @@
          "when": {
             "branch": "master"
          }
-      },
+      }
+   ],
+   "type": "docker"
+}
+---
+{
+   "kind": "pipeline",
+   "name": "scala-jsonschema/2.12",
+   "steps": [
       {
          "commands": [
             "CI=Drone SCALA_VER=2.12 sbt clean test"
@@ -32,7 +40,15 @@
          "when": {
             "branch": "master"
          }
-      },
+      }
+   ],
+   "type": "docker"
+}
+---
+{
+   "kind": "pipeline",
+   "name": "scala-jsonschema/2.11",
+   "steps": [
       {
          "commands": [
             "CI=Drone SCALA_VER=2.11 sbt clean test"
@@ -47,7 +63,20 @@
          "when": {
             "branch": "master"
          }
-      },
+      }
+   ],
+   "type": "docker"
+}
+---
+{
+   "depends_on": [
+      "scala-jsonschema/2.13",
+      "scala-jsonschema/2.12",
+      "scala-jsonschema/2.11"
+   ],
+   "kind": "pipeline",
+   "name": "scala-jsonschema/finalize",
+   "steps": [
       {
          "commands": [
             "CI=Drone SCALA_VER=2.13 sbt clean coverage test",
@@ -56,28 +85,23 @@
             "chmod +x .codecov",
             "./.codecov -X gcov -X coveragepy -X xcode -X gcovout"
          ],
-         "depends_on": [
-            "build_2.13",
-            "build_2.12",
-            "build_2.11"
-         ],
          "environment": {
             "CODECOV_TOKEN": {
                "from_secret": "codecov_token"
             }
          },
          "image": "andyglow/sbt:latest",
-         "name": "coverage",
+         "name": "scoverage",
          "when": {
             "branch": "master"
          }
       },
       {
          "depends_on": [
-            "coverage"
+            "scoverage"
          ],
          "image": "plugins/slack",
-         "name": "notify",
+         "name": "slack",
          "settings": {
             "channel": "builds",
             "link_names": true,

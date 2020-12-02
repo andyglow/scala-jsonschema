@@ -1,13 +1,17 @@
-//local BuildTpl(name, build) = {
-//  kind: "pipeline",
-//  type: "docker",
-//  name: "scala-jsonschema:" + name,
-//  steps: [
-//    build
-//  ]
-//};
+local Pipeline(name) = {
+  kind: "pipeline",
+  type: "docker",
+  name: "scala-jsonschema/" + name
+};
 
-local BuildStepTpl(name) = {
+local OneStepPipeline(name, step) = Pipeline(name) + {
+  kind: "pipeline",
+  type: "docker",
+  name: "scala-jsonschema/" + name,
+  steps: [ step ]
+};
+
+local BuildStep(name) = {
   name: name,
   image: "andyglow/sbt:latest",
   when: { "branch": "master" },
@@ -16,12 +20,13 @@ local BuildStepTpl(name) = {
   }
 };
 
-local BuildStep(ver) = BuildStepTpl("build_" + ver) + {
+local SbtCleanTest(ver) = BuildStep("build_" + ver) + {
   commands: [
     "CI=Drone SCALA_VER=" + ver + " sbt clean test"
   ]
 };
-local CoverageStep(name) = BuildStepTpl(name) + {
+
+local Coverage(name) = BuildStep(name) + {
   commands: [
      "CI=Drone SCALA_VER=2.13 sbt clean coverage test",
      "CI=Drone SCALA_VER=2.13 sbt coverageAggregate",
@@ -31,7 +36,7 @@ local CoverageStep(name) = BuildStepTpl(name) + {
   ]
 };
 
-local NotfyStep(name) = {
+local Notify(name) = {
   name: name,
   image: "plugins/slack",
   when: { status: [ "success", "failure" ] },
@@ -50,28 +55,19 @@ local NotfyStep(name) = {
   }
 };
 
-//[
-//  BuildTpl("2.13", BuildStep("2.13")),
-//  BuildTpl("2.12", BuildStep("2.12")),
-//  BuildTpl("2.11", BuildStep("2.11")),
-//  BuildTpl("coverage", CoverageStep) + { depends_on: [ "build_2.13" ] },
-//]
-
 [
-{
-  kind: "pipeline",
-  type: "docker",
-  name: "scala-jsonschema",
-  steps: [
-    BuildStep("2.13"),
-    BuildStep("2.12"),
-    BuildStep("2.11"),
-    CoverageStep("coverage") + {
-      depends_on: [ "build_2.13", "build_2.12", "build_2.11" ]
-    },
-    NotfyStep("notify") + {
-      depends_on: [ "coverage" ]
-    }
-  ]
-}
+  OneStepPipeline("2.13", SbtCleanTest("2.13")),
+  OneStepPipeline("2.12", SbtCleanTest("2.12")),
+  OneStepPipeline("2.11", SbtCleanTest("2.11")),
+  Pipeline("finalize") + {
+    steps: [
+      Coverage("scoverage"),
+      Notify("slack") + { depends_on: [ "scoverage" ] }
+    ],
+    depends_on: [
+      "scala-jsonschema/2.13",
+      "scala-jsonschema/2.12",
+      "scala-jsonschema/2.11"
+    ],
+  },
 ]
