@@ -1,7 +1,10 @@
 local Pipeline(name) = {
   kind: "pipeline",
   type: "docker",
-  name: "scala-jsonschema/" + name
+  name: "scala-jsonschema/" + name,
+  workspace: {
+    path: name
+  }
 };
 
 local OneStepPipeline(name, step) = Pipeline(name) + {

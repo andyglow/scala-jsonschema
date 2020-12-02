@@ -19,7 +19,10 @@
          }
       }
    ],
-   "type": "docker"
+   "type": "docker",
+   "workspace": {
+      "path": "2.13"
+   }
 }
 ---
 {
@@ -42,7 +45,10 @@
          }
       }
    ],
-   "type": "docker"
+   "type": "docker",
+   "workspace": {
+      "path": "2.12"
+   }
 }
 ---
 {
@@ -65,7 +71,10 @@
          }
       }
    ],
-   "type": "docker"
+   "type": "docker",
+   "workspace": {
+      "path": "2.11"
+   }
 }
 ---
 {
@@ -119,6 +128,9 @@
          }
       }
    ],
-   "type": "docker"
+   "type": "docker",
+   "workspace": {
+      "path": "finalize"
+   }
 }
 ...
