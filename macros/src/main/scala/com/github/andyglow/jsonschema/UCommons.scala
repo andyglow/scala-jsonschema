@@ -10,6 +10,8 @@ import scala.util.control.NonFatal
 private[jsonschema] trait UCommons extends SchemaTypes with ULogging { this: UContext with UFieldDecorations =>
   import c.universe._
 
+  lazy val is211 = util.Properties.versionNumberString.startsWith("2.11")
+
   class ResolutionContext(val stack: List[Type], val onCycle: Type => Unit) {
     def isEmpty: Boolean = stack.isEmpty
     def contains(x: Type): Boolean = stack exists { y => x =:= y }
@@ -36,7 +38,7 @@ private[jsonschema] trait UCommons extends SchemaTypes with ULogging { this: UCo
   val U = SchemaType
 
   // N is for Names
-  private[jsonschema] object N {
+  private[jsonschema] class ConstantNames {
     val json       = q"_root_.json"
     val Json       = q"$json.Json"
     val Schema     = q"$json.Schema"
@@ -49,9 +51,10 @@ private[jsonschema] trait UCommons extends SchemaTypes with ULogging { this: UCo
       val TypeSignature = q"$jsonschema.TypeSignature"
     }
   }
+  private[jsonschema] val N = new ConstantNames
 
   // T is for Types
-  private[jsonschema] object T {
+  private[jsonschema] class ConstantTypes {
     val string        = typeOf[String]
     val array         = typeOf[Array[_]]
     val iterable      = typeOf[Iterable[_]]
@@ -72,6 +75,7 @@ private[jsonschema] trait UCommons extends SchemaTypes with ULogging { this: UCo
       val discriminatorKey = typeOf[json.schema.discriminatorKey]
     }
   }
+  private[jsonschema] val T = new ConstantTypes
 
   def validateNonValueCaseClass[T](tpe: Type, prefix: String)(block: => T): T = {
     val symbol = tpe.typeSymbol

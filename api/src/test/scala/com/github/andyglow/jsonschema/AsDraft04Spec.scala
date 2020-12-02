@@ -237,6 +237,8 @@ class AsDraft04Spec extends AnyWordSpec {
           "exclusiveMinimum" -> 3,
           "exclusiveMaximum" -> 18,
           "multipleOf" -> 3)
+
+        ()
       }
 
       "byte" in numCase(Json.schema[Byte])
@@ -259,6 +261,8 @@ class AsDraft04Spec extends AnyWordSpec {
             "items" -> obj("type" -> "string"),
             "minItems" -> 15,
             "maxItems" -> 20))
+
+        ()
       }
 
       "array" in arrCase[Array[String]](Json.schema[Array[String]])

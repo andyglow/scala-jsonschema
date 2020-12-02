@@ -30,7 +30,7 @@ sealed trait Schema[+T] {
   //  [error]  required: Seq[json.ValidationDef[_, _]] (in scala.collection.immutable)
   def validations: Seq[V.Def[_, _]] = _validations.toSeq
   protected object ToString {
-    def apply(fn: StringBuilder => Unit): String = {
+    def apply(fn: StringBuilder => Any): String = {
       val sb = new StringBuilder
       fn(sb)
       writeValidations(sb)
@@ -55,6 +55,8 @@ sealed trait Schema[+T] {
         }
         sb.append("}")
       }
+
+      ()
     }
   }
   protected def mkCopy(): Self

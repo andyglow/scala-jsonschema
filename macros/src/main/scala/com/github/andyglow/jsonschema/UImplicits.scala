@@ -6,7 +6,7 @@ import scala.reflect.internal.util.NoSourceFile
 private[jsonschema] trait UImplicits { this: UContext with UCommons with USignatures =>
   import c.universe._
 
-  object Implicit {
+  class Implicit {
     final val LF = '\u000A'
     final val CR = '\u000D'
 
@@ -84,4 +84,5 @@ private[jsonschema] trait UImplicits { this: UContext with UCommons with USignat
       }
     }
   }
+  val Implicit = new Implicit
 }

@@ -26,7 +26,7 @@ class ParseJsonBulkSpec extends AnyFunSuite {
 
   // for running in parallel in drone
   private def open(resourcePath: String, attempt: Int = 0): Source = {
-    Thread.sleep(attempt * 1000)
+    Thread.sleep(attempt * 1000L)
     try {
       CI_WS_PATH
         .map(_ + "/modules/parser/src/test/resources" + resourcePath)

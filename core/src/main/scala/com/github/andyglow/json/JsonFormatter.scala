@@ -58,6 +58,8 @@ class JsonFormatter(step: Int = 2) {
       case str(x)       => sb append s""""${Escaped(x)}""""
       case _            => sb append value.toString
     }
+
+    ()
   }
 }
 

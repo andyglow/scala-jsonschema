@@ -7,7 +7,14 @@ object CompilerOptions {
     "-deprecation",
     "-language:higherKinds")
 
-  private val opts211 = base ++ Seq()
+  private val opts211 = base ++ Seq(
+    "-Xfuture",
+    "-Yno-adapted-args",
+    "-Ywarn-dead-code",
+    "-Ywarn-numeric-widen",
+    "-Ywarn-value-discard",
+    "-Ywarn-unused"
+  )
 
   private val opts212 = base ++ Seq(
     "-Ywarn-unused:imports,-patvars,-privates,-locals,-implicits",

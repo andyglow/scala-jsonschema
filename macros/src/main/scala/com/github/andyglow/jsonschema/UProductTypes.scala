@@ -42,14 +42,15 @@ private[jsonschema] trait UProductTypes { this: UContext with UCommons with USca
       val isOption    = fieldTpe <:< T.option
       val hasDefault  = fieldSym.isParamWithDefault
       val default     = Option.whenever (hasDefault) {
-        val defaultGetterTree  = parseFCQN(subjectCompanion.fullName + ".apply$default$" + (i + 1))
-        val defaultGetterSym   = subjectCompanion.typeSignature.member(TermName(s"apply$$default$$${i+1}")).asTerm
+        val defaultGetterTree = parseFCQN(subjectCompanion.fullName + ".apply$default$" + (i + 1))
+        val defaultGetterSym  = subjectCompanion.typeSignature.member(TermName(s"apply$$default$$${i+1}")).asTerm
+        val hasSource         = defaultGetterSym.pos.source != NoSourceFile
         // we don't want to infer default value for `scala.None`
-        val isNone = if (isOption) {
+        val isNone = if (isOption && !is211) {
           val effectiveDefaultGetterTree =
             c.untypecheck {
               c.typecheck {
-                if (defaultGetterSym.pos.source == NoSourceFile) {
+                if (!hasSource) {
                   // for continuous compilation
                   parseFCQN(tpe.typeSymbol.fullName + ".apply$default$" + (i + 1))
                 } else {
@@ -67,7 +68,30 @@ private[jsonschema] trait UProductTypes { this: UContext with UCommons with USca
         Some.when (!isNone) {
           val toV = c.inferImplicitValue(appliedType(T.toValue, fieldTpe))
           if (toV.nonEmpty) q"Some($toV($defaultGetterTree))" else {
-            c.abort(c.enclosingPosition, s"Can't infer a json value for '$name': $fieldTpe")
+            val errorSuffix = {
+              if (hasSource) try {
+                val defaultGetterSym = subjectCompanion.typeSignature.member(TermName(s"apply$$default$$${i+1}")).asTerm
+                val defaultValueCode = parseParameter(defaultGetterSym).default.get
+                s"`$tpe(..., $name: $fieldTpe = $defaultValueCode)`."
+              } catch {
+                case err: Throwable =>
+                  s"""`$tpe(..., $name: $fieldTpe)``.
+                     |Can't parse source code defining the value: ${err.getMessage}.
+                     |""".stripMargin
+              } else {
+                s"`$tpe(..., $name: $fieldTpe)`"
+              }
+            }
+
+            c.abort(c.enclosingPosition,
+              s"""Can't infer json value for default value of $errorSuffix
+                 |Please provide `ToValue[$fieldTpe]` type class. It can also be automatically derived in case
+                 |- your json library knows how to convert `$fieldTpe` into json and
+                 |- the bridge between scala-jsonschema and your library is configured. Namely
+                 | - corresponding library is in classpath (eg. scala-jsonschema-spray-json, scala-jsonschema-play-json, scala-jsonschema-circe-json, etc)
+                 | - corresponding import is taking place (eg. `import com.github.andyglow.jsonschema.AsSpray._`, `import com.github.andyglow.jsonschema.AsPlay._`, `import com.github.andyglow.jsonschema.AsCirce._` etc)
+                 |${if (isOption && is211) "NOTE: Functionality of recognizing `scala.None` is not available for scala 2.11." else ""}
+                 |""".stripMargin)
           }
         }
       }

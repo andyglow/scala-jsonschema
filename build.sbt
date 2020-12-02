@@ -6,7 +6,11 @@ import scala.sys.process._
 // https://github.com/xerial/sbt-sonatype/issues/71
 publishTo in ThisBuild := sonatypePublishTo.value
 
+lazy val buildInfo = taskKey[Unit]("Prints Build Info")
+
 lazy val commonSettings = Seq(
+
+  // logBuffered := false,
 
   organization := "com.github.andyglow",
 
@@ -158,6 +162,19 @@ lazy val `circe-json` = { project in file("modules/circe-json") }.dependsOn(core
 
 lazy val `json4s-json` = { project in file("modules/json4s-json") }.dependsOn(core, api % "compile->compile;test->test").settings(
   commonSettings,
+
+  buildInfo := {
+    val sb = new StringBuilder("*** SCALA INFO ***\n")
+    sb append s"- Version: ${scalaVersion.value}\n"
+    sb append "- Compiler Options:\n"
+    scalacOptions.value foreach { opt =>
+      sb append s"  [$opt]\n"
+    }
+
+    streams.value.log.info(sb.toString)
+  },
+  Compile / compile := (Compile / compile).dependsOn(buildInfo).value,
+  Test / compile := (Test / compile).dependsOn(buildInfo).value,
 
   name := "scala-jsonschema-json4s-json",
 
@@ -362,13 +379,3 @@ addCommandAlias("makeDocs", ";docs/mdoc;docs/makeSite")
 addCommandAlias("publishDocs", ";makeDocs;ghpagesPushSite")
 //ParadoxMaterialThemePlugin.paradoxMaterialThemeSettings(Paradox)
 
-lazy val buildInfo = taskKey[Unit]("Prints Build Info")
-buildInfo := {
-  val sb = new StringBuilder("*** BUILD INFO ***\n")
-  sb append s"- Scala: ${scalaVersion.value}"
-
-  streams.value.log.info(sb.toString)
-}
-
-Compile / compile := (Compile / compile).dependsOn(buildInfo).value
-Test / test := (Test / test).dependsOn(buildInfo).value
