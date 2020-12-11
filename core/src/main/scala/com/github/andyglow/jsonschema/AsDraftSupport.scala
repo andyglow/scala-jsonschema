@@ -181,6 +181,7 @@ trait AsDraftSupport {
       case x: `allof`[_]    => x.subTypes.toSeq flatMap references
       case x: `oneof`[_]    => x.subTypes.toSeq flatMap references
       case `array`(ref, _)  => references(ref)
+      case `dictionary`(ref)  => references(ref)
       case `object`(fields) => fields.toSeq map { _.tpe } flatMap references
       case _                => Seq.empty
     }
