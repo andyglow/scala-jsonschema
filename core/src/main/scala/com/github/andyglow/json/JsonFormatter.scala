@@ -20,7 +20,7 @@ class JsonFormatter(step: Int = 2) {
         sb append "{\n"
         var first = true
 
-        for { (name, value) <- fields.toSeq.sortBy(_._1) } {
+        for { (name, value) <- fields } {
           if (!first) {
             sb append ",\n"
           } else {
