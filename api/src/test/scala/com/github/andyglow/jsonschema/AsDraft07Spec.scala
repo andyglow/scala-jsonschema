@@ -7,6 +7,8 @@ import json.schema.Version._
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpec
 
+case class FooX(a: Int)
+case class FooY(b: Int)
 
 class AsDraft07Spec extends AnyWordSpec {
 
@@ -18,22 +20,53 @@ class AsDraft07Spec extends AnyWordSpec {
       val o = `object`(
         Field("foo", `string`[String]),
         Field("bar", `integer`, required = false),
-        Field("baz", `def`[Boolean]("my-bool", `boolean`)))
+        Field("baz", `def`[Boolean]("my-bool", `boolean`)),
+        Field("mapObject", `dictionary`[String, FooX, Map](`def`[FooX]("FooX", `object`(Field("a", `integer`))))),
+        Field("listObject", `array`[FooY, List](`def`[FooY]("FooY", `object`(Field("b", `integer`)))))
+      )
 
-      AsValue.schema(o, Draft07(id = "http://example.com/foobarbaz.json")) should containJson(obj(
-      f"$$schema" -> "http://json-schema.org/draft-07/schema#",
-      f"$$id" -> "http://example.com/foobarbaz.json",
-      "type" -> "object",
-      "additionalProperties" -> false,
-      "required" -> arr("foo", "baz"),
-      "properties" -> obj(
-        "foo" -> obj("type" -> "string"),
-        "bar" -> obj("type" -> "integer"),
-        "baz" -> obj(f"$$ref" -> "#my-bool")),
-      "definitions" -> obj(
-        "my-bool" -> obj(
-          f"$$id" -> "#my-bool",
-          "type" -> "boolean"))))
+      val expected = obj(
+        f"$$schema" -> "http://json-schema.org/draft-07/schema#",
+        f"$$id" -> "http://example.com/foobarbaz.json",
+        "type" -> "object",
+        "additionalProperties" -> false,
+        "required" -> arr("listObject", "baz", "mapObject", "foo"),
+        "properties" -> obj(
+          "foo" -> obj("type" -> "string"),
+          "bar" -> obj("type" -> "integer"),
+          "baz" -> obj(f"$$ref" -> "#my-bool"),
+          "mapObject" -> obj(
+            "type" -> "object",
+            "patternProperties" -> obj(
+              "^.*$" -> obj(
+                f"$$ref" -> "#FooX"))
+          ),
+          "listObject" -> obj(
+            "type" -> "array",
+            "items" -> obj(f"$$ref" -> "#FooY")
+          )
+        ),
+        "definitions" -> obj(
+          "my-bool" -> obj(
+            f"$$id" -> "#my-bool",
+            "type" -> "boolean"),
+          "FooX" -> obj(
+            f"$$id" -> "#FooX",
+            "type" -> "object",
+            "additionalProperties" -> false,
+            "properties" -> obj("a" -> obj("type" -> "integer")),
+            "required" -> arr("a")
+          ),
+          "FooY" -> obj(
+            f"$$id" -> "#FooY",
+            "type" -> "object",
+            "additionalProperties" -> false,
+            "properties" -> obj("b" -> obj("type" -> "integer")),
+            "required" -> arr("b")
+          )
+        ))
+
+      AsValue.schema(o, Draft07(id = "http://example.com/foobarbaz.json")) should containJson(expected)
     }
   }
 }
