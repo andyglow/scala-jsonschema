@@ -254,18 +254,18 @@ object Schema {
   // +---------------
   //
   sealed case class `object`[T](
-    fields: Set[`object`.Field[_]]) extends Schema[T] {
+    fields: Seq[`object`.Field[_]]) extends Schema[T] {
     import `object`._
     type Self = `object`[T]
     def mkCopy() = copy()
     override def canEqual(that: Any): Boolean = that.isInstanceOf[`object`[_]]
     override def equals(obj: Any): Boolean = obj match {
-      case `object`(f) => fields == f && super.equals(obj)
+      case `object`(f) => fields.toSet == f.toSet && super.equals(obj)
       case _ => false
     }
 
     def dropField(pred: Field[_] => Boolean): `object`[T] = copy(fields = this.fields.filterNot(pred))
-    def withField(f: Field[_]): `object`[T] = copy(fields = fields + f)
+    def withField(f: Field[_]): `object`[T] = copy(fields = fields :+ f)
     def withFieldsUpdated(pf: PartialFunction[Field[_], Field[_]]): `object`[T] = copy(
       fields = fields collect {
         case f if pf isDefinedAt f => pf(f)
@@ -285,7 +285,7 @@ object Schema {
   final object `object` {
     sealed trait Free { this: `object`[_] => }
     final object Free {
-      def apply[T](): `object`[T] with Free = new `object`[T](Set.empty) with Free
+      def apply[T](): `object`[T] with Free = new `object`[T](Seq.empty) with Free
     }
     final case class Field[T](
       name: String,
@@ -320,7 +320,7 @@ object Schema {
       def apply[T: ToValue](name: String, tpe: Schema[T], required: Boolean, default: T): Field[T] = new Field(name, tpe, required, Some(ToValue(default)), description = None)
       def fromJson[T](name: String, tpe: Schema[T], required: Boolean, default: Option[Value]): Field[T] = new Field(name, tpe, required, default, description = None)
     }
-    def apply[T](field: Field[_], xs: Field[_]*): `object`[T] = new `object`((field +: xs.toSeq).toSet)
+    def apply[T](field: Field[_], xs: Field[_]*): `object`[T] = new `object`(field +: xs.toSeq)
   }
 
   // +------------

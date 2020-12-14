@@ -69,8 +69,8 @@ object AsPlay {
       x => JsArray { x.value.toSeq map { adapt(_) } },
       x => arr { x.value map { unadapt(_) }})
     implicit val objAdapter: Aux[obj, JsObject] = make(
-      x => JsObject { x.value.toMap mapV { adapt(_) } },
-      x => obj { x.value.toMap mapV { unadapt(_) } })
+      x => JsObject { x.fields.toList mapV { adapt(_) } },
+      x => obj { x.value.toMap.mapV { unadapt(_) }.toSeq })
   }
 
   implicit def toValue[T](implicit w: Writes[T]): ToValue[T] = new ToValue[T] {

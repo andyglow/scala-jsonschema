@@ -19,19 +19,19 @@ object ParseJsonSchema {
     def toSuccess(message: String): Try[T] = x.fold[Try[T]](Failure(new Exception(message)))(Success(_))
   }
 
-  implicit class MapOps(private val x: Map[String, Value]) extends AnyVal {
+  implicit class SeqTupleOps(private val x: Seq[(String, Value)]) extends AnyVal {
 
-    def str(k: String): Option[String] = x.get(k) collect { case str(x) => x }
+    def str(k: String): Option[String] = x.find(_._1 == k).map(_._2) collect { case str(x) => x }
 
-    def int(k: String): Option[Int] = x.get(k) collect { case num(x) => x.intValue }
+    def int(k: String): Option[Int] = x.find(_._1 == k).map(_._2) collect { case num(x) => x.intValue }
 
-    def obj(k: String): Option[obj] = x.get(k) collect { case x: obj => x }
+    def obj(k: String): Option[obj] = x.find(_._1 == k).map(_._2)collect { case x: obj => x }
 
-    def bool(k: String): Option[Boolean] = x.get(k) collect { case bool(x) => x }
+    def bool(k: String): Option[Boolean] = x.find(_._1 == k).map(_._2) collect { case bool(x) => x }
 
-    def arr(k: String): Option[Seq[Value]] = x.get(k) collect { case arr(x) => x }
+    def arr(k: String): Option[Seq[Value]] = x.find(_._1 == k).map(_._2) collect { case arr(x) => x }
 
-    def set(k: String): Option[Set[Value]] = x.get(k) collect { case arr(x) => x.toSet }
+    def set(k: String): Option[Set[Value]] = x.find(_._1 == k).map(_._2) collect { case arr(x) => x.toSet }
 
   }
 
@@ -41,23 +41,23 @@ object ParseJsonSchema {
 
   def apply(x: Value): Try[Schema[_]] = x match {
     case o @ obj(fields)
-      if fields.get("$$schema").contains(str("http://json-schema.org/draft-04/schema#")) =>
+      if fields.str("$$schema").contains("http://json-schema.org/draft-04/schema#") =>
       makeType(o)
 
     case _ => Failure(new Exception("not a json schema"))
   }
 
   private[jsonschema] def makeType(x: obj): Try[Schema[_]] = {
-    val tpe = x.value.str("type")
+    val tpe = x.fields.str("type")
 
-    def makeStrOrEnum = x.value.arr("enum") match {
+    def makeStrOrEnum = x.fields.arr("enum") match {
       case None => makeStr
       case Some(arr) => Success { `enum`(arr.toSet) }
     }
 
     def makeStr = Success {
-      val str = `string`[String](x.value.str("format") flatMap parseFormat)
-      x.value.str("pattern").foldLeft(str) { case (str, p) => str.withValidation(`pattern` := p).asInstanceOf[`string`[String]]}
+      val str = `string`[String](x.fields.str("format") flatMap parseFormat)
+      x.fields.str("pattern").foldLeft(str) { case (str, p) => str.withValidation(`pattern` := p).asInstanceOf[`string`[String]]}
     }
 
     def makeBool = Success {
@@ -73,22 +73,22 @@ object ParseJsonSchema {
     }
 
     def makeArr = for {
-      elementType <- x.value.obj("items").toSuccess("items is not defined") flatMap makeType
+      elementType <- x.fields.obj("items").toSuccess("items is not defined") flatMap makeType
     } yield {
-      val unique = x.value.bool("uniqueItems") getOrElse false
+      val unique = x.fields.bool("uniqueItems") getOrElse false
       `array`(elementType, unique = unique)
     }
 
-    def makeObj = x.value.obj("patternProperties") match {
+    def makeObj = x.fields.obj("patternProperties") match {
       case Some(obj(fields)) if fields.nonEmpty && fields.head._2.isInstanceOf[obj] =>
         val (k, v) = fields.head
         makeType(v.asInstanceOf[obj]) map { x => `dictionary`[Any, Any, scala.collection.immutable.Map](x).withValidation(`patternProperties` := k) }
       case _ =>
-        val required = x.value.set("required") map { _ collect { case str(x) => x } } getOrElse Set.empty
-        x.value.obj("properties").map { _.value }.toSuccess("properties is not defined") flatMap { props =>
-        val fields = props.collect { case (k, v: obj) =>
+        val required = x.fields.set("required") map { _ collect { case str(x) => x } } getOrElse Set.empty
+        x.fields.obj("properties").map { _.fields }.toSuccess("properties is not defined") flatMap { props =>
+          val fields = props.collect { case (k, v: obj) =>
             `object`.Field(k, makeType(v).get, required.contains(k))
-        }.toSet
+        }.toSeq
 
         Success(new `object`(fields))
       }

@@ -22,6 +22,12 @@ object scalamigration {
       x.view.mapValues(f).toMap
   }
 
+  implicit class ListTupleMigOps[K, V](private val x: List[(K, V)]) extends AnyVal {
+
+    @inline def mapV[V2](f: V => V2): List[(K, V2)] =
+      x map { case (k, v) => k -> f(v) }
+  }
+
   implicit class TryMigOps[+T](private val e: Try[T]) extends AnyVal {
 
     def find[U](pf: PartialFunction[T, U]): Try[U] = e collect pf

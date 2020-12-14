@@ -35,7 +35,7 @@ object AsCirce {
         case x if x.isNumber => num(x.asNumber.get.toDouble)
         case x if x.isString => str(x.asString.get)
         case x if x.isArray  => val a = x.asArray.get map translate; arr(a)
-        case x if x.isObject => val map = x.asObject.get.toMap mapV translate; obj(map)
+        case x if x.isObject => val map = x.asObject.get.toList mapV translate; obj(map)
       }
 
       translate(js)

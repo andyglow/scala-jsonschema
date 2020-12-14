@@ -35,6 +35,6 @@ object MutableValue {
 
     def update(k: String, v: MutableValue): obj = { value.update(k, v); this }
 
-    override def toValue = Value.obj(value.toMap mapV { _.toValue })
+    override def toValue = Value.obj(value.toList mapV { _.toValue })
   }
 }

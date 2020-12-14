@@ -68,8 +68,8 @@ object AsSpray {
       x => JsArray { x.value.toVector map { adapt(_) } },
       x => arr { x.elements map { unadapt(_) }})
     implicit val objAdapter: Aux[obj, JsObject] = make(
-      x => JsObject { x.value.toMap mapV { adapt(_) } },
-      x => obj { x.fields.toMap mapV { unadapt(_) } })
+      x => JsObject(x.fields.toList.mapV { adapt(_) }:_*),
+      x => obj { x.fields.toList mapV { unadapt(_) } })
   }
 
 

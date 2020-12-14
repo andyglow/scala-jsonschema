@@ -89,56 +89,52 @@ object Value {
     def apply(x: Value, xs: Value*): arr = arr(x +: xs.toSeq)
   }
 
-  case class obj(private val underlying: Map[String, Value]) extends Value {
-
-    lazy val fields: Seq[(String, Value)] = underlying.toSeq
-
-    lazy val value: Map[String, Value] = underlying match {
-      case m: immutable.Map[String, value] => m
-      case m                               => m.toMap
-    }
+  case class obj(fields: Seq[(String, Value)] = Seq.empty) extends Value {
 
     def fieldSet: Set[(String, Value)] = fields.toSet
 
-    def keys: Set[String] = underlying.keySet
+    def keys: Set[String] = fields.map(_._1).toSet
 
-    def values: Iterable[Value] = underlying.values
+    def values: Iterable[Value] = fields.map(_._2)
 
-    def ++(other: obj): obj = obj(underlying ++ other.underlying)
+    def ++(other: obj): obj = merge(other, deep = false)
 
-    def ++(other: Option[obj]): obj = other.fold(this)(x => obj(underlying ++ x.underlying))
+    def ++(other: Option[obj]): obj = other.fold(this)(x => this ++ x)
 
-    def -(otherField: String): obj = obj(underlying.toMap - otherField)
+    def -(otherField: String): obj = obj(fields.filterNot(_._1 == otherField))
 
-    def +(otherField: (String, Value)): obj = obj(underlying.toMap + otherField)
+    def +(otherField: (String, Value)): obj = this ++ obj(otherField)
 
     def canEqual(other: Any): Boolean = other.isInstanceOf[obj]
 
     override def hashCode: Int = fieldSet.hashCode()
 
-    def deepMerge(other: obj): obj = {
-
-      def merge(existingObject: obj, otherObject: obj): obj = {
-        val result = existingObject.underlying ++ otherObject.underlying.map {
-          case (otherKey, otherValue) =>
-            val maybeExistingValue = existingObject.underlying.get(otherKey)
-            val newValue = (maybeExistingValue, otherValue) match {
-              case (Some(e: obj), o: obj) => merge(e, o)
-              case _                      => otherValue
-            }
-
-            (otherKey, newValue)
-        }
-
-        obj(result)
+    def merge(other: obj, deep: Boolean): obj = {
+      val otherValues: Map[String, Value] = other.fields.toMap
+      val overwritten: Seq[(String, Value)] = fields.map {
+        case (name: String, value: Value) =>
+          name ->
+            otherValues
+              .get(name)
+              .map { otherValue: Value =>
+                (value, otherValue) match {
+                  case (e: obj, o: obj) if deep => e.merge(o, deep)
+                  case _                        => otherValue
+                }
+              }
+              .getOrElse(value)
       }
-
-      merge(this, other)
+      val currentKeys: Set[String] = keys
+      val result = overwritten ++ other.fields.filterNot(currentKeys contains _._1)
+      obj(result)
     }
 
+    def deepMerge(other: obj): obj = merge(other, deep = true)
+
     def contains(other: obj): Boolean = {
-      other.underlying forall { case (k, thatV) =>
-          underlying.get(k) match {
+      val fieldsMap = fields.toMap
+      other.fields forall { case (k, thatV) =>
+          fieldsMap.get(k) match {
             case None        => true // ???
             case Some(thisV) =>
               (thatV, thisV) match {
@@ -155,7 +151,7 @@ object Value {
       case _           => false
     }
 
-    override def toString = value map { case (k, v) => s""""$k": ${v.toString}"""} mkString ("{", ", ", "}")
+    override def toString: String = fields map { case (k, v) => s""""$k": ${v.toString}"""} mkString ("{", ", ", "}")
   }
 
   object obj {
@@ -169,7 +165,7 @@ object Value {
       case class some(name: String, value: Value) extends field
     }
 
-    def apply(fields: field*): obj = new obj(mutable.LinkedHashMap(fields collect {case field.some(k, v) => (k, v)}: _*))
+    def apply(field0: field, fields: field*): obj = obj((field0 +: fields) collect {case field.some(k, v) => (k, v)})
 
     val empty: obj = obj()
   }

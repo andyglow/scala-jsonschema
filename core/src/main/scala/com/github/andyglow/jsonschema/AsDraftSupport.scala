@@ -1,9 +1,9 @@
 package com.github.andyglow.jsonschema
 
+import com.github.andyglow.json.Value
 import json._
 import json.Schema._
-import json.schema.{ validation => V }
-
+import json.schema.{validation => V}
 import com.github.andyglow.json.Value._
 
 
@@ -30,11 +30,17 @@ trait AsDraftSupport {
     ("format", x.format map { _.productPrefix }))
 
   def mkObj(vv: Option[V.Def[_, _]], x: `object`[_], par: ParentSchema): obj = {
-    val discriminatorField = par match {
+    val discriminatorField: Option[String] = par match {
       case Some(`oneof`(_, f)) => f
       case _                   => None
     }
-    val props = x.fields.map { field =>
+    val discriminatorFieldValue: Option[obj] = discriminatorField.flatMap { df =>
+      for { dk <- x.discriminationKey } yield {
+        obj(df -> obj("enum" -> arr(dk)))
+      }
+    }
+
+    val props: obj = obj(x.fields.map { field =>
       val default     = field.default map { d => obj("default" -> d) } getOrElse obj()
       val description = field.description map { d => obj("description" -> d) } getOrElse obj()
       val tpe         = apply(field.tpe, Some(x), includeType = true, isRoot = false)
@@ -44,22 +50,18 @@ trait AsDraftSupport {
         tpe ++
         description
       )
-    }.toMap ++ discriminatorField.flatMap { df =>
-      for { dk <- x.discriminationKey } yield {
-        df -> obj("enum" -> arr(dk))
-      }
-    }
+    }) ++ discriminatorFieldValue
 
-    val required = x.fields.collect {
+    val required = (x.fields.collect {
       case field if field.required => str(field.name)
-    } ++ discriminatorField.map(str)
+    } ++ discriminatorField.map(str)).distinct
 
     val canHaveAdditionalProperties = x.isInstanceOf[`object`.Free]
 
     obj(
       ("additionalProperties", canHaveAdditionalProperties),
-      ("properties", if (props.isEmpty) None else Some(obj(props))),
-      ("required"  , if (required.isEmpty) None else Some(arr(required.toSeq))))
+      ("properties", if (props.fields.isEmpty) None else Some(props)),
+      ("required"  , if (required.isEmpty) None else Some(arr(required))))
   }
 
   def mkDict(vv: Option[V.Def[_, _]], comp: Schema[_], par: ParentSchema): obj = {
@@ -164,7 +166,7 @@ trait AsDraftSupport {
       x.validations.collect {
         case d if d.validation != `patternProperties` =>
           d.validation.name -> d.json
-      }.toMap
+      }
     }
 
     (validations, pp)
@@ -186,7 +188,7 @@ trait AsDraftSupport {
     }
 
     obj {
-      references(x).map(inferDefinition).toMap
+      references(x).map(inferDefinition)
     }
   }
 }

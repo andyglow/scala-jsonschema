@@ -61,7 +61,7 @@ class ValueSpec extends AnyWordSpec {
       "handle value" in {
         obj(
           "foo" -> "foo",
-          "bar" -> "bar").value shouldEqual Map(
+          "bar" -> "bar").fields shouldEqual Seq(
 
           "foo" -> str("foo"),
           "bar" -> str("bar"))

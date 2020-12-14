@@ -65,7 +65,7 @@ object AsU {
     implicit val numAdapter: Aux[num, ujson.Num] = make(x => ujson.Num(x.value.toDouble), x => num(x.value))
     implicit val strAdapter: Aux[str, ujson.Str] = make(x => ujson.Str(x.value), x => str(x.value))
     implicit val arrAdapter: Aux[arr, ujson.Arr] = make(x => x.value map { adapt(_) }, x => arr { x.value map { unadapt(_) }})
-    implicit val objAdapter: Aux[obj, ujson.Obj] = make(x => x.value.toMap mapV { adapt(_) }, x => obj { x.value.toMap mapV { unadapt(_) }})
+    implicit val objAdapter: Aux[obj, ujson.Obj] = make(x => x.fields.toList mapV { adapt(_) }, x => obj { x.value.toList mapV { unadapt(_) }})
   }
 
   implicit def toValue[T](implicit w: Writer[T]): ToValue[T] = new ToValue[T] {

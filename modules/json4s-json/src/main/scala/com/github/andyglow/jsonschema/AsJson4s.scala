@@ -74,13 +74,13 @@ object AsJson4s {
       x => JArray { x.value.toList map { adapt(_) } },
       x => arr { x.arr map { unadapt(_) }})
     implicit val objAdapter: Aux[obj, JObject] = make({ x =>
-      val fields = x.value.toList.map {
+      val fields = x.fields.toList.map {
         case (k, v) => JField(k, AsJson4s.apply(v))
       }
 
       JObject(fields)
     }, { x =>
-      obj { x.obj.toMap mapV { unadapt(_) } }
+      obj { x.obj mapV { unadapt(_) } }
     })
   }
 
