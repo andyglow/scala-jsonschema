@@ -224,6 +224,22 @@ class SchemaMacroSpec extends AnyWordSpec {
       Json.schema[Map[Int, Foo9]] shouldEqual `dictionary`[Int, Foo9, Map](`object`(Field("name", `string`))).withValidation(`patternProperties` := "^[0-9]+$")
     }
   }
+
+  "generated schema should preserve field ordering" in {
+    import `object`.Field
+
+    val schema: `object`[FieldOrder] = Json.schema[FieldOrder].asInstanceOf[`object`[FieldOrder]]
+    schema shouldEqual `object`(
+      Field("value1", `string`),
+      Field("value2", `string`),
+      Field("value3", `string`),
+      Field("value4", `string`, required = false, default = ""),
+      Field("value5", `string`),
+      Field("value6", `string`)
+    )
+
+    schema.fields.map(_.name) shouldEqual Seq("value1", "value2", "value3", "value4", "value5", "value6")
+  }
 }
 
 object SchemaMacroSpec {
@@ -257,6 +273,14 @@ object SchemaMacroSpec {
     strMap: Map[String, Double] = Map("foo" -> .12),
     intMap: Map[Int, String] = Map(1 -> "1", 2 -> "2"))
 
+  case class FieldOrder(
+                       value1: String,
+                       value2: String,
+                       value3: String,
+                       value4: String = "",
+                       value5: String,
+                       value6: String
+                       )
 }
 
 sealed trait FooBar

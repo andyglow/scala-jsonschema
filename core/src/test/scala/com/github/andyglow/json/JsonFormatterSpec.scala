@@ -37,13 +37,21 @@ class JsonFormatterSpec extends AnyPropSpec {
          |]""".stripMargin
   }
 
-  property("JsonFormatter should format objects") {
+  property("JsonFormatter should format objects and respect ordering") {
     format(obj(
       "x" -> "x",
       "y" -> "y")) shouldEqual
       s"""{
          |  "x": "x",
          |  "y": "y"
+         |}""".stripMargin
+
+    format(obj(
+      "y" -> "y",
+      "x" -> "x")) shouldEqual
+      s"""{
+         |  "y": "y",
+         |  "x": "x"
          |}""".stripMargin
   }
 
@@ -54,5 +62,4 @@ class JsonFormatterSpec extends AnyPropSpec {
          |  "\\"quoted-key\\"": "\\n\\t'val\\""
          |}""".stripMargin
   }
-
 }

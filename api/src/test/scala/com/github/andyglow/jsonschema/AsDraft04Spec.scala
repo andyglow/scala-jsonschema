@@ -21,25 +21,30 @@ class AsDraft04Spec extends AnyWordSpec {
     "emit Object" in {
       import `object`.Field
 
-      AsValue.schema(
+      val schema: obj = AsValue.schema(
         `object`(
           Field("foo" , `string`),
           Field("meta", `object`.Free[Any]()),
           Field("bar" , `integer`, required = false),
           Field("baz" , `def`[Boolean]("my-bool", `boolean`))),
-        Draft04()) shouldEqual obj(
-      f"$$schema" -> "http://json-schema.org/draft-04/schema#",
-      "type" -> "object",
-      "additionalProperties" -> false,
-      "required" -> arr("foo", "meta", "baz"),
-      "properties" -> obj(
-        "foo"  -> obj("type" -> "string"),
-        "meta" -> obj("type" -> "object", "additionalProperties" -> true),
-        "bar"  -> obj("type" -> "integer"),
-        "baz"  -> obj(f"$$ref" -> "#/definitions/my-bool")),
-      "definitions" -> obj(
-        "my-bool" -> obj(
-          "type" -> "boolean")))
+        Draft04())
+
+      schema shouldEqual obj(
+        f"$$schema" -> "http://json-schema.org/draft-04/schema#",
+        "type" -> "object",
+        "additionalProperties" -> false,
+        "required" -> arr("foo", "meta", "baz"),
+        "properties" -> obj(
+          "foo"  -> obj("type" -> "string"),
+          "meta" -> obj("type" -> "object", "additionalProperties" -> true),
+          "bar"  -> obj("type" -> "integer"),
+          "baz"  -> obj(f"$$ref" -> "#/definitions/my-bool")),
+        "definitions" -> obj(
+          "my-bool" -> obj(
+            "type" -> "boolean")))
+
+      // Should preserve ordering
+      schema.get("properties").get.asInstanceOf[obj].fields.map(_._1) shouldEqual Seq("foo", "meta", "bar", "baz")
     }
   }
 

@@ -97,6 +97,8 @@ object Value {
 
     def values: Iterable[Value] = fields.map(_._2)
 
+    def get(name: String): Option[Value] = fields.find(_._1 == name).map(_._2)
+
     def ++(other: obj): obj = merge(other, deep = false)
 
     def ++(other: Option[obj]): obj = other.fold(this)(x => this ++ x)
