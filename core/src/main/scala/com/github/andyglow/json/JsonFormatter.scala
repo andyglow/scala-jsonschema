@@ -3,6 +3,7 @@ package com.github.andyglow.json
 import com.github.andyglow.json.Value._
 
 class JsonFormatter(step: Int = 2) {
+  import JsonFormatter.NL
 
   def format(value: Value): String = {
     val sb = new StringBuilder
@@ -14,18 +15,17 @@ class JsonFormatter(step: Int = 2) {
   private def _format(value: Value, sb: StringBuilder, indent: Int = 0): Unit = {
     val i0 = " " * indent
     val i1 = " " * (indent + step)
-    val nl = System.lineSeparator()
 
     value match {
       case obj(fields)  =>
         sb append "{"
-        sb append nl
+        sb append NL
         var first = true
 
         for { (name, value) <- fields } {
           if (!first) {
             sb append ","
-            sb append nl
+            sb append NL
           } else {
             first = false
           }
@@ -35,19 +35,19 @@ class JsonFormatter(step: Int = 2) {
           _format(value, sb, indent + step)
         }
 
-        sb append nl
+        sb append NL
         sb append i0
         sb append "}"
 
       case arr(items)   =>
         sb append "["
-        sb append nl
+        sb append NL
         var first = true
 
         for { value <- items } {
           if (!first) {
             sb append ","
-            sb append nl
+            sb append NL
           } else {
             first = false
           }
@@ -56,7 +56,7 @@ class JsonFormatter(step: Int = 2) {
           _format(value, sb, indent + step)
         }
 
-        sb append nl
+        sb append NL
         sb append i0
         sb append "]"
 
@@ -68,4 +68,6 @@ class JsonFormatter(step: Int = 2) {
   }
 }
 
-object JsonFormatter extends JsonFormatter(step = 2)
+object JsonFormatter extends JsonFormatter(step = 2) {
+  val NL: String = System.lineSeparator()
+}
