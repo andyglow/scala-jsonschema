@@ -86,7 +86,7 @@ private[jsonschema] trait Extractors { this: HasLog with AST with HasContext =>
           def unapply(p: Type): Option[Pred] = {
             dbg(s"Ex.unapply: p=${showRaw(p)}")
 
-            val v = p match {
+            def unmatch(p: Type) = p match {
               // collection
               case TypeRef(_, `sEmpty`        , _)                    => Some(Size(t, Size.Def.Const(0)))
               case TypeRef(_, `sNonEmpty`     , _)                    => Some(Size(t, Size.Def.Min(1)))
@@ -125,6 +125,8 @@ private[jsonschema] trait Extractors { this: HasLog with AST with HasContext =>
               case TypeRef(_, `sOr`           , List(Ex(ll), Ex(rr))) => Some(Or(ll, rr))
               case _                                                  => None
             }
+
+            val v = unmatch(p) orElse unmatch(p.dealias)
             dbg(s"Ex.unapply: result ${showRaw(v)}")
 
             v
