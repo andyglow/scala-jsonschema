@@ -7,10 +7,9 @@ import json.schema.Version._
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpec
 
-case class FooX(a: Int)
-case class FooY(b: Int)
-
 class AsDraft07Spec extends AnyWordSpec {
+
+  import AsDraft07Spec._
 
   "AsValue.schema" should {
 
@@ -69,4 +68,9 @@ class AsDraft07Spec extends AnyWordSpec {
       AsValue.schema(o, Draft07(id = "http://example.com/foobarbaz.json")) should containJson(expected)
     }
   }
+}
+
+object AsDraft07Spec {
+  case class FooX(a: Int)
+  case class FooY(b: Int)
 }
