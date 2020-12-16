@@ -14,15 +14,18 @@ class JsonFormatter(step: Int = 2) {
   private def _format(value: Value, sb: StringBuilder, indent: Int = 0): Unit = {
     val i0 = " " * indent
     val i1 = " " * (indent + step)
+    val nl = System.lineSeparator()
 
     value match {
       case obj(fields)  =>
-        sb append "{\n"
+        sb append "{"
+        sb append nl
         var first = true
 
         for { (name, value) <- fields } {
           if (!first) {
-            sb append ",\n"
+            sb append ","
+            sb append nl
           } else {
             first = false
           }
@@ -32,17 +35,19 @@ class JsonFormatter(step: Int = 2) {
           _format(value, sb, indent + step)
         }
 
-        sb append "\n"
+        sb append nl
         sb append i0
         sb append "}"
 
       case arr(items)   =>
-        sb append "[\n"
+        sb append "["
+        sb append nl
         var first = true
 
         for { value <- items } {
           if (!first) {
-            sb append ",\n"
+            sb append ","
+            sb append nl
           } else {
             first = false
           }
@@ -51,7 +56,7 @@ class JsonFormatter(step: Int = 2) {
           _format(value, sb, indent + step)
         }
 
-        sb append "\n"
+        sb append nl
         sb append i0
         sb append "]"
 
