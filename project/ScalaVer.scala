@@ -6,10 +6,12 @@ final object ScalaVer {
 
   val values: Seq[ScalaVer] = Set(_211, _212, _213).toSeq
 
-  lazy val value: ScalaVer = sys.env.get("SCALA_VER") match {
-    case Some("2.11") => _211
-    case Some("2.12") => _212
-    case Some("2.13") => _213
-    case _            => _213
+  def fromEnv: Option[ScalaVer] = sys.env.get("SCALA_VER") flatMap fromString
+
+  def fromString(full: String): Option[ScalaVer] = full match {
+    case x if x startsWith "2.11" => Some(_211)
+    case x if x startsWith "2.12" => Some(_212)
+    case x if x startsWith "2.13" => Some(_213)
+    case _                        => None
   }
 }

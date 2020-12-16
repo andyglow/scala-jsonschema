@@ -7,6 +7,7 @@ import scala.sys.process._
 publishTo in ThisBuild := sonatypePublishTo.value
 
 lazy val buildInfo = taskKey[Unit]("Prints Build Info")
+lazy val scalaV = settingKey[ScalaVer]("Current Scala Version")
 
 lazy val commonSettings = Seq(
 
@@ -20,9 +21,11 @@ lazy val commonSettings = Seq(
 
   organizationName := "andyglow",
 
-  scalaVersion := ScalaVer.value.full,
+  scalaVersion := (ScalaVer.fromEnv getOrElse ScalaVer._213).full,
 
   crossScalaVersions := ScalaVer.values.map(_.full),
+
+  scalaV := ScalaVer.fromString(scalaVersion.value) getOrElse ScalaVer._213,
 
   Compile / unmanagedSourceDirectories ++= {
     val bd = baseDirectory.value
@@ -44,12 +47,19 @@ lazy val commonSettings = Seq(
     }
   },
 
-  scalacOptions := CompilerOptions(ScalaVer.value),
+  scalacOptions := CompilerOptions(scalaV.value),
 
-  scalacOptions in (Compile, doc) ++= Seq(
-    "-groups",
-    "-implicits",
-    "-no-link-warnings"),
+  scalacOptions in (Compile, doc) := {
+    val muted = Seq(
+      "-Ywarn-unused")
+
+    val base = scalacOptions.value filterNot muted.contains
+
+    base ++ Seq(
+      "-groups",
+      "-implicits",
+      "-no-link-warnings")
+  },
 
   licenses := Seq(("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))),
 
@@ -166,6 +176,7 @@ lazy val `json4s-json` = { project in file("modules/json4s-json") }.dependsOn(co
   buildInfo := {
     val sb = new StringBuilder("*** SCALA INFO ***\n")
     sb append s"- Version: ${scalaVersion.value}\n"
+    sb append s"- Version: ${scalaV.value}\n"
     sb append "- Compiler Options:\n"
     scalacOptions.value foreach { opt =>
       sb append s"  [$opt]\n"
