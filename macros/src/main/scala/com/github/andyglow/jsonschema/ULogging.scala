@@ -8,5 +8,7 @@ private[jsonschema] trait ULogging { this: UContext =>
 
   val warn: String => Unit = c.warning(c.enclosingPosition, _)
 
-  val err: String => Nothing = c.abort(c.enclosingPosition, _)
+  val err: String => Unit = c.error(c.enclosingPosition, _)
+
+  val abort: String => Nothing = c.abort(c.enclosingPosition, _)
 }
