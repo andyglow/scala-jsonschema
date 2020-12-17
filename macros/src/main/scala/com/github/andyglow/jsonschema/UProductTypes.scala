@@ -31,8 +31,7 @@ private[jsonschema] trait UProductTypes { this: UContext with UCommons with USca
   }
 
   private[UProductTypes] def resolveFields(tpe: Type): Seq[Field] = {
-    val annotationMap = fieldAnnotationMap(tpe)
-
+    val annotationMap       = fieldAnnotationMap(tpe)
     val subjectCompanionSym = tpe.typeSymbol
     val subjectCompanion    = subjectCompanionSym.asClass.companion.asModule
 
@@ -191,6 +190,23 @@ private[jsonschema] trait UProductTypes { this: UContext with UCommons with USca
   }
 
   val CaseClass = new CaseClassExtractor
+
+  case class CaseObjectSymbol(sym: Symbol)
+
+  class CaseObjectExtractor {
+
+    def unapply(tpe: Type)(implicit
+      ctx: ResolutionContext,
+      specFD: FieldDecorations = FieldDecorations.Empty): Option[CaseObjectSymbol] = {
+
+      val sym = tpe.typeSymbol
+      Some.when (sym.isClass && sym.isModuleClass) {
+        CaseObjectSymbol(sym)
+      }
+    }
+  }
+
+  val CaseObject = new CaseObjectExtractor
 
 //
 //  object CaseClass {

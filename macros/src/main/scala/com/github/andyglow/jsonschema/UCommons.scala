@@ -98,7 +98,7 @@ private[jsonschema] trait UCommons extends SchemaTypes with ULogging { this: UCo
     if (symbol.isClass) {
       val clazz = symbol.asClass
       if (clazz.isCaseClass) {
-        if (clazz.isDerivedValueClass) {
+        if (clazz.isDerivedValueClass || clazz.isModuleClass) {
           None
         } else {
           Some(block)
@@ -107,6 +107,39 @@ private[jsonschema] trait UCommons extends SchemaTypes with ULogging { this: UCo
         None
     } else
       None
+  }
+
+  def isSealed(x: Type): Boolean = {
+    val s = x.typeSymbol
+    s.isClass && s.asClass.isSealed
+  }
+
+  def isCaseClass(x: Type): Boolean = {
+    val s = x.typeSymbol
+    s.isClass && !s.isModuleClass && s.asClass.isCaseClass
+  }
+
+  def isCaseObject(x: Type): Boolean = isCaseObject(x.typeSymbol)
+
+  def isCaseObject(x: SymbolApi): Boolean = x.isClass && x.isModuleClass
+
+  // BORROWED:
+  // https://github.com/plokhotnyuk/jsoniter-scala/blob/3612fddf19a8ce23ac973d71e85ef02f79c06fff/jsoniter-scala-macros/src/main/scala/com/github/plokhotnyuk/jsoniter_scala/macros/JsonCodecMaker.scala#L351-L365
+  def resolveSumTypeRecursively(
+    tpe: Type,
+    include: Type => Boolean,
+    otherwise: Symbol => Type): Seq[Type] = {
+
+    if (tpe.typeSymbol.isClass) {
+      val leaves = tpe.typeSymbol.asClass.knownDirectSubclasses.toSeq flatMap { s =>
+        val cs = s.asClass
+        val subTpe = if (cs.typeParams.isEmpty) cs.toType else resolveGenericType(cs.toType, cs.typeParams, tpe.typeArgs)
+        if (isSealed(subTpe)) resolveSumTypeRecursively(subTpe, include, otherwise)
+        else if (include(subTpe)) Seq(subTpe)
+        else Seq(otherwise(s))
+      }
+      if (include(tpe)) leaves :+ tpe else leaves
+    } else Seq.empty
   }
 
   implicit class SomeCompanionOps(val x: Some.type) {

@@ -2,60 +2,60 @@ package com.github.andyglow.jsonschema
 
 
 
-private[jsonschema] trait USumTypes { this: UContext with UCommons with UValueTypes with UProductTypes with UImplicits with UTypeAnnotations with USignatures =>
+private[jsonschema] trait USumTypes { this: UContext with UCommons with UValueTypes with UProductTypes with UImplicits with UTypeAnnotations with USignatures with UEnums =>
   import c.universe._
 
 
   class SumTypeExtractor {
 
-    private def isSealed(x: Type): Boolean = {
-      val s = x.typeSymbol
-      s.isClass && s.asClass.isSealed
+    private def isSupportedLeafSymbol(x: Symbol): Boolean = {
+      x.isClass && x.asClass.isCaseClass
     }
-
     private def isSupportedLeafType(x: Type): Boolean = {
       val s = x.typeSymbol
-      s.isClass && !s.isModuleClass && s.asClass.isCaseClass
+      isSupportedLeafSymbol(s)
     }
-
-    // BORROWED:
-    // https://github.com/plokhotnyuk/jsoniter-scala/blob/3612fddf19a8ce23ac973d71e85ef02f79c06fff/jsoniter-scala-macros/src/main/scala/com/github/plokhotnyuk/jsoniter_scala/macros/JsonCodecMaker.scala#L351-L365
-    private def collectRecursively(x: Type): Seq[Type] =
-      if (x.typeSymbol.isClass) {
-        val leafs = x.typeSymbol.asClass.knownDirectSubclasses.toSeq flatMap { s =>
-          val cs = s.asClass
-          val subTpe = if (cs.typeParams.isEmpty) cs.toType else resolveGenericType(cs.toType, cs.typeParams, x.typeArgs)
-          if (isSealed(subTpe)) collectRecursively(subTpe)
-          else if (isSupportedLeafType(subTpe)) Seq(subTpe)
-          else c.abort(
-            c.enclosingPosition,
-            "Only Scala case classes are supported for Sum Type leafs. Please consider using of " +
-              s"them for Sum Types with base '$x' or provide a custom implicitly accessible json.Schema for the Sum Type.")
-        }
-        if (isSupportedLeafType(x)) leafs :+ x else leafs
-      } else Seq.empty
 
     def resolve(tpe: Type)(implicit ctx: ResolutionContext): Option[U.OneOf] = {
       Some.when (isSealed(tpe)) {
         // get type annotation for the root type
         // needed primarily for discriminator logic
         val rootTA = TypeAnnotations(tpe)
-        val subTypes = collectRecursively(tpe)
+
+        // resolve all sealed hierarchy members
+        val subTypes = resolveSumTypeRecursively(
+          tpe,
+          include = isSupportedLeafType,
+          otherwise = sym => abort(
+            "Supported Type:" + isSupportedLeafSymbol(sym) +
+              s"\nOnly Scala case classes/objects are supported for Sum Type leaves.\nActual: ${showRaw(sym)}.\nPlease consider using of " +
+              s"them for Sum Types with base '$tpe' or provide a custom implicitly accessible json.Schema for the Sum Type."))
+
+        // this needs to support hybrid mode where hierarchy might
+        // include both case classes and case objects at the same time
+        var coll = SumTypeEnumCollector(tpe)
+
         val schemas = subTypes map { subTpe =>
           val subSchema = Implicit.getOrElse(subTpe, subTpe match {
             case ValueClass(st) => st
             case CaseClass(st)  => st
-            case _              => c.abort(c.enclosingPosition, "Only case classes and value classes are supported candidates for sum type hierarchy")
+            case CaseObject(co) if
+              { val newColl = coll.withInstancesReplaced(Set(co.sym))
+                val isEnum  = newColl exists { c => coll = c; c.trees.nonEmpty }
+                isEnum
+              } => U.Enum(tpe, coll.trees)
+            case _              => c.abort(c.enclosingPosition, "Only case classes/objects and value classes are supported candidates for sum type hierarchy")
           })
 
           // if discriminator is specified we need to make several checks
-          // 1. type must ne a product type
+          // 1. type must be a product type
           // 2. if discriminator isn't a phantom, product must contain specified field
           rootTA.discriminator foreach { d =>
             def validate(t: SchemaType): Unit = t match {
               case o: SchemaType.Obj                     => if (!d.phantom && !o.fields.exists(_.name == d.field)) c.abort(c.enclosingPosition, s"Discriminator: Field '${d.field}' is not found in ${show(subTpe)}")
               case SchemaType.ValueClass(_, _, inner, _) => validate(inner)
-              case _                                     => c.abort(c.enclosingPosition, "Discriminator: Only case classes and value classes are supported candidates for sum type hierarchy")
+              case SchemaType.Enum(_, _, _)              => // skip
+              case _                                     => c.abort(c.enclosingPosition, "Discriminator: Only case classes/objects and value classes are supported candidates for sum type hierarchy")
             }
 
             validate(subSchema)
@@ -76,10 +76,21 @@ private[jsonschema] trait USumTypes { this: UContext with UCommons with UValueTy
           }
 
           // if `definition` annotation is specified wrap the schema into `def`
+          // Even if this is an Enum. Let user decide. It may result in several definitions of enum containing only one element
           ta.wrapIntoDefIfRequired(subTpe, effectiveSubSchema)
         }
 
-        U.OneOf(tpe, schemas, rootTA.discriminator.map(_.field))
+        // flatten schemas
+        // gather all enums under one definition
+        val singleEnum = schemas.foldLeft(U.Enum(tpe, Seq.empty)) {
+          case (acc, U.Enum(_, values, _)) => acc.copy(values = acc.values ++ values)
+          case (acc, _)                    => acc
+        }
+        val effectiveSchemas = if (singleEnum.values.isEmpty) schemas else {
+          schemas.filter { case _: U.Enum => false; case _ => true } :+ singleEnum
+        }
+
+        U.OneOf(tpe, effectiveSchemas, rootTA.discriminator.map(_.field))
       }
     }
 

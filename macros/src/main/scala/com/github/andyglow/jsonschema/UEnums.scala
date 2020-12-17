@@ -6,31 +6,64 @@ private[jsonschema] trait UEnums { this: UContext with UCommons =>
 
   private val ScalaEnumTpe = typeOf[scala.Enumeration]
 
+  // ISSUE: https://github.com/andyglow/scala-jsonschema/issues/106
+  // Used to extract case objects from sealed trait hierarchy
+  case class SumTypeEnumCollector(
+    tpe: Type,
+    trees: Seq[(Tree, Option[String])] = Seq.empty) {
+
+    private val toValueTree = c.inferImplicitValue(
+      appliedType(T.toValue, tpe),
+      silent = true,
+      withMacrosDisabled = true)
+
+    private lazy val instances = resolveSumTypeRecursively(
+      tpe,
+      include = isCaseObject,
+      otherwise = _ => NoType)
+
+
+    def includesOnlySupportedSymbols(): Boolean = !instances.contains(NoType)
+
+    def resolved(): Option[SumTypeEnumCollector] = {
+      instances.find(_ == NoType) foreach { _ =>
+        abort(
+          s"Only Scala case objects are supported for Sum Type leaves\nPlease consider using of " +
+            s"them for Sum Types with base '$tpe' or provide a custom implicitly accessible json.Schema for the Sum Type.")
+      }
+
+      withInstancesReplaced(instances.map(_.typeSymbol).toSet)
+    }
+
+    def withInstancesReplaced(instances: Set[Symbol]): Option[SumTypeEnumCollector] = {
+      Option.whenever (instances forall isCaseObject) {
+        if (toValueTree.nonEmpty) {
+          val valueTrees = instances.toSeq collect {
+            case i: ClassSymbol =>
+              val caseObj = i.owner.asClass.toType.decls.find { d =>
+                d.name == i.name.toTermName
+              } getOrElse NoSymbol
+
+              q"$toValueTree($caseObj)"
+          }
+          copy(trees = valueTrees map { t => (t, None) })
+        } else {
+          val valueNames = instances.toSeq map { module => module.name.decodedName.toString }
+          val valueTrees = valueNames map { moduleName => (q"${N.internal.json}.Value.str($moduleName)", Some(moduleName)) }
+          copy(trees = valueTrees)
+        }
+      }
+    }
+  }
+
   class EnumExtractor {
 
     private def fromSumType(tpe: Type)(implicit ctx: ResolutionContext): Option[U.Enum] = {
       Option.whenever (tpe.typeSymbol.isClass && tpe.typeSymbol.asClass.isSealed) {
-        val instances = tpe.typeSymbol.asClass.knownDirectSubclasses
-        val toValueTree = c.inferImplicitValue(
-          appliedType(T.toValue, tpe),
-          silent = true,
-          withMacrosDisabled = true)
-
-        Option.whenever (instances forall { i => val c = i.asClass; c.isModuleClass}) {
-          if (toValueTree.nonEmpty) {
-            val valueTrees = instances.toSeq collect {
-              case i: ClassSymbol =>
-                val caseObj = i.owner.asClass.toType.decls.find { d =>
-                  d.name == i.name.toTermName
-                } getOrElse NoSymbol
-
-                q"$toValueTree($caseObj)"
-            }
-            Some(U.Enum(tpe, valueTrees, None))
-          } else {
-            val valueNames = instances.toSeq map { module => module.name.decodedName.toString }
-            val valueTrees = valueNames map { moduleName => q"${N.internal.json}.Value.str($moduleName)" }
-            Some(U.Enum(tpe, valueTrees, Some(valueNames)))
+        val coll = SumTypeEnumCollector(tpe)
+        Option.whenever(coll.includesOnlySupportedSymbols()) {
+          coll.resolved() map { collector =>
+            U.Enum(tpe, collector.trees)
           }
         }
       }
@@ -72,8 +105,8 @@ private[jsonschema] trait UEnums { this: UContext with UCommons =>
 
       Some.when(isScalaEnum) {
         val valueNames = objTpe.decls.flatMap(getEnumName).toList.distinct
-        val valueTrees = valueNames map { moduleName => q"${N.internal.json}.Value.str($moduleName)" }
-        U.Enum(tpe, valueTrees, Some(valueNames))
+        val valueTrees = valueNames map { moduleName => (q"${N.internal.json}.Value.str($moduleName)", Some(moduleName)) }
+        U.Enum(tpe, valueTrees)
       }
     }
 

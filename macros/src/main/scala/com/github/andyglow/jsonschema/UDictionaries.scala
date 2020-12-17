@@ -27,7 +27,8 @@ private[jsonschema] trait UDictionaries { this: UContext with UCommons with UEnu
                 // +---------
                 // | key is enum
                 // +------------------------
-                case Enum(U.Enum(_, _, Some(names), _)) =>
+                case Enum(U.Enum(_, values, _)) =>
+                  val names = values collect { case (_, Some(name)) => name }
                   val pattern = names.mkString("^(?:", "|", ")$")
                   dict.copy(extra = dict.extra.copy(validations = Seq(q"${N.Validation}.patternProperties := $pattern")))
                 case _                               => None

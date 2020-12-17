@@ -157,6 +157,42 @@ class SchemaMacroSpec extends AnyWordSpec {
         `object`(Field("bar", `number`[Double]))))
     }
 
+    "generate schema for hybrid Sealed Trait family" in {
+      import `object`.Field
+
+      Json.schema[HybridSum] shouldEqual `oneof`(Set(
+        `object`(
+          Field("id", `integer`),
+          Field("name", `string`)),
+        `enum`(Set("V2", "V3"))))
+    }
+
+    "generate schema for hybrid generic Sealed Trait family" in {
+      import `object`.Field
+
+      Json.schema[HybridGenericSum[Double]] shouldEqual `oneof`(Set(
+        `object`(
+          Field("id", `integer`),
+          Field("value", `number`[Double])),
+        `enum`(Set("V2"))))
+    }
+
+    "generate schema for hybrid recursive Sealed Trait family" in {
+      import `object`.Field
+
+      Json.schema[HybridRecursiveSum] shouldEqual `oneof`(Set(
+        `object`(
+          Field("intVal", `integer`),
+          Field("err", `string`, required = false)),
+        `object`(
+          Field("tpe", `string`)),
+        `object`(
+          Field("error", `string`)),
+        `object`(
+          Field("value", `integer`)),
+        `enum`(Set("L1V3", "L2V1", "L2V2"))))
+    }
+
 
 //    "generate schema for Map which Sealed Family for values" in {
 //      import `object`.Field
@@ -281,3 +317,31 @@ object FooBarInsideCompanion {
 sealed trait AnyFooBar extends Any
 case class AnyFooBar1(value: String) extends AnyVal with AnyFooBar
 case class AnyFooBar2(value: Int) extends AnyVal with AnyFooBar
+
+sealed trait HybridSum
+object HybridSum {
+  case class V1(id: Int, name: String) extends HybridSum
+  case object V2 extends HybridSum
+  case object V3 extends HybridSum
+}
+
+sealed trait HybridGenericSum[+T]
+object HybridGenericSum {
+  case class V1[T](id: Int, value: T) extends HybridGenericSum[T]
+  case object V2 extends HybridGenericSum[Nothing]
+}
+
+sealed trait HybridRecursiveSum
+object HybridRecursiveSum {
+  sealed trait Level1 extends HybridRecursiveSum
+  case class L1V1(error: String) extends Level1
+  case class L1V2(value: Int) extends Level1
+  case object L1V3 extends Level1
+
+  sealed trait Level2 extends HybridRecursiveSum { def tpe: String }
+  case object L2V1 extends Level2 { def tpe = "l2-v1" }
+  case object L2V2 extends Level2 { def tpe = "l2-v2" }
+  case class L2V3(tpe: String) extends Level2
+
+  case class Generic(err: Option[String], intVal: Int) extends HybridRecursiveSum
+}
