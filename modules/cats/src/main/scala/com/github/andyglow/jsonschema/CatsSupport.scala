@@ -20,7 +20,11 @@ trait LowPriorityCatsSupport extends ScalaVersionSpecificLowPriorityCatsSupport 
   implicit def nemStrVB[K, V]: Magnet[NonEmptyMap[K, V], Map[_, _]] = mk[NonEmptyMap[K, V], Map[_, _]]
   implicit def oneAndVB[F[_], X]: Magnet[OneAnd[F, X], Iterable[_]] = mk[OneAnd[F, X], Iterable[_]]
 
-  protected def mkNEx[T, C[_]](schema: Schema[T])(implicit b: Magnet[C[T], Iterable[_]]) = Predef(`array`[T, C](schema).withValidation(`minItems` := 1))
+  protected def mkNEx[T, C[_]](schema: Schema[T], unique: Boolean = false)(implicit b: Magnet[C[T], Iterable[_]]) = {
+    val defn = `array`[T, C](schema).withValidation(`minItems` := 1)
+    val effectiveDefn = if (unique) defn.withValidation(`uniqueItems` := true) else defn
+    Predef(effectiveDefn)
+  }
   protected def mkNESM[K, V](vSchema: Schema[V], keyP: KeyPattern[K])(implicit b: Magnet[NonEmptyMap[K, V], Map[_, _]]) = Predef {
     val schema = `dictionary`[K, V, NonEmptyMap](vSchema).withValidation(`minProperties` := 1)
     if (keyP == `dictionary`.KeyPattern.StringKeyPattern) schema else {
@@ -36,7 +40,7 @@ trait LowPriorityCatsSupport extends ScalaVersionSpecificLowPriorityCatsSupport 
 
   implicit def nevSchemaFromPredef[T](implicit p: Predef[T]): Predef[NonEmptyVector[T]] = mkNEx[T, NonEmptyVector](p.schema)
 
-  implicit def nesSchemaFromPredef[T](implicit p: Predef[T]): Predef[NonEmptySet[T]] = mkNEx[T, NonEmptySet](p.schema)
+  implicit def nesSchemaFromPredef[T](implicit p: Predef[T]): Predef[NonEmptySet[T]] = mkNEx[T, NonEmptySet](p.schema, unique = true)
 
   implicit def necSchemaFromPredef[T](implicit p: Predef[T]): Predef[NonEmptyChain[T]] = mkNEx[T, NonEmptyChain](p.schema)
 
