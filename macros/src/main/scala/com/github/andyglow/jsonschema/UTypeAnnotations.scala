@@ -25,7 +25,7 @@ private[jsonschema] trait UTypeAnnotations { this: UContext with UCommons with U
     }
 
     def fromAnnotations(tpe: Type): Texts = {
-      val annotations = tpe.typeSymbol.asClass.annotations
+      val annotations = if (tpe.typeSymbol.isClass) tpe.typeSymbol.asClass.annotations else Nil
 
       val title: Option[String] =
         annotations
@@ -89,7 +89,7 @@ private[jsonschema] trait UTypeAnnotations { this: UContext with UCommons with U
     val Empty = TypeAnnotations(None, None, None, None)
 
     def fromAnnotations(tpe: Type): TypeAnnotations = {
-      val annotations = tpe.typeSymbol.asClass.annotations
+      val annotations = if (tpe.typeSymbol.isClass) tpe.typeSymbol.asClass.annotations else Nil
 
       val texts = Texts(tpe).filter(_.nonEmpty)
 
