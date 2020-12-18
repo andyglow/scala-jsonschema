@@ -2,7 +2,8 @@ package com.github.andyglow.json
 
 import com.github.andyglow.json.Value._
 
-class JsonFormatter(step: Int = 2) {
+
+class JsonFormatter(step: Int = 2, sorted: Boolean = false) {
   import JsonFormatter.NL
 
   def format(value: Value): String = {
@@ -12,17 +13,21 @@ class JsonFormatter(step: Int = 2) {
     sb.toString()
   }
 
+  private def fields(x: obj): scala.collection.Seq[(String, Value)] = if (sorted) x.fields.sortBy(_._1) else x.fields
+
+  private def elements(x: arr): scala.collection.Seq[Value] = if (sorted) x.value.sorted else x.value
+
   private def _format(value: Value, sb: StringBuilder, indent: Int = 0): Unit = {
     val i0 = " " * indent
     val i1 = " " * (indent + step)
 
     value match {
-      case obj(fields)  =>
+      case o: obj  =>
         sb append "{"
         sb append NL
         var first = true
 
-        for { (name, value) <- fields } {
+        for { (name, value) <- fields(o) } {
           if (!first) {
             sb append ","
             sb append NL
@@ -39,12 +44,12 @@ class JsonFormatter(step: Int = 2) {
         sb append i0
         sb append "}"
 
-      case arr(items)   =>
+      case a: arr   =>
         sb append "["
         sb append NL
         var first = true
 
-        for { value <- items } {
+        for { value <- elements(a) } {
           if (!first) {
             sb append ","
             sb append NL
@@ -68,6 +73,14 @@ class JsonFormatter(step: Int = 2) {
   }
 }
 
-object JsonFormatter extends JsonFormatter(step = 2) {
+object JsonFormatter {
   val NL: String = System.lineSeparator()
+
+  private lazy val plainFmt = new JsonFormatter()
+  private lazy val sortedFmt = new JsonFormatter(sorted = true)
+
+  def format(value: Value, sorted: Boolean = false): String = {
+    def fmt = if (sorted) sortedFmt else plainFmt
+    fmt.format(value)
+  }
 }
