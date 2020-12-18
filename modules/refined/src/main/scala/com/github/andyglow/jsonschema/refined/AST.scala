@@ -80,6 +80,11 @@ private[jsonschema] trait AST { this: Math with HasContext with HasLog =>
     // NUMERIC
     // -------
 
+    sealed trait NumPred extends Pred {
+      def isInt: Boolean = t =:= typeOf[Int] || t =:= typeOf[java.lang.Integer]
+      def prefix: Tree = if (isInt) q"`integer`" else q"`number`[$t]"
+    }
+
     def Pos(t: Type) = Ge(t, 0)
     def NonPos(t: Type) = Le(t, 0, inclusive = true)
     def Neg(t: Type) = Le(t, 0)
@@ -92,10 +97,10 @@ private[jsonschema] trait AST { this: Math with HasContext with HasLog =>
       def inclusive: Boolean
     }
 
-    case class Divisable(t: Type, v: Any) extends Pred {
+    case class Divisable(t: Type, v: Any) extends NumPred {
       override def tree = {
         val vv = v.asInstanceOf[Number].doubleValue()
-        q"`number`[$t].withValidation( `multipleOf` := $vv )"
+        q"$prefix.withValidation( `multipleOf` := $vv )"
       }
     }
 
@@ -104,25 +109,25 @@ private[jsonschema] trait AST { this: Math with HasContext with HasLog =>
     case class Bounded(
       t: Type,
       min: NumericPred,
-      max: NumericPred) extends Pred {
+      max: NumericPred) extends NumPred {
 
       override def tree: Tree = {
         (min.inclusive, max.inclusive) match {
-          case (true , true)  => q"`number`[$t].withValidation( `minimum` := ${min.vv}, `maximum` := ${max.vv} )"
-          case (true , false) => q"`number`[$t].withValidation( `minimum` := ${min.vv}, `exclusiveMaximum` := ${max.vv} )"
-          case (false, true)  => q"`number`[$t].withValidation( `exclusiveMinimum` := ${min.vv}, `maximum` := ${max.vv} )"
-          case (false, false) => q"`number`[$t].withValidation( `exclusiveMinimum` := ${min.vv}, `exclusiveMaximum` := ${max.vv} )"
+          case (true , true)  => q"$prefix.withValidation( `minimum` := ${min.vv}, `maximum` := ${max.vv} )"
+          case (true , false) => q"$prefix.withValidation( `minimum` := ${min.vv}, `exclusiveMaximum` := ${max.vv} )"
+          case (false, true)  => q"$prefix.withValidation( `exclusiveMinimum` := ${min.vv}, `maximum` := ${max.vv} )"
+          case (false, false) => q"$prefix.withValidation( `exclusiveMinimum` := ${min.vv}, `exclusiveMaximum` := ${max.vv} )"
         }
         // TODO: if minv == maxv => const
       }
     }
 
-    case class Ge(t: Type, v: Any, inclusive: Boolean = false) extends Pred with NumericPred {
+    case class Ge(t: Type, v: Any, inclusive: Boolean = false) extends NumPred with NumericPred {
       def asSize: Size.Def = Size.Def.Min(vv.toInt)
       override def tree = {
         inclusive match {
-          case true  => q"`number`[$t].withValidation( `minimum` := $vv )"
-          case false => q"`number`[$t].withValidation( `exclusiveMinimum` := $vv )"
+          case true  => q"$prefix.withValidation( `minimum` := $vv )"
+          case false => q"$prefix.withValidation( `exclusiveMinimum` := $vv )"
         }
       }
 
@@ -139,12 +144,12 @@ private[jsonschema] trait AST { this: Math with HasContext with HasLog =>
       }
     }
 
-    case class Le(t: Type, v: Any, inclusive: Boolean = false) extends Pred with NumericPred {
+    case class Le(t: Type, v: Any, inclusive: Boolean = false) extends NumPred with NumericPred {
       def asSize: Size.Def = Size.Def.Max(vv.toInt)
       override def tree = {
         inclusive match {
-          case true  => q"`number`[$t].withValidation( `maximum` := $vv )"
-          case false => q"`number`[$t].withValidation( `exclusiveMaximum` := $vv )"
+          case true  => q"$prefix.withValidation( `maximum` := $vv )"
+          case false => q"$prefix.withValidation( `exclusiveMaximum` := $vv )"
         }
       }
 
@@ -193,7 +198,7 @@ private[jsonschema] trait AST { this: Math with HasContext with HasLog =>
       }
     }
 
-    case class Or(l: Pred, r: Pred) extends Pred {
+    case class Or(l: Pred, r: Pred) extends NumPred {
       require(l.t =:= r.t)
       def t = l.t
       override def norm: Pred = {
@@ -202,7 +207,7 @@ private[jsonschema] trait AST { this: Math with HasContext with HasLog =>
           case (l: Ge, r: Ge)    => l min r
           case (l: Le, r: Le)    => l max r
           case Outside(min, max) => Not(Bounded(t, min, max))
-          case Inside(_, _)      => Naked(l.t, q"`number`[${l.t}]")
+          case Inside(_, _)      => Naked(l.t, prefix)
           case (l, r)            => OneOf(t, ::(l, r :: Nil))
         }
 
@@ -259,6 +264,4 @@ private[jsonschema] trait AST { this: Math with HasContext with HasLog =>
       }
     }
   }
-
-
 }
