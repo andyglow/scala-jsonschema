@@ -37,6 +37,63 @@ class JsonFormatterSpec extends AnyPropSpec {
          |]""".stripMargin
   }
 
+  property("JsonFormatter should format arrays with ordering forced. strings") {
+    format(arr("bbb", "ccc", "aaa"), sorted = true) shouldEqual
+      s"""[
+         |  "aaa",
+         |  "bbb",
+         |  "ccc"
+         |]""".stripMargin
+  }
+
+  property("JsonFormatter should format arrays with ordering forced. nums") {
+    format(arr(8, 12, 1, 6), sorted = true) shouldEqual
+      s"""[
+         |  1,
+         |  6,
+         |  8,
+         |  12
+         |]""".stripMargin
+  }
+
+  property("JsonFormatter should format arrays with ordering forced. bools") {
+    format(arr(true, false), sorted = true) shouldEqual
+      s"""[
+         |  false,
+         |  true
+         |]""".stripMargin
+  }
+
+  property("JsonFormatter should format arrays with ordering forced. arrays") {
+    format(arr(arr(2, 1), arr(3, 1, 7)), sorted = true) shouldEqual
+      s"""[
+         |  [
+         |    1,
+         |    2
+         |  ],
+         |  [
+         |    1,
+         |    3,
+         |    7
+         |  ]
+         |]""".stripMargin
+  }
+
+  property("JsonFormatter should format arrays with ordering forced. objs") {
+    format(arr(obj("a" -> 1), obj("c" -> 3), obj("b" -> 2)), sorted = true) shouldEqual
+      s"""[
+         |  {
+         |    "a": 1
+         |  },
+         |  {
+         |    "b": 2
+         |  },
+         |  {
+         |    "c": 3
+         |  }
+         |]""".stripMargin
+  }
+
   property("JsonFormatter should format objects") {
     format(obj(
       "x" -> "x",
@@ -44,6 +101,18 @@ class JsonFormatterSpec extends AnyPropSpec {
       s"""{
          |  "x": "x",
          |  "y": "y"
+         |}""".stripMargin
+  }
+
+  property("JsonFormatter should format objects with ordering forced") {
+    format(obj(
+      "a" -> "a",
+      "c" -> "c",
+      "b" -> "b"), sorted = true) shouldEqual
+      s"""{
+         |  "a": "a",
+         |  "b": "b",
+         |  "c": "c"
          |}""".stripMargin
   }
 

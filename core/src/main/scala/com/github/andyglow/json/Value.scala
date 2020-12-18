@@ -248,4 +248,34 @@ object Value {
 
     def toArr(implicit elementAdapter: ValueAdapter[T]): arr = arr(x.map { elementAdapter adapt _ }.toSeq)
   }
+
+  implicit val valueOrdering: Ordering[Value] = {
+    Ordering fromLessThan {
+      case (l: str , r: str)   => l.value < r.value
+      case (l: num , r: num)   => l.value < r.value
+      case (l: bool, r: bool)  => l.value < r.value
+      case (l: arr , r: arr)   => if (l.value.length == r.value.length)
+                                    l.value.zip(r.value).forall { case (l, r) => valueOrdering.lt(l, r) }
+                                  else
+                                    l.value.length < r.value.length
+      case (l: obj , r: obj)   => if (l.value.keySet == r.value.keySet) {
+                                    val zipped = l.value.foldLeft[List[(Value, Value)]](Nil) { case (acc, (field, ll)) =>
+                                      val rr = r.value(field)
+                                      acc :+ ((ll, rr))
+                                    }
+                                    zipped.forall { case (l, r) => valueOrdering.lt(l, r) }
+                                  } else
+                                    l.value.keySet.toSeq.sorted.mkString < r.value.keySet.toSeq.sorted.mkString
+      case (`null` , _)        => true
+      case (l, r)              => def weight(x: Value): Int = x match {
+                                    case `null`  => 100
+                                    case _: bool => 50
+                                    case _: num  => 40
+                                    case _: str  => 30
+                                    case _: arr  => 20
+                                    case _: obj  => 10
+                                  }
+                                  weight(l) < weight(r)
+    }
+  }
 }
