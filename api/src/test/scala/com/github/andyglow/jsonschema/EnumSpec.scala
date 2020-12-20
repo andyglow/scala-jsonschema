@@ -4,6 +4,7 @@ import com.github.andyglow.json.ToValue
 import json._
 import json.Schema._
 import json.schema._
+import org.scalatest.exceptions.TestFailedException
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec._
 
@@ -109,7 +110,16 @@ class EnumSpec extends AnyWordSpec {
       }
 
       "all case objects, ToValue is in implicit scope, no type hints" in {
-        "Json.schema[case5]" shouldNot compile
+        val err = intercept[TestFailedException] { "Json.schema[case5]" should compile }
+        err.getMessage shouldBe
+          """Expected no compiler error, but got the following type error: "com.github.andyglow.jsonschema.EnumSpec.case5.V1.type: In order to convert this into enum item
+            |the combination of ToValue and Writer/Encoder (from your json-library) is going to be used
+            |```
+            |EnumSpec.this.case5.asValue(V1)
+            |```
+            |This is the case when resulting json value is hard to reason about in compile time.
+            |Use @typeHint annotation to specify correct type.
+            |", for code: Json.schema[case5]""".stripMargin
       }
 
       "all case objects, ToValue is in implicit scope, Int for members type hint" in {
@@ -117,7 +127,13 @@ class EnumSpec extends AnyWordSpec {
       }
 
       "all case objects, ToValue is in implicit scope, Int for members type hint | xxx" in {
-        "Json.schema[case7]" shouldNot compile
+        val err = intercept[TestFailedException] { "Json.schema[case7]" should compile }
+        err.getMessage shouldBe
+          """Expected no compiler error, but got the following type error: "Error inferring schema for enum: com.github.andyglow.jsonschema.EnumSpec.case7. Some family members come with different schemas:
+            |- json.schema.Predef.doubleS.schema:
+            |  - com.github.andyglow.jsonschema.EnumSpec.case7.V2.type. Type Hint: Double
+            |- json.schema.Predef.intS.schema:
+            |  - com.github.andyglow.jsonschema.EnumSpec.case7.V1.type. Type Hint: Int", for code: Json.schema[case7]""".stripMargin
       }
     }
   }
