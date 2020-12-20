@@ -23,8 +23,8 @@ class AsDraft06(val v: Draft06) extends AsValue with AsDraftSupport {
 
   override def buildRef(ref: String): String = s"#$ref"
 
-  override def inferDefinition(x: `def`[_]): (String, obj) = {
+  override def inferDefinition(x: `def`[_], par: ParentSchema): (String, obj) = {
     val ref = x.sig
-    ref -> (obj(f"$$id" -> s"#$ref") ++ apply(x.tpe))
+    ref -> (obj(f"$$id" -> s"#$ref") ++ apply(x.tpe, par orElse Some(x), includeType = true, isRoot = false))
   }
 }

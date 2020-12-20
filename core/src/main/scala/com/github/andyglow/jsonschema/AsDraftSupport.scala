@@ -9,7 +9,7 @@ import com.github.andyglow.json.Value._
 
 trait AsDraftSupport {
 
-  private type ParentSchema = Option[json.Schema[_]]
+  type ParentSchema = Option[json.Schema[_]]
 
   def apply(x: json.Schema[_]): obj = apply(x, None, includeType = true, isRoot = true)
 
@@ -42,11 +42,13 @@ trait AsDraftSupport {
       field.name -> (
         default ++
         tpe ++
-        description
-      )
-    }.toMap ++ discriminatorField.flatMap { df =>
-      for { dk <- x.discriminationKey } yield {
-        df -> obj("enum" -> arr(dk))
+        description)
+    }.toMap ++ {
+      // discrimination logic
+      discriminatorField.flatMap { df =>
+        for { dk <- x.discriminationKey } yield {
+          df -> obj("enum" -> arr(dk))
+        }
       }
     }
 
@@ -126,12 +128,12 @@ trait AsDraftSupport {
     obj("not" -> apply(x.tpe, Some(x), includeType = false, isRoot = false))
   }
 
-  def mkRef(vv: Option[V.Def[_, _]], x: `def`[_], par: ParentSchema): obj = {
+  def mkDef(vv: Option[V.Def[_, _]], x: `def`[_], par: ParentSchema): obj = {
     val ref = x.sig
     obj(f"$$ref" -> buildRef(ref))
   }
 
-  def mkLazyRef(vv: Option[V.Def[_, _]], x: `ref`[_], par: ParentSchema): obj = {
+  def mkRef(vv: Option[V.Def[_, _]], x: `ref`[_], par: ParentSchema): obj = {
     val ref = x.sig
     obj(f"$$ref" -> buildRef(ref))
   }
@@ -151,8 +153,8 @@ trait AsDraftSupport {
     case (vv, x: `oneof`[_], par, isRoot)     => mkOneOf(vv, x, isRoot, par)
     case (vv, x: `allof`[_], par, isRoot)     => mkAllOf(vv, x, isRoot, par)
     case (vv, x: `not`[_], par, _)            => mkNot(vv, x, par)
-    case (vv, x: `def`[_], par, _)            => mkRef(vv, x, par)
-    case (vv, x: `ref`[_], par, _)            => mkLazyRef(vv, x, par)
+    case (vv, x: `def`[_], par, _)            => mkDef(vv, x, par)
+    case (vv, x: `ref`[_], par, _)            => mkRef(vv, x, par)
     case (vv, x: `value-class`[_, _], par, _) => mkValueClass(vv, x, par)
   }
 
@@ -170,24 +172,24 @@ trait AsDraftSupport {
     (validations, pp)
   }
 
-  def inferDefinition(x: `def`[_]): (String, obj) = {
+  def inferDefinition(x: `def`[_], par: ParentSchema): (String, obj) = {
     val ref = x.sig
-    ref -> apply(x.tpe, Some(x), includeType = true, isRoot = false)
+    ref -> apply(x.tpe, par orElse Some(x), includeType = true, isRoot = false)
   }
 
   def inferDefinitions(x: Schema[_]): obj = {
-    def references(tpe: json.Schema[_]): Seq[`def`[_]] = tpe match {
-      case x: `def`[_]      => references(x.tpe) :+ x
-      case x: `allof`[_]    => x.subTypes.toSeq flatMap references
-      case x: `oneof`[_]    => x.subTypes.toSeq flatMap references
-      case `array`(ref, _)  => references(ref)
-      case `dictionary`(ref)  => references(ref)
-      case `object`(fields) => fields.toSeq map { _.tpe } flatMap references
-      case _                => Seq.empty
+    def extractDefs(tpe: json.Schema[_], par: ParentSchema): Seq[(String, obj)] = tpe match {
+      case x: `def`[_]          => extractDefs(x.tpe, par) :+ inferDefinition(x, par)
+      case x: `allof`[_]        => x.subTypes.toSeq flatMap { extractDefs(_, Some(x)) }
+      case x: `oneof`[_]        => x.subTypes.toSeq flatMap { extractDefs(_, Some(x)) }
+      case x @ `array`(ref, _)  => extractDefs(ref, Some(x))
+      case x @`dictionary`(ref) => extractDefs(ref, Some(x))
+      case x @ `object`(fields) => fields.toSeq map { _.tpe } flatMap { extractDefs(_, Some(x)) }
+      case _                    => Seq.empty
     }
 
     obj {
-      references(x).map(inferDefinition).toMap
+      extractDefs(x, None).toMap
     }
   }
 }

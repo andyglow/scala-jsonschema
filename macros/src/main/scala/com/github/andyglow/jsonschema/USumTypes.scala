@@ -64,11 +64,11 @@ private[jsonschema] trait USumTypes { this: UContext with UCommons with UValueTy
 
           // get hierarchy member type annotation
           // for discriminator-key
-          val ta = TypeAnnotations(subTpe)
+          val subTA = TypeAnnotations(subTpe)
 
           // apply discriminator key if required
           val effectiveSubSchema = rootTA.discriminator.fold(subSchema) { d =>
-            val key = ta.discriminatorKey match {
+            val key = subTA.discriminatorKey match {
               case None                      => signature(subTpe)
               case Some(DiscriminatorKey(x)) => x
             }
@@ -78,7 +78,7 @@ private[jsonschema] trait USumTypes { this: UContext with UCommons with UValueTy
 
           // if `definition` annotation is specified wrap the schema into `def`
           // Even if this is an Enum. Let user decide. It may result in several definitions of enum containing only one element
-          ta.wrapIntoDefIfRequired(subTpe, effectiveSubSchema)
+          subTA.wrapIntoDefIfRequired(subTpe, effectiveSubSchema)
         }
 
         // flatten schemas
