@@ -42,12 +42,12 @@ class EnumeratumSupportSpec extends AnyWordSpec {
     }
 
     "support ByteEnumEntry" in {
-      Json.schema[ByteV] shouldBe `enum`.of[Byte](0, 1, 2)
+      Json.schema[ByteV] shouldBe `enum`.of[Byte](0.toByte, 1.toByte, 2.toByte)
       Json.schema[Map[ByteV, String]] shouldBe `dictionary`[ByteV, String, Map](`string`).withValidation(`patternProperties` := "^(?:0|1|2)$")
     }
 
     "support ShortEnumEntry" in {
-      Json.schema[ShortV] shouldBe `enum`.of[Short](0, 1, 2)
+      Json.schema[ShortV] shouldBe `enum`.of[Short](0.toShort, 1.toShort, 2.toShort)
       Json.schema[Map[ShortV, String]] shouldBe `dictionary`[ShortV, String, Map](`string`).withValidation(`patternProperties` := "^(?:0|1|2)$")
     }
 

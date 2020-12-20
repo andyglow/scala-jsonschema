@@ -73,6 +73,7 @@ private[jsonschema] trait UCommons extends SchemaTypes with ULogging { this: UCo
       val definition = typeOf[json.schema.definition]
       val discriminator = typeOf[json.schema.discriminator]
       val discriminatorKey = typeOf[json.schema.discriminatorKey]
+      val typeHint = typeOf[json.schema.typeHint[_]]
     }
   }
   private[jsonschema] val T = new ConstantTypes
@@ -141,6 +142,13 @@ private[jsonschema] trait UCommons extends SchemaTypes with ULogging { this: UCo
       if (include(tpe)) leaves :+ tpe else leaves
     } else Seq.empty
   }
+
+  class TypeOps(x: Type) {
+
+    def opt: Option[Type] = if (x == NoType) None else Some(x)
+  }
+
+  implicit def mkTypeOps(x: Type): TypeOps = new TypeOps(x)
 
   implicit class SomeCompanionOps(val x: Some.type) {
     def when[T](predicate: Boolean)(block: => T): Option[T] = if (predicate) Some(block) else None

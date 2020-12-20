@@ -79,9 +79,9 @@ class SchemaMacroSpec extends AnyWordSpec {
         val Mon, Tue, Wed, Thu, Fri, Sat, Sun = Value
       }
 
-      Json.schema[WeekDay.type] shouldEqual `enum`(Set("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"))
-      Json.schema[WeekDay.Value] shouldEqual `enum`(Set("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"))
-      Json.schema[WeekDay.T] shouldEqual `enum`(Set("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"))
+      Json.schema[WeekDay.type] shouldEqual `enum`.of("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+      Json.schema[WeekDay.Value] shouldEqual `enum`.of("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+      Json.schema[WeekDay.T] shouldEqual `enum`.of("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
 
       object Planet extends Enumeration {
         protected case class Val(mass: Double, radius: Double) extends super.Val {
@@ -102,7 +102,7 @@ class SchemaMacroSpec extends AnyWordSpec {
         val Neptune = Val(1.024e+26, 2.4746e7)
       }
 
-      Json.schema[Planet.type] shouldEqual `enum`(Set("Mercury", "Venus", "Earth", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune"))
+      Json.schema[Planet.type] shouldEqual `enum`.of("Mercury", "Venus", "Earth", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune")
 
       Json.schema[Map[WeekDay.type, String]] shouldEqual `dictionary`[WeekDay.type, String, Map](`string`).withValidation(`patternProperties` := "^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)$")
     }
@@ -125,7 +125,7 @@ class SchemaMacroSpec extends AnyWordSpec {
       Color.Green
       Color.Blue
 
-      Json.schema[Color] shouldEqual `enum`(Set("Red", "Green", "Blue"))
+      Json.schema[Color] shouldEqual `enum`.of("Red", "Green", "Blue")
 
       Json.schema[Map[Color, String]] shouldEqual `dictionary`[Color, String, Map](`string`).withValidation(`patternProperties` := "^(?:Red|Green|Blue)$")
     }
@@ -164,7 +164,7 @@ class SchemaMacroSpec extends AnyWordSpec {
         `object`(
           Field("id", `integer`),
           Field("name", `string`)),
-        `enum`(Set("V2", "V3"))))
+        `enum`.of("V2", "V3")))
     }
 
     "generate schema for hybrid generic Sealed Trait family" in {
@@ -174,7 +174,7 @@ class SchemaMacroSpec extends AnyWordSpec {
         `object`(
           Field("id", `integer`),
           Field("value", `number`[Double])),
-        `enum`(Set("V2"))))
+        `enum`.of("V2")))
     }
 
     "generate schema for hybrid recursive Sealed Trait family" in {
@@ -190,7 +190,7 @@ class SchemaMacroSpec extends AnyWordSpec {
           Field("error", `string`)),
         `object`(
           Field("value", `integer`)),
-        `enum`(Set("L1V3", "L2V1", "L2V2"))))
+        `enum`.of("L1V3", "L2V1", "L2V2")))
     }
 
 
