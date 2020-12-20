@@ -7,49 +7,9 @@ import json.schema._
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec._
 
-
-class EnumSpec extends AnyWordSpec {
-  import EnumSpec._
-
-  "`enum`" should {
-
-    "be derived" when {
-
-      "all case objects, no type hints" in {
-        Json.schema[case0] shouldBe `enum`.of("V1", "V2")
-      }
-
-      "all case objects, string for root type hint" in {
-        Json.schema[case1] shouldBe `enum`.of("V1", "V2")
-      }
-
-      "all case objects, string for root and all members type hint" in {
-        Json.schema[case2] shouldBe `enum`.of("V1", "V2")
-      }
-
-      "all case objects, Int for root type hint" in {
-        Json.schema[case3] shouldBe `enum`.of("V1", "V2")
-      }
-
-      "all case objects, ToValue is in implicit scope, Int for root type hint" in {
-        Json.schema[case4] shouldBe `enum`.of(1, 2)
-      }
-
-      "all case objects, ToValue is in implicit scope, no type hints" in {
-        "Json.schema[case5]" shouldNot compile
-      }
-
-      "all case objects, ToValue is in implicit scope, Int for members type hint" in {
-        Json.schema[case6] shouldBe `enum`.of(1, 2)
-      }
-
-      "all case objects, ToValue is in implicit scope, Int for members type hint | xxx" in {
-        "Json.schema[case7]" shouldNot compile
-      }
-    }
-  }
-}
-
+// need to come first as otherwise scala 2.11 fail with
+// [error] knownDirectSubclasses of case0 observed before subclass V1 registered
+// [error] knownDirectSubclasses of case0 observed before subclass V2 registered
 object EnumSpec {
 
   sealed trait case0
@@ -117,6 +77,48 @@ object EnumSpec {
     implicit val asValue: ToValue[case7] = ToValue mk {
       case V1 => 1
       case V2 => 2
+    }
+  }
+}
+
+class EnumSpec extends AnyWordSpec {
+  import EnumSpec._
+
+  "`enum`" should {
+
+    "be derived" when {
+
+      "all case objects, no type hints" in {
+        Json.schema[case0] shouldBe `enum`.of("V1", "V2")
+      }
+
+      "all case objects, string for root type hint" in {
+        Json.schema[case1] shouldBe `enum`.of("V1", "V2")
+      }
+
+      "all case objects, string for root and all members type hint" in {
+        Json.schema[case2] shouldBe `enum`.of("V1", "V2")
+      }
+
+      "all case objects, Int for root type hint" in {
+        Json.schema[case3] shouldBe `enum`.of("V1", "V2")
+      }
+
+      "all case objects, ToValue is in implicit scope, Int for root type hint" in {
+        Json.schema[case4] shouldBe `enum`.of(1, 2)
+      }
+
+      "all case objects, ToValue is in implicit scope, no type hints" in {
+        "Json.schema[case5]" shouldNot compile
+      }
+
+      "all case objects, ToValue is in implicit scope, Int for members type hint" in {
+        Json.schema[case6] shouldBe `enum`.of(1, 2)
+      }
+
+      "all case objects, ToValue is in implicit scope, Int for members type hint | xxx" in {
+        "Json.schema[case7]" shouldNot compile
+      }
     }
   }
 }
