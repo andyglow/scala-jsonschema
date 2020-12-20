@@ -84,10 +84,8 @@ private[jsonschema] trait USumTypes { this: UContext with UCommons with UValueTy
         // gather all enums under one definition
         val enumTrees = schemas.foldLeft[Map[SchemaType, Seq[(Tree, Option[String])]]](Map.empty) {
           case (acc, U.Enum(_, schema, values, _)) => acc.updatedWith(schema) { _.fold(values) { _ ++ values } }
-          case (acc, z)                            => info(s"<< ${show(z)}"); acc
+          case (acc, z)                            => acc
         }
-
-        dbg(s"ONEOF: ENUMS: ${enumTrees}")
 
         val effectiveSchemas = if (enumTrees.isEmpty) schemas else {
           schemas.filter { case _: U.Enum => false; case _ => true } ++ {

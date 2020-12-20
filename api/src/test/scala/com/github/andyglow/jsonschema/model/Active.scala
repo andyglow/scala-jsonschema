@@ -1,10 +1,11 @@
 package com.github.andyglow.jsonschema.model
 
 import com.github.andyglow.json.{ToValue, Value}
+import json.schema.typeHint
 
 // members goes without companion
 
-sealed trait Active
+@typeHint[String] sealed trait Active
 
 case object On extends Active
 case object Off extends Active
