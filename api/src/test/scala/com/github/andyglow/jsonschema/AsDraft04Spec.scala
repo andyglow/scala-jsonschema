@@ -111,14 +111,14 @@ class AsDraft04Spec extends AnyWordSpec {
       // complex
 
       // array of formatted strings
-      asDraft04(`array`(`string`[String](F.`email`))) shouldEqual obj("type" -> "array", "items" -> obj("type" -> "string", "format" -> "email"))
+      asDraft04(`array`(`string`(F.`email`))) shouldEqual obj("type" -> "array", "items" -> obj("type" -> "string", "format" -> "email"))
 
       // array of array
-      asDraft04(`array`(`array`(`string`[String]))) shouldEqual obj("type" -> "array", "items" -> obj("type" -> "array", "items" -> obj("type" -> "string")))
+      asDraft04(`array`(`array`(`string`))) shouldEqual obj("type" -> "array", "items" -> obj("type" -> "array", "items" -> obj("type" -> "string")))
     }
 
     "emit Enum" in {
-      asDraft04(`enum`(Set("Red", "Blue", "Green"))) shouldEqual obj(
+      asDraft04(`enum`.of("Red", "Blue", "Green")) shouldEqual obj(
         "type" -> "string",
         "enum" -> arr("Red", "Blue", "Green"))
     }
@@ -128,10 +128,10 @@ class AsDraft04Spec extends AnyWordSpec {
 
       asDraft04(`oneof`(Set(
         `object`(
-          Field("foo", `string`[String]),
+          Field("foo", `string`),
           Field("bar", `integer`, required = false)),
         `object`(
-          Field("foo", `string`[String]))))) should containJson {
+          Field("foo", `string`))))) should containJson {
         obj(
           "type" -> "object",
           "oneOf" -> arr(

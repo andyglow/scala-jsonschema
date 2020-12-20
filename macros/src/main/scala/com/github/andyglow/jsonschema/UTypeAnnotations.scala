@@ -64,7 +64,8 @@ private[jsonschema] trait UTypeAnnotations { this: UContext with UCommons with U
     texts: Option[Texts],
     definition: Option[DefinitionKey],
     discriminator: Option[Discriminator],
-    discriminatorKey: Option[DiscriminatorKey]) {
+    discriminatorKey: Option[DiscriminatorKey],
+    typeHint: Type) {
 
     def wrapIntoDefIfRequired(tpe: Type, schema: SchemaType): SchemaType = {
       import SchemaType._
@@ -86,7 +87,7 @@ private[jsonschema] trait UTypeAnnotations { this: UContext with UCommons with U
 
   object TypeAnnotations {
 
-    val Empty = TypeAnnotations(None, None, None, None)
+    val Empty = TypeAnnotations(None, None, None, None, NoType)
 
     def fromAnnotations(tpe: Type): TypeAnnotations = {
       val annotations = if (tpe.typeSymbol.isClass) tpe.typeSymbol.asClass.annotations else Nil
@@ -106,7 +107,6 @@ private[jsonschema] trait UTypeAnnotations { this: UContext with UCommons with U
         annotations
           .map(_.tree)
           .filter(_.tpe <:< T.annotation.discriminator)
-//          .map { x => c.info(c.enclosingPosition, "BipBip: \n" + showRaw(x) + "\n" + show(x), force = true); x }
           .collectFirst {
             case Apply(_, fieldTree :: phantomTree :: Nil) =>
               val field = fieldTree match {
@@ -131,7 +131,16 @@ private[jsonschema] trait UTypeAnnotations { this: UContext with UCommons with U
             case Apply(_, List(Literal(Constant(text: String)))) => DiscriminatorKey(text)
           }
 
-      TypeAnnotations(texts, definition, discriminator, discriminatorKey)
+      val typeHint: Option[Type] =
+        annotations
+          .map(_.tree)
+          .filter(_.tpe <:< T.annotation.typeHint)
+          .collectFirst {
+            case Apply(Select(New(x: TypeTree), termNames.CONSTRUCTOR), List()) =>
+              x.tpe.typeArgs.head
+          }
+
+      TypeAnnotations(texts, definition, discriminator, discriminatorKey, typeHint.getOrElse(NoType))
     }
 
     def apply(tpe: Type): TypeAnnotations = fromAnnotations(tpe)

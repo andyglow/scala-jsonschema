@@ -76,7 +76,7 @@ trait AsDraftSupport {
 
   def mkEnum(vv: Option[V.Def[_, _]], x: `enum`[_], par: ParentSchema): obj = {
     obj(
-      "type" -> "string",
+      "type" -> x.tpe.jsonType,
       "enum" -> arr(x.values.toSeq))
   }
 

@@ -1,56 +1,132 @@
 package com.github.andyglow.jsonschema
 
 
-private[jsonschema] trait UEnums { this: UContext with UCommons =>
+private[jsonschema] trait UEnums { this: UContext with UCommons with UJsonValueType with UTypeAnnotations =>
   import c.universe._
 
   private val ScalaEnumTpe = typeOf[scala.Enumeration]
 
+  case class EnumFamily(
+    tpe: Type,
+    items: Seq[EnumItem])(implicit ctx: ResolutionContext) {
+
+    lazy val rootTypeHint: Type = TypeAnnotations(tpe).typeHint
+
+    lazy val singleSchema: SchemaType = {
+      val ss = schemas.keySet
+      if (ss.isEmpty) {
+        abort(s"Error inferring schema for enum: ${show(tpe)}. No items defined")
+      } else if (ss.size > 1) {
+        val details = ss.map { s =>
+          val schemaDetails = schemas(s).map { member =>
+            s"  - ${show(member.tpe)}.${if (member.typeHint != NoType) s" Type Hint: ${show(member.typeHint)}" else ""}"
+          }.mkString("\n")
+          s"- ${showCode(s.tree)}:\n$schemaDetails"
+        }.mkString("\n")
+        abort(s"Error inferring schema for enum: ${show(tpe)}. Some family members come with different schemas:\n$details")
+      } else
+        ss.head
+    }
+
+    lazy val schemas: Map[SchemaType, Seq[EnumItem]] = {
+      val schemas = for {
+        enumItem <- items
+        schema    = enumItem.typeHint.orElse(rootTypeHint).opt.map(resolve(_, ctx)) orElse JsonValueType.unapply(enumItem.schemaTree)
+      } yield {
+        val effectiveSchema = schema match {
+          case None =>
+            enumItem match {
+              case _: EnumItem.FromToValue => abort {
+                s"""${show(enumItem.tpe)}: In order to convert this into enum item
+                   |the combination of ToValue and Writer/Encoder (from your json-library) is going to be used
+                   |```
+                   |${showCode(enumItem.schemaTree)}
+                   |```
+                   |This is the case when resulting json value is hard to reason about in compile time.
+                   |Use @typeHint annotation to specify correct type.
+                   |""".stripMargin
+              }
+              case _ =>
+            }
+
+            SchemaType.Str(enumItem.tpe, q"None")
+          case Some(x) => x
+        }
+
+        (effectiveSchema, enumItem)
+      }
+
+      schemas
+        .groupBy { case (schema, _) => schema}
+        .map     { case (schema, tuples) => (schema, tuples map { case (_, item) => item }) }
+    }
+  }
+
+  sealed trait EnumItem {
+    // when enum is created from class name, we know it's name for sure
+    def knownString: Option[String]
+    def tpe: Type
+    def schemaTree: Tree
+    def typeHint: Type
+    def tuple: (Tree, Option[String]) = (schemaTree, knownString)
+  }
+  object EnumItem {
+    case class FromCaseObject(tpe: Type, value: String, typeHint: Type) extends EnumItem {
+      def knownString: Option[String] = Some(value)
+      def schemaTree: Tree = q"${N.internal.json}.Value.str($value)"
+    }
+
+    case class FromToValue(tpe: Type, value: Tree, typeHint: Type) extends EnumItem {
+      def knownString: Option[String] = None
+      def schemaTree: Tree = value
+    }
+  }
+
   // ISSUE: https://github.com/andyglow/scala-jsonschema/issues/106
   // Used to extract case objects from sealed trait hierarchy
-  case class SumTypeEnumCollector(
-    tpe: Type,
-    trees: Seq[(Tree, Option[String])] = Seq.empty) {
+  class SumTypeEnumExtractor(tpe: Type) {
 
     private val toValueTree = c.inferImplicitValue(
       appliedType(T.toValue, tpe),
       silent = true,
       withMacrosDisabled = true)
 
-    private lazy val instances = resolveSumTypeRecursively(
+    private lazy val items: Seq[Type] = resolveSumTypeRecursively(
       tpe,
       include = isCaseObject,
       otherwise = _ => NoType)
 
-
-    def includesOnlySupportedSymbols(): Boolean = !instances.contains(NoType)
-
-    def resolved(): Option[SumTypeEnumCollector] = {
-      instances.find(_ == NoType) foreach { _ =>
-        abort(
-          s"Only Scala case objects are supported for Sum Type leaves\nPlease consider using of " +
-            s"them for Sum Types with base '$tpe' or provide a custom implicitly accessible json.Schema for the Sum Type.")
+    def allResolved(silent: Boolean = false): Option[Seq[EnumItem]] = {
+      val invalid = items.contains(NoType)
+      if (invalid) {
+        if (!silent)
+          abort(
+            s"Only Scala case objects are supported for Sum Type leaves\nPlease consider using of " +
+              s"them for Sum Types with base '$tpe' or provide a custom implicitly accessible json.Schema for the Sum Type.")
+        else None
+      } else {
+        val symbols = items.map(_.typeSymbol)
+        someResolved(symbols)
       }
-
-      withInstancesReplaced(instances.map(_.typeSymbol).toSet)
     }
 
-    def withInstancesReplaced(instances: Set[Symbol]): Option[SumTypeEnumCollector] = {
-      Option.whenever (instances forall isCaseObject) {
+    def someResolved(symbols: Seq[Symbol]): Option[Seq[EnumItem]] = {
+      Option.whenever(symbols forall isCaseObject) {
         if (toValueTree.nonEmpty) {
-          val valueTrees = instances.toSeq collect {
-            case i: ClassSymbol =>
-              val caseObj = i.owner.asClass.toType.decls.find { d =>
-                d.name == i.name.toTermName
+          symbols collect {
+            case module: ClassSymbol =>
+              val caseObj = module.owner.asClass.toType.decls.find { d =>
+                d.name == module.name.toTermName
               } getOrElse NoSymbol
-
-              q"$toValueTree($caseObj)"
+              val tpe = module.toType
+              EnumItem.FromToValue(tpe, q"$toValueTree($caseObj)", TypeAnnotations(tpe).typeHint)
           }
-          copy(trees = valueTrees map { t => (t, None) })
         } else {
-          val valueNames = instances.toSeq map { module => module.name.decodedName.toString }
-          val valueTrees = valueNames map { moduleName => (q"${N.internal.json}.Value.str($moduleName)", Some(moduleName)) }
-          copy(trees = valueTrees)
+          symbols collect {
+            case module: ClassSymbol =>
+              val tpe = module.toType
+              EnumItem.FromCaseObject(tpe, module.name.decodedName.toString, TypeAnnotations(tpe).typeHint)
+          }
         }
       }
     }
@@ -60,11 +136,24 @@ private[jsonschema] trait UEnums { this: UContext with UCommons =>
 
     private def fromSumType(tpe: Type)(implicit ctx: ResolutionContext): Option[U.Enum] = {
       Option.whenever (tpe.typeSymbol.isClass && tpe.typeSymbol.asClass.isSealed) {
-        val coll = SumTypeEnumCollector(tpe)
-        Option.whenever(coll.includesOnlySupportedSymbols()) {
-          coll.resolved() map { collector =>
-            U.Enum(tpe, collector.trees)
+        val extractor = new SumTypeEnumExtractor(tpe)
+        extractor.allResolved(silent = true) map { enumItems =>
+          val family = EnumFamily(tpe, enumItems)
+          var schema = family.singleSchema
+          val hasFromToValueMembers = enumItems collectFirst { case _: EnumItem.FromToValue => true } getOrElse false
+
+          if (!hasFromToValueMembers) {
+            schema = SchemaType.Str(tpe, q"None")
+            family.rootTypeHint.opt.filterNot(_ =:= typeOf[String]) foreach { hintTpe =>
+              warn(s"@typeHint[$hintTpe] is ignored for $tpe, as all family members was derived directly from case objects. Enum Type is String")
+            }
+            enumItems foreach {
+              case EnumItem.FromCaseObject(tpe, _, hintTpe) if hintTpe != NoType && !(hintTpe=:= typeOf[String]) =>
+                warn(s"@typeHint[$hintTpe] is ignored for $tpe, as all family members was derived directly from case objects. Enum Type is String")
+              case _ =>
+            }
           }
+          U.Enum(tpe, schema, enumItems.map(_.tuple))
         }
       }
     }
@@ -74,7 +163,7 @@ private[jsonschema] trait UEnums { this: UContext with UCommons =>
       // Given that `tpe` can refer to different aspects of enum
       // - WeekDay.type
       // - WeekDay.Value
-      // - WeekDay.AlasedTpe. eg. `type AliasedTpe = Value`
+      // - WeekDay.AliasedTpe. eg. `type AliasedTpe = Value`
       // we need to determine root enum object type
       val objTpe = tpe.dealias.map {
         case TypeRef((x, _, _)) => x // schema[WeekDay.T] | schema[WeekDay.Value]
@@ -106,7 +195,7 @@ private[jsonschema] trait UEnums { this: UContext with UCommons =>
       Some.when(isScalaEnum) {
         val valueNames = objTpe.decls.flatMap(getEnumName).toList.distinct
         val valueTrees = valueNames map { moduleName => (q"${N.internal.json}.Value.str($moduleName)", Some(moduleName)) }
-        U.Enum(tpe, valueTrees)
+        U.Enum(tpe, SchemaType.Str(tpe, q"None"), valueTrees)
       }
     }
 

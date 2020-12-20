@@ -1,7 +1,8 @@
 package json
 
+import com.github.andyglow.json.Value.ValueAdapter
 import com.github.andyglow.json._
-import json.schema.{ validation => V }
+import json.schema.{validation => V}
 
 
 sealed trait Schema[+T] {
@@ -328,12 +329,13 @@ object Schema {
   // +---------------
   //
   final case class `enum`[T](
+    tpe: Schema[_],
     values: Set[Value]) extends Schema[T] {
     type Self = `enum`[T]
-    def mkCopy() = new `enum`[T](values)
+    def mkCopy() = new `enum`[T](tpe, values)
     override def canEqual(that: Any): Boolean = that.isInstanceOf[`enum`[_]]
     override def equals(obj: Any): Boolean = obj match {
-      case `enum`(v) => values == v && super.equals(obj)
+      case `enum`(t, v) => t == tpe && values == v && super.equals(obj)
       case _ => false
     }
     override def jsonType: String = "enum"
@@ -348,7 +350,12 @@ object Schema {
     }
   }
   final object `enum` {
-    def of[T](x: Value, xs: Value*): `enum`[T] = new `enum`[T]((x +: xs).toSet)
+    def of[T](tpe: Schema[_], x: Value, xs: Value*): `enum`[T] = new `enum`[T](tpe, (x +: xs).toSet)
+    def of[T](x: T, xs: T*)(implicit va: ValueAdapter[T], vs: ValueSchema[T]): `enum`[vs.S] = {
+      new `enum`[vs.S](
+        vs.schema,
+        (x +: xs).toSet.map { (x: T) => va.adapt(x) })
+    }
   }
 
   // +------------

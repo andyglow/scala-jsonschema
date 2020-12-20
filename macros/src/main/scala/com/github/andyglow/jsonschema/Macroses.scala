@@ -16,6 +16,7 @@ class Macroses(val c: blackbox.Context) extends UContext
   with UProductTypes
   with USumTypes
   with UTypeAnnotations
+  with UJsonValueType
   with UFieldDecorations
   with UScalaParsers {
 
@@ -80,8 +81,8 @@ class Macroses(val c: blackbox.Context) extends UContext
     }.tree
 
     // debug
-    if (c.settings.contains("print-jsonschema-code"))
-      c.info(c.enclosingPosition, show(out), force = false)
+    if (c.settings.contains("print-jsonschema-code") || debugEnabled)
+      c.info(c.enclosingPosition, showCode(out), force = false)
 
     c.Expr[S[T]](out)
   }

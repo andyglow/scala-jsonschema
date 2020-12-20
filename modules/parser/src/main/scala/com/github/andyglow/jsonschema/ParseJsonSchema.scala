@@ -52,7 +52,14 @@ object ParseJsonSchema {
 
     def makeStrOrEnum = x.value.arr("enum") match {
       case None => makeStr
-      case Some(arr) => Success { `enum`(arr.toSet) }
+      case Some(arr) =>
+        tpe.map(_.toLowerCase) match {
+          case None | Some("string")  => Success { `enum` (`string`, arr.toSet) }
+          case Some("integer")        => Success { `enum` (`integer`, arr.toSet) }
+          case Some("boolean")        => Success { `enum` (`boolean`, arr.toSet) }
+          case Some("number")         => Success { `enum` (`number`[Double], arr.toSet) }
+          case Some(x)                => Failure { InvalidEnumType(x) }
+        }
     }
 
     def makeStr = Success {
@@ -118,4 +125,6 @@ object ParseJsonSchema {
       case "uri"        => `uri`
     }
   }
+
+  case class InvalidEnumType(value: String) extends Exception(s"invalid enum type: $value")
 }

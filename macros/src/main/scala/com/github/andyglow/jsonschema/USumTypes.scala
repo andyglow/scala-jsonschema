@@ -2,7 +2,7 @@ package com.github.andyglow.jsonschema
 
 
 
-private[jsonschema] trait USumTypes { this: UContext with UCommons with UValueTypes with UProductTypes with UImplicits with UTypeAnnotations with USignatures with UEnums =>
+private[jsonschema] trait USumTypes { this: UContext with UCommons with UValueTypes with UProductTypes with UImplicits with UTypeAnnotations with USignatures with UEnums with Macroses =>
   import c.universe._
 
 
@@ -16,7 +16,7 @@ private[jsonschema] trait USumTypes { this: UContext with UCommons with UValueTy
       isSupportedLeafSymbol(s)
     }
 
-    def resolve(tpe: Type)(implicit ctx: ResolutionContext): Option[U.OneOf] = {
+    def resolveOneOf(tpe: Type)(implicit ctx: ResolutionContext): Option[U.OneOf] = {
       Some.when (isSealed(tpe)) {
         // get type annotation for the root type
         // needed primarily for discriminator logic
@@ -33,17 +33,17 @@ private[jsonschema] trait USumTypes { this: UContext with UCommons with UValueTy
 
         // this needs to support hybrid mode where hierarchy might
         // include both case classes and case objects at the same time
-        var coll = SumTypeEnumCollector(tpe)
+        val enumExtractor = new SumTypeEnumExtractor(tpe)
+        var enumItems: Seq[EnumItem] = Seq.empty
 
         val schemas = subTypes map { subTpe =>
           val subSchema = Implicit.getOrElse(subTpe, subTpe match {
             case ValueClass(st) => st
             case CaseClass(st)  => st
             case CaseObject(co) if
-              { val newColl = coll.withInstancesReplaced(Set(co.sym))
-                val isEnum  = newColl exists { c => coll = c; c.trees.nonEmpty }
-                isEnum
-              } => U.Enum(tpe, coll.trees)
+              { enumItems = enumExtractor.someResolved(Seq(co.sym)) getOrElse Seq.empty
+                enumItems.nonEmpty
+              } => U.Enum(tpe, EnumFamily(tpe, enumItems).singleSchema, enumItems.map(_.tuple))
             case _              => c.abort(c.enclosingPosition, "Only case classes/objects and value classes are supported candidates for sum type hierarchy")
           })
 
@@ -54,7 +54,7 @@ private[jsonschema] trait USumTypes { this: UContext with UCommons with UValueTy
             def validate(t: SchemaType): Unit = t match {
               case o: SchemaType.Obj                     => if (!d.phantom && !o.fields.exists(_.name == d.field)) c.abort(c.enclosingPosition, s"Discriminator: Field '${d.field}' is not found in ${show(subTpe)}")
               case SchemaType.ValueClass(_, _, inner, _) => validate(inner)
-              case SchemaType.Enum(_, _, _)              => // skip
+              case SchemaType.Enum(_, _, _, _)           => // skip
               case _                                     => c.abort(c.enclosingPosition, "Discriminator: Only case classes/objects and value classes are supported candidates for sum type hierarchy")
             }
 
@@ -82,12 +82,19 @@ private[jsonschema] trait USumTypes { this: UContext with UCommons with UValueTy
 
         // flatten schemas
         // gather all enums under one definition
-        val singleEnum = schemas.foldLeft(U.Enum(tpe, Seq.empty)) {
-          case (acc, U.Enum(_, values, _)) => acc.copy(values = acc.values ++ values)
-          case (acc, _)                    => acc
+        val enumTrees = schemas.foldLeft[Map[SchemaType, Seq[(Tree, Option[String])]]](Map.empty) {
+          case (acc, U.Enum(_, schema, values, _)) => acc.updatedWith(schema) { _.fold(values) { _ ++ values } }
+          case (acc, z)                            => info(s"<< ${show(z)}"); acc
         }
-        val effectiveSchemas = if (singleEnum.values.isEmpty) schemas else {
-          schemas.filter { case _: U.Enum => false; case _ => true } :+ singleEnum
+
+        dbg(s"ONEOF: ENUMS: ${enumTrees}")
+
+        val effectiveSchemas = if (enumTrees.isEmpty) schemas else {
+          schemas.filter { case _: U.Enum => false; case _ => true } ++ {
+            enumTrees map { case (st, trees) =>
+              U.Enum(tpe, st, trees)
+            }
+          }
         }
 
         U.OneOf(tpe, effectiveSchemas, rootTA.discriminator.map(_.field))
@@ -95,7 +102,7 @@ private[jsonschema] trait USumTypes { this: UContext with UCommons with UValueTy
     }
 
     def unapply(tpe: Type)(implicit ctx: ResolutionContext): Option[U.OneOf] =
-      resolve(tpe)(ctx :+ tpe)
+      resolveOneOf(tpe)(ctx :+ tpe)
   }
 
   val SumType = new SumTypeExtractor

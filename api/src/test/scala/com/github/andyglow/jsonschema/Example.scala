@@ -4,7 +4,7 @@ import java.time.LocalDateTime
 
 import com.github.andyglow.json.JsonFormatter
 import json.Json
-import json.schema.Version
+import json.schema.{Version, typeHint}
 
 object Example {
   import ExampleJsonSchema._
@@ -20,9 +20,9 @@ object ExampleMsg {
 
   object Gender {
 
-    case object Male extends Gender
+    @typeHint[String] case object Male extends Gender
 
-    case object Female extends Gender
+    @typeHint[String] case object Female extends Gender
   }
 
   case class Company(name: String)
