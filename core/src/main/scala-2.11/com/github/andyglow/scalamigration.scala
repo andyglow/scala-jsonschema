@@ -21,6 +21,13 @@ object scalamigration {
 
     @inline def mapV[V2](f: V => V2): Map[K, V2] =
       x mapValues f
+
+    def updatedWith(k: K)(op: Option[V] => Option[V]): Map[K, V] = {
+      op(x get k) match {
+        case Some(v) => x.updated(k, v)
+        case None    => x - k
+      }
+    }
   }
 
 
