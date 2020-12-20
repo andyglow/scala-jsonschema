@@ -58,6 +58,15 @@ object DiscriminatorSpec {
       @discriminatorKey("m2") final case class Member2(value: String) extends Root
     }
   }
+
+  // definition + specific discriminator keys
+  final object case5 {
+    @discriminator sealed trait Root
+    final object Root {
+      @definition("m1") @discriminatorKey("m1") final case class Member1(value: Int) extends Root
+      @definition("m2") @discriminatorKey("m2") final case class Member2(value: String) extends Root
+    }
+  }
 }
 
 class DiscriminatorSpec extends AnyWordSpec {
@@ -156,6 +165,35 @@ class DiscriminatorSpec extends AnyWordSpec {
               "properties" -> obj(
                 "type" -> obj("enum" -> arr("m2")),
                 "value" -> obj("type" -> "string")))))
+        }
+      }
+
+      "definition, phantom, specific keys" in {
+        val s = Json.schema[case5.Root]
+        s shouldBe `oneof`.of(
+          `def`("m1", `object`(F("value", `integer`, required = true)).withDiscriminationKey("m1")),
+          `def`("m2", `object`(F("value", `string`, required = true)).withDiscriminationKey("m2"))).discriminatedBy("type")
+
+        AsValue.schema(s, v.Raw) should containJson {
+          obj(
+            "oneOf" -> arr(
+              obj(f"$$ref" -> "#/definitions/m1"),
+              obj(f"$$ref" -> "#/definitions/m2")),
+            "definitions" -> obj(
+              "m1" -> obj(
+                "additionalProperties" -> false,
+                "required" -> arr("type", "value"),
+                "properties" -> obj(
+                  "type" -> obj("enum" -> arr("m1")),
+                  "value" -> obj("type" -> "integer"))),
+              "m2" -> obj(
+                "additionalProperties" -> false,
+                "required" -> arr("type", "value"),
+                "properties" -> obj(
+                  "type" -> obj("enum" -> arr("m2")),
+                  "value" -> obj("type" -> "string")))
+            )
+          )
         }
       }
     }
