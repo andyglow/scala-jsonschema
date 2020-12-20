@@ -126,7 +126,7 @@ class EnumSpec extends AnyWordSpec {
         Json.schema[case6] shouldBe `enum`.of(1, 2)
       }
 
-      "all case objects, ToValue is in implicit scope, Int for members type hint | xxx" in {
+      "all case objects, ToValue is in implicit scope, difference in type hints" in {
         val err = intercept[TestFailedException] { "Json.schema[case7]" should compile }
         err.getMessage shouldBe
           """Expected no compiler error, but got the following type error: "Error inferring schema for enum: com.github.andyglow.jsonschema.EnumSpec.case7. Some family members come with different schemas:

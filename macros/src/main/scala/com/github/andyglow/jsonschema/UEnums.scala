@@ -18,7 +18,7 @@ private[jsonschema] trait UEnums { this: UContext with UCommons with UJsonValueT
         abort(s"Error inferring schema for enum: ${show(tpe)}. No items defined")
       } else if (ss.size > 1) {
         val details = ss.map { s =>
-          val schemaDetails = schemas(s).map { member =>
+          val schemaDetails = schemas(s).sortBy{_.hashCode}.map { member =>
             s"  - ${show(member.tpe)}.${if (member.typeHint != NoType) s" Type Hint: ${show(member.typeHint)}" else ""}"
           }.mkString("\n")
           s"- ${showCode(s.tree)}:\n$schemaDetails"
