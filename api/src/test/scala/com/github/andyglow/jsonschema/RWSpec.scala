@@ -33,8 +33,7 @@ class RWSpec extends AnyWordSpec {
       s shouldBe `object`(
         F("id", `string`, required = true).setReadOnly,
         F("name", `string`, required = true),
-        F("password", `string`, required = true).setWriteOnly,
-      )
+        F("password", `string`, required = true).setWriteOnly)
 
       AsValue.schema(s, v.Raw) should containJson {
         obj(
