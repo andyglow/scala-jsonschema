@@ -1,5 +1,7 @@
 package com.github.andyglow.jsonschema
 
+import json.Schema.`object`.Field.RWMode
+
 
 private[jsonschema] trait SchemaTypes { this: UContext with UCommons =>
   import c.universe._
@@ -59,12 +61,18 @@ private[jsonschema] trait SchemaTypes { this: UContext with UCommons =>
       sealed trait Field {
         protected def prefix: Tree
         val description: Option[String]
-        def tree: Tree = description.fold(prefix)(d => q"$prefix.withDescription(Some($d))")
+        def rwMode: Option[Tree]
+        def tree: Tree = {
+          var effectiveTree = prefix
+          description foreach { description => effectiveTree = q"$effectiveTree.withDescription(Some($description))" }
+          rwMode foreach { rwMode => effectiveTree = q"$effectiveTree.withRWMode($rwMode)" }
+          effectiveTree
+        }
         def mapSchema(fn: SchemaType => SchemaType): Field
         def name: String
       }
       object Field {
-        case class Apply(tpe: Type, name: String, schema: SchemaType, required: Option[Tree], default: Option[Tree], description: Option[String]) extends Field {
+        case class Apply(tpe: Type, name: String, schema: SchemaType, required: Option[Tree], default: Option[Tree], description: Option[String], rwMode: Option[Tree]) extends Field {
           def prefix = (required, default) match {
             case (Some(required), Some(default))  => q"${N.Schema}.`object`.Field[$tpe]($name, ${schema.tree}, $required, $default)"
             case (None, Some(default))            => q"${N.Schema}.`object`.Field[$tpe]($name, ${schema.tree}, false, $default)"
@@ -73,7 +81,7 @@ private[jsonschema] trait SchemaTypes { this: UContext with UCommons =>
           }
           def mapSchema(fn: SchemaType => SchemaType): Field = copy(schema = fn(schema))
         }
-        case class FromJson(tpe: Type, name: String, schema: SchemaType, required: Tree, default: Tree, description: Option[String]) extends Field {
+        case class FromJson(tpe: Type, name: String, schema: SchemaType, required: Tree, default: Tree, description: Option[String], rwMode: Option[Tree]) extends Field {
           def prefix = q"${N.Schema}.`object`.Field.fromJson[$tpe]($name, ${schema.tree}, $required, $default)"
           def mapSchema(fn: SchemaType => SchemaType): Field = copy(schema = fn(schema))
         }

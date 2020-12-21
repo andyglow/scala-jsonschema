@@ -789,3 +789,9 @@ of label Scala-JsonSchema will check certain sources in certain order.
 | case class `title`              | `Config` -> `Annotation` -> `Scaladoc`  |
 | case class `description`        | `Config` -> `Annotation` -> `Scaladoc`  |
 | case class field `description`  | `Config` -> `Annotation` -> `Scaladoc`  |
+
+## Annotations
+| Annotation     | Scope  | Description                                     |
+| -------------- | -------| ----------------------------------------------- |
+| @readOnly      | Field  | Adds `"readOnly": true` to property definition  |
+| @writeOnly     | Field  | Adds `"writeOnly": true` to property definition |

@@ -47,7 +47,7 @@ class DefinitionsSpec extends AnyWordSpec {
         obj(
           f"$$schema" -> "http://json-schema.org/draft-07/schema#",
           f"$$id" -> "pets",
-          "oneof" -> arr(
+          "oneOf" -> arr(
             obj(f"$$ref" -> "#com.github.andyglow.jsonschema.DefinitionsSpec.Pet.Cat"),
             obj(f"$$ref" -> "#alligator")),
           "definitions" -> obj(

@@ -2,6 +2,7 @@ package json
 
 import com.github.andyglow.json.Value.ValueAdapter
 import com.github.andyglow.json._
+import json.Schema.`object`.Field.RWMode
 import json.schema.{validation => V}
 
 
@@ -293,14 +294,16 @@ object Schema {
       tpe: Schema[T],
       required: Boolean,
       default: Option[Value],
-      description: Option[String]) {
+      description: Option[String],
+      rwMode: Field.RWMode) {
       def canEqual(that: Any): Boolean = that.isInstanceOf[Field[T]]
       override def equals(that: Any): Boolean = canEqual(that) && {
         val other = that.asInstanceOf[Field[T]]
         this.name == other.name &&
           this.required == other.required &&
           this.tpe      == other.tpe &&
-          this.default  == other.default
+          this.default  == other.default &&
+          this.rwMode   == other.rwMode
       }
       override def hashCode: Int = name.hashCode
       override def toString: String = {
@@ -311,16 +314,39 @@ object Schema {
           case (false, Some(v)) => s" /$v"
         }
         description foreach { x => extra = extra + s" description=`$x`"}
-        s"$name: ${tpe}$extra"
+        s"$name: $tpe: $rwMode$extra"
       }
-      def withDescription(x: Option[String]): Field[T] = new Field(name, tpe, required, default, x)
+      def withDescription(x: Option[String]): Field[T] = new Field(name, tpe, required, default, x, rwMode)
+      def withRWMode(x: RWMode): Field[T] = new Field(name, tpe, required, default, description, x)
+      def setReadOnly: Field[T] = withRWMode(RWMode.ReadOnly)
+      def setWriteOnly: Field[T] = withRWMode(RWMode.WriteOnly)
     }
     final object Field {
-      def apply[T](name: String, tpe: Schema[T]): Field[T] = new Field(name, tpe, required = true, default = None, description = None)
-      def apply[T](name: String, tpe: Schema[T], required: Boolean): Field[T] = new Field(name, tpe, required, default = None, description = None)
-      def apply[T: ToValue](name: String, tpe: Schema[T], required: Boolean, default: T): Field[T] = new Field(name, tpe, required, Some(ToValue(default)), description = None)
-      def fromJson[T](name: String, tpe: Schema[T], required: Boolean, default: Option[Value]): Field[T] = new Field(name, tpe, required, default, description = None)
+      sealed trait RWMode
+      object RWMode {
+        case object ReadOnly extends RWMode
+        case object WriteOnly extends RWMode
+        case object ReadWrite extends RWMode
+      }
+
+      def apply[T](name: String, tpe: Schema[T]): Field[T] = new Field(name, tpe, required = true, default = None, description = None, RWMode.ReadWrite)
+      def apply[T](name: String, tpe: Schema[T], required: Boolean): Field[T] = new Field(name, tpe, required, default = None, description = None, RWMode.ReadWrite)
+
+      def apply[T: ToValue](
+        name: String,
+        tpe: Schema[T],
+        required: Boolean,
+        default: T,
+        rwMode: RWMode = RWMode.ReadWrite): Field[T] = new Field(name, tpe, required, Some(ToValue(default)), description = None, rwMode = rwMode)
+
+      def fromJson[T](
+        name: String,
+        tpe: Schema[T],
+        required: Boolean,
+        default: Option[Value],
+        rwMode: RWMode = RWMode.ReadWrite): Field[T] = new Field(name, tpe, required, default, description = None, rwMode = rwMode)
     }
+
     def apply[T](field: Field[_], xs: Field[_]*): `object`[T] = new `object`((field +: xs.toSeq).toSet)
   }
 
