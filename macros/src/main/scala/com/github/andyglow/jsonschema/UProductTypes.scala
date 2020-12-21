@@ -162,6 +162,14 @@ private[jsonschema] trait UProductTypes { this: UContext with UCommons with USca
           // description
           val description = fd.get(f.name.decodedName.toString)
 
+          // RW Mode
+          val rwMode = (f.hasAnnotation.readOnly, f.hasAnnotation.writeOnly) match {
+            case (true, true)   => None
+            case (false, false) => None
+            case (true, false)  => Some(q"${N.Field}.RWMode.ReadOnly")
+            case (false, true)  => Some(q"${N.Field}.RWMode.WriteOnly")
+          }
+
           // create a field model
           f.default map { default =>
             // if default value is specified
@@ -171,7 +179,8 @@ private[jsonschema] trait UProductTypes { this: UContext with UCommons with USca
               fieldSchema,
               q"${!f.isOption && !f.hasDefault}",
               default,
-              description)
+              description,
+              rwMode)
           } getOrElse {
             // if no default is specified
             U.Obj.Field.Apply(
@@ -180,7 +189,8 @@ private[jsonschema] trait UProductTypes { this: UContext with UCommons with USca
               fieldSchema,
               Some(q"${!f.isOption && !f.hasDefault}"),
               None,
-              description)
+              description,
+              rwMode)
           }
         }
 

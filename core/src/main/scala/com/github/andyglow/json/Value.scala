@@ -139,7 +139,9 @@ object Value {
     def contains(other: obj): Boolean = {
       other.underlying forall { case (k, thatV) =>
           underlying.get(k) match {
-            case None        => true // ???
+            case None        =>
+              println(s"k=${k}, thatV=$thatV, this=$this")
+              false
             case Some(thisV) =>
               (thatV, thisV) match {
                 case (thisV: obj, thatV: obj) => thisV contains thatV

@@ -133,7 +133,6 @@ class AsDraft04Spec extends AnyWordSpec {
         `object`(
           Field("foo", `string`))))) should containJson {
         obj(
-          "type" -> "object",
           "oneOf" -> arr(
             obj(
               "additionalProperties" -> false,

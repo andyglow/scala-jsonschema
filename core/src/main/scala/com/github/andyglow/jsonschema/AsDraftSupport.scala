@@ -2,9 +2,9 @@ package com.github.andyglow.jsonschema
 
 import json._
 import json.Schema._
-import json.schema.{ validation => V }
-
+import json.schema.{validation => V}
 import com.github.andyglow.json.Value._
+import json.Schema.`object`.Field.RWMode
 
 
 trait AsDraftSupport {
@@ -38,10 +38,16 @@ trait AsDraftSupport {
       val default     = field.default map { d => obj("default" -> d) } getOrElse obj()
       val description = field.description map { d => obj("description" -> d) } getOrElse obj()
       val tpe         = apply(field.tpe, Some(x), includeType = true, isRoot = false)
+      val rw          = field.rwMode match {
+        case RWMode.ReadOnly  => obj("readOnly" -> true)
+        case RWMode.WriteOnly => obj("writeOnly" -> true)
+        case RWMode.ReadWrite => obj()
+      }
 
       field.name -> (
         default ++
         tpe ++
+        rw ++
         description)
     }.toMap ++ {
       // discrimination logic

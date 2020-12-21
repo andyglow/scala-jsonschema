@@ -42,6 +42,7 @@ private[jsonschema] trait UCommons extends SchemaTypes with ULogging { this: UCo
     val json       = q"_root_.json"
     val Json       = q"$json.Json"
     val Schema     = q"$json.Schema"
+    val Field      = q"$Schema.`object`.Field"
     val Predef     = q"$json.schema.Predef"
     val Validation = q"$json.schema.validation.Instance"
     final object internal {
@@ -68,12 +69,14 @@ private[jsonschema] trait UCommons extends SchemaTypes with ULogging { this: UCo
     val predefC       = typeOf[json.schema.Predef[_]].typeConstructor
 
     object annotation {
-      val title = typeOf[json.schema.title]
-      val description = typeOf[json.schema.description]
-      val definition = typeOf[json.schema.definition]
-      val discriminator = typeOf[json.schema.discriminator]
-      val discriminatorKey = typeOf[json.schema.discriminatorKey]
-      val typeHint = typeOf[json.schema.typeHint[_]]
+      val title             = typeOf[json.schema.title]
+      val description       = typeOf[json.schema.description]
+      val definition        = typeOf[json.schema.definition]
+      val discriminator     = typeOf[json.schema.discriminator]
+      val discriminatorKey  = typeOf[json.schema.discriminatorKey]
+      val typeHint          = typeOf[json.schema.typeHint[_]]
+      val readOnly          = typeOf[json.schema.readOnly]
+      val writeOnly         = typeOf[json.schema.writeOnly]
     }
   }
   private[jsonschema] val T = new ConstantTypes
@@ -169,5 +172,12 @@ private[jsonschema] trait UCommons extends SchemaTypes with ULogging { this: UCo
     isOption: Boolean) {
 
     def hasDefault: Boolean = default.isDefined
+
+    object hasAnnotation {
+
+      lazy val readOnly: Boolean = annotations.map(_.tree.tpe).exists(_ <:< T.annotation.readOnly)
+
+      lazy val writeOnly: Boolean = annotations.map(_.tree.tpe).exists(_ <:< T.annotation.writeOnly)
+    }
   }
 }
