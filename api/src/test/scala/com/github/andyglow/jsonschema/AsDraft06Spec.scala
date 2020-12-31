@@ -19,7 +19,7 @@ class AsDraft06Spec extends AnyWordSpec {
         Field("bar", `integer`, required = false),
         Field("baz", `def`[Boolean]("my-bool", `boolean`)))
 
-      AsValue.schema(o, Draft06(id = "http://example.com/foobarbaz.json")) should containJson(obj(
+      AsValue.schema(o, Draft06(id = "http://example.com/foobarbaz.json")) should beStructurallyEqualTo(obj(
       f"$$schema" -> "http://json-schema.org/draft-06/schema#",
       f"$$id" -> "http://example.com/foobarbaz.json",
       "type" -> "object",

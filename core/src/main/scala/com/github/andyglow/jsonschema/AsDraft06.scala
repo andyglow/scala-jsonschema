@@ -5,7 +5,7 @@ import json.Schema._
 import json.schema.Version._
 
 
-class AsDraft06(val v: Draft06) extends AsValue with AsDraftSupport {
+class AsDraft06(val v: Draft06) extends AsValue with AsDraftSupport with Pre09 {
 
   def schema(x: json.Schema[_]): obj = {
     val base = obj(

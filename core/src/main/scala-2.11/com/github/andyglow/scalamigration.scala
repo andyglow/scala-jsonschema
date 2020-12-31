@@ -1,5 +1,6 @@
 package com.github.andyglow
 
+import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
 import scala.util.control.NonFatal
 
@@ -53,5 +54,11 @@ object scalamigration {
     }
 
     def find[U](pf: PartialFunction[T, U]): Try[U] = e collect pf
+  }
+
+
+  implicit class ListBufferCompanionMigOps(private val lb: ListBuffer.type) extends AnyVal {
+
+    @inline def from[T](elements: TraversableOnce[T]): ListBuffer[T] = lb.apply[T](elements.toSeq: _*)
   }
 }

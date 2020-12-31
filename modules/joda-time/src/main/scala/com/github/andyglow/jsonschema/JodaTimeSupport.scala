@@ -18,6 +18,8 @@ object JodaTimeSupport {
 
   implicit val jtLocalTimeSchema: Schema[LocalTime] = `string`[LocalTime](`string`.Format.`time`)
 
+  implicit val jtDurationSchema: Schema[Duration] = `string`[Duration](`string`.Format.`duration`)
+
   object predef {
 
     implicit val jtDateTimePredef: Predef[DateTime] = Predef(jtDateTimeSchema)
@@ -29,5 +31,7 @@ object JodaTimeSupport {
     implicit val jtLocalDatePredef: Predef[LocalDate] = Predef(jtLocalDateSchema)
 
     implicit val jtLocalTimePredef: Predef[LocalTime] = Predef(jtLocalTimeSchema)
+
+    implicit val jtDurationPredef: Predef[Duration] = Predef(jtDurationSchema)
   }
 }

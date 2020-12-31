@@ -2,7 +2,7 @@ package com.github.andyglow.jsonschema
 
 import com.github.andyglow.json.Value._
 
-object AsRaw extends AsValue with AsDraftSupport {
+object AsRaw extends AsValue with AsDraftSupport with Post09 {
 
   def schema(x: json.Schema[_]): obj = {
     val base = obj(
