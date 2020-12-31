@@ -176,12 +176,18 @@ object Schema {
     object Format {
       final case object `date` extends Format
       final case object `time` extends Format
-      final case object `date-time` extends Format // Date representation, as defined by RFC 3339, section 5.6.
-      final case object `email` extends Format // Internet email address, see RFC 5322, section 3.4.1.
-      final case object `hostname` extends Format // Internet host name, see RFC 1034, section 3.1.
-      final case object `ipv4` extends Format // Internet host name, see RFC 1034, section 3.1.
-      final case object `ipv6` extends Format // IPv6 address, as defined in RFC 2373, section 2.2.
-      final case object `uri` extends Format // A universal resource identifier (URI), according to RFC3986.
+      final case object `date-time` extends Format    // Date representation, as defined by RFC 3339, section 5.6.
+      final case object `email` extends Format        // Internet email address, see RFC 5322, section 3.4.1.
+      final case object `hostname` extends Format     // Internet host name, see RFC 1034, section 3.1.
+      final case object `ipv4` extends Format         // Internet host name, see RFC 1034, section 3.1.
+      final case object `ipv6` extends Format         // IPv6 address, as defined in RFC 2373, section 2.2.
+      final case object `uri` extends Format          // A universal resource identifier (URI), according to RFC3986.
+
+      // added in 2019-09
+      final case object `duration` extends Format     // The duration format is from the ISO 8601 ABNF as given in Appendix A of RFC 3339
+      final case object `idn-hostname` extends Format // Use RFC 1123 instead of RFC 1034; this allows for a leading digit,
+                                                      // `hostname` is also RFC 1123 since 2019-09
+      final case object `uuid` extends Format         // A string instance is valid against this attribute if it is a valid string representation of a UUID, according to RFC4122
     }
   }
 

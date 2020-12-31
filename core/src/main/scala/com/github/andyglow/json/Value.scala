@@ -1,23 +1,47 @@
 package com.github.andyglow.json
 
 import scala.collection._
+import comparison._
+
 
 sealed trait Value {
 
   def toString: String
+  
+  def tpe: String
+
+  final def diff(y: Value): Result = internalDiff(y)
+
+  protected def internalDiff(y: Value, path: Path = Path.Empty): Result
 }
 
 object Value {
 
-  case object `null` extends Value { override def toString = "null" }
+  case object `null` extends Value {
+    override def toString = "null"
+    override def tpe = "null"
+    protected def internalDiff(y: Value, path: Path = Path.Empty): Result = y match {
+      case `null` => Result.Equal
+      case _      => Result.Different(Diff.ValueMismatch(path, `null`, y))
+    }
+  }
 
   sealed abstract class bool(val value: Boolean) extends Value with Product with Serializable {
+
+    override def tpe = "boolean"
 
     def canEqual(that: Any): Boolean = that.isInstanceOf[bool]
 
     override def equals(that: Any): Boolean = canEqual(that) && (this.value == that.asInstanceOf[bool].value)
 
     override def hashCode: Int = value.hashCode
+
+    protected def internalDiff(y: Value, path: Path = Path.Empty): Result = y match {
+      case `true` if this == `true`   => Result.Equal
+      case `false` if this == `false` => Result.Equal
+      case bool(y) => Result.Different(Diff.ValueMismatch(path, value, y))
+      case _       => Result.Different(Diff.TypeMismatch(path, this.tpe, y.tpe))
+    }
   }
 
   case object `true` extends bool(true) { override def toString = "true" }
@@ -31,7 +55,18 @@ object Value {
     def unapply(b: bool): Option[Boolean] = Some(b.value)
   }
 
-  case class num(value: BigDecimal) extends Value { override def toString = s"$value" }
+  case class num(value: BigDecimal) extends Value {
+
+    override def tpe = "number"
+
+    override def toString = s"$value"
+
+    protected def internalDiff(y: Value, path: Path = Path.Empty): Result = y match {
+      case num(y) if y == value => Result.Equal
+      case num(y)               => Result.Different(Diff.ValueMismatch(path, value, y))
+      case _                    => Result.Different(Diff.TypeMismatch(path, this.tpe, y.tpe))
+    }
+  }
 
   object num {
 
@@ -52,9 +87,22 @@ object Value {
     def apply(x: Number): num = new num(BigDecimal(x.doubleValue()))
   }
 
-  case class str(value: String) extends Value { override def toString = s""""$value"""" }
+  case class str(value: String) extends Value {
+
+    override def tpe = "string"
+
+    override def toString = s""""$value""""
+
+    protected def internalDiff(y: Value, path: Path = Path.Empty): Result = y match {
+      case str(y) if y == value => Result.Equal
+      case str(y)               => Result.Different(Diff.ValueMismatch(path, value, y))
+      case _                    => Result.Different(Diff.TypeMismatch(path, this.tpe, y.tpe))
+    }
+  }
 
   case class arr(value: Seq[Value] = Seq.empty) extends Value {
+
+    override def tpe = "array"
 
     def ++(other: arr): arr = arr(value ++ other.value)
 
@@ -80,6 +128,26 @@ object Value {
           }
         }
     }
+
+    // TODO: implement bi-directional comparison
+    protected def internalDiff(y: Value, path: Path = Path.Empty): Result = y match {
+      case arr(y) => 
+        if (y.length != this.value.length) Result.Different(Diff.ArrayLengthMismatch(path, this.value.length, y.length)) else {
+          var res: Result = Result.Equal
+          // get through all right elements
+          for { (y, idx) <- y.zipWithIndex } {
+            // make sure they exists in left array
+            val found = this.value.exists { x =>
+              x.internalDiff(y, path) == Result.Equal              
+            }
+            // update resulting diff with missing element if not found
+            if (!found) res = res + Diff.MissingElement(path / idx, y)
+          }
+          
+          res
+        }
+      case _      => Result.Different(Diff.TypeMismatch(path, this.tpe, y.tpe))
+    }
   }
 
   object arr {
@@ -90,6 +158,8 @@ object Value {
   }
 
   case class obj(private val underlying: Map[String, Value]) extends Value {
+
+    override def tpe = "object"
 
     lazy val fields: Seq[(String, Value)] = underlying.toSeq
 
@@ -140,7 +210,6 @@ object Value {
       other.underlying forall { case (k, thatV) =>
           underlying.get(k) match {
             case None        =>
-              println(s"k=${k}, thatV=$thatV, this=$this")
               false
             case Some(thisV) =>
               (thatV, thisV) match {
@@ -150,6 +219,25 @@ object Value {
               }
           }
       }
+    }
+
+    protected def internalDiff(that: Value, path: Path = Path.Empty): Result = that match {
+      case obj(thatFields) =>
+        // TODO: should we store comparison direction as a field?
+        // like: missed on left, missed on right
+        val missed = ((thatFields.keySet -- underlying.keySet).map(k => (k, thatFields(k))) ++
+                      (underlying.keySet -- thatFields.keySet).map(k => (k, underlying(k)))) map { case (k, v) =>
+          Diff.MissingProperty(path / k, v)
+        }
+        val init = if (missed.isEmpty) Result.Equal else Result.Different(missed.toList)
+
+        (thatFields.keySet intersect underlying.keySet).foldLeft[Result](init) { case (acc, k) =>
+          val thisV = underlying(k)
+          val thatV = thatFields(k)
+          acc ++ thisV.internalDiff(thatV, path / k)
+        }
+
+      case _      => Result.Different(Diff.TypeMismatch(path, this.tpe, that.tpe))
     }
 
     override def equals(other: Any): Boolean = other match {

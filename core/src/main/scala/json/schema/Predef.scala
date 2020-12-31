@@ -9,6 +9,8 @@ import json.Schema.`dictionary`.KeyPattern
 import json.Schema.`string`.Format
 import json.schema.validation.Instance._
 
+import scala.concurrent.duration.Duration
+
 
 /** The idea behind Predef is a continuation of the idea about exposing
   * schemas that was found in implicit scope as `ref`. Namely, if schema
@@ -39,7 +41,7 @@ object Predef extends LowPriorityPredefs {
   implicit val longS: Predef[Long]                             = Predef(`number`[Long])
   implicit val bigIntS: Predef[BigInt]                         = Predef(`number`[BigInt])
   implicit val bigDecimalS: Predef[BigDecimal]                 = Predef(`number`[BigDecimal])
-  implicit val uuidS: Predef[UUID]                             = Predef(`string`[UUID].withValidation(`pattern` := "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"))
+  implicit val uuidS: Predef[UUID]                             = Predef(`string`[UUID](Format.`uuid`))
   implicit val uriS: Predef[URI]                               = Predef(`string`[URI](Format.`uri`))
   implicit val urlS: Predef[URL]                               = Predef(`string`[URL](Format.`uri`))
   implicit val juDateS: Predef[java.util.Date]                 = Predef(`string`[java.util.Date](Format.`date-time`))
@@ -50,6 +52,8 @@ object Predef extends LowPriorityPredefs {
   implicit val localDateS: Predef[java.time.LocalDate]         = Predef(`string`[java.time.LocalDate](Format.`date`))
   implicit val jsqlTimeS: Predef[java.sql.Time]                = Predef(`string`[java.sql.Time](Format.`time`))
   implicit val localTimeS: Predef[java.time.LocalTime]         = Predef(`string`[java.time.LocalTime](Format.`time`))
+  implicit val jDurationS: Predef[java.time.Duration]          = Predef(`string`[java.time.Duration](Format.`duration`))
+  implicit val durationS: Predef[Duration]                     = Predef(`string`[Duration](Format.`duration`))
 
   implicit def arrayS[T](implicit p: Predef[T]): Predef[Array[T]] = Predef(`array`[T, Array](p.schema, unique = false))
   implicit def setS[T](implicit p: Predef[T]): Predef[Set[T]] = Predef(`array`[T, Set](p.schema, unique = true))

@@ -1,10 +1,19 @@
+import sbt.Keys.{crossScalaVersions, scalaVersion}
+import sbt.settingKey
+
 sealed abstract class ScalaVer(val full: String)
-final object ScalaVer {
+
+object ScalaVer {
+
   final case object _211 extends ScalaVer("2.11.12")
+
   final case object _212 extends ScalaVer("2.12.12")
+
   final case object _213 extends ScalaVer("2.13.4")
 
   val values: Seq[ScalaVer] = Set(_211, _212, _213).toSeq
+
+  val default: ScalaVer = _212
 
   def fromEnv: Option[ScalaVer] = sys.env.get("SCALA_VER") flatMap fromString
 
@@ -14,4 +23,11 @@ final object ScalaVer {
     case x if x startsWith "2.13" => Some(_213)
     case _                        => None
   }
+
+  lazy val scalaV = settingKey[ScalaVer]("Current Scala Version")
+
+  def settings = Seq(
+    scalaVersion        := (ScalaVer.fromEnv getOrElse ScalaVer.default).full,
+    crossScalaVersions  := ScalaVer.values.map(_.full),
+    scalaV              := ScalaVer.fromString(scalaVersion.value) getOrElse ScalaVer.default)
 }

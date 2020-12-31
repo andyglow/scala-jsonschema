@@ -1,15 +1,14 @@
 import xerial.sbt.Sonatype._
 import ReleaseTransformations._
 import scala.sys.process._
-
+import ScalaVer.scalaV
 
 // https://github.com/xerial/sbt-sonatype/issues/71
 publishTo in ThisBuild := sonatypePublishTo.value
 
 lazy val buildInfo = taskKey[Unit]("Prints Build Info")
-lazy val scalaV = settingKey[ScalaVer]("Current Scala Version")
 
-lazy val commonSettings = Seq(
+lazy val commonSettings = ScalaVer.settings ++ Seq(
 
   // logBuffered := false,
 
@@ -20,12 +19,6 @@ lazy val commonSettings = Seq(
   startYear := Some(2017),
 
   organizationName := "andyglow",
-
-  scalaVersion := (ScalaVer.fromEnv getOrElse ScalaVer._213).full,
-
-  crossScalaVersions := ScalaVer.values.map(_.full),
-
-  scalaV := ScalaVer.fromString(scalaVersion.value) getOrElse ScalaVer._213,
 
   Compile / unmanagedSourceDirectories ++= {
     val bd = baseDirectory.value

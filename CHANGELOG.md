@@ -1,3 +1,7 @@
+- **0.7.1**
+  - draft 2019-09 implemented
+  - json-diff functionality added  
+  ...
 - **0.6.3**
   - fixed scala.None handling for the default values of case class parameters (scala 2.11 is not supported this kind of functionality)
 - **0.6.2**

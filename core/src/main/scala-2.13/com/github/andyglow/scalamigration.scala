@@ -26,4 +26,5 @@ object scalamigration {
 
     def find[U](pf: PartialFunction[T, U]): Try[U] = e collect pf
   }
+
 }

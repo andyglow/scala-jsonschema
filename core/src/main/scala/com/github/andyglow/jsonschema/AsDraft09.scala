@@ -5,7 +5,7 @@ import json.Schema._
 import json.schema.Version._
 
 
-class AsDraft07(val v: Draft07) extends AsValue with AsDraftSupport with Pre09 {
+class AsDraft09(val v: Draft09) extends AsValue with AsDraftSupport with Post09 {
 
   def schema(x: json.Schema[_]): obj = {
     val base = obj(
@@ -16,15 +16,15 @@ class AsDraft07(val v: Draft07) extends AsValue with AsDraftSupport with Pre09 {
 
     val definitions = inferDefinitions(x)
 
-    base ++ apply(x) ++ {
-      if (definitions.fields.nonEmpty) obj("definitions" -> definitions) else obj()
-    }
+    base ++ {
+      if (definitions.fields.nonEmpty) obj("$defs" -> definitions) else obj()
+    } ++ apply(x)
   }
 
   override def buildRef(ref: String): String = s"#$ref"
 
   override def inferDefinition(x: `def`[_], par: ParentSchema): (String, obj) = {
     val ref = x.sig
-    ref -> (obj(f"$$id" -> s"#$ref") ++ apply(x.tpe, par orElse Some(x), includeType = true, isRoot = false))
+    ref -> (obj(f"$$anchor" -> ref) ++ apply(x.tpe, par orElse Some(x), includeType = true, isRoot = false))
   }
 }

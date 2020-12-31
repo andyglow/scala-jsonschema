@@ -6,36 +6,47 @@ import json.schema.{validation => V}
 import com.github.andyglow.json.Value._
 import json.Schema.`object`.Field.RWMode
 
+import scala.collection.mutable.ListBuffer
+
+import com.github.andyglow.scalamigration._
+
 
 trait AsDraftSupport {
+
+  private[jsonschema] def isDraft04 = this.isInstanceOf[AsDraft04]
+
+  private[jsonschema] def isDraft06 = this.isInstanceOf[AsDraft06]
+
+  private[jsonschema] def isDraft07 = this.isInstanceOf[AsDraft07]
+
+  private[jsonschema] def isDraft09 = this.isInstanceOf[AsDraft09]
 
   type ParentSchema = Option[json.Schema[_]]
 
   def apply(x: json.Schema[_]): obj = apply(x, None, includeType = true, isRoot = true)
 
   def apply(x: json.Schema[_], parent: ParentSchema, includeType: Boolean, isRoot: Boolean): obj = {
-    val (validations, pp) = inferValidations(x)
-    val specifics         = inferSpecifics.lift((pp, x, parent, isRoot)) getOrElse obj()
+    val validationList    = inferValidations(x)
+    val specifics         = inferSpecifics.lift((validationList, x, parent, isRoot)) getOrElse obj.empty
     val base              = x match {
-      case _: `def`[_] | _: `allof`[_] | _: `oneof`[_] | _: `ref`[_] => obj()
+      case _: `def`[_] | _: `allof`[_] | _: `oneof`[_] | _: `ref`[_] => obj.empty
       case `value-class`(x) if includeType                           => obj("type" -> x.jsonType)
       case _ if includeType                                          => obj("type" -> x.jsonType)
-      case _                                                         => obj()
+      case _                                                         => obj.empty
     }
 
-    base ++ validations ++ specifics
+    base ++ validationList.json ++ specifics
   }
 
-  def mkStr(vv: Option[V.Def[_, _]], x: `string`[_], par: ParentSchema): obj = obj(
-    ("format", x.format map { _.productPrefix }))
+  def mkStr(vl: ValidationList, x: `string`[_], par: ParentSchema): obj
 
-  def mkObj(vv: Option[V.Def[_, _]], x: `object`[_], par: ParentSchema): obj = {
+  def mkObj(vl: ValidationList, x: `object`[_], par: ParentSchema): obj = {
     val discriminatorField = par match {
       case Some(`oneof`(_, f)) => f
       case _                   => None
     }
     val props = x.fields.map { field =>
-      val default     = field.default map { d => obj("default" -> d) } getOrElse obj()
+      val default     = field.default map { d => obj("default" -> d) } getOrElse obj.empty
       val description = field.description map { d => obj("description" -> d) } getOrElse obj()
       val tpe         = apply(field.tpe, Some(x), includeType = true, isRoot = false)
       val rw          = field.rwMode match {
@@ -70,25 +81,25 @@ trait AsDraftSupport {
       ("required"  , if (required.isEmpty) None else Some(arr(required.toSeq))))
   }
 
-  def mkDict(vv: Option[V.Def[_, _]], comp: Schema[_], par: ParentSchema): obj = {
-    val pattern = vv map { _.json.asInstanceOf[str].value } getOrElse "^.*$"
+  def mkDict(vl: ValidationList, comp: Schema[_], par: ParentSchema): obj = {
+    val pattern = vl.extract(_.validation == V.Instance.`patternProperties`) map { _.json.asInstanceOf[str].value } getOrElse "^.*$"
     obj("patternProperties" -> obj(
       pattern -> apply(comp, Some(comp), includeType = true, isRoot = false)))
   }
 
-  def mkArr(vv: Option[V.Def[_, _]], comp: Schema[_], unique: Boolean, par: ParentSchema): obj = {
+  def mkArr(vl: ValidationList, comp: Schema[_], unique: Boolean, par: ParentSchema): obj = {
     obj(
       "items" -> apply(comp, par, includeType = true, isRoot = false),
       "uniqueItems" -> (if (unique) Some(true) else None))
   }
 
-  def mkEnum(vv: Option[V.Def[_, _]], x: `enum`[_], par: ParentSchema): obj = {
+  def mkEnum(vl: ValidationList, x: `enum`[_], par: ParentSchema): obj = {
     obj(
       "type" -> x.tpe.jsonType,
       "enum" -> arr(x.values.toSeq))
   }
 
-  def mkOneOf(vv: Option[V.Def[_, _]], x: `oneof`[_], isRoot: Boolean, par: ParentSchema): obj = {
+  def mkOneOf(vl: ValidationList, x: `oneof`[_], isRoot: Boolean, par: ParentSchema): obj = {
     val subTypesSeq = x.subTypes.toSeq
     val tpe = subTypesSeq.find {
       case `def`(_, _) => false
@@ -112,7 +123,7 @@ trait AsDraftSupport {
           subTypesSeq.tail.map(apply(_, Some(x), includeType = true, isRoot = false)): _*))
   }
 
-  def mkAllOf(vv: Option[V.Def[_, _]], x: `allof`[_], isRoot: Boolean, par: ParentSchema): obj = {
+  def mkAllOf(vl: ValidationList, x: `allof`[_], isRoot: Boolean, par: ParentSchema): obj = {
     val subTypesSeq = x.subTypes.toSeq
     val tpe = subTypesSeq.head.jsonType
     val sameType = subTypesSeq.tail.foldLeft(true) { case (agg, t) => agg && (t.jsonType == tpe) }
@@ -130,27 +141,27 @@ trait AsDraftSupport {
   }
 
 
-  def mkNot(vv: Option[V.Def[_, _]], x: `not`[_], par: ParentSchema): obj = {
+  def mkNot(vl: ValidationList, x: `not`[_], par: ParentSchema): obj = {
     obj("not" -> apply(x.tpe, Some(x), includeType = false, isRoot = false))
   }
 
-  def mkDef(vv: Option[V.Def[_, _]], x: `def`[_], par: ParentSchema): obj = {
+  def mkDef(vl: ValidationList, x: `def`[_], par: ParentSchema): obj = {
     val ref = x.sig
     obj(f"$$ref" -> buildRef(ref))
   }
 
-  def mkRef(vv: Option[V.Def[_, _]], x: `ref`[_], par: ParentSchema): obj = {
+  def mkRef(vl: ValidationList, x: `ref`[_], par: ParentSchema): obj = {
     val ref = x.sig
     obj(f"$$ref" -> buildRef(ref))
   }
 
   def buildRef(ref: String): String = s"#/definitions/$ref"
 
-  def mkValueClass(vv: Option[V.Def[_, _]], x: `value-class`[_, _], par: ParentSchema): obj = {
-    inferSpecifics.lift((vv, x.tpe, par, false)) getOrElse obj()
+  def mkValueClass(vl: ValidationList, x: `value-class`[_, _], par: ParentSchema): obj = {
+    inferSpecifics.lift((vl, x.tpe, par, false)) getOrElse obj()
   }
 
-  val inferSpecifics: PartialFunction[(Option[V.Def[_, _]], json.Schema[_], ParentSchema, Boolean), obj] = {
+  val inferSpecifics: PartialFunction[(ValidationList, json.Schema[_], ParentSchema, Boolean), obj] = {
     case (vv, x: `string`[_], par, _)         => mkStr(vv, x, par)
     case (vv, x: `object`[_], par, _)         => mkObj(vv, x, par)
     case (vv, `dictionary`(comp), par, _)     => mkDict(vv, comp, par)
@@ -164,18 +175,44 @@ trait AsDraftSupport {
     case (vv, x: `value-class`[_, _], par, _) => mkValueClass(vv, x, par)
   }
 
-  def inferValidations(x: json.Schema[_]): (obj, Option[V.Def[_, _]]) = {
-    import V.Instance._
+  class ValidationList(elements: ListBuffer[V.Def[_, _]]) {
 
-    val pp = x.validations.find(_.validation == `patternProperties`)
-    val validations = obj {
-      x.validations.collect {
-        case d if d.validation != `patternProperties` =>
-          d.validation.name -> d.json
-      }.toMap
+    def find(accept: V.Def[_, _] => Boolean): Option[V.Def[_, _]] = elements.find(accept)
+
+    // tests all elements from left to right and
+    // if matching found returns it, removing it from mutable elements collection at the same time
+    def extract(accept: V.Def[_, _] => Boolean): Option[V.Def[_, _]] = {
+      var res: Option[V.Def[_, _]] = None
+      var i = 0
+      while (res.isEmpty && i < elements.length) {
+        if (accept(elements(i))) {
+          res = Some(elements(i))
+          elements.remove(i)
+        }
+        i = i + 1
+      }
+
+      res
     }
 
-    (validations, pp)
+    def json: obj = obj {
+      elements.map { d => d.validation.name -> d.json }.toMap
+    }
+  }
+
+  def inferValidations(x: json.Schema[_]): ValidationList = {
+    import V.Instance._
+
+//    val pp = x.validations.find(_.validation == `patternProperties`)
+//    val validations = obj {
+//      x.validations.collect {
+//        case d if d.validation != `patternProperties` =>
+//          d.validation.name -> d.json
+//      }.toMap
+//    }
+//
+//    (validations, pp)
+    new ValidationList(ListBuffer.from(x.validations))
   }
 
   def inferDefinition(x: `def`[_], par: ParentSchema): (String, obj) = {

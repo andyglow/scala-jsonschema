@@ -25,21 +25,23 @@ class AsDraft04Spec extends AnyWordSpec {
         `object`(
           Field("foo" , `string`),
           Field("meta", `object`.Free[Any]()),
+          Field("uuid", `string`(`string`.Format.`uuid`)),
           Field("bar" , `integer`, required = false),
           Field("baz" , `def`[Boolean]("my-bool", `boolean`))),
-        Draft04()) shouldEqual obj(
+        Draft04()) should beStructurallyEqualTo(obj(
       f"$$schema" -> "http://json-schema.org/draft-04/schema#",
       "type" -> "object",
       "additionalProperties" -> false,
-      "required" -> arr("foo", "meta", "baz"),
+      "required" -> arr("foo", "meta", "baz", "uuid"),
       "properties" -> obj(
         "foo"  -> obj("type" -> "string"),
         "meta" -> obj("type" -> "object", "additionalProperties" -> true),
+        "uuid" -> obj("type" -> "string", "pattern" -> Constants.RegEx.uuid),
         "bar"  -> obj("type" -> "integer"),
         "baz"  -> obj(f"$$ref" -> "#/definitions/my-bool")),
       "definitions" -> obj(
         "my-bool" -> obj(
-          "type" -> "boolean")))
+          "type" -> "boolean"))))
     }
   }
 

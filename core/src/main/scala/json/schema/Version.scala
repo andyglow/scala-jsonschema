@@ -25,4 +25,9 @@ object Version {
 
     val uri: String = "http://json-schema.org/draft-07/schema#"
   }
+
+  final case class Draft09(id: String) extends Version {
+
+    val uri: String = "https://json-schema.org/draft/2019-09/schema"
+  }
 }
