@@ -183,8 +183,8 @@ lazy val `json4s-json` = { project in file("modules/json4s-json") }.dependsOn(co
   name := "scala-jsonschema-json4s-json",
 
   libraryDependencies ++= Seq(
-    "org.json4s" %% "json4s-core" % "3.6.9",
-    "org.json4s" %% "json4s-native" % "3.6.9" % Test)
+    "org.json4s" %% "json4s-core" % "3.6.11",
+    "org.json4s" %% "json4s-native" % "3.6.11" % Test)
 )
 
 lazy val `u-json` = { project in file("modules/u-json") }.dependsOn(core, api % "compile->compile;test->test").settings(
@@ -210,7 +210,7 @@ lazy val `joda-time` = { project in file("modules/joda-time") }.dependsOn(core, 
 
   name := "scala-jsonschema-joda-time",
 
-  libraryDependencies += "joda-time" % "joda-time" % "2.10.9"
+  libraryDependencies += "joda-time" % "joda-time" % "2.10.10"
 )
 
 lazy val `cats` = { project in file("modules/cats") }.dependsOn(core, api).settings(
