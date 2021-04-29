@@ -4,7 +4,7 @@ import scala.sys.process._
 import ScalaVer.scalaV
 
 // https://github.com/xerial/sbt-sonatype/issues/71
-publishTo in ThisBuild := sonatypePublishTo.value
+ThisBuild / publishTo  := sonatypePublishTo.value
 
 lazy val buildInfo = taskKey[Unit]("Prints Build Info")
 
@@ -42,7 +42,7 @@ lazy val commonSettings = ScalaVer.settings ++ Seq(
 
   scalacOptions := CompilerOptions(scalaV.value),
 
-  scalacOptions in (Compile, doc) := {
+  Compile / doc / scalacOptions := {
     val muted = Seq(
       "-Ywarn-unused")
 
@@ -247,7 +247,7 @@ lazy val `refined` = { project in file("modules/refined") }.dependsOn(core, api)
   // mute unused imports because otherwise IN TESTS it complains on
   // unused `import com.github.andyglow.jsonschema.RefinedSupport._`
   // which is not true
-  scalacOptions in Test -= {
+  Test / scalacOptions -= {
     CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, 11))           => "-Ywarn-unused-import"
       case Some((2, 12))           => "-Ywarn-unused:imports,-patvars,-privates,-locals,-implicits"
@@ -376,7 +376,7 @@ lazy val root = { project in file(".") }
 
     publishArtifact := false,
 
-    aggregate in update := false
+    update / aggregate := false
   )
 
 addCommandAlias("makeDocs", ";docs/mdoc;docs/makeSite")
