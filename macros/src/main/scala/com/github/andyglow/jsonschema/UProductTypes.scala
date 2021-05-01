@@ -148,7 +148,7 @@ private[jsonschema] trait UProductTypes { this: UContext with UCommons with USca
         // fields descriptions
         val fd =
           FieldDecorations.fromFieldAnnotations(resolvedFields) ++
-            FieldDecorations.fromScaladoc(scaladoc) ++
+            FieldDecorations.fromScaladoc(tpe, scaladoc) ++
             specFD
 
         // check if all descriptions specified immediately in method call matches field names

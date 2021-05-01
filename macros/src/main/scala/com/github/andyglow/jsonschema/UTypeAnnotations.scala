@@ -1,6 +1,6 @@
 package com.github.andyglow.jsonschema
 
-import com.github.andyglow.scaladoc.Scaladoc
+import scaladoc._
 
 
 private[jsonschema] trait UTypeAnnotations { this: UContext with UCommons with UScaladocs with USignatures =>
@@ -21,7 +21,7 @@ private[jsonschema] trait UTypeAnnotations { this: UContext with UCommons with U
   object Texts {
 
     def fromScaladoc(scaladoc: Scaladoc): Texts = {
-      Texts(None, scaladoc.description)
+      Texts(None, scaladoc.tags.collect { case Tag.Description(descr) => descr.trimmed.plainString }.mkString("\n"))
     }
 
     def fromAnnotations(tpe: Type): Texts = {
