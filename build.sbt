@@ -6,6 +6,8 @@ import ScalaVer.scalaV
 // https://github.com/xerial/sbt-sonatype/issues/71
 ThisBuild / publishTo  := sonatypePublishTo.value
 
+ThisBuild / versionScheme := Some("pvp")
+
 lazy val buildInfo = taskKey[Unit]("Prints Build Info")
 
 lazy val commonSettings = ScalaVer.settings ++ Seq(
