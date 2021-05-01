@@ -1,6 +1,6 @@
 package com.github.andyglow.jsonschema
 
-import com.github.andyglow.scaladoc.Scaladoc
+import scaladoc._
 
 
 trait UFieldDecorations { this: UContext with UCommons =>
@@ -49,7 +49,9 @@ trait UFieldDecorations { this: UContext with UCommons =>
       pairs.toMap
     }
 
-    def fromScaladoc(scaladoc: Option[Scaladoc]): FieldDecorations = scaladoc.fold(Empty){_.paramMap}
+    def fromScaladoc(tpe: Type, scaladoc: Option[Scaladoc]): FieldDecorations = scaladoc.fold(Empty) { x =>
+      x.textParams
+    }
 
     def fromFieldAnnotations(fields: Seq[Field]): FieldDecorations = {
       fields.flatMap { f =>
