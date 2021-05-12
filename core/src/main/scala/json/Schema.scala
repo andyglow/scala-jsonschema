@@ -288,12 +288,30 @@ object Schema {
       }
       sb.setLength(sb.length - 1) // drop last comma
       sb append ")"
+
+      if (this.isInstanceOf[Free]) { sb append " additionalProperties=true" }
+    }
+
+    def free: `object`[T] with Free = {
+      val self = this
+      new `object`[T](fields) with Free {
+        type Type = T
+        def strict: `object`[T] = self
+      }
     }
   }
   final object `object` {
-    sealed trait Free { this: `object`[_] => }
+    sealed trait Free { this: `object`[_] =>
+      type Type
+      def strict: `object`[Type]
+    }
     final object Free {
-      def apply[T](): `object`[T] with Free = new `object`[T](Set.empty) with Free
+      def apply[T](): `object`[T] with Free = {
+        new `object`[T](Set.empty) with Free {
+          type Type = T
+          override def strict: `object`[T] = new `object`[T](Set.empty)
+        }
+      }
     }
     final case class Field[T](
       name: String,
