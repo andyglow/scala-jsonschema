@@ -6,7 +6,6 @@
 * [Design](design.md)
 * [Types](types.md)
 * [Type Constraints](type-constraints.md)
-* [Modules](modules/index.md)
 * [Document your model](document-it.md)
 * [Customization](customization.md)
 

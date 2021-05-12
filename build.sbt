@@ -262,69 +262,36 @@ lazy val docs = { project in file("documentation") }
   )
 //  .dependsOn(api, `joda-time`)
   .settings(
-    ScalaVer.settings213,
-    mdocIn        := baseDirectory.value / "main" / "paradox",
-    mdocVariables := Map("VERSION" -> version.value, "SCALA_VERSION" -> scalaVersion.value),
-    paradoxProperties ++= Map("project.name" -> "Scala JsonSchema", "github.base_url" -> "https://github.com/andyglow/scala-jsonschema"),
-    Compile / paradox / sourceDirectory := mdocOut.value,
-    git.remoteRepo                      := scmInfo.value.get.connection,
-    Compile / paradoxMaterialTheme ~= {
-      _.withCustomStylesheet("assets/styles.css")
-    },
-    Compile / paradoxMaterialTheme ~= {
-      _.withCustomJavaScript("assets/dependencies.js")
-    },
+    commonSettings,
 
-    // #color
-    Compile / paradoxMaterialTheme ~= {
-      _.withColor("teal", "indigo")
+    mdocIn := baseDirectory.value / "main" / "paradox",
+
+    mdocExtraArguments := Seq("--verbose"),
+
+    mdocVariables := Map(
+      "VERSION" -> version.value,
+      "SCALA_VERSION" -> scalaVersion.value),
+
+    paradoxProperties ++= Map(
+      "project.name" -> "Scala JsonSchema",
+      "github.base_url" -> "https://github.com/andyglow/scala-jsonschema"),
+
+    Compile / paradox / sourceDirectory := mdocOut.value,
+
+    git.remoteRepo := scmInfo.value.get.connection,
+
+    Compile / paradoxMaterialTheme ~= { x =>
+      x.withCustomStylesheet("assets/styles.css")
+       .withCustomJavaScript("assets/dependencies.js")
+       .withColor("teal", "indigo")
+       .withRepository(uri("https://github.com/andyglow/scala-jsonschema"))
+       .withSocial(uri("https://github.com/andyglow"))
+       .withLanguage(java.util.Locale.ENGLISH)
+       .withCopyright("""
+          Inspired by <a href="https://github.com/coursera/autoschema">AutoSchema</a>
+          by <a href="https://github.com/coursera">Coursera</a>
+        """)
     }
-    // #color
-    ,
-    // #repository
-    Compile / paradoxMaterialTheme ~= {
-      _.withRepository(uri("https://github.com/andyglow/scala-jsonschema"))
-    }
-    // #repository
-    ,
-    // #social
-    Compile / paradoxMaterialTheme ~= {
-      _.withSocial(uri("https://github.com/andyglow"))
-    }
-    // #social
-    ,
-    // #language
-    Compile / paradoxMaterialTheme ~= {
-      _.withLanguage(java.util.Locale.ENGLISH)
-    }
-    // #language
-    ,
-    // #analytics
-//    Compile / paradoxMaterialTheme ~= {
-//      _.withSocial(uri("https://github.com/andyglow"))
-//    }
-//    // #social
-//    ,
-//    // #language
-//    Compile / paradoxMaterialTheme ~= {
-//      _.withLanguage(java.util.Locale.ENGLISH)
-//    }
-//    // #language
-//    ,
-//    // #analytics
-////    Compile / paradoxMaterialTheme ~= {
-////      _.withGoogleAnalytics("UA-107934279-1") // Remember to change this!
-////    }
-//    // #analytics
-////    ,
-//    // #copyright
-//    Compile / paradoxMaterialTheme ~= {
-//      _.withCopyright("""
-//        Inspired by <a href="https://github.com/coursera/autoschema">AutoSchema</a>
-//        by <a href="https://github.com/coursera">Coursera</a>
-//      """)
-//    }
-//    // #copyright
   )
 
 lazy val root = { project in file(".") }
