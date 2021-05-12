@@ -80,8 +80,8 @@ class DocumentationSpec extends AnyWordSpec {
       JsonFormatter.format(AsValue.schema(escapeCheck, Draft04())) shouldBe
         s"""{
           |  "$$schema": "http://json-schema.org/draft-04/schema#",
-          |  "description": "My perfect class",
           |  "type": "object",
+          |  "description": "My perfect class",
           |  "additionalProperties": false,
           |  "properties": {
           |    "a": {
@@ -106,8 +106,8 @@ class DocumentationSpec extends AnyWordSpec {
     JsonFormatter.format(AsValue.schema(outer, Draft04())) shouldBe
       s"""{
         |  "$$schema": "http://json-schema.org/draft-04/schema#",
-        |  "description": "Outer",
         |  "type": "object",
+        |  "description": "Outer",
         |  "additionalProperties": false,
         |  "properties": {
         |    "a": {
