@@ -10,9 +10,7 @@ class AsDraft09(val v: Draft09) extends AsValue with AsDraftSupport with Post09 
   def schema(x: json.Schema[_]): obj = {
     val base = obj(
       f"$$schema"   -> v.uri,
-      f"$$id"       -> v.id,
-      "description" -> x.description,
-      "title"       -> x.title)
+      f"$$id"       -> v.id)
 
     val definitions = inferDefinitions(x)
 

@@ -76,9 +76,11 @@ trait AsDraftSupport {
     val canHaveAdditionalProperties = x.isInstanceOf[`object`.Free]
 
     obj(
+      ("description"         , x.description),
+      ("title"               , x.title),
       ("additionalProperties", canHaveAdditionalProperties),
-      ("properties", if (props.isEmpty) None else Some(obj(props))),
-      ("required"  , if (required.isEmpty) None else Some(arr(required.toSeq))))
+      ("properties"          , if (props.isEmpty) None else Some(obj(props))),
+      ("required"            , if (required.isEmpty) None else Some(arr(required.toSeq))))
   }
 
   def mkDict(vl: ValidationList, comp: Schema[_], par: ParentSchema): obj = {
