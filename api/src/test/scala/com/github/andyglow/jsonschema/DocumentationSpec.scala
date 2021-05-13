@@ -12,6 +12,11 @@ class DocumentationSpec extends AnyWordSpec {
 
   private val escapeCheck     = Json.objectSchema[EscapeCheck]()
 
+  private val outer = {
+    implicit val inner = Predef(escapeCheck.toDefinition("Inner"))
+    Json.objectSchema[Outer]()
+  }
+
   private val fromScaladoc    = Json.objectSchema[FromScaladoc]()
   private val fromAnnotations = Json.objectSchema[FromAnnotations]()
   private val fromConfig      = Json.objectSchema[FromSpec](
@@ -75,8 +80,8 @@ class DocumentationSpec extends AnyWordSpec {
       JsonFormatter.format(AsValue.schema(escapeCheck, Draft04())) shouldBe
         s"""{
           |  "$$schema": "http://json-schema.org/draft-04/schema#",
-          |  "description": "My perfect class",
           |  "type": "object",
+          |  "description": "My perfect class",
           |  "additionalProperties": false,
           |  "properties": {
           |    "a": {
@@ -94,6 +99,52 @@ class DocumentationSpec extends AnyWordSpec {
           |  ]
           |}""".stripMargin
     }
+  }
+
+  "descriptions should be propagated at definition level as well" in {
+
+    JsonFormatter.format(AsValue.schema(outer, Draft04())) shouldBe
+      s"""{
+        |  "$$schema": "http://json-schema.org/draft-04/schema#",
+        |  "type": "object",
+        |  "description": "Outer",
+        |  "additionalProperties": false,
+        |  "properties": {
+        |    "a": {
+        |      "type": "string",
+        |      "description": "\\"A\\" Param"
+        |    },
+        |    "inner": {
+        |      "$$ref": "#/definitions/Inner",
+        |      "description": "Inner Param"
+        |    }
+        |  },
+        |  "required": [
+        |    "a",
+        |    "inner"
+        |  ],
+        |  "definitions": {
+        |    "Inner": {
+        |      "type": "object",
+        |      "description": "My perfect class",
+        |      "additionalProperties": false,
+        |      "properties": {
+        |        "a": {
+        |          "type": "string",
+        |          "description": "\\"A\\" Param"
+        |        },
+        |        "b": {
+        |          "type": "integer",
+        |          "description": "`B` Param"
+        |        }
+        |      },
+        |      "required": [
+        |        "a",
+        |        "b"
+        |      ]
+        |    }
+        |  }
+        |}""".stripMargin
   }
 }
 
@@ -120,4 +171,11 @@ object DocumentationSpec {
     * @param b `B` Param
     */
   case class EscapeCheck(a: String, b: Int)
+
+  /** Outer
+    *
+    * @param a     "A" Param
+    * @param inner Inner Param
+    */
+  case class Outer(a: String, inner: EscapeCheck)
 }
