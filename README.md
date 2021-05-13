@@ -533,9 +533,19 @@ implicit val metaSchema: json.Schema[JsObject] = json.Schema.`object`.Free[JsObj
 // or alternatively define a metadata Predef in case you need this to not go to definition section of json-schema
 // implicit val metaPredef: json.schema.Predef[JsObject] = json.schema.Predef(json.Schema.`object`.Free[JsObject]())
 
-// person schema
-val personSchema: json.Schema[Person] = Json.schema[Person]
+// payload schema
+val payloadSchema: json.Schema[Payload] = Json.schema[Payload]
 ``` 
+
+Also, there is API to make object definition Free (and vice versa, a Free definition Strict)
+```scala
+case class Person(name: String, age: Int)
+val personSchema = Json.objectSchema[Person]
+val freePersonSchema = personSchema.free
+val strictPersonSchema = freePersonSchema.strict
+
+strictPersonSchema == personSchema // equal
+```
 
 ## Joda Time
 Joda Time Support allows you to use joda-time classes within your models.

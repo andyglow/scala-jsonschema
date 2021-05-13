@@ -24,7 +24,7 @@ class AsDraft04Spec extends AnyWordSpec {
       AsValue.schema(
         `object`(
           Field("foo" , `string`),
-          Field("meta", `object`.Free[Any]()),
+          Field("meta", `object`(Field("owner" , `string`)).free),
           Field("uuid", `string`(`string`.Format.`uuid`)),
           Field("bar" , `integer`, required = false),
           Field("baz" , `def`[Boolean]("my-bool", `boolean`))),
@@ -35,7 +35,7 @@ class AsDraft04Spec extends AnyWordSpec {
       "required" -> arr("foo", "meta", "baz", "uuid"),
       "properties" -> obj(
         "foo"  -> obj("type" -> "string"),
-        "meta" -> obj("type" -> "object", "additionalProperties" -> true),
+        "meta" -> obj("type" -> "object", "properties" -> obj("owner" -> obj("type" -> "string")), "required" -> arr("owner"), "additionalProperties" -> true),
         "uuid" -> obj("type" -> "string", "pattern" -> Constants.RegEx.uuid),
         "bar"  -> obj("type" -> "integer"),
         "baz"  -> obj(f"$$ref" -> "#/definitions/my-bool")),
