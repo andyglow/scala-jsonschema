@@ -98,7 +98,7 @@ lazy val commonSettings = ScalaVer.settings ++ Seq(
     ReleaseStep(action = Command.process("sonatypeReleaseAll", _), enableCrossBuild = true),
     pushChanges),
   
-  libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.8" % Test
+  libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.9" % Test
 )
 
 
