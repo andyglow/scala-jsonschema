@@ -21,6 +21,16 @@ class ParseJsonSchemaSpec extends AnyFunSuite {
     }.value shouldBe `string`
   }
 
+  test("title") {
+    parseType {
+      """{
+        | "type": "string",
+        | "title": "testing title"
+        |}
+      """.stripMargin
+    }.value.title shouldBe Some("testing title")
+  }
+
   test("string: date") {
     import `string`._
     import Format._
