@@ -49,6 +49,7 @@ object ParseJsonSchema {
 
   private[jsonschema] def makeType(x: obj): Try[Schema[_]] = {
     val tpe = x.value.str("type")
+    val title = x.value.str("title")
 
     def makeStrOrEnum = x.value.arr("enum") match {
       case None => makeStr
@@ -101,7 +102,7 @@ object ParseJsonSchema {
       }
     }
 
-    tpe.toSuccess("type is not defined") flatMap {
+    val result = tpe.toSuccess("type is not defined") flatMap {
       case "string"  => makeStrOrEnum
       case "boolean" => makeBool
       case "integer" => makeInt
@@ -109,6 +110,8 @@ object ParseJsonSchema {
       case "array"   => makeArr
       case "object"  => makeObj
     }
+
+    title.map(t => result.map(_.withTitle(t))).getOrElse(result)
   }
 
   private[jsonschema] def parseFormat(x: String): Option[Schema.`string`.Format] = {
