@@ -39,9 +39,9 @@ object ParseJsonSchema {
 
   def apply(x: InputStream): Try[Schema[_]] = ParseJson(x) flatMap apply
 
-  def apply(x: Value): Try[Schema[_]] = x match {
+  def apply(x: Value, checkSchema: Boolean = true): Try[Schema[_]] = x match {
     case o @ obj(fields)
-      if fields.get("$$schema").contains(str("http://json-schema.org/draft-04/schema#")) =>
+      if !checkSchema || fields.get("$$schema").contains(str("http://json-schema.org/draft-04/schema#")) =>
       makeType(o)
 
     case _ => Failure(new Exception("not a json schema"))
