@@ -135,7 +135,7 @@ Inspired by Coursera Autoschema but uses `Scala Macros` instead of `Java Reflect
         - `eu.timepit.refined.collection.MaxSize`
         - `eu.timepit.refined.collection.Empty`
         - `eu.timepit.refined.collection.NonEmpty`
-- with Enumeratum module enabled
+- with Enumeratum module enabled with `import com.github.andyglow.jsonschema.EnumeratumSupport._`
     - `enums` based on `EnumEntry`/`Enum`            
     - `enums` based on `ValueEnumEntry`/`ValueEnum`            
 - Misc
