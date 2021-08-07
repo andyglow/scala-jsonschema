@@ -588,6 +588,27 @@ results in
 }
 ```
 
+## Cats
+In order to enable integration with `cats` we not only add it to dependencies, we also need tp import the integration package.
+```scala
+import com.github.andyglow.jsonschema.CatsSupport._
+```
+// TODO: provide examples
+
+## Refined
+For Refined types to get described accordingly we, besides adding integration to dependency list, need to import the integration package.
+```scala
+import com.github.andyglow.jsonschema.RefinedSupport._
+```
+// TODO: provide examples
+
+## Enumeratum
+To stitch Enumeratum support in we need to, add correcponding integration to dependencies, as well as import the integration package.
+```scala
+import com.github.andyglow.jsonschema.EnumeratumSupport._
+```
+// TODO: provide examples
+
 ## Json Libraries
 The library uses its own Json model _com.github.andyglow.json.Value_ to represent Json Schema as JSON document.
 But project contains additionally several modules which could connect it with library of your choice.
