@@ -37,7 +37,7 @@ object ParseJsonSchema {
 
   def apply(x: String): Try[Schema[_]] = apply(new ByteArrayInputStream(x.getBytes))
 
-  def apply(x: InputStream): Try[Schema[_]] = ParseJson(x) flatMap apply
+  def apply(x: InputStream): Try[Schema[_]] = ParseJson(x) flatMap { apply(_) }
 
   def apply(x: Value, checkSchema: Boolean = true): Try[Schema[_]] = x match {
     case o @ obj(fields)
