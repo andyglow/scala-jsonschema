@@ -380,12 +380,13 @@ object Schema {
   //
   final case class `enum`[T](
     tpe: Schema[_],
-    values: Set[Value]) extends Schema[T] {
+    values: Set[Value],
+    titles: Option[Seq[String]]) extends Schema[T] {
     type Self = `enum`[T]
-    def mkCopy() = new `enum`[T](tpe, values)
+    def mkCopy() = new `enum`[T](tpe, values, titles)
     override def canEqual(that: Any): Boolean = that.isInstanceOf[`enum`[_]]
     override def equals(obj: Any): Boolean = obj match {
-      case `enum`(t, v) => t == tpe && values == v && super.equals(obj)
+      case `enum`(s, v, t) => s == tpe && values == v && t == titles && super.equals(obj)
       case _ => false
     }
     override def jsonType: String = "enum"
@@ -396,16 +397,25 @@ object Schema {
         sb append ","
       }
       sb.setLength(sb.length - 1) // drop last comma
+      titles foreach { title =>
+        sb append title
+        sb append ","
+      }
+      sb.setLength(sb.length - 1) // drop last comma
       sb append ")"
     }
   }
   final object `enum` {
-    def of[T](tpe: Schema[_], x: Value, xs: Value*): `enum`[T] = new `enum`[T](tpe, (x +: xs).toSet)
+    def of[T](tpe: Schema[_], x: Value, xs: Value*): `enum`[T] = `enum`(tpe, (x +: xs).toSet)
+    def of[T](tpe: Schema[_], xs: Set[Value], y: Option[Seq[String]]): `enum`[T] = new `enum`[T](tpe, xs, y)
     def of[T](x: T, xs: T*)(implicit va: ValueAdapter[T], vs: ValueSchema[T]): `enum`[vs.S] = {
-      new `enum`[vs.S](
+      `enum`(
         vs.schema,
-        (x +: xs).toSet.map { (x: T) => va.adapt(x) })
+        (x +: xs).toSet.map { (x: T) => va.adapt(x) }
+      )
     }
+
+    def apply[T](tpe: Schema[_], values: Set[Value]): `enum`[T] = new `enum`(tpe = tpe, values = values, None)
   }
 
   // +------------

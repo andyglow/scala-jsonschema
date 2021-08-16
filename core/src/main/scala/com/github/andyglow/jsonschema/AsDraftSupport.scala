@@ -98,7 +98,9 @@ trait AsDraftSupport {
   def mkEnum(vl: ValidationList, x: `enum`[_], par: ParentSchema): obj = {
     obj(
       "type" -> x.tpe.jsonType,
-      "enum" -> arr(x.values.toSeq))
+      "enum" -> arr(x.values.toSeq),
+      "titles" -> arr(x.titles.toSeq.flatten.map(x => str(x)))
+    )
   }
 
   def mkOneOf(vl: ValidationList, x: `oneof`[_], isRoot: Boolean, par: ParentSchema): obj = {

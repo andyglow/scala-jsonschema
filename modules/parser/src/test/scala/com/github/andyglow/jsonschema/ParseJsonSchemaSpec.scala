@@ -4,6 +4,8 @@ import com.github.andyglow.json.{ParseJson, Value}
 import json.Schema
 import com.github.andyglow.testsupport._
 import com.github.andyglow.scalamigration._
+import org.scalatest.Inside.inside
+
 import scala.util.Try
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.funsuite.AnyFunSuite
@@ -29,6 +31,20 @@ class ParseJsonSchemaSpec extends AnyFunSuite {
         |}
       """.stripMargin
     }.value.title shouldBe Some("testing title")
+  }
+
+  test("enum title") {
+    inside( parseType {
+      """{
+        | "type": "string",
+        | "enum": ["it","en","de"],
+        | "title": "Preferred language",
+        | "enum_titles": ["Italian","English","German"],
+        |}
+      """.stripMargin
+    }.value) {
+      case `enum`(_, _, titles) => titles shouldBe Some(Seq("Italian","English","German"))
+    }
   }
 
   test("string: date") {

@@ -54,11 +54,14 @@ object ParseJsonSchema {
     def makeStrOrEnum = x.value.arr("enum") match {
       case None => makeStr
       case Some(arr) =>
+        def enumTitles: Option[Seq[String]] = x.value.arr("enum_titles")map(_.collect {
+        case str(value) => value
+        })
         tpe.map(_.toLowerCase) match {
-          case None | Some("string")  => Success { `enum` (`string`, arr.toSet) }
-          case Some("integer")        => Success { `enum` (`integer`, arr.toSet) }
-          case Some("boolean")        => Success { `enum` (`boolean`, arr.toSet) }
-          case Some("number")         => Success { `enum` (`number`[Double], arr.toSet) }
+          case None | Some("string")  => Success { `enum` (`string`, arr.toSet, enumTitles) }
+          case Some("integer")        => Success { `enum` (`integer`, arr.toSet, enumTitles) }
+          case Some("boolean")        => Success { `enum` (`boolean`, arr.toSet, enumTitles) }
+          case Some("number")         => Success { `enum` (`number`[Double], arr.toSet, enumTitles) }
           case Some(x)                => Failure { InvalidEnumType(x) }
         }
     }
