@@ -203,7 +203,7 @@ trait AsDraftSupport {
   }
 
   def inferValidations(x: json.Schema[_]): ValidationList = {
-    import V.Instance._
+//    import V.Instance._
 
 //    val pp = x.validations.find(_.validation == `patternProperties`)
 //    val validations = obj {

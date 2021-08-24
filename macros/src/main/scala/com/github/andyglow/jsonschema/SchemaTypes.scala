@@ -1,7 +1,5 @@
 package com.github.andyglow.jsonschema
 
-import json.Schema.`object`.Field.RWMode
-
 
 private[jsonschema] trait SchemaTypes { this: UContext with UCommons =>
   import c.universe._
