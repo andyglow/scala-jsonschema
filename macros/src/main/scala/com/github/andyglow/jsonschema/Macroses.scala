@@ -92,6 +92,8 @@ class Macroses(val c: blackbox.Context) extends UContext
       val sig = signature(tpe)
       ctx.onCycle(tpe)
       U.Ref(tpe, q"$sig")
+    } else if (T.isNothing(tpe)) {
+      c.abort(c.enclosingPosition, "No Schema[_] for Nothing")
     } else {
       implicit def _ctx    = ctx
       implicit def _specFD = specFD

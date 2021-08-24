@@ -78,6 +78,11 @@ private[jsonschema] trait UCommons extends SchemaTypes with ULogging { this: UCo
       val readOnly          = typeOf[json.schema.readOnly]
       val writeOnly         = typeOf[json.schema.writeOnly]
     }
+
+    def isNothing(t: Type): Boolean = t.dealias match {
+      case t: TypeRef if t.sym == definitions.NothingClass => true
+      case _                                               => false
+    }
   }
   private[jsonschema] val T = new ConstantTypes
 
