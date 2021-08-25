@@ -106,6 +106,8 @@ sealed trait Schema[+T] {
 
 object Schema {
 
+  def apply[T: Schema]: Schema[T] = implicitly
+
   // +------------
   // | Boolean
   // +---------------

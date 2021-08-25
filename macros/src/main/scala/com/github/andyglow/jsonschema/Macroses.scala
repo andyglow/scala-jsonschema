@@ -2,8 +2,7 @@ package com.github.andyglow.jsonschema
 
 import scala.reflect.macros.blackbox
 
-
-class Macroses(val c: blackbox.Context) extends UContext
+trait MacroCake extends UContext
   with UCommons
   with UImplicits
   with USignatures
@@ -36,6 +35,7 @@ class Macroses(val c: blackbox.Context) extends UContext
     }
   }
 
+
   /** Derives a Predef
     *
     * @tparam T
@@ -66,18 +66,28 @@ class Macroses(val c: blackbox.Context) extends UContext
     }
   }
 
-  private def deriveInternal[T: c.WeakTypeTag, S[_]](specFD: FieldDecorations = FieldDecorations.Empty): c.Expr[S[T]] = {
+
+  protected def deriveInternal[T: c.WeakTypeTag, S[_]](
+    specFD: FieldDecorations = FieldDecorations.Empty,
+    noImplicitSearch: Boolean = false
+  ): c.Expr[S[T]] = {
     val tpe = weakTypeOf[T]
 
     val typeDeco = TypeAnnotations(tpe)
 
     val recursiveTypes = new RecursiveTypes
     implicit val ctx = new ResolutionContext(Nil, recursiveTypes.append)
+
     val out = {
-      val st = recursiveTypes.substitute(resolve(tpe, ctx, specFD))
+
+      val st = recursiveTypes.substitute(
+        resolve(tpe, ctx, specFD, noImplicitSearch)
+      )
+
       st.withExtra(st.extra.copy(
         title = typeDeco.texts.flatMap(_.title),
         description = typeDeco.texts.flatMap(_.description)))
+
     }.tree
 
     // debug
@@ -87,13 +97,18 @@ class Macroses(val c: blackbox.Context) extends UContext
     c.Expr[S[T]](out)
   }
 
-  def resolve(tpe: Type, ctx: ResolutionContext, specFD: FieldDecorations = FieldDecorations.Empty): SchemaType = {
+  def resolve(
+    tpe: Type,
+    ctx: ResolutionContext,
+    specFD: FieldDecorations = FieldDecorations.Empty,
+    noImplicitSearch: Boolean = false
+  ): SchemaType = {
     if (ctx contains tpe) {
       val sig = signature(tpe)
       ctx.onCycle(tpe)
       U.Ref(tpe, q"$sig")
     } else if (T.isNothing(tpe)) {
-      c.abort(c.enclosingPosition, "No Schema[_] for Nothing")
+      c.abort(c.enclosingPosition, "No json.Schema[_] for Nothing")
     } else {
       implicit def _ctx    = ctx
       implicit def _specFD = specFD
@@ -109,7 +124,9 @@ class Macroses(val c: blackbox.Context) extends UContext
           c.abort(c.enclosingPosition, s"schema for $tpe is not supported, ${ctx.stack mkString " :: "}")
       }
 
-      Implicit.getOrElse(tpe, genTree)
+      if (noImplicitSearch) genTree else Implicit.getOrElse(tpe, genTree)
     }
   }
 }
+
+class Macroses(val c: blackbox.Context) extends MacroCake

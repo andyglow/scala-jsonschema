@@ -275,6 +275,16 @@ lazy val enumeratum = { project in file("modules/enumeratum") }.dependsOn(core, 
   libraryDependencies += "com.beachape" %% "enumeratum" % "1.7.0",
 )
 
+lazy val derived = { project in file("modules/derived") }.dependsOn(core, api, macros).settings(
+  commonSettings,
+
+  name := "scala-jsonschema-derived",
+
+  libraryDependencies ++= Seq(
+    (scalaVersion apply ("org.scala-lang" % "scala-reflect" % _ % Compile)).value.withSources.withJavadoc
+  )
+)
+
 lazy val docs = { project in file("documentation") }
   .enablePlugins(
     // - variable substitution

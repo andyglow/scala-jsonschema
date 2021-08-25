@@ -21,7 +21,9 @@ private[jsonschema] trait UCommons extends SchemaTypes with ULogging { this: UCo
   def resolve(
     tpe: Type,
     ctx: ResolutionContext,
-    specFD: FieldDecorations = FieldDecorations.Empty): SchemaType
+    specFD: FieldDecorations = FieldDecorations.Empty,
+    noImplicit: Boolean = false
+  ): SchemaType
 
   def resolveGenericType(x: Type, from: List[Symbol], to: List[Type]): Type = {
     try x.substituteTypes(from, to) catch {

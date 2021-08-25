@@ -62,7 +62,8 @@ private[jsonschema] trait UProductTypes { this: UContext with UCommons with USca
             }
 
           try c.eval(c.Expr[Boolean](q"$effectiveDefaultGetterTree.isEmpty")) catch {
-            case ex: Throwable => throw new Exception(s"Unable to check isNone for ${show(tpe)}.${show(fieldSym)}: ${show(fieldTpe)}. May be try not-full rebuild", ex)
+            case ex: Throwable =>
+              throw new Exception(s"Unable to check isNone for ${show(tpe)}.${show(fieldSym)}: ${show(fieldTpe)}. May be try non-full rebuild. Throws on evaluation of:\n```\n${showCode(q"$effectiveDefaultGetterTree.isEmpty")}\n```", ex)
           }
         } else false
 

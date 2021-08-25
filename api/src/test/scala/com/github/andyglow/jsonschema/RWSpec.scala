@@ -5,8 +5,7 @@ import com.github.andyglow.jsonschema.JsonMatchers._
 import json.Schema._
 import json.Schema.`object`.{Field => F}
 import json.schema.{Version => v, _}
-import json.{Json, Schema => S, schema => s}
-import org.scalatest.exceptions.TestFailedException
+import json.Json
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec._
 
