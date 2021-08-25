@@ -21,7 +21,9 @@ private[jsonschema] trait UCommons extends SchemaTypes with ULogging { this: UCo
   def resolve(
     tpe: Type,
     ctx: ResolutionContext,
-    specFD: FieldDecorations = FieldDecorations.Empty): SchemaType
+    specFD: FieldDecorations = FieldDecorations.Empty,
+    noImplicit: Boolean = false
+  ): SchemaType
 
   def resolveGenericType(x: Type, from: List[Symbol], to: List[Type]): Type = {
     try x.substituteTypes(from, to) catch {
@@ -77,6 +79,11 @@ private[jsonschema] trait UCommons extends SchemaTypes with ULogging { this: UCo
       val typeHint          = typeOf[json.schema.typeHint[_]]
       val readOnly          = typeOf[json.schema.readOnly]
       val writeOnly         = typeOf[json.schema.writeOnly]
+    }
+
+    def isNothing(t: Type): Boolean = t.dealias match {
+      case t: TypeRef if t.sym == definitions.NothingClass => true
+      case _                                               => false
     }
   }
   private[jsonschema] val T = new ConstantTypes

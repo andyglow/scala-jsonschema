@@ -5,6 +5,7 @@ object CompilerOptions {
     "-feature",
     "-unchecked",
     "-deprecation",
+    "-language:existentials",
     "-language:higherKinds")
 
   private val opts211 = base ++ Seq(
