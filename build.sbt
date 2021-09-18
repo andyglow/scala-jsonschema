@@ -114,8 +114,8 @@ lazy val macros = { project in file("macros") }.dependsOn(core).settings (
   name := "scala-jsonschema-macros",
 
   libraryDependencies ++= Seq(
-    "com.github.andyglow" %% "scaladoc-ast"    % "0.0.13",
-    "com.github.andyglow" %% "scaladoc-parser" % "0.0.13",
+    "com.github.andyglow" %% "scaladoc-ast"    % "0.0.14",
+    "com.github.andyglow" %% "scaladoc-parser" % "0.0.14",
     (scalaVersion apply ("org.scala-lang" % "scala-reflect" % _ % Compile)).value.withSources.withJavadoc)
 )
 
@@ -367,6 +367,7 @@ lazy val root = { project in file(".") }
   .aggregate(
     core,
     macros,
+    derived,
     api,
     parser,
     refined,
