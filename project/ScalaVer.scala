@@ -7,7 +7,7 @@ object ScalaVer {
 
   final case object _211 extends ScalaVer("2.11.12")
 
-  final case object _212 extends ScalaVer("2.12.14")
+  final case object _212 extends ScalaVer("2.12.15")
 
   final case object _213 extends ScalaVer("2.13.6")
 
