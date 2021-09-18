@@ -3,6 +3,7 @@ package com.github.andyglow.jsonschema
 import json.{Json, Schema}
 import json.schema.validation.Instance._
 import json.Schema._
+import json.schema.Version.Raw
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -244,6 +245,17 @@ class SchemaMacroSpec extends AnyWordSpec {
       Json.schema[Map[String, Int]] shouldEqual `dictionary`(`integer`)
 
       Json.schema[Map[String, Foo9]] shouldEqual `dictionary`[String, Foo9, Map](`object`(Field("name", `string`)))
+
+      Json.schema[Map[Bar8, Int]] shouldEqual `dictionary`[Bar8, Int, Map](`integer`)
+
+      import com.github.andyglow.json.Value._
+
+      AsValue.schema(Json.schema[Map[Bar8, Int]], Raw) shouldEqual obj(
+        "type" -> "object",
+        "patternProperties" -> obj(
+          "^.*$" -> obj("type" -> "integer")
+        )
+      )
     }
 
     "generate schema for Map[_: MapKeyPattern, _]" in {
