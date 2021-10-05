@@ -241,7 +241,7 @@ lazy val `refined` = { project in file("modules/refined") }.dependsOn(core, api)
   libraryDependencies += {
     val refinedV = CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, 11)) => "0.9.12"
-      case _             => "0.9.13"
+      case _             => "0.9.27"
     }
 
     "eu.timepit" %% "refined" % refinedV
