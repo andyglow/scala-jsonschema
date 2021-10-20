@@ -133,7 +133,7 @@ lazy val `play-json` = { project in file("modules/play-json") }.dependsOn(core, 
   libraryDependencies += {
     val playV = CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, 11)) => "2.7.4"
-      case _             => "2.8.1"
+      case _             => "2.9.2"
     }
 
     "com.typesafe.play" %% "play-json" % playV
