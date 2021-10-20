@@ -198,7 +198,7 @@ lazy val `u-json` = { project in file("modules/u-json") }.dependsOn(core, api % 
 
   libraryDependencies ++= {
     val uV = CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, 11)) => "0.7.4"
+      case Some((2, 11)) => "1.4.2"
       case _             => "1.0.0"
     }
 
