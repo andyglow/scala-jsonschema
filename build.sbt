@@ -225,7 +225,7 @@ lazy val `cats` = { project in file("modules/cats") }.dependsOn(core, api).setti
   libraryDependencies += {
     val catsV = CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, 11)) => "2.0.0"
-      case _             => "2.1.1"
+      case _             => "2.6.1"
     }
 
     "org.typelevel" %% "cats-core" % catsV
