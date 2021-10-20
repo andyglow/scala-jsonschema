@@ -156,7 +156,7 @@ lazy val `circe-json` = { project in file("modules/circe-json") }.dependsOn(core
   libraryDependencies ++= {
     val circeV = CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, 11)) => "0.12.0-M3"
-      case _             => "0.13.0"
+      case _             => "0.14.1"
     }
 
     Seq(
