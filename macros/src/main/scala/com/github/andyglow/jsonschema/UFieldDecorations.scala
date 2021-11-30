@@ -14,7 +14,7 @@ trait UFieldDecorations { this: UContext with UCommons =>
     */
   type FieldDecorations = Map[String, String]
 
-  final object FieldDecorations {
+  object FieldDecorations {
 
     val Empty: FieldDecorations = Map.empty
 

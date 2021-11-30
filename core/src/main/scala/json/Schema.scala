@@ -119,7 +119,7 @@ object Schema {
     override def jsonType: String = "boolean"
     override def toString: String = ToString(_ append "boolean")
   }
-  final object `boolean` extends `boolean`
+  object `boolean` extends `boolean`
 
   // +------------
   // | Integer
@@ -132,7 +132,7 @@ object Schema {
     override def jsonType: String = "integer"
     override def toString: String = ToString(_ append "integer")
   }
-  final object `integer` extends `integer`
+  object `integer` extends `integer`
 
   // +------------
   // | Number
@@ -145,7 +145,7 @@ object Schema {
     override def jsonType: String = "number"
     override def toString: String = ToString(_ append "number")
   }
-  final object `number` {
+  object `number` {
     def apply[T: Numeric]: `number`[T] = new `number`[T]
   }
 
@@ -171,25 +171,25 @@ object Schema {
       }
     }
   }
-  final object `string` extends `string`[String](None) {
+  object `string` extends `string`[String](None) {
     def apply[T]: `string`[T] = new `string`[T](None)
     def apply[T](format: Format): `string`[T] = new `string`[T](Some(format))
     trait Format extends Product
     object Format {
-      final case object `date` extends Format
-      final case object `time` extends Format
-      final case object `date-time` extends Format    // Date representation, as defined by RFC 3339, section 5.6.
-      final case object `email` extends Format        // Internet email address, see RFC 5322, section 3.4.1.
-      final case object `hostname` extends Format     // Internet host name, see RFC 1034, section 3.1.
-      final case object `ipv4` extends Format         // Internet host name, see RFC 1034, section 3.1.
-      final case object `ipv6` extends Format         // IPv6 address, as defined in RFC 2373, section 2.2.
-      final case object `uri` extends Format          // A universal resource identifier (URI), according to RFC3986.
+      case object `date` extends Format
+      case object `time` extends Format
+      case object `date-time` extends Format    // Date representation, as defined by RFC 3339, section 5.6.
+      case object `email` extends Format        // Internet email address, see RFC 5322, section 3.4.1.
+      case object `hostname` extends Format     // Internet host name, see RFC 1034, section 3.1.
+      case object `ipv4` extends Format         // Internet host name, see RFC 1034, section 3.1.
+      case object `ipv6` extends Format         // IPv6 address, as defined in RFC 2373, section 2.2.
+      case object `uri` extends Format          // A universal resource identifier (URI), according to RFC3986.
 
       // added in 2019-09
-      final case object `duration` extends Format     // The duration format is from the ISO 8601 ABNF as given in Appendix A of RFC 3339
-      final case object `idn-hostname` extends Format // Use RFC 1123 instead of RFC 1034; this allows for a leading digit,
+      case object `duration` extends Format     // The duration format is from the ISO 8601 ABNF as given in Appendix A of RFC 3339
+      case object `idn-hostname` extends Format // Use RFC 1123 instead of RFC 1034; this allows for a leading digit,
                                                       // `hostname` is also RFC 1123 since 2019-09
-      final case object `uuid` extends Format         // A string instance is valid against this attribute if it is a valid string representation of a UUID, according to RFC4122
+      case object `uuid` extends Format         // A string instance is valid against this attribute if it is a valid string representation of a UUID, according to RFC4122
     }
   }
 
@@ -242,20 +242,20 @@ object Schema {
       sb append ")"
     }
   }
-  final object `dictionary` {
+  object `dictionary` {
     abstract class KeyPattern[T](val pattern: String)
-    final object KeyPattern {
+    object KeyPattern {
       def mk[T](pattern: String): KeyPattern[T] = new KeyPattern[T](pattern) {}
       def forEnum[T](vals: Iterable[String]): KeyPattern[T] = {
         require(vals.nonEmpty)
         mk[T](vals.toList.distinct.sorted.mkString("^(?:", "|", ")$"))
       }
-      implicit final object StringKeyPattern extends KeyPattern[String]("^.*$")
-      implicit final object CharKeyPattern extends KeyPattern[Char]("^.{1}$")
-      implicit final object ByteKeyPattern extends KeyPattern[Byte]("^[0-9]+$")
-      implicit final object ShortKeyPattern extends KeyPattern[Short]("^[0-9]+$")
-      implicit final object IntKeyPattern extends KeyPattern[Int]("^[0-9]+$")
-      implicit final object LongKeyPattern extends KeyPattern[Long]("^[0-9]+$")
+      implicit object StringKeyPattern extends KeyPattern[String]("^.*$")
+      implicit object CharKeyPattern extends KeyPattern[Char]("^.{1}$")
+      implicit object ByteKeyPattern extends KeyPattern[Byte]("^[0-9]+$")
+      implicit object ShortKeyPattern extends KeyPattern[Short]("^[0-9]+$")
+      implicit object IntKeyPattern extends KeyPattern[Int]("^[0-9]+$")
+      implicit object LongKeyPattern extends KeyPattern[Long]("^[0-9]+$")
     }
   }
 
@@ -302,12 +302,12 @@ object Schema {
       }
     }
   }
-  final object `object` {
+  object `object` {
     sealed trait Free { this: `object`[_] =>
       type Type
       def strict: `object`[Type]
     }
-    final object Free {
+    object Free {
       def apply[T](): `object`[T] with Free = {
         new `object`[T](Set.empty) with Free {
           type Type = T
@@ -347,7 +347,7 @@ object Schema {
       def setReadOnly: Field[T] = withRWMode(RWMode.ReadOnly)
       def setWriteOnly: Field[T] = withRWMode(RWMode.WriteOnly)
     }
-    final object Field {
+    object Field {
       sealed trait RWMode
       object RWMode {
         case object ReadOnly extends RWMode
@@ -401,7 +401,7 @@ object Schema {
       sb append ")"
     }
   }
-  final object `enum` {
+  object `enum` {
     def of[T](tpe: Schema[_], x: Value, xs: Value*): `enum`[T] = new `enum`[T](tpe, (x +: xs).toSet)
     def of[T](x: T, xs: T*)(implicit va: ValueAdapter[T], vs: ValueSchema[T]): `enum`[vs.S] = {
       new `enum`[vs.S](
@@ -440,7 +440,7 @@ object Schema {
     }
     def discriminatedBy(x: String): Self = new `oneof`[T](subTypes, Some(x))
   }
-  final object `oneof` {
+  object `oneof` {
     def of[T](x: Schema[_], xs: Schema[_]*): `oneof`[T] = new `oneof`[T]((x +: xs).toSet, None)
   }
 
@@ -468,7 +468,7 @@ object Schema {
       sb append ")"
     }
   }
-  final object `allof` {
+  object `allof` {
     def of[T](x: Schema[_], xs: Schema[_]*): `allof`[T] = new `allof`[T]((x +: xs).toSet)
   }
 
@@ -535,7 +535,7 @@ object Schema {
     }
   }
 
-  final object `def` {
+  object `def` {
     def apply[T](tpe: Schema[_])(sig: => String): `def`[T] = tpe match {
       case `def`(originalSig, innerTpe) => `def`(originalSig, innerTpe)
       case `value-class`(innerTpe)      => `def`(sig, innerTpe)

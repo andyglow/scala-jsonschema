@@ -9,7 +9,7 @@ import com.github.andyglow.jsonschema.{ model => case0 }
 
 object NoneForDefaultValueCases {
 
-  final object case1 {
+  object case1 {
     case class Foo(value: Option[String] = None)
   }
 }

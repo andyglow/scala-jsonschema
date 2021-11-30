@@ -7,7 +7,7 @@ object ScalaParts {
     tpe: String,
     default: Option[String])
 
-  final object ParsedParameter {
+  object ParsedParameter {
 
     def fromString(x: String): ParsedParameter = {
       val colonIdx = x.indexOf(':')

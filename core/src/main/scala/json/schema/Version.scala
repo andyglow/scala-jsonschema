@@ -7,7 +7,7 @@ sealed trait Version {
 
 object Version {
 
-  final case object Raw extends Version {
+  case object Raw extends Version {
     def uri = ???
   }
 

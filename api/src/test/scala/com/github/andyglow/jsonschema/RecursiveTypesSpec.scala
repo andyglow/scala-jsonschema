@@ -11,19 +11,19 @@ import org.scalatest.wordspec._
 // comes first because otherwise it fails on directKnownSubclass resolution
 object RecursiveTypesSpec {
 
-  final object case1 {
+  object case1 {
     final case class SList(head: String, tail: Option[SList])
   }
 
-  final object case2 {
+  object case2 {
     sealed trait Node
-    final object Node {
+    object Node {
       final case class Element(tag: String, children: List[Node]) extends Node
       final case class Text(content: String) extends Node
     }
   }
 
-  final object case3 {
+  object case3 {
     final case class LList[T](head: T, tail: Option[LList[T]])
     final case class User(id: String, friends: LList[String])
   }

@@ -5,11 +5,11 @@ sealed abstract class ScalaVer(val full: String)
 
 object ScalaVer {
 
-  final case object _211 extends ScalaVer("2.11.12")
+  case object _211 extends ScalaVer("2.11.12")
 
-  final case object _212 extends ScalaVer("2.12.15")
+  case object _212 extends ScalaVer("2.12.15")
 
-  final case object _213 extends ScalaVer("2.13.7")
+  case object _213 extends ScalaVer("2.13.7")
 
   val values: Seq[ScalaVer] = Set(_213, _212, _211).toSeq
 
