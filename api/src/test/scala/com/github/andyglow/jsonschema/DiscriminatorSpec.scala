@@ -13,18 +13,18 @@ import JsonMatchers._
 object DiscriminatorSpec {
 
   // phantom
-  final object case0 {
+  object case0 {
     @discriminator sealed trait Root
-    final object Root {
+    object Root {
       final case class Member1(value: Int) extends Root
       final case class Member2(value: String) extends Root
     }
   }
 
   // not a phantom
-  final object case1 {
+  object case1 {
     @discriminator(field = "type", phantom = false) sealed trait Root
-    final object Root {
+    object Root {
       final case class Member1(`type`: String, value: Int) extends Root
       final case class Member2(`type`: String, value: String) extends Root
     }
@@ -33,36 +33,36 @@ object DiscriminatorSpec {
   // not a phantom, should fail because discriminator field is both
   // - not a phantom
   // - and not present
-  final object case2 {
+  object case2 {
     @discriminator(field = "tpe", phantom = false) sealed trait Root
-    final object Root {
+    object Root {
       final case class Member1(`type`: String, value: Int) extends Root
       final case class Member2(`type`: String, value: String) extends Root
     }
   }
 
   // not a phantom, non-standard discrimination field
-  final object case3 {
+  object case3 {
     @discriminator(field = "tpe", phantom = false) sealed trait Root
-    final object Root {
+    object Root {
       final case class Member1(tpe: String, value: Int) extends Root
       final case class Member2(tpe: String, value: String) extends Root
     }
   }
 
   // specific discriminator keys
-  final object case4 {
+  object case4 {
     @discriminator sealed trait Root
-    final object Root {
+    object Root {
       @discriminatorKey("m1") final case class Member1(value: Int) extends Root
       @discriminatorKey("m2") final case class Member2(value: String) extends Root
     }
   }
 
   // definition + specific discriminator keys
-  final object case5 {
+  object case5 {
     @discriminator sealed trait Root
-    final object Root {
+    object Root {
       @definition("m1") @discriminatorKey("m1") final case class Member1(value: Int) extends Root
       @definition("m2") @discriminatorKey("m2") final case class Member2(value: String) extends Root
     }

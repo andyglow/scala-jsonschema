@@ -27,16 +27,16 @@ object FsExampleMsg {
 
   sealed trait FsType
   object FsType {
-    final case object ext3 extends FsType
-    final case object ext4 extends FsType
-    final case object btrfs extends FsType
+    case object ext3 extends FsType
+    case object ext4 extends FsType
+    case object btrfs extends FsType
   }
 
   sealed trait DiskType
   object DiskType {
-    final case object disk extends DiskType
-    final case object nfs extends DiskType
-    final case object tmpfs extends DiskType
+    case object disk extends DiskType
+    case object nfs extends DiskType
+    case object tmpfs extends DiskType
   }
 
   @discriminator sealed trait Storage
