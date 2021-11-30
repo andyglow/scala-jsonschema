@@ -101,7 +101,7 @@ sealed trait Schema[+T] {
   def withTitle(x: String): Self = duplicate(title = Some(x))
   def withDiscriminationKey(x: String): Self = duplicate(discriminationKey = Some(x))
   def toDefinition[TT >: T](sig: String): Schema.`def`[TT] = Schema.`def`(sig, this)
-  @deprecated("0.6.1", "will be removed in 1.0.0") def apply(refName: String): Schema[T] = toDefinition(refName)
+  @deprecated("please use `toDefinition` instead", "1.0.0") def apply(refName: String): Schema[T] = toDefinition(refName)
 }
 
 object Schema {

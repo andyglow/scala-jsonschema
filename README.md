@@ -401,7 +401,7 @@ To use custom name, just apply it.
 ```scala
 import json._
 
-implicit val someStrSchema: json.Schema[String] = Json.schema[String]("my-lovely-string")
+implicit val someStrSchema: json.Schema[String] = Json.schema[String].toDefinition("my-lovely-string")
 
 implicit val someArrSchema: json.Schema[Array[String]] = Json.schema[Array[String]]
 
@@ -439,7 +439,7 @@ Then you can do
 ```scala
 import json._
 
-implicit val userIdSchema: json.Schema[UserId] = Json.schema[UserId]("userId")
+implicit val userIdSchema: json.Schema[UserId] = Json.schema[UserId].toDefinition("userId")
 
 implicit val userSchema: json.Schema[User] = Json.schema[User]
 
@@ -497,7 +497,7 @@ import json.Validation._
 
 implicit val vb = ValidationBound.mk[UserId, String]
 
-implicit val userIdSchema: json.Schema[UserId] = Json.schema[UserId]("userId") withValidation (
+implicit val userIdSchema: json.Schema[UserId] = Json.schema[UserId].toDefinition("userId") withValidation (
   `pattern` := "[a-f\\d]{16}"
 )
 ``` 
