@@ -48,6 +48,7 @@ object Predef extends LowPriorityPredefs {
   implicit val jsqlTimestampS: Predef[java.sql.Timestamp]      = Predef(`string`[java.sql.Timestamp](Format.`date-time`))
   implicit val instantS: Predef[java.time.Instant]             = Predef(`string`[java.time.Instant](Format.`date-time`))
   implicit val localDateTimeS: Predef[java.time.LocalDateTime] = Predef(`string`[java.time.LocalDateTime](Format.`date-time`))
+  implicit val zonedDateTimeS: Predef[java.time.ZonedDateTime] = Predef(`string`[java.time.ZonedDateTime](Format.`date-time`))
   implicit val jsqlDateS: Predef[java.sql.Date]                = Predef(`string`[java.sql.Date](Format.`date`))
   implicit val localDateS: Predef[java.time.LocalDate]         = Predef(`string`[java.time.LocalDate](Format.`date`))
   implicit val jsqlTimeS: Predef[java.sql.Time]                = Predef(`string`[java.sql.Time](Format.`time`))
