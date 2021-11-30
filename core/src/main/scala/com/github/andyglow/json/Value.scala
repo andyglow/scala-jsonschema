@@ -70,7 +70,7 @@ object Value {
 
   object num {
 
-    def apply(x: Byte): num = new num(x)
+    def apply(x: Byte): num = new num(x: Long)
 
     def apply(x: Int): num = new num(x)
 
