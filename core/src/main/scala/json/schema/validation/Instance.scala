@@ -9,7 +9,7 @@ sealed abstract class Instance[S, V]()(implicit conv: V => Value) extends Produc
 
   def name: String = productPrefix
 
-  def :=(x: V): Def[S, V] = Def(this, x, x)
+  def :=(x: V): Def[S, V] = Def(this, x, conv(x))
 }
 
 object Instance {
