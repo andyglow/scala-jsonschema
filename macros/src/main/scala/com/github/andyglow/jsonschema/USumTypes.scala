@@ -17,6 +17,13 @@ private[jsonschema] trait USumTypes { this: UContext with UCommons with UValueTy
       isSupportedLeafSymbol(s)
     }
 
+    private def addTitleAndDescriptionToSubType(st:SchemaType, tpe:Type): SchemaType = {
+      val typeDeco = TypeAnnotations(tpe)
+      st.withExtra(st.extra.copy(
+        title = typeDeco.texts.flatMap(_.title),
+        description = typeDeco.texts.flatMap(_.description)))
+    }
+
     def resolveOneOf(tpe: Type)(implicit ctx: ResolutionContext): Option[U.OneOf] = {
       Some.when (isSealed(tpe)) {
         // get type annotation for the root type
@@ -40,7 +47,7 @@ private[jsonschema] trait USumTypes { this: UContext with UCommons with UValueTy
         val schemas = subTypes map { subTpe =>
           val subSchema = Implicit.getOrElse(subTpe, subTpe match {
             case ValueClass(st) => st
-            case CaseClass(st)  => st
+            case CaseClass(st)  => addTitleAndDescriptionToSubType(st,subTpe)
             case CaseObject(co) if
               { enumItems = enumExtractor.someResolved(Seq(co.sym)) getOrElse Seq.empty
                 enumItems.nonEmpty

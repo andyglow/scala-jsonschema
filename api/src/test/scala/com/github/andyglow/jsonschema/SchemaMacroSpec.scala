@@ -4,6 +4,7 @@ import json.{Json, Schema}
 import json.schema.validation.Instance._
 import json.Schema._
 import json.schema.Version.Raw
+import json.schema.{description, title}
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -156,6 +157,19 @@ class SchemaMacroSpec extends AnyWordSpec {
       Json.schema[FooBarInsideCompanion] shouldEqual `oneof`(Set(
         `object`(Field("foo", `number`[Double])),
         `object`(Field("bar", `number`[Double]))))
+    }
+
+    "generate schema for Sealed Trait subclasses defined inside of it's companion object and include sub-types annotations" in {
+      import `object`.Field
+
+      Json.schema[FooBarInsideCompanionWithAnnotations] shouldEqual `oneof`(Set(
+        `object`(Field("foo", `number`[Double]))
+          .withTitle("FooInsideCompanionWithAnnotationsTitle")
+          .withDescription("FooInsideCompanionWithAnnotationsDescription"),
+        `object`(Field("bar", `number`[Double]))
+          .withTitle("BarInsideCompanionWithAnnotationsTitle")
+          .withDescription("BarInsideCompanionWithAnnotationsDescription")
+      ))
     }
 
     "generate schema for hybrid Sealed Trait family" in {
@@ -324,6 +338,18 @@ sealed trait FooBarInsideCompanion
 object FooBarInsideCompanion {
   case class FooBarInsideCompanion1(foo: Double) extends FooBarInsideCompanion
   case class FooBarInsideCompanion2(bar: Double) extends FooBarInsideCompanion
+}
+
+
+sealed trait FooBarInsideCompanionWithAnnotations
+object FooBarInsideCompanionWithAnnotations {
+  @title("FooInsideCompanionWithAnnotationsTitle")
+  @description("FooInsideCompanionWithAnnotationsDescription")
+  case class FooInsideCompanionWithAnnotations(foo: Double) extends FooBarInsideCompanionWithAnnotations
+
+  @title("BarInsideCompanionWithAnnotationsTitle")
+  @description("BarInsideCompanionWithAnnotationsDescription")
+  case class BarInsideCompanionWithAnnotations(bar: Double) extends FooBarInsideCompanionWithAnnotations
 }
 
 sealed trait AnyFooBar extends Any
