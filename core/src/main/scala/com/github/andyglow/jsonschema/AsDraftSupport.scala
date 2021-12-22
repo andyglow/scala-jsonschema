@@ -71,7 +71,7 @@ trait AsDraftSupport {
 
     val required = x.fields.collect {
       case field if field.required => str(field.name)
-    } ++ discriminatorField.map(str)
+    } ++ discriminatorField.map(str.apply)
 
     val canHaveAdditionalProperties = x.isInstanceOf[`object`.Free]
 

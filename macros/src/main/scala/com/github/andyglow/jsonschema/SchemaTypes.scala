@@ -4,7 +4,6 @@ package com.github.andyglow.jsonschema
 private[jsonschema] trait SchemaTypes { this: UContext with UCommons =>
   import c.universe._
 
-
   sealed trait SchemaType extends Product {
     type Self <: SchemaType
 
@@ -71,11 +70,16 @@ private[jsonschema] trait SchemaTypes { this: UContext with UCommons =>
       }
       object Field {
         case class Apply(tpe: Type, name: String, schema: SchemaType, required: Option[Tree], default: Option[Tree], description: Option[String], rwMode: Option[Tree]) extends Field {
-          def prefix = (required, default) match {
-            case (Some(required), Some(default))  => q"${N.Schema}.`object`.Field[$tpe]($name, ${schema.tree}, $required, $default)"
-            case (None, Some(default))            => q"${N.Schema}.`object`.Field[$tpe]($name, ${schema.tree}, false, $default)"
-            case (Some(required), None)           => q"${N.Schema}.`object`.Field[$tpe]($name, ${schema.tree}, $required)"
-            case (None, None)                     => q"${N.Schema}.`object`.Field[$tpe]($name, ${schema.tree})"
+          def prefix = {
+            val z = (required, default) match {
+              case (Some(required), Some(default))  => q"${N.Schema}.`object`.Field[$tpe]($name, ${schema.tree}, $required, $default)"
+              case (None, Some(default))            => q"${N.Schema}.`object`.Field[$tpe]($name, ${schema.tree}, false, $default)"
+              case (Some(required), None)           => q"${N.Schema}.`object`.Field[$tpe]($name, ${schema.tree}.asInstanceOf[${T.schemaC}[$tpe]], $required)"
+//              case (Some(required), None)           => q"${N.Schema}.`object`.Field[$tpe]($name, ${schema.tree}, $required)"
+              case (None, None)                     => q"${N.Schema}.`object`.Field[$tpe]($name, ${schema.tree})"
+            }
+            // println(s"--- $z")
+            z
           }
           def mapSchema(fn: SchemaType => SchemaType): Field = copy(schema = fn(schema))
         }
@@ -83,31 +87,8 @@ private[jsonschema] trait SchemaTypes { this: UContext with UCommons =>
           def prefix = q"${N.Schema}.`object`.Field.fromJson[$tpe]($name, ${schema.tree}, $required, $default)"
           def mapSchema(fn: SchemaType => SchemaType): Field = copy(schema = fn(schema))
         }
-//        def unapply(x: Tree): Option[Field] = x match {
-//          case q"_root_.json.Schema.`object`.Field.apply[$t]($name, $schema)"                         => SchemaType.unapply(schema) map { Field.Apply(t.tpe, name, _, None, None) }
-//          case q"_root_.json.Schema.`object`.Field.apply[$t]($name, $schema, $required)"              => SchemaType.unapply(schema) map { Field.Apply(t.tpe, name, _, Some(required), None) }
-//          case q"_root_.json.Schema.`object`.Field.apply[$t]($name, $schema, $required, $default)"    => SchemaType.unapply(schema) map { Field.Apply(t.tpe, name, _, Some(required), Some(default)) }
-//          case q"_root_.json.Schema.`object`.Field.fromJson[$t]($name, $schema, $required, $default)" => SchemaType.unapply(schema) map { Field.FromJson(t.tpe, name, _, required, default) }
-//        }
       }
     }
-//    def unapply(x: Tree): Option[SchemaType] = x match {
-//      case q"_root_.json.Schema.`boolean`()" => Some(Bool)
-//      case q"_root_.json.Schema.`integer`()" => Some(Integer)
-//      case q"_root_.json.Schema.`number`[$t]()" => Some(Number(t.tpe))
-//      case q"_root_.json.Schema.`string`[$t]($format)" => Some(Str(t.tpe, format))
-//      case q"_root_.json.Schema.`set`[$t, $c]($elementSchema)"   => unapply(elementSchema) map { ESet(t.tpe, c.tpe, _) }
-//      case q"_root_.json.Schema.`array`[$t, $c]($elementSchema)" => unapply(elementSchema) map { Arr(t.tpe, c.tpe, _) }
-//      case q"_root_.json.Schema.`dictionary`[$k, $v, $c]($valueSchema)" => unapply(valueSchema) map { Dict(k.tpe, v.tpe, c.tpe, _) }
-//      case q"_root_.json.Schema.`object`[$t](Set(..$fields))" => Obj(t.tpe, fields.map(Obj.Field.unapply(_).get))
-//      case q"_root_.json.Schema.`enum`[$t](Set(..$values))"    => Enum(t.tpe, values)
-//      case q"_root_.json.Schema.`oneof`[$t](Set(..$schemas))" => OneOf(t.tpe, schemas.map(unapply(_).get))
-//      case q"_root_.json.Schema.`allof`[$t](Set(..$schemas))" => AllOf(t.tpe, schemas.map(unapply(_).get))
-//      case q"_root_.json.Schema.`not`[$t]($schema)"           => unapply(schema) map { Not(t.tpe, _) }
-//      case q"_root_.json.Schema.`ref`[$t]($sig, $schema)"     => unapply(schema) map { Ref(t.tpe, sig, _) }
-//      case q"_root_.json.Schema.`value-class`[$o, $i]($schema)" => unapply(schema) map { ValueClass(o.tpe, i.tpe, _) }
-//      case q"_root_.json.Schema.`lazy-ref`[$t]($sig)"           => LazyRef(t.tpe, sig)
-//    }
   }
 
   def transformSchema(in: SchemaType)(pf: PartialFunction[SchemaType, SchemaType]): SchemaType = {

@@ -12,10 +12,27 @@ private[jsonschema] trait UCommons extends SchemaTypes with ULogging { this: UCo
 
   lazy val is211 = util.Properties.versionNumberString.startsWith("2.11")
 
-  class ResolutionContext(val stack: List[Type], val onCycle: Type => Unit) {
+  trait ProfileOps {
+    def profile: c.Expr[json.Profile]
+    def has[Flag: c.TypeTag]: Boolean = {
+      // profile.actualType.member(TypeName("Opts")).asType.toTypeIn(config.actualType)
+      profile.actualType <:< typeOf[Flag]
+    }
+    def leftRightSymbols: (TypeSymbol, TypeSymbol) = {
+      val l = profile.actualType.member(TypeName("Left")).asType
+      val r = profile.actualType.member(TypeName("Right")).asType
+
+      (l, r)
+    }
+  }
+
+  class ResolutionContext(
+    val profile: c.Expr[json.Profile],
+    val stack: List[Type],
+    val onCycle: Type => Unit) extends ProfileOps {
     def isEmpty: Boolean = stack.isEmpty
     def contains(x: Type): Boolean = stack exists { y => x =:= y }
-    def :+(x: Type): ResolutionContext = new ResolutionContext(stack :+ x, onCycle)
+    def :+(x: Type): ResolutionContext = new ResolutionContext(profile, stack :+ x, onCycle)
   }
 
   def resolve(
@@ -67,8 +84,11 @@ private[jsonschema] trait UCommons extends SchemaTypes with ULogging { this: UCo
     val map           = weakTypeOf[Map[_, _]]
     val lazyRef       = typeOf[json.Schema.`ref`[_]]
     val keyPattern    = typeOf[KeyPattern[_]]
-    val schemaC       = typeOf[json.Schema[_]].typeConstructor
+    val schema        = typeOf[json.Schema[_]]
+    val schemaC       = schema.typeConstructor
     val predefC       = typeOf[json.schema.Predef[_]].typeConstructor
+    val profile       = typeOf[json.Profile]
+    val either        = weakTypeOf[Either[_, _]]
 
     object annotation {
       val title             = typeOf[json.schema.title]

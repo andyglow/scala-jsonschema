@@ -37,7 +37,7 @@ private[jsonschema] trait UProductTypes { this: UContext with UCommons with USca
 
     def toField(fieldSym: TermSymbol, i: Int): Field = {
       val name        = NameTransformer.decode(fieldSym.name.toString)
-      val fieldTpe    = fieldSym.typeSignature.dealias // In(tpe).dealias
+      val fieldTpe    = fieldSym.typeSignature.dealias
       val isOption    = fieldTpe <:< T.option
       val hasDefault  = fieldSym.isParamWithDefault
       val default     = Option.whenever (hasDefault) {
@@ -130,8 +130,6 @@ private[jsonschema] trait UProductTypes { this: UContext with UCommons with USca
     fields getOrElse Seq.empty
   }
 
-
-
   class CaseClassExtractor {
     import FieldDecorations._
 
@@ -160,7 +158,13 @@ private[jsonschema] trait UProductTypes { this: UContext with UCommons with USca
           val name = f.name.decodedName.toString
 
           // resolve the field type schema
-          val fieldSchema = resolve(f.effectiveTpe, ctx :+ tpe)
+          val fieldSchema = {
+            val schema = resolve(f.effectiveTpe, ctx :+ tpe)
+            if (f.isOption && ctx.has[json.Profile.OptionAsArray]) {
+              SchemaType.Arr(f.effectiveTpe, T.array.typeConstructor, schema, unique = true)
+            } else
+              schema
+          }
 
           // description
           val description = fd.get(f.name.decodedName.toString)
@@ -173,6 +177,9 @@ private[jsonschema] trait UProductTypes { this: UContext with UCommons with USca
             case (false, true)  => Some(q"${N.Field}.RWMode.WriteOnly")
           }
 
+          // required
+          val required = if (f.isOption) ctx.has[json.Profile.OptionIsRequired] else !f.hasDefault
+
           // create a field model
           f.default map { default =>
             // if default value is specified
@@ -180,7 +187,7 @@ private[jsonschema] trait UProductTypes { this: UContext with UCommons with USca
               .effectiveTpe,
               name,
               fieldSchema,
-              q"${!f.isOption && !f.hasDefault}",
+              q"$required",
               default,
               description,
               rwMode)
@@ -190,7 +197,7 @@ private[jsonschema] trait UProductTypes { this: UContext with UCommons with USca
               f.effectiveTpe,
               name,
               fieldSchema,
-              Some(q"${!f.isOption && !f.hasDefault}"),
+              q"$required",
               None,
               description,
               rwMode)
@@ -220,60 +227,6 @@ private[jsonschema] trait UProductTypes { this: UContext with UCommons with USca
   }
 
   val CaseObject = new CaseObjectExtractor
-
-//
-//  object CaseClass {
-//
-//
-//
-//    def gen(cc: CaseClass, tpe: Type, ctx: ResolutionContext): Tree = {
-//      val fieldMap = cc.fields
-//      // check if all descriptions specified immediately in method call matches field names
-//      if (ctx.isEmpty) descriptions foreach { descriptions =>
-//        descriptions.keySet foreach { k =>
-//          if (!fieldMap.exists(_.name.decodedName.toString == k))
-//            c.abort(c.enclosingPosition, s"unknown field: $k. ${show(tpe)} fields are: ${fieldMap.map(_.name.decodedName.toString).mkString(", ")}")
-//        }
-//      }
-//
-//      val scaladoc = getTypeScaladoc(tpe)
-//      val objTitle = cc.title
-//      val objDescr = scaladoc flatMap { _.description } orElse cc.description
-//      val obj = q"$schemaObj.`object`"
-//      val fields = fieldMap map { f =>
-//        val name      = f.name.decodedName.toString
-//        val jsonType  = resolve(f.effectiveTpe, if (f.isOption) ctx else ctx :+ tpe)
-//        val fDescr    = {
-//          def fromScaladoc   = scaladoc flatMap { _.param(name) }
-//          def fromAnnotation = f.annotations
-//            .map(_.tree)
-//            .filter(_.tpe <:< typeOf[json.schema.description])
-//            .collectFirst { case Apply(_, List(Literal(Constant(text: String)))) => text }
-//          def fromSpec       = if (ctx.isEmpty) descriptions flatMap { _.get(name) } else None
-//
-//          fromSpec orElse fromScaladoc orElse fromAnnotation
-//        }
-//
-//        val tree = f.default map { d =>
-//          q"$obj.Field.fromJson[${f.effectiveTpe}](name = $name, tpe = $jsonType, required = ${ !f.isOption && !f.hasDefault }, default = $d)"
-//        } getOrElse {
-//          q"$obj.Field[${f.effectiveTpe}](name = $name, tpe = $jsonType, required = ${ !f.isOption && !f.hasDefault })"
-//        }
-//        fDescr match {
-//          case Some(descr) => q"$tree.withDescription(Some($descr))"
-//          case None => tree
-//        }
-//      }
-//
-//      (objDescr, objTitle) match {
-//        case (Some(descr), Some(title)) => q"$obj[$tpe](..$fields).duplicate(description = Some($descr), title = Some($title))"
-//        case (_, Some(title))           => q"$obj[$tpe](..$fields).duplicate(title = Some($title))"
-//        case (Some(descr), _)           => q"$obj[$tpe](..$fields).duplicate(description = Some($descr))"
-//        case _                          => q"$obj[$tpe](..$fields)"
-//      }
-//    }
-//  }
-
 
   private[UProductTypes] def bestApply(sym: Symbol): Option[MethodSymbol] = {
     val tpe = sym.typeSignature

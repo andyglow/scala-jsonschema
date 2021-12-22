@@ -10,6 +10,7 @@ trait MacroCake extends UContext
   with UArrays
   with UDictionaries
   with UEnums
+  with UEithers
   with URecursiveTypes
   with UValueTypes
   with UProductTypes
@@ -75,8 +76,10 @@ trait MacroCake extends UContext
 
     val typeDeco = TypeAnnotations(tpe)
 
+    val profile = c.Expr[json.Profile](c.inferImplicitValue(T.profile))
+
     val recursiveTypes = new RecursiveTypes
-    implicit val ctx = new ResolutionContext(Nil, recursiveTypes.append)
+    implicit val ctx = new ResolutionContext(profile, Nil, recursiveTypes.append)
 
     val out = {
 
@@ -120,6 +123,7 @@ trait MacroCake extends UContext
         case SumType(x)    => x
         case CaseClass(x)  => x
         case ValueClass(x) => x
+        case Eithr(x)      => x
         case _ =>
           c.abort(c.enclosingPosition, s"schema for $tpe is not supported, ${ctx.stack mkString " :: "}")
       }
