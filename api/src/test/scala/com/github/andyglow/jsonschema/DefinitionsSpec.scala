@@ -4,13 +4,12 @@ package com.github.andyglow.jsonschema
 import json._
 import json.Schema._
 import json.Schema.`object`._
-
 import com.github.andyglow.json.Value._
-
 import json.schema.Version
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec._
 import JsonMatchers._
+import json.schema.validation.Magnet
 
 // moved on top because of
 // - knownDirectSubclasses of Pet observed before subclass Cat registered
@@ -99,16 +98,21 @@ class DefinitionsSpec extends AnyWordSpec {
     }
 
     "be exposed out of value-classes (custom names used)" in {
+      import json.schema.validation.Instance._
+
       implicit val idS   = Json.schema[UserId] toDefinition "user-id"
-      implicit val nameS = Json.schema[UserName] toDefinition "user-name"
+      implicit val nameM = Magnet.mk[UserName, String]
+      implicit val nameS = Json.schema[UserName] toDefinition "user-name" withValidation (
+        `maxLength` := 100
+      )
 
       val userS = Json.schema[User]
 
       userS shouldBe `object`(
         Field("id"  , `def`[UserId]("user-id", `integer`)),
-        Field("name", `def`[UserName]("user-name", `string`)))
+        Field("name", `def`[UserName]("user-name", `string`.withValidation(`maxLength` := 100))))
 
-      AsValue.schema(userS, Version.Draft07(id = "users")) should containJson {
+      AsValue.schema(userS, Version.Draft07(id = "users")) should beStructurallyEqualTo {
         obj(
           f"$$schema" -> "http://json-schema.org/draft-07/schema#",
           f"$$id" -> "users",
@@ -124,7 +128,8 @@ class DefinitionsSpec extends AnyWordSpec {
               "type" -> "integer"),
             "user-name" -> obj(
               f"$$id" -> "#user-name",
-              "type" -> "string")))
+              "type" -> "string",
+              "maxLength" -> 100)))
       }
     }
 
