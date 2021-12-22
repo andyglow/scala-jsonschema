@@ -224,7 +224,7 @@ trait AsDraftSupport {
 
   def inferDefinitions(x: Schema[_]): obj = {
     def extractDefs(tpe: json.Schema[_], par: ParentSchema): Seq[(String, obj)] = tpe match {
-      case x: `def`[_]          => extractDefs(x.tpe, par) :+ inferDefinition(x, par)
+      case x: `def`[_]          => extractDefs(x.tpe.withValidationsAddedFrom(x), par) :+ inferDefinition(x, par)
       case x: `allof`[_]        => x.subTypes.toSeq flatMap { extractDefs(_, Some(x)) }
       case x: `oneof`[_]        => x.subTypes.toSeq flatMap { extractDefs(_, Some(x)) }
       case x @ `array`(ref, _)  => extractDefs(ref, Some(x))

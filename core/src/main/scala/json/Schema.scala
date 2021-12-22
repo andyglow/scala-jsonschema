@@ -84,6 +84,12 @@ sealed trait Schema[+T] {
 
     copy
   }
+  def withValidationsAddedFrom(x: Schema[_]): Self = {
+    val copy = mkCopy()
+    copy._validations = copy._validations ++ x._validations
+
+    copy
+  }
   def canEqual(that: Any): Boolean = that.isInstanceOf[Schema[_]] // && getClass == that.getClass
   override def equals(obj: Any): Boolean = obj match {
     case s: Schema[_] =>
@@ -515,6 +521,9 @@ object Schema {
       sb append tpe
       sb append ")"
     }
+    override def withValidation[TT >: T, B](
+      v: V.Def[B, _],
+      vs: V.Def[B, _]*)(implicit bound: V.Magnet[TT, B]): `def`[T] = copy(tpe = tpe.asInstanceOf[Schema[TT]].withValidation(v, vs: _*))
     override def toDefinition[TT >: T](sig: String): `def`[TT] = {
       def deepCopy(x: Schema[_]): Schema[_] = {
         val y = x match {
@@ -562,7 +571,7 @@ object Schema {
       sb append tpe
       sb append ")"
     }
-    override def toDefinition[TT >: O](sig: String): `def`[TT] = `def`[TT](sig, tpe)
+    override def toDefinition[TT >: O](sig: String): `def`[TT] = `def`[TT](sig, tpe.withValidationsAddedFrom(this))
   }
 
   // +------------
