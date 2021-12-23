@@ -561,7 +561,7 @@ object Schema {
   //
   final case class `value-class`[O, I](tpe: Schema[I]) extends Schema[O] {
     type Self = `value-class`[O, I]
-    override def jsonType: String = ??? // should never call this
+    override def jsonType: String = tpe.jsonType
     def mkCopy() = new `value-class`[O, I](tpe)
     override def canEqual(that: Any): Boolean = that.isInstanceOf[`value-class`[_, _]]
     override def equals(obj: Any): Boolean = obj match {
