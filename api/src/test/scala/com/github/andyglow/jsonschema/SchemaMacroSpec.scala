@@ -195,21 +195,17 @@ class SchemaMacroSpec extends AnyWordSpec {
         `enum`.of("L1V3", "L2V1", "L2V2")))
     }
 
+    "generate schema for Map which Sealed Values Family for values" in {
 
-//    "generate schema for Map which Sealed Family for values" in {
-//      import `object`.Field
-//
-//      Json.schema[Map[String, FooBar]] shouldEqual `string-map`[String, FooBar, Map](
-//        `oneof`(Set(
-//          `object`(Field("foo", `number`[Double]())),
-//          `object`(Field("bar", `number`[Double]())))))
-//    }
+      Json.schema[Map[String, AnyFooBar]] shouldEqual `dictionary`[String, AnyFooBar, Map](
+        `oneof`.of(`value-class`(`string`), `value-class`(`integer`)))
+    }
 
-//    "generate schema for Map which Sealed Values Family for values" in {
-//
-//      Json.schema[Map[String, AnyFooBar]] shouldEqual `string-map`[String, AnyFooBar, Map](
-//        `oneof`(Set(`string`[String](), `integer`)))
-//    }
+    "generate schema for List which Sealed Values Family for values" in {
+
+      Json.schema[List[AnyFooBar]] shouldEqual `array`[AnyFooBar, List](
+        `oneof`.of(`value-class`(`string`), `value-class`(`integer`)))
+    }
 
     "generate schema for case class that includes another case class" in {
       import `object`.Field
