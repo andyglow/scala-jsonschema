@@ -4,6 +4,7 @@ import json.{Json, Schema}
 import json.schema.validation.Instance._
 import json.Schema._
 import json.schema.Version.Raw
+import json.schema._
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpec
 

@@ -1,7 +1,7 @@
 package com.github.andyglow.jsonschema
 
 
-private[jsonschema] trait UEnums { this: UContext with UCommons with UJsonValueType with UTypeAnnotations =>
+private[jsonschema] trait UEnums { this: UContext with UCommons with UJsonValueType with UTypeAnnotations with UFlags =>
   import c.universe._
 
   private val ScalaEnumTpe = typeOf[scala.Enumeration]
@@ -22,7 +22,7 @@ private[jsonschema] trait UEnums { this: UContext with UCommons with UJsonValueT
           .sortBy { schema => showCode(schema.tree) }
           .map { schema =>
             val schemaDetails = schemas(schema)
-              .sortBy{ member => show(member.tpe) }
+              .sortBy { member => show(member.tpe) }
               .map { member =>
                 s"  - ${show(member.tpe)}.${if (member.typeHint != NoType) s" Type Hint: ${show(member.typeHint)}" else ""}"
               }.mkString("\n")
@@ -72,16 +72,17 @@ private[jsonschema] trait UEnums { this: UContext with UCommons with UJsonValueT
     def knownString: Option[String]
     def tpe: Type
     def schemaTree: Tree
-    def typeHint: Type
+    def typeAnnotations: TypeAnnotations
     def tuple: (Tree, Option[String]) = (schemaTree, knownString)
+    def typeHint: Type = typeAnnotations.typeHint
   }
   object EnumItem {
-    case class FromCaseObject(tpe: Type, value: String, typeHint: Type) extends EnumItem {
+    case class FromCaseObject(tpe: Type, value: String, typeAnnotations: TypeAnnotations) extends EnumItem {
       def knownString: Option[String] = Some(value)
       def schemaTree: Tree = q"${N.internal.json}.Value.str($value)"
     }
 
-    case class FromToValue(tpe: Type, value: Tree, typeHint: Type) extends EnumItem {
+    case class FromToValue(tpe: Type, value: Tree, typeAnnotations: TypeAnnotations) extends EnumItem {
       def knownString: Option[String] = None
       def schemaTree: Tree = value
     }
@@ -124,13 +125,13 @@ private[jsonschema] trait UEnums { this: UContext with UCommons with UJsonValueT
                 d.name == module.name.toTermName
               } getOrElse NoSymbol
               val tpe = module.toType
-              EnumItem.FromToValue(tpe, q"$toValueTree($caseObj)", TypeAnnotations(tpe).typeHint)
+              EnumItem.FromToValue(tpe, q"$toValueTree($caseObj)", TypeAnnotations(tpe))
           }
         } else {
           symbols collect {
             case module: ClassSymbol =>
               val tpe = module.toType
-              EnumItem.FromCaseObject(tpe, module.name.decodedName.toString, TypeAnnotations(tpe).typeHint)
+              EnumItem.FromCaseObject(tpe, module.name.decodedName.toString, TypeAnnotations(tpe))
           }
         }
       }
@@ -139,7 +140,7 @@ private[jsonschema] trait UEnums { this: UContext with UCommons with UJsonValueT
 
   class EnumExtractor {
 
-    private def fromSumType(tpe: Type)(implicit ctx: ResolutionContext): Option[U.Enum] = {
+    private def fromSumType(tpe: Type)(implicit ctx: ResolutionContext): Option[SchemaType] = {
       Option.whenever (tpe.typeSymbol.isClass && tpe.typeSymbol.asClass.isSealed) {
         val extractor = new SumTypeEnumExtractor(tpe)
         extractor.allResolved(silent = true) map { enumItems =>
@@ -153,12 +154,22 @@ private[jsonschema] trait UEnums { this: UContext with UCommons with UJsonValueT
               warn(s"@typeHint[$hintTpe] is ignored for $tpe, as all family members was derived directly from case objects. Enum Type is String")
             }
             enumItems foreach {
-              case EnumItem.FromCaseObject(tpe, _, hintTpe) if hintTpe != NoType && !(hintTpe=:= typeOf[String]) =>
-                warn(s"@typeHint[$hintTpe] is ignored for $tpe, as all family members was derived directly from case objects. Enum Type is String")
+              case EnumItem.FromCaseObject(tpe, _, hintAnnotation) if hintAnnotation.typeHint != NoType && !(hintAnnotation.typeHint =:= typeOf[String]) =>
+                warn(s"@typeHint[${hintAnnotation.typeHint}] is ignored for $tpe, as all family members was derived directly from case objects. Enum Type is String")
               case _ =>
             }
           }
-          U.Enum(tpe, schema, enumItems.map(_.tuple))
+
+          if (flags.enumsAsOneOf) {
+            U.OneOf(
+              tpe = tpe,
+              memberSchema = enumItems map { item =>
+                U.Const(item.tpe, schema, item.schemaTree).withTypeAnnotations(item.typeAnnotations)
+              },
+              discriminatorField = None
+            )
+          } else
+            U.Enum(tpe, schema, enumItems.map(_.tuple))
         }
       }
     }
@@ -204,7 +215,7 @@ private[jsonschema] trait UEnums { this: UContext with UCommons with UJsonValueT
       }
     }
 
-    def unapply(tpe: Type)(implicit ctx: ResolutionContext): Option[U.Enum] = {
+    def unapply(tpe: Type)(implicit ctx: ResolutionContext): Option[SchemaType] = {
       fromScalaEnumeration(tpe) orElse fromSumType(tpe)
     }
   }

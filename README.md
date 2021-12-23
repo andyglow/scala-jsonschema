@@ -46,14 +46,14 @@ The goal of this library is to make JSON Schema generation done the way all popu
 Inspired by Coursera Autoschema but uses `Scala Macros` instead of `Java Reflection`.
 
 ## Features
-- Supports Json Schema `draft-04`, `draft-06`, `draft-07`
+- Supports Json Schema `draft-04`, `draft-06`, `draft-07`, `draft-09`
 - Supports `case classes`
 - Supports `value classes`
 - Supports `sealed trait enums`
 - Supports `sealed trait case classes`
 - Supports `recursive types`
 - Supports `scala.Enumeration`
-- Treats `scaal.Option` as optional fields
+- Treats `scala.Option` as optional fields
 - As well as treats fields with `default values` as optional
 - Any `Iterable` is treated as `array`
 - Pluggable [Joda-Time](https://github.com/JodaOrg/joda-time) Support
@@ -364,8 +364,8 @@ The result will be looking this way then.
 }
 ```
 
-## Definitions/References
-There are couple of ways to specify reference of schema.
+## Definitions / References
+There is a couple of ways to specify reference of schema.
 1. It could be generated from type name (including type args)
 2. You can do it yourself. It is useful when you want to provide couple of schemas with same type but with different validation rules.
 
@@ -674,8 +674,86 @@ case class Foo(name: String)
 val fooSchema: ujson.Value = Json.schema[Foo].asU(Draft04())
 ``` 
 
+## Enumerations
+A few words about enumeration support.
+Most of the time enumerations are enumerations, we don't need to know anything
+else except allowed values, that's it. But.. sometimes we need something more. 
+Sometimes we need the specified values to show up some extra information.
+Some titles, descriptions, etc. `json-schema` doesn't support this, unfortunately.
+But we can work around this. We can make macro to generate `oneof(const1, const2, const3, ...)` instead of `enum`.
+For that you need to provide a special flag.
+
+```scala
+implicit val jsonSchemaFlags: Flag with Flag.EnumsAsOneOf = null
+```
+
+this should show up in implicit scope of the macro. 
+
+Example.. Say we have a `Gender` enum specified like this
+```
+sealed trait Gender
+object Gender {
+    case object Male extends Gender
+    case object Female extends Gender
+}
+```
+
+Usually `Json.schema[Gender]` returns something like this
+```json
+{
+  "type": "string",
+  "enum": [
+    "Male",
+    "Female"
+  ]
+}
+```
+But after the flag added, what we have is
+```json
+{
+  "oneOf": [
+    { "const": "Male" },
+    { "const": "Female" }
+  ]
+}
+```
+With this said, we can add some titles and descriptions into our models. 
+For example this model definition, with `EnumsAsOneOf` flag enabled
+```scala
+  sealed trait Gender
+  object Gender {
+    @title("The Male") case object Male extends Gender
+    /** The Female
+      */
+    case object Female extends Gender
+  }
+```
+will produce schema such as
+```json
+{
+  "oneOf": [
+    {
+      "title": "The Male",
+      "const": "Male"
+    },
+    {
+      "description": "The Female",
+      "const": "Female"
+    }
+  ]
+}
+```
+For better explanation on how to apply documentation tags to the model please refer to the next chapter.
+
 ## Documentation
-3 ways to maintain documented models are supported.
+By documentation, we mean extra information that can be carried along with the schema in
+order to improve its clarity. This all basically is about support of 2 fields: `title`, `description`.
+There are 3 places where these fields may take a place.
+- `root` model level
+- `definition` level
+- `one-of` / `all-of` / `any-of` level
+
+We have 3 ways to maintain documented models are supported.
 
 1. Annotations   
 2. Config

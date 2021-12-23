@@ -398,7 +398,9 @@ object Schema {
     }
     override def jsonType: String = "enum"
     override def toString: String = ToString { sb =>
-      sb append "enum("
+      sb append "enum["
+      sb append tpe.toString
+      sb append "]("
       values foreach { value =>
         sb append value
         sb append ","
@@ -590,6 +592,26 @@ object Schema {
     }
   }
 
-  // TODO
-  // final case class `const`[T](tpe: Schema[_], value: Value) extends Schema[T] { override def jsonType: String = tpe.jsonType }
+  // +------------
+  // | Const
+  // +---------------
+  // It is used in conjunction with OneOf as Alternative to Enum
+  // INTERNAL API
+  final case class `const`[T](value: Value) extends Schema[T] {
+    override def jsonType: String = "const"
+    override type Self = `const`[T]
+    override protected def mkCopy(): `const`[T] = `const`(value)
+    override def toString: String = ToString { sb =>
+      sb append "const("
+      sb append JsonFormatter.format(value)
+      sb append ": "
+      sb append value.tpe
+      sb append ")"
+    }
+    override def canEqual(that: Any): Boolean = that.isInstanceOf[`const`[_]]
+    override def equals(obj: Any): Boolean = obj match {
+      case `const`(v) => value == v && super.equals(obj)
+      case _ => false
+    }
+  }
 }

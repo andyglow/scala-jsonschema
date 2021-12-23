@@ -1,10 +1,9 @@
 package com.github.andyglow.jsonschema
 
 import java.time.LocalDateTime
-
 import com.github.andyglow.json.JsonFormatter
 import json.Json
-import json.schema.{Version, typeHint}
+import json.schema._
 
 object Example {
   import ExampleJsonSchema._
@@ -20,8 +19,10 @@ object ExampleMsg {
 
   object Gender {
 
-    @typeHint[String] case object Male extends Gender
+    @typeHint[String] @title("The Male") case object Male extends Gender
 
+    /** The Female
+      */
     @typeHint[String] case object Female extends Gender
   }
 
@@ -54,6 +55,8 @@ object ExampleMsg {
 
 object ExampleJsonSchema {
   import ExampleMsg._
+
+  implicit val jsonSchemaFlags: Flag with Flag.EnumsAsOneOf = null
 
   implicit val genderJsonType: json.Schema[Gender] = Json.schema[Gender]
 

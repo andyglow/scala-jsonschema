@@ -1,14 +1,14 @@
 package com.github.andyglow.jsonschema
 
 import java.net.URI
-
 import com.github.andyglow.json.Value._
 import com.github.andyglow.jsonschema.JsonMatchers._
 import json._
 import json.Schema._
-import json.Schema.`string`. { Format => F }
-import json.schema.Version.Draft04
-import json.schema.{ validation => V }, V.Instance._
+import json.Schema.`string`.{Format => F}
+import json.schema.Version.{Draft04, Draft09}
+import json.schema.{validation => V}
+import V.Instance._
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -17,6 +17,25 @@ class AsDraft04Spec extends AnyWordSpec {
   import AsDraft04Spec._
 
   "AsValue.schema" should {
+
+    "emit const" in {
+
+      val a = `oneof`.of(
+        `const`("foo").withTitle("Foo").withDescription("f-o-o"),
+        `const`("bar").withTitle("Bar").withDescription("b-a-r")
+      )
+
+      val e = obj(
+        f"$$schema" -> "https://json-schema.org/draft/2019-09/schema",
+        f"$$id" -> "http://example.com/foobarbaz.json",
+        "oneOf" -> arr(
+          obj("const" -> "foo", "title" -> "Foo", "description" -> "f-o-o"),
+          obj("const" -> "bar", "title" -> "Bar", "description" -> "b-a-r")
+        )
+      )
+
+      AsValue.schema(a, Draft09(id = "http://example.com/foobarbaz.json")) should beStructurallyEqualTo(e)
+    }
 
     "emit Object" in {
       import `object`.Field
