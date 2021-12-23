@@ -80,6 +80,17 @@ object EnumSpec {
       case V2 => 2
     }
   }
+
+  sealed trait case8
+  object case8 {
+    @title("v1")
+    @description("Version 1")
+    case object V1 extends case8
+
+    @title("v2")
+    @description("Version 2")
+    case object V2 extends case8
+  }
 }
 
 class EnumSpec extends AnyWordSpec {
@@ -91,6 +102,22 @@ class EnumSpec extends AnyWordSpec {
 
       "all case objects, no type hints" in {
         Json.schema[case0] shouldBe `enum`.of("V1", "V2")
+      }
+
+      "all case objects, no type hints, enum-as-oneof" in {
+        implicit val jsonSchemaFlags: Flag with Flag.EnumsAsOneOf = null
+        Json.schema[case0] shouldBe `oneof`.of[case0](
+          const("V1"),
+          const("V2")
+        )
+      }
+
+      "all case objects, no type hints, enum-as-oneof decorated" in {
+        implicit val jsonSchemaFlags: Flag with Flag.EnumsAsOneOf = null
+        Json.schema[case8] shouldBe `oneof`.of[case8](
+          const("V1").withTitle("v1").withDescription("Version 1"),
+          const("V2").withTitle("v2").withDescription("Version 2")
+        )
       }
 
       "all case objects, string for root type hint" in {

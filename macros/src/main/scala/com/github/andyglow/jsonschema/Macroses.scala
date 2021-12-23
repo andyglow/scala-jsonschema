@@ -4,6 +4,7 @@ import scala.reflect.macros.blackbox
 
 trait MacroCake extends UContext
   with UCommons
+  with UFlags
   with UImplicits
   with USignatures
   with UScaladocs

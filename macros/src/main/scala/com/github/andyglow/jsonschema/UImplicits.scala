@@ -48,8 +48,7 @@ private[jsonschema] trait UImplicits { this: UContext with UCommons with USignat
       case _ => false
     }
 
-
-    def getOrElse(tpe: Type, gen: => SchemaType): SchemaType = {
+    def get(tpe: Type): Option[SchemaType] = {
 
       val sType = appliedType(T.schemaC, tpe) // .dealias.widen
       val pType = appliedType(T.predefC, tpe) // .dealias.widen
@@ -78,11 +77,13 @@ private[jsonschema] trait UImplicits { this: UContext with UCommons with USignat
       }
 
       lookupSchema match {
-        case NotFound      => gen
-        case FromPredef(x) => U.`-from-tree-`(tpe, x)
-        case FromSchema(x) => U.`-from-tree-`(tpe, q"""${N.Schema}.`def`[$tpe]($x)(${signature(tpe)})""")
+        case NotFound      => None
+        case FromPredef(x) => Some(U.`-from-tree-`(tpe, x))
+        case FromSchema(x) => Some(U.`-from-tree-`(tpe, q"""${N.Schema}.`def`[$tpe]($x)(${signature(tpe)})"""))
       }
     }
+
+    def getOrElse(tpe: Type, gen: => SchemaType): SchemaType = get(tpe) getOrElse gen
   }
   val Implicit = new Implicit
 }

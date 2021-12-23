@@ -1,7 +1,7 @@
 package com.github.andyglow.jsonschema
 
 
-private[jsonschema] trait SchemaTypes { this: UContext with UCommons =>
+private[jsonschema] trait SchemaTypes { this: UContext with UCommons with UTypeAnnotations with UFlags =>
   import c.universe._
 
 
@@ -14,6 +14,13 @@ private[jsonschema] trait SchemaTypes { this: UContext with UCommons =>
 
     def extra: SchemaType.Extra
     def withExtra(x: SchemaType.Extra): Self
+    def withTypeAnnotations(x: TypeAnnotations): Self = {
+      withExtra(
+        extra.copy(
+          title = extra.title orElse x.texts.flatMap(_.title),
+          description = extra.description orElse x.texts.flatMap(_.description),
+          discriminationKey = extra.discriminationKey orElse x.discriminatorKey.map(_.value)))
+    }
 
     final def tree: Tree = {
 
@@ -54,6 +61,7 @@ private[jsonschema] trait SchemaTypes { this: UContext with UCommons =>
     case class ValueClass(tpe: Type, innerTpe: Type, schema: SchemaType, extra: Extra = Extra()) extends SchemaType { type Self = ValueClass; def prefix = q"${N.Schema}.`value-class`[$tpe, $innerTpe](${schema.tree})"; def withExtra(x: SchemaType.Extra) = copy(extra = x) }
     case class Def(tpe: Type, sig: Tree, schema: SchemaType, extra: Extra = Extra()) extends SchemaType { type Self = Def; def prefix = q"${N.Schema}.`def`[$tpe]($sig, ${schema.tree})"; def withExtra(x: SchemaType.Extra) = copy(extra = x) }
     case class Ref(tpe: Type, sig: Tree, extra: Extra = Extra()) extends SchemaType { type Self = Ref; def prefix = q"${N.Schema}.`ref`[$tpe]($sig)"; def withExtra(x: SchemaType.Extra) = copy(extra = x) }
+    case class Const(tpe: Type, schema: SchemaType, value: Tree, extra: Extra = Extra()) extends SchemaType { type Self = Const; def prefix = q"${N.Schema}.`const`[$tpe]($value)"; def withExtra(x: SchemaType.Extra) = copy(extra = x) }
     case class `-from-tree-`(tpe: Type, prefix: Tree, extra: Extra = Extra()) extends SchemaType { type Self = `-from-tree-`; def withExtra(x: SchemaType.Extra) = copy(extra = x) }
     object Obj {
       sealed trait Field {

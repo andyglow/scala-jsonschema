@@ -157,6 +157,14 @@ trait AsDraftSupport {
     obj(f"$$ref" -> buildRef(ref))
   }
 
+  def mkConst(vl: ValidationList, x: `const`[_], par: ParentSchema): obj = {
+    obj(
+      ("description"  , x.description),
+      ("title"        , x.title),
+      ("const"        ,x.value)
+    )
+  }
+
   def buildRef(ref: String): String = s"#/definitions/$ref"
 
   def mkValueClass(vl: ValidationList, x: `value-class`[_, _], par: ParentSchema): obj = {
@@ -175,6 +183,7 @@ trait AsDraftSupport {
     case (vv, x: `def`[_], par, _)            => mkDef(vv, x, par)
     case (vv, x: `ref`[_], par, _)            => mkRef(vv, x, par)
     case (vv, x: `value-class`[_, _], par, _) => mkValueClass(vv, x, par)
+    case (vv, x: `const`[_], par, _)          => mkConst(vv, x, par)
   }
 
   class ValidationList(elements: ListBuffer[V.Def[_, _]]) {

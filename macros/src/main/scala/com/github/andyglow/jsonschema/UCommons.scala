@@ -7,7 +7,7 @@ import scala.language.implicitConversions
 import scala.util.control.NonFatal
 
 
-private[jsonschema] trait UCommons extends SchemaTypes with ULogging { this: UContext with UFieldDecorations =>
+private[jsonschema] trait UCommons extends SchemaTypes with ULogging { this: UContext with UFieldDecorations with UTypeAnnotations with UFlags =>
   import c.universe._
 
   lazy val is211 = util.Properties.versionNumberString.startsWith("2.11")
