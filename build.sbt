@@ -197,10 +197,7 @@ lazy val `u-json` = { project in file("modules/u-json") }.dependsOn(core, api % 
   name := "scala-jsonschema-ujson",
 
   libraryDependencies ++= {
-    val uV = CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, 11)) => "1.4.2"
-      case _             => "1.0.0"
-    }
+    val uV = "1.4.3"
 
     Seq(
       "com.lihaoyi" %% "ujson" % uV,
