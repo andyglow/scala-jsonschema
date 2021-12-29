@@ -1,5 +1,6 @@
 import xerial.sbt.Sonatype._
 import ReleaseTransformations._
+import com.lightbend.paradox.apidoc.ApidocPlugin.autoImport.apidocRootPackage
 import scala.sys.process._
 import ScalaVer.scalaV
 
@@ -247,6 +248,12 @@ lazy val derived = { project in file("modules/derived") }
   )
 
 lazy val docs = { project in file("documentation") }
+  // this is 2 phase approach
+  // 1. MDoc
+  //    - variables get substituted
+  //    - snippets get evaluated
+  // 2. Paradox
+  //    - generates the site out of the MDoc output
   .enablePlugins(
     // - variable substitution
     // - snippets evaluation
@@ -264,9 +271,11 @@ lazy val docs = { project in file("documentation") }
   .settings(
     commonSettings,
 
-    mdocIn := baseDirectory.value / "main" / "paradox",
+    apidocRootPackage := "json",
 
-    mdocExtraArguments := Seq("--verbose"),
+    mdocIn := baseDirectory.value / "main" / "markdown",
+
+    // mdocExtraArguments := Seq("--verbose"),
 
     mdocVariables := Map(
       "VERSION" -> version.value,
@@ -275,6 +284,10 @@ lazy val docs = { project in file("documentation") }
     paradoxProperties ++= Map(
       "project.name" -> "Scala JsonSchema",
       "github.base_url" -> "https://github.com/andyglow/scala-jsonschema"),
+
+    paradoxGroups := Map(
+      "Phase" -> Seq("model", "schema")
+    ),
 
     Compile / paradox / sourceDirectory := mdocOut.value,
 

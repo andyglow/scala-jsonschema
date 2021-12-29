@@ -8,6 +8,7 @@ addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.4.6")
 
 // Documentation
 addSbtPlugin("com.lightbend.paradox" % "sbt-paradox"                % "0.10.2")
+addSbtPlugin("com.lightbend.paradox" % "sbt-paradox-apidoc"         % "0.10")
 addSbtPlugin("io.github.jonas"       % "sbt-paradox-material-theme" % "0.6.0")
 addSbtPlugin("com.typesafe.sbt"      % "sbt-site"                   % "1.4.1")
 addSbtPlugin("com.typesafe.sbt"      % "sbt-ghpages"                % "0.6.3")
