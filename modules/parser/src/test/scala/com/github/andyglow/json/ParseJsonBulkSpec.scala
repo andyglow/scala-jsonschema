@@ -4,7 +4,6 @@ import scala.io.Source
 import scala.util.{Failure, Success}
 import org.scalatest.funsuite.AnyFunSuite
 
-
 class ParseJsonBulkSpec extends AnyFunSuite {
 
   private lazy val clazz = classOf[ParseJsonBulkSpec]
@@ -13,11 +12,16 @@ class ParseJsonBulkSpec extends AnyFunSuite {
     def env[T](x: String)(fn: String => T): Option[T] = {
       sys.env
         .get(x)
-        .flatMap { x => try Some(fn(x)) catch { case _: Throwable => None } }
+        .flatMap { x =>
+          try Some(fn(x))
+          catch { case _: Throwable => None }
+        }
     }
-    def CI = env("CI")(_.toBoolean) getOrElse false
+    def CI    = env("CI")(_.toBoolean) getOrElse false
     def DRONE = env("DRONE")(_.toBoolean) getOrElse false
-    def DRONE_WORKSPACE_PATH = env("DRONE_WORKSPACE_PATH")(identity) // custom env var according to https://docs.drone.io/pipeline/environment/reference/
+    def DRONE_WORKSPACE_PATH = env("DRONE_WORKSPACE_PATH")(
+      identity
+    ) // custom env var according to https://docs.drone.io/pipeline/environment/reference/
 
     if (CI & DRONE) {
       DRONE_WORKSPACE_PATH orElse Some("/drone/src")

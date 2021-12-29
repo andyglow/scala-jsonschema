@@ -23,7 +23,8 @@ object ExampleMsg {
 
     /** The Female
       */
-    @typeHint[String] case object Female extends Gender
+    @typeHint[String]
+    case object Female extends Gender
   }
 
   case class Company(name: String)
@@ -32,14 +33,22 @@ object ExampleMsg {
 
   /** Super Person
     *
-    * @param firstName First
-    * @param middleName Middle
-    * @param lastName Last
-    * @param gender Gender
-    * @param birthDay Birth dat
-    * @param company Company
-    * @param cars Cars owned
-    * @param active Is Active or not
+    * @param firstName
+    *   First
+    * @param middleName
+    *   Middle
+    * @param lastName
+    *   Last
+    * @param gender
+    *   Gender
+    * @param birthDay
+    *   Birth dat
+    * @param company
+    *   Company
+    * @param cars
+    *   Cars owned
+    * @param active
+    *   Is Active or not
     */
   case class Person(
     firstName: String,
@@ -49,7 +58,8 @@ object ExampleMsg {
     birthDay: LocalDateTime,
     company: Company,
     cars: Seq[Car],
-    active: Boolean = true)
+    active: Boolean = true
+  )
 
 }
 

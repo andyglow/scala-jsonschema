@@ -16,9 +16,7 @@ class SchemaMacroSpec extends AnyWordSpec {
     "generate schema for case class of primitive fields" in {
       import `object`.Field
 
-      val expected = `object`(
-        Field("name", `string`),
-        Field("bar" , `integer`))
+      val expected = `object`(Field("name", `string`), Field("bar", `integer`))
 
       Json.schema[Foo1] shouldEqual expected
     }
@@ -28,27 +26,41 @@ class SchemaMacroSpec extends AnyWordSpec {
 
       Json.schema[Foo2] shouldEqual `object`(
         Field("name", `string`, required = false),
-        Field("bar" , `integer`, required = false))
+        Field("bar", `integer`, required = false)
+      )
     }
 
     "generate schema for case class of primitive fields with default values" in {
       import `object`.Field
 
       Json.schema[Foo3] shouldEqual `object`(
-        Field("name"    , `string`, required = false, default = "xxx"),
-        Field("bar"     , `integer`, required = false, default = 5),
-        Field("active"  , `boolean`, required = false, default = true))
+        Field("name", `string`, required = false, default = "xxx"),
+        Field("bar", `integer`, required = false, default = 5),
+        Field("active", `boolean`, required = false, default = true)
+      )
     }
 
     "generate schema for case class of array fields with default values" in {
       import `object`.Field
 
       Json.schema[Bar9] shouldEqual `object`(
-        Field("set"     , `array`(`integer`, unique = true), required = false, default = Set(1, 5, 9)),
-        Field("list"    , `array`(`boolean`), required = false, default = List(true, false)),
-        Field("vector"  , `array`(`number`[Long]), required = false, default = Vector(9, 7)),
-        Field("strMap"  , `dictionary`(`number`[Double]), required = false, default = Map("foo" -> .12)),
-        Field("intMap"  , `dictionary`[Int, String, Map](`string`).withValidation(`patternProperties` := "^[0-9]+$"), required = false, default = Map(1 -> "1", 2 -> "2")))
+        Field("set", `array`(`integer`, unique = true), required = false, default = Set(1, 5, 9)),
+        Field("list", `array`(`boolean`), required = false, default = List(true, false)),
+        Field("vector", `array`(`number`[Long]), required = false, default = Vector(9, 7)),
+        Field(
+          "strMap",
+          `dictionary`(`number`[Double]),
+          required = false,
+          default = Map("foo" -> .12)
+        ),
+        Field(
+          "intMap",
+          `dictionary`[Int, String, Map](`string`)
+            .withValidation(`patternProperties` := "^[0-9]+$"),
+          required = false,
+          default = Map(1 -> "1", 2 -> "2")
+        )
+      )
     }
 
     "generate references for implicitly defined dependencies" in {
@@ -69,8 +81,11 @@ class SchemaMacroSpec extends AnyWordSpec {
             "component",
             `def`[Compo1](
               "com.github.andyglow.jsonschema.SchemaMacroSpec.Compo1",
-              `string`[Compo1]),
-            required = true))
+              `string`[Compo1]
+            ),
+            required = true
+          )
+        )
       }
     }
 
@@ -81,32 +96,52 @@ class SchemaMacroSpec extends AnyWordSpec {
         val Mon, Tue, Wed, Thu, Fri, Sat, Sun = Value
       }
 
-      Json.schema[WeekDay.type] shouldEqual `enum`.of("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
-      Json.schema[WeekDay.Value] shouldEqual `enum`.of("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+      Json
+        .schema[WeekDay.type] shouldEqual `enum`.of("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+      Json.schema[WeekDay.Value] shouldEqual `enum`.of(
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri",
+        "Sat",
+        "Sun"
+      )
       Json.schema[WeekDay.T] shouldEqual `enum`.of("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
 
       object Planet extends Enumeration {
         protected case class Val(mass: Double, radius: Double) extends super.Val {
-          def surfaceGravity: Double = Planet.G * mass / (radius * radius)
+          def surfaceGravity: Double                   = Planet.G * mass / (radius * radius)
           def surfaceWeight(otherMass: Double): Double = otherMass * surfaceGravity
         }
         import scala.language.implicitConversions
         implicit def valueToPlanetVal(x: Value): Val = x.asInstanceOf[Val]
 
-        val G: Double = 6.67300E-11
-        val Mercury = Val(3.303e+23, 2.4397e6)
-        val Venus   = Val(4.869e+24, 6.0518e6)
-        val Earth   = Val(5.976e+24, 6.37814e6)
-        val Mars    = Val(6.421e+23, 3.3972e6)
-        val Jupiter = Val(1.9e+27, 7.1492e7)
-        val Saturn  = Val(5.688e+26, 6.0268e7)
-        val Uranus  = Val(8.686e+25, 2.5559e7)
-        val Neptune = Val(1.024e+26, 2.4746e7)
+        val G: Double = 6.67300e-11
+        val Mercury   = Val(3.303e+23, 2.4397e6)
+        val Venus     = Val(4.869e+24, 6.0518e6)
+        val Earth     = Val(5.976e+24, 6.37814e6)
+        val Mars      = Val(6.421e+23, 3.3972e6)
+        val Jupiter   = Val(1.9e+27, 7.1492e7)
+        val Saturn    = Val(5.688e+26, 6.0268e7)
+        val Uranus    = Val(8.686e+25, 2.5559e7)
+        val Neptune   = Val(1.024e+26, 2.4746e7)
       }
 
-      Json.schema[Planet.type] shouldEqual `enum`.of("Mercury", "Venus", "Earth", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune")
+      Json.schema[Planet.type] shouldEqual `enum`.of(
+        "Mercury",
+        "Venus",
+        "Earth",
+        "Mars",
+        "Jupiter",
+        "Saturn",
+        "Uranus",
+        "Neptune"
+      )
 
-      Json.schema[Map[WeekDay.type, String]] shouldEqual `dictionary`[WeekDay.type, String, Map](`string`).withValidation(`patternProperties` := "^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)$")
+      Json.schema[Map[WeekDay.type, String]] shouldEqual `dictionary`[WeekDay.type, String, Map](
+        `string`
+      ).withValidation(`patternProperties` := "^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)$")
     }
 
     "generate schema for Sealed Trait Enums" in {
@@ -129,105 +164,102 @@ class SchemaMacroSpec extends AnyWordSpec {
 
       Json.schema[Color] shouldEqual `enum`.of("Red", "Green", "Blue")
 
-      Json.schema[Map[Color, String]] shouldEqual `dictionary`[Color, String, Map](`string`).withValidation(`patternProperties` := "^(?:Red|Green|Blue)$")
+      Json.schema[Map[Color, String]] shouldEqual `dictionary`[Color, String, Map](`string`)
+        .withValidation(`patternProperties` := "^(?:Red|Green|Blue)$")
     }
 
     "generate schema for Sealed Trait subclasses" in {
       import `object`.Field
 
-      Json.schema[FooBar] shouldEqual `oneof`(Set(
-        `object`(Field("foo", `number`[Double])),
-        `object`(Field("bar", `number`[Double]))))
+      Json.schema[FooBar] shouldEqual `oneof`(
+        Set(`object`(Field("foo", `number`[Double])), `object`(Field("bar", `number`[Double])))
+      )
     }
 
     "generate schema for Multi Level Sealed Trait subclasses" in {
       import `object`.Field
 
-      Json.schema[MultiLevelSealedTraitRoot] shouldEqual `oneof`(Set(
-        `object`(Field("a", `integer`)),
-        `object`(Field("b", `string`)),
-        `object`(Field("c", `boolean`)),
-        `object`(Field("d", `number`[Double])),
-        `object`(Field("e", `array`[String, List](`string`)))))
+      Json.schema[MultiLevelSealedTraitRoot] shouldEqual `oneof`(
+        Set(
+          `object`(Field("a", `integer`)),
+          `object`(Field("b", `string`)),
+          `object`(Field("c", `boolean`)),
+          `object`(Field("d", `number`[Double])),
+          `object`(Field("e", `array`[String, List](`string`)))
+        )
+      )
     }
 
     "generate schema for Sealed Trait subclasses defined inside of it's companion object" in {
       import `object`.Field
 
-      Json.schema[FooBarInsideCompanion] shouldEqual `oneof`(Set(
-        `object`(Field("foo", `number`[Double])),
-        `object`(Field("bar", `number`[Double]))))
+      Json.schema[FooBarInsideCompanion] shouldEqual `oneof`(
+        Set(`object`(Field("foo", `number`[Double])), `object`(Field("bar", `number`[Double])))
+      )
     }
 
     "generate schema for hybrid Sealed Trait family" in {
       import `object`.Field
 
-      Json.schema[HybridSum] shouldEqual `oneof`(Set(
-        `object`(
-          Field("id", `integer`),
-          Field("name", `string`)),
-        `enum`.of("V2", "V3")))
+      Json.schema[HybridSum] shouldEqual `oneof`(
+        Set(`object`(Field("id", `integer`), Field("name", `string`)), `enum`.of("V2", "V3"))
+      )
     }
 
     "generate schema for hybrid generic Sealed Trait family" in {
       import `object`.Field
 
-      Json.schema[HybridGenericSum[Double]] shouldEqual `oneof`(Set(
-        `object`(
-          Field("id", `integer`),
-          Field("value", `number`[Double])),
-        `enum`.of("V2")))
+      Json.schema[HybridGenericSum[Double]] shouldEqual `oneof`(
+        Set(`object`(Field("id", `integer`), Field("value", `number`[Double])), `enum`.of("V2"))
+      )
     }
 
     "generate schema for hybrid recursive Sealed Trait family" in {
       import `object`.Field
 
-      Json.schema[HybridRecursiveSum] shouldEqual `oneof`(Set(
-        `object`(
-          Field("intVal", `integer`),
-          Field("err", `string`, required = false)),
-        `object`(
-          Field("tpe", `string`)),
-        `object`(
-          Field("error", `string`)),
-        `object`(
-          Field("value", `integer`)),
-        `enum`.of("L1V3", "L2V1", "L2V2")))
+      Json.schema[HybridRecursiveSum] shouldEqual `oneof`(
+        Set(
+          `object`(Field("intVal", `integer`), Field("err", `string`, required = false)),
+          `object`(Field("tpe", `string`)),
+          `object`(Field("error", `string`)),
+          `object`(Field("value", `integer`)),
+          `enum`.of("L1V3", "L2V1", "L2V2")
+        )
+      )
     }
 
     "generate schema for Map which Sealed Values Family for values" in {
 
       Json.schema[Map[String, AnyFooBar]] shouldEqual `dictionary`[String, AnyFooBar, Map](
-        `oneof`.of(`value-class`(`string`), `value-class`(`integer`)))
+        `oneof`.of(`value-class`(`string`), `value-class`(`integer`))
+      )
     }
 
     "generate schema for List which Sealed Values Family for values" in {
 
       Json.schema[List[AnyFooBar]] shouldEqual `array`[AnyFooBar, List](
-        `oneof`.of(`value-class`(`string`), `value-class`(`integer`)))
+        `oneof`.of(`value-class`(`string`), `value-class`(`integer`))
+      )
     }
 
     "generate schema for case class that includes another case class" in {
       import `object`.Field
 
       Json.schema[Bar5] shouldEqual `object`(
-        Field("foo", `object`(
-          Field("name", `string`),
-          Field("bar" , `integer`))))
+        Field("foo", `object`(Field("name", `string`), Field("bar", `integer`)))
+      )
     }
 
     "generate schema for case class using collection of string" in {
       import `object`.Field
 
-      Json.schema[Bar6] shouldEqual `object`(
-        Field("foo", `array`(`string`)))
+      Json.schema[Bar6] shouldEqual `object`(Field("foo", `array`(`string`)))
     }
 
     "generate schema for case class using collection of integers" in {
       import `object`.Field
 
-      Json.schema[Bar7] shouldEqual `object`(
-        Field("foo", `array`(`integer`)))
+      Json.schema[Bar7] shouldEqual `object`(Field("foo", `array`(`integer`)))
     }
 
     "generate schema for value class" in {
@@ -241,7 +273,9 @@ class SchemaMacroSpec extends AnyWordSpec {
 
       Json.schema[Map[String, Int]] shouldEqual `dictionary`(`integer`)
 
-      Json.schema[Map[String, Foo9]] shouldEqual `dictionary`[String, Foo9, Map](`object`(Field("name", `string`)))
+      Json.schema[Map[String, Foo9]] shouldEqual `dictionary`[String, Foo9, Map](
+        `object`(Field("name", `string`))
+      )
 
       Json.schema[Map[Bar8, Int]] shouldEqual `dictionary`[Bar8, Int, Map](`integer`)
 
@@ -258,15 +292,22 @@ class SchemaMacroSpec extends AnyWordSpec {
     "generate schema for Map[_: MapKeyPattern, _]" in {
       import `object`.Field
 
-      Json.schema[Map[Long, Long]] shouldEqual `dictionary`[Long, Long, Map](`number`[Long]).withValidation(`patternProperties` := "^[0-9]+$")
+      Json.schema[Map[Long, Long]] shouldEqual `dictionary`[Long, Long, Map](`number`[Long])
+        .withValidation(`patternProperties` := "^[0-9]+$")
 
-      Json.schema[Map[Char, Long]] shouldEqual `dictionary`[Char, Long, Map](`number`[Long]).withValidation(`patternProperties` := "^.{1}$")
+      Json.schema[Map[Char, Long]] shouldEqual `dictionary`[Char, Long, Map](`number`[Long])
+        .withValidation(`patternProperties` := "^.{1}$")
 
-      Json.schema[Map[Int, String]] shouldEqual `dictionary`[Int, String, Map](`string`).withValidation(`patternProperties` := "^[0-9]+$")
+      Json.schema[Map[Int, String]] shouldEqual `dictionary`[Int, String, Map](`string`)
+        .withValidation(`patternProperties` := "^[0-9]+$")
 
-      Json.schema[Map[Int, Int]] shouldEqual `dictionary`[Int, Int, Map](`integer`).withValidation(`patternProperties` := "^[0-9]+$")
+      Json.schema[Map[Int, Int]] shouldEqual `dictionary`[Int, Int, Map](`integer`).withValidation(
+        `patternProperties` := "^[0-9]+$"
+      )
 
-      Json.schema[Map[Int, Foo9]] shouldEqual `dictionary`[Int, Foo9, Map](`object`(Field("name", `string`))).withValidation(`patternProperties` := "^[0-9]+$")
+      Json.schema[Map[Int, Foo9]] shouldEqual `dictionary`[Int, Foo9, Map](
+        `object`(Field("name", `string`))
+      ).withValidation(`patternProperties` := "^[0-9]+$")
     }
   }
 }
@@ -300,7 +341,8 @@ object SchemaMacroSpec {
     list: List[Boolean] = List(true, false),
     vector: Vector[Long] = Vector(9L, 7L),
     strMap: Map[String, Double] = Map("foo" -> .12),
-    intMap: Map[Int, String] = Map(1 -> "1", 2 -> "2"))
+    intMap: Map[Int, String] = Map(1 -> "1", 2 -> "2")
+  )
 
 }
 
@@ -309,12 +351,12 @@ case class FooBar1(foo: Double) extends FooBar
 case class FooBar2(bar: Double) extends FooBar
 
 sealed trait MultiLevelSealedTraitRoot
-sealed trait MultiLevelBranch1 extends MultiLevelSealedTraitRoot
-sealed trait MultiLevelBranch2 extends MultiLevelSealedTraitRoot
-case class MultiLevelBranch1Instance1(a: Int) extends MultiLevelBranch1
-case class MultiLevelBranch1Instance2(b: String) extends MultiLevelBranch1
-case class MultiLevelBranch2Instance1(c: Boolean) extends MultiLevelBranch2
-case class MultiLevelBranch2Instance2(d: Double) extends MultiLevelBranch2
+sealed trait MultiLevelBranch1                      extends MultiLevelSealedTraitRoot
+sealed trait MultiLevelBranch2                      extends MultiLevelSealedTraitRoot
+case class MultiLevelBranch1Instance1(a: Int)       extends MultiLevelBranch1
+case class MultiLevelBranch1Instance2(b: String)    extends MultiLevelBranch1
+case class MultiLevelBranch2Instance1(c: Boolean)   extends MultiLevelBranch2
+case class MultiLevelBranch2Instance2(d: Double)    extends MultiLevelBranch2
 case class MultiLevelRootInstance1(e: List[String]) extends MultiLevelSealedTraitRoot
 
 sealed trait FooBarInsideCompanion
@@ -323,33 +365,33 @@ object FooBarInsideCompanion {
   case class FooBarInsideCompanion2(bar: Double) extends FooBarInsideCompanion
 }
 
-sealed trait AnyFooBar extends Any
+sealed trait AnyFooBar               extends Any
 case class AnyFooBar1(value: String) extends AnyVal with AnyFooBar
-case class AnyFooBar2(value: Int) extends AnyVal with AnyFooBar
+case class AnyFooBar2(value: Int)    extends AnyVal with AnyFooBar
 
 sealed trait HybridSum
 object HybridSum {
   case class V1(id: Int, name: String) extends HybridSum
-  case object V2 extends HybridSum
-  case object V3 extends HybridSum
+  case object V2                       extends HybridSum
+  case object V3                       extends HybridSum
 }
 
 sealed trait HybridGenericSum[+T]
 object HybridGenericSum {
   case class V1[T](id: Int, value: T) extends HybridGenericSum[T]
-  case object V2 extends HybridGenericSum[Nothing]
+  case object V2                      extends HybridGenericSum[Nothing]
 }
 
 sealed trait HybridRecursiveSum
 object HybridRecursiveSum {
-  sealed trait Level1 extends HybridRecursiveSum
+  sealed trait Level1            extends HybridRecursiveSum
   case class L1V1(error: String) extends Level1
-  case class L1V2(value: Int) extends Level1
-  case object L1V3 extends Level1
+  case class L1V2(value: Int)    extends Level1
+  case object L1V3               extends Level1
 
-  sealed trait Level2 extends HybridRecursiveSum { def tpe: String }
-  case object L2V1 extends Level2 { def tpe = "l2-v1" }
-  case object L2V2 extends Level2 { def tpe = "l2-v2" }
+  sealed trait Level2          extends HybridRecursiveSum { def tpe: String   }
+  case object L2V1             extends Level2             { def tpe = "l2-v1" }
+  case object L2V2             extends Level2             { def tpe = "l2-v2" }
   case class L2V3(tpe: String) extends Level2
 
   case class Generic(err: Option[String], intVal: Int) extends HybridRecursiveSum

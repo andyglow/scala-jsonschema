@@ -10,7 +10,6 @@ import org.scalatest.funsuite._
 import json.Schema._
 import json.Schema.`string`.Format
 
-
 class RefinedAliasedSpec extends AnyFunSuite {
 
   test("partially aliased") {
@@ -18,15 +17,14 @@ class RefinedAliasedSpec extends AnyFunSuite {
 
     schema[Refined[String, IP]] shouldBe `oneof`.of(
       `string`(Format.`ipv4`),
-      `string`(Format.`ipv6`))
+      `string`(Format.`ipv6`)
+    )
   }
 
   test("fully aliased") {
     type IPFormat = S.IPv4 Or S.IPv6
-    type IP = String Refined IPFormat
+    type IP       = String Refined IPFormat
 
-    schema[IP] shouldBe `oneof`.of(
-      `string`(Format.`ipv4`),
-      `string`(Format.`ipv6`))
+    schema[IP] shouldBe `oneof`.of(`string`(Format.`ipv4`), `string`(Format.`ipv6`))
   }
 }

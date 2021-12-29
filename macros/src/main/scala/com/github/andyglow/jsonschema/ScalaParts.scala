@@ -2,16 +2,13 @@ package com.github.andyglow.jsonschema
 
 object ScalaParts {
 
-  case class ParsedParameter(
-    name: String,
-    tpe: String,
-    default: Option[String])
+  case class ParsedParameter(name: String, tpe: String, default: Option[String])
 
   object ParsedParameter {
 
     def fromString(x: String): ParsedParameter = {
       val colonIdx = x.indexOf(':')
-      val eqIdx = x.indexOf('=')
+      val eqIdx    = x.indexOf('=')
       require(eqIdx < 0 || colonIdx < eqIdx)
 
       val name = x.substring(0, colonIdx).trim

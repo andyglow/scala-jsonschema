@@ -3,7 +3,6 @@ package com.github.andyglow.json
 import scala.collection.mutable
 import com.github.andyglow.scalamigration._
 
-
 sealed trait MutableValue {
 
   def toValue: Value

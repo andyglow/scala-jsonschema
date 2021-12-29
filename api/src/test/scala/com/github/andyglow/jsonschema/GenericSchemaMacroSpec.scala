@@ -8,13 +8,13 @@ import json.Schema.`object`.Field
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.funsuite.AnyFunSuite
 
-
 class GenericSchemaMacroSpec extends AnyFunSuite {
 
   test("generic case class") {
     Json.schema[GenericCC[Int]] shouldEqual `object`(
       Field("head", `integer`),
-      Field("tail", `array`(`integer`)))
+      Field("tail", `array`(`integer`))
+    )
   }
 
   test("generic case class with generic nesting") {
@@ -22,25 +22,28 @@ class GenericSchemaMacroSpec extends AnyFunSuite {
 
     Json.schema[DoubleGenericCC[LocalDateTime]] shouldEqual `object`(
       Field("str", `string`),
-      Field("gen", `object`(
-        Field("head", `string`(`date-time`)),
-        Field("tail", `array`(`string`(`date-time`))))))
+      Field(
+        "gen",
+        `object`(
+          Field("head", `string`(`date-time`)),
+          Field("tail", `array`(`string`(`date-time`)))
+        )
+      )
+    )
   }
 
   test("generic case class with generic nesting and defaults") {
     Json.schema[DoubleGenericCCWithDefaults[Long]] shouldEqual `object`(
       Field("str", `string`, required = false, "abc"),
-      Field("gen", `object`(
-        Field("head", `number`[Long]),
-        Field("tail", `array`(`number`[Long])))))
+      Field("gen", `object`(Field("head", `number`[Long]), Field("tail", `array`(`number`[Long]))))
+    )
   }
 
   test("generic case class with generic nesting and defaults defined externally") {
     Json.schema[DoubleGenericCCWithPredefinedDefaults[Long]] shouldEqual `object`(
       Field("str", `string`, required = false, "some-str"),
-      Field("gen", `object`(
-        Field("head", `number`[Long]),
-        Field("tail", `array`(`number`[Long])))))
+      Field("gen", `object`(Field("head", `number`[Long]), Field("tail", `array`(`number`[Long]))))
+    )
   }
 }
 
@@ -52,10 +55,11 @@ case class DoubleGenericCCWithDefaults[T](str: String = "abc", gen: GenericCC[T]
 
 case class DoubleGenericCCWithPredefinedDefaults[T](
   str: String = GenericSchemaMacroSpec.defaultStr1 + "-" + GenericSchemaMacroSpec.defaultStr2,
-  gen: GenericCC[T])
+  gen: GenericCC[T]
+)
 
 object GenericSchemaMacroSpec {
 
   val defaultStr1 = "some"
-  val defaultStr2= "str"
+  val defaultStr2 = "str"
 }

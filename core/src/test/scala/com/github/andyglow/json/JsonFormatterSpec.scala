@@ -9,23 +9,23 @@ class JsonFormatterSpec extends AnyPropSpec {
   import JsonFormatter._
 
   private val primitiveExamples = Table(
-    ("JS Input"           , "Expected"),
-    (str("foo")           , """"foo""""),
-    (num(5)               , """5"""),
-    (num(5L)              , """5"""),
-    (num(5.1)             , """5.1"""),
-    (num(BigDecimal(5.1)) , """5.1"""),
-    (num(BigDecimal(5))   , """5"""),
-    (`null`               , """null"""),
-    (`true`               , """true"""),
-    (`false`              , """false"""),
-    (bool(true)           , """true"""),
-    (bool(false)          , """false""")
+    ("JS Input", "Expected"),
+    (str("foo"), """"foo""""),
+    (num(5), """5"""),
+    (num(5L), """5"""),
+    (num(5.1), """5.1"""),
+    (num(BigDecimal(5.1)), """5.1"""),
+    (num(BigDecimal(5)), """5"""),
+    (`null`, """null"""),
+    (`true`, """true"""),
+    (`false`, """false"""),
+    (bool(true), """true"""),
+    (bool(false), """false""")
   )
 
   property("JsonFormatter should format primitive types") {
-    forAll(primitiveExamples) {
-      (js, expected) => format(js) shouldEqual expected
+    forAll(primitiveExamples) { (js, expected) =>
+      format(js) shouldEqual expected
     }
   }
 
@@ -95,9 +95,7 @@ class JsonFormatterSpec extends AnyPropSpec {
   }
 
   property("JsonFormatter should format objects") {
-    format(obj(
-      "x" -> "x",
-      "y" -> "y")) shouldEqual
+    format(obj("x" -> "x", "y" -> "y")) shouldEqual
       s"""{
          |  "x": "x",
          |  "y": "y"
@@ -105,10 +103,7 @@ class JsonFormatterSpec extends AnyPropSpec {
   }
 
   property("JsonFormatter should format objects with ordering forced") {
-    format(obj(
-      "a" -> "a",
-      "c" -> "c",
-      "b" -> "b"), sorted = true) shouldEqual
+    format(obj("a" -> "a", "c" -> "c", "b" -> "b"), sorted = true) shouldEqual
       s"""{
          |  "a": "a",
          |  "b": "b",
@@ -117,8 +112,7 @@ class JsonFormatterSpec extends AnyPropSpec {
   }
 
   property("JsonFormatter should escape keys and string values") {
-    format(obj(
-      """"quoted-key"""" -> "\n\t'val\"")) shouldEqual
+    format(obj(""""quoted-key"""" -> "\n\t'val\"")) shouldEqual
       s"""{
          |  "\\"quoted-key\\"": "\\n\\t'val\\""
          |}""".stripMargin

@@ -3,7 +3,6 @@ package com.github.andyglow.jsonschema
 import json.schema.Version
 import json.schema.Version._
 
-
 trait AsValueBuilder[V <: Version] {
 
   def apply(v: V): AsValue

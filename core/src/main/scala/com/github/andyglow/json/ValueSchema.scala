@@ -3,7 +3,6 @@ package com.github.andyglow.json
 import json.Schema
 import json.Schema._
 
-
 sealed trait ValueSchema[T] {
   type S
   def schema: json.Schema[S]

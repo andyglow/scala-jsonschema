@@ -4,7 +4,6 @@ import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
 import scala.util.control.NonFatal
 
-
 object scalamigration {
 
   implicit class SpecificStringOps(private val x: String) extends AnyVal {
@@ -30,7 +29,6 @@ object scalamigration {
       }
     }
   }
-
 
   implicit class TryMigOps[+T](private val e: Try[T]) extends AnyVal {
 
@@ -58,6 +56,7 @@ object scalamigration {
 
   implicit class ListBufferCompanionMigOps(private val lb: ListBuffer.type) extends AnyVal {
 
-    @inline def from[T](elements: TraversableOnce[T]): ListBuffer[T] = lb.apply[T](elements.toSeq: _*)
+    @inline def from[T](elements: TraversableOnce[T]): ListBuffer[T] =
+      lb.apply[T](elements.toSeq: _*)
   }
 }

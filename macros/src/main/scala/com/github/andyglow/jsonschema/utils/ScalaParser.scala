@@ -8,23 +8,23 @@ object ScalaParser {
     readFieldDefinition(chars, start).right map ParsedParameter.fromString
 
   def readFieldDefinition(chars: Array[Char], start: Int): Either[String, String] = {
-    var ch: Char = 0
-    var i: Int = start
-    var openParens = 0
-    var openBrackets = 0
+    var ch: Char        = 0
+    var i: Int          = start
+    var openParens      = 0
+    var openBrackets    = 0
     var openSingleQuote = 0
     var openDoubleQuote = 0
-    var completed = false
-    val sb = new StringBuilder
+    var completed       = false
+    val sb              = new StringBuilder
     while (i <= chars.length && !completed) {
       ch = chars(i)
-      val notEnclosed = openParens == 0 && openBrackets == 0 && openSingleQuote == 0 && openDoubleQuote == 0
+      val notEnclosed =
+        openParens == 0 && openBrackets == 0 && openSingleQuote == 0 && openDoubleQuote == 0
       if (ch == ',' && notEnclosed) completed = true
       else if (ch == ')') {
         completed = notEnclosed
         openParens = openParens - 1
-      }
-      else if (ch == '(') openParens = openParens + 1
+      } else if (ch == '(') openParens = openParens + 1
       else if (ch == '[') openBrackets = openBrackets + 1
       else if (ch == ']') openBrackets = openBrackets - 1
       else if (ch == '"') openDoubleQuote = 1 - openDoubleQuote
@@ -33,10 +33,13 @@ object ScalaParser {
       i = i + 1
     }
     if (!completed) {
-      Left(s"err: buf=[$sb], par=$openParens, brk=$openBrackets, sq=$openSingleQuote, dq=$openDoubleQuote")
-    } else Right {
-      sb.toString
-    }
+      Left(
+        s"err: buf=[$sb], par=$openParens, brk=$openBrackets, sq=$openSingleQuote, dq=$openDoubleQuote"
+      )
+    } else
+      Right {
+        sb.toString
+      }
   }
 //
 //  def main(args: Array[String]): Unit = {

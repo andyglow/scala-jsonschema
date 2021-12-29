@@ -2,7 +2,6 @@ package com.github.andyglow.jsonschema
 
 import json.schema.{description, title}
 
-
 object SumTypeModels {
 
   sealed trait FooBarInsideCompanionWithAnnotations extends Any

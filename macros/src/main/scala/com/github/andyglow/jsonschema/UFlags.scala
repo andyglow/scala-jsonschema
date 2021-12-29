@@ -9,7 +9,8 @@ private[jsonschema] trait UFlags { this: UContext =>
 
   lazy val flags: Flags = {
     val ff = c.inferImplicitValue(typeOf[json.schema.Flag])
-    if (ff.isEmpty) Flags() else {
+    if (ff.isEmpty) Flags()
+    else {
       val enumsAsOneOf = ff.tpe <:< typeOf[json.schema.Flag.EnumsAsOneOf]
       Flags(enumsAsOneOf = enumsAsOneOf)
     }

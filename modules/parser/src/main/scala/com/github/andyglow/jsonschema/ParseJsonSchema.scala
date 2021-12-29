@@ -13,10 +13,10 @@ object ParseJsonSchema {
   import Value._
   import Schema._
 
-
   implicit class OptionOps[T](private val x: Option[T]) extends AnyVal {
 
-    def toSuccess(message: String): Try[T] = x.fold[Try[T]](Failure(new Exception(message)))(Success(_))
+    def toSuccess(message: String): Try[T] =
+      x.fold[Try[T]](Failure(new Exception(message)))(Success(_))
   }
 
   implicit class MapOps(private val x: Map[String, Value]) extends AnyVal {
@@ -41,31 +41,35 @@ object ParseJsonSchema {
 
   def apply(x: Value, checkSchema: Boolean = true): Try[Schema[_]] = x match {
     case o @ obj(fields)
-      if !checkSchema || fields.get("$$schema").contains(str("http://json-schema.org/draft-04/schema#")) =>
+        if !checkSchema || fields
+          .get("$$schema")
+          .contains(str("http://json-schema.org/draft-04/schema#")) =>
       makeType(o)
 
     case _ => Failure(new Exception("not a json schema"))
   }
 
   private[jsonschema] def makeType(x: obj): Try[Schema[_]] = {
-    val tpe = x.value.str("type")
+    val tpe   = x.value.str("type")
     val title = x.value.str("title")
 
     def makeStrOrEnum = x.value.arr("enum") match {
       case None => makeStr
       case Some(arr) =>
         tpe.map(_.toLowerCase) match {
-          case None | Some("string")  => Success { `enum` (`string`, arr.toSet) }
-          case Some("integer")        => Success { `enum` (`integer`, arr.toSet) }
-          case Some("boolean")        => Success { `enum` (`boolean`, arr.toSet) }
-          case Some("number")         => Success { `enum` (`number`[Double], arr.toSet) }
-          case Some(x)                => Failure { InvalidEnumType(x) }
+          case None | Some("string") => Success { `enum`(`string`, arr.toSet) }
+          case Some("integer")       => Success { `enum`(`integer`, arr.toSet) }
+          case Some("boolean")       => Success { `enum`(`boolean`, arr.toSet) }
+          case Some("number")        => Success { `enum`(`number`[Double], arr.toSet) }
+          case Some(x)               => Failure { InvalidEnumType(x) }
         }
     }
 
     def makeStr = Success {
       val str = `string`[String](x.value.str("format") flatMap parseFormat)
-      x.value.str("pattern").foldLeft(str) { case (str, p) => str.withValidation(`pattern` := p).asInstanceOf[`string`[String]]}
+      x.value.str("pattern").foldLeft(str) { case (str, p) =>
+        str.withValidation(`pattern` := p).asInstanceOf[`string`[String]]
+      }
     }
 
     def makeBool = Success {
@@ -90,16 +94,21 @@ object ParseJsonSchema {
     def makeObj = x.value.obj("patternProperties") match {
       case Some(obj(fields)) if fields.nonEmpty && fields.head._2.isInstanceOf[obj] =>
         val (k, v) = fields.head
-        makeType(v.asInstanceOf[obj]) map { x => `dictionary`[Any, Any, scala.collection.immutable.Map](x).withValidation(`patternProperties` := k) }
+        makeType(v.asInstanceOf[obj]) map { x =>
+          `dictionary`[Any, Any, scala.collection.immutable.Map](x)
+            .withValidation(`patternProperties` := k)
+        }
       case _ =>
-        val required = x.value.set("required") map { _ collect { case str(x) => x } } getOrElse Set.empty
+        val required = x.value.set("required") map {
+          _ collect { case str(x) => x }
+        } getOrElse Set.empty
         x.value.obj("properties").map { _.value }.toSuccess("properties is not defined") flatMap { props =>
-        val fields = props.collect { case (k, v: obj) =>
+          val fields = props.collect { case (k, v: obj) =>
             `object`.Field(k, makeType(v).get, required.contains(k))
-        }.toSet
+          }.toSet
 
-        Success(new `object`(fields))
-      }
+          Success(new `object`(fields))
+        }
     }
 
     val result = tpe.toSuccess("type is not defined") flatMap {
@@ -118,14 +127,14 @@ object ParseJsonSchema {
     import Schema.`string`.Format._
 
     PartialFunction.condOpt(x) {
-      case "date"       => `date`
-      case "date-time"  => `date-time`
-      case "time"       => `time`
-      case "email"      => `email`
-      case "hostname"   => `hostname`
-      case "ipv4"       => `ipv4`
-      case "ipv6"       => `ipv6`
-      case "uri"        => `uri`
+      case "date"      => `date`
+      case "date-time" => `date-time`
+      case "time"      => `time`
+      case "email"     => `email`
+      case "hostname"  => `hostname`
+      case "ipv4"      => `ipv4`
+      case "ipv6"      => `ipv6`
+      case "uri"       => `uri`
     }
   }
 

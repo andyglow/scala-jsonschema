@@ -2,7 +2,6 @@ package com.github.andyglow.json
 
 import com.github.andyglow.json.Value._
 
-
 class JsonFormatter(step: Int = 2, sorted: Boolean = false) {
   import JsonFormatter.NL
 
@@ -13,16 +12,18 @@ class JsonFormatter(step: Int = 2, sorted: Boolean = false) {
     sb.toString()
   }
 
-  private def fields(x: obj): scala.collection.Seq[(String, Value)] = if (sorted) x.fields.sortBy(_._1) else x.fields
+  private def fields(x: obj): scala.collection.Seq[(String, Value)] =
+    if (sorted) x.fields.sortBy(_._1) else x.fields
 
-  private def elements(x: arr): scala.collection.Seq[Value] = if (sorted) x.value.sorted else x.value
+  private def elements(x: arr): scala.collection.Seq[Value] =
+    if (sorted) x.value.sorted else x.value
 
   private def _format(value: Value, sb: StringBuilder, indent: Int = 0): Unit = {
     val i0 = " " * indent
     val i1 = " " * (indent + step)
 
     value match {
-      case o: obj  =>
+      case o: obj =>
         sb append "{"
         sb append NL
         var first = true
@@ -44,7 +45,7 @@ class JsonFormatter(step: Int = 2, sorted: Boolean = false) {
         sb append i0
         sb append "}"
 
-      case a: arr   =>
+      case a: arr =>
         sb append "["
         sb append NL
         var first = true
@@ -65,8 +66,8 @@ class JsonFormatter(step: Int = 2, sorted: Boolean = false) {
         sb append i0
         sb append "]"
 
-      case str(x)       => sb append s""""${Escaped(x)}""""
-      case _            => sb append value.toString
+      case str(x) => sb append s""""${Escaped(x)}""""
+      case _      => sb append value.toString
     }
 
     ()
@@ -76,7 +77,7 @@ class JsonFormatter(step: Int = 2, sorted: Boolean = false) {
 object JsonFormatter {
   val NL: String = System.lineSeparator()
 
-  private lazy val plainFmt = new JsonFormatter()
+  private lazy val plainFmt  = new JsonFormatter()
   private lazy val sortedFmt = new JsonFormatter(sorted = true)
 
   def format(value: Value, sorted: Boolean = false): String = {

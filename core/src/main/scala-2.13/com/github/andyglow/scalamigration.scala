@@ -2,7 +2,6 @@ package com.github.andyglow
 
 import scala.util.Try
 
-
 object scalamigration {
 
   implicit class SpecificStringOps(private val x: String) extends AnyVal {

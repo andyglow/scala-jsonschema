@@ -1,6 +1,5 @@
 package com.github.andyglow.jsonschema
 
-
 private[jsonschema] trait URecursiveTypes { this: UContext with SchemaTypes with USignatures =>
   import c.universe._
 
@@ -9,13 +8,13 @@ private[jsonschema] trait URecursiveTypes { this: UContext with SchemaTypes with
     private var types: List[Type] = Nil
 
     def append(x: Type): Unit = {
-      if (types.exists(_ =:= x)) () else {
+      if (types.exists(_ =:= x)) ()
+      else {
         types = types :+ x
       }
     }
 
-    /** Traverses through the schema tree and replaces top recursive types with Ref,
-      * so that it would go to definition when rendered
+    /** Traverses through the schema tree and replaces top recursive types with Ref, so that it would go to definition when rendered
       *
       * @param in
       * @return

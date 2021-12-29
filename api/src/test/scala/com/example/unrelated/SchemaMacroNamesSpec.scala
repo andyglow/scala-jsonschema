@@ -3,8 +3,7 @@ package com.example.unrelated
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpec
 
-/** This spec checks that the macro works even when names from
-  * `com.github.andyglow.jsonschema` are not in scope.
+/** This spec checks that the macro works even when names from `com.github.andyglow.jsonschema` are not in scope.
   */
 class SchemaMacroNamesSpec extends AnyWordSpec {
 

@@ -6,15 +6,15 @@ import json.Schema.`dictionary`.KeyPattern
 import scala.language.implicitConversions
 import scala.util.control.NonFatal
 
-
-private[jsonschema] trait UCommons extends SchemaTypes with ULogging { this: UContext with UFieldDecorations with UTypeAnnotations with UFlags =>
+private[jsonschema] trait UCommons extends SchemaTypes with ULogging {
+  this: UContext with UFieldDecorations with UTypeAnnotations with UFlags =>
   import c.universe._
 
   lazy val is211 = util.Properties.versionNumberString.startsWith("2.11")
 
   class ResolutionContext(val stack: List[Type], val onCycle: Type => Unit) {
-    def isEmpty: Boolean = stack.isEmpty
-    def contains(x: Type): Boolean = stack exists { y => x =:= y }
+    def isEmpty: Boolean               = stack.isEmpty
+    def contains(x: Type): Boolean     = stack exists { y => x =:= y }
     def :+(x: Type): ResolutionContext = new ResolutionContext(stack :+ x, onCycle)
   }
 
@@ -26,13 +26,15 @@ private[jsonschema] trait UCommons extends SchemaTypes with ULogging { this: UCo
   ): SchemaType
 
   def resolveGenericType(x: Type, from: List[Symbol], to: List[Type]): Type = {
-    try x.substituteTypes(from, to) catch {
+    try x.substituteTypes(from, to)
+    catch {
       case NonFatal(_) =>
         c.abort(
           c.enclosingPosition,
           s"""Cannot resolve generic type(s) for `$x`
              |Please provide a custom implicitly accessible json.Schema for it.
-             |""".stripMargin)
+             |""".stripMargin
+        )
     }
   }
 
@@ -49,36 +51,36 @@ private[jsonschema] trait UCommons extends SchemaTypes with ULogging { this: UCo
     val Validation = q"$json.schema.validation.Instance"
     object internal {
       private val prefix = q"_root_.com.github.andyglow"
-      val json = q"$prefix.json"
-      val jsonschema = q"$prefix.jsonschema"
-      val TypeSignature = q"$jsonschema.TypeSignature"
+      val json           = q"$prefix.json"
+      val jsonschema     = q"$prefix.jsonschema"
+      val TypeSignature  = q"$jsonschema.TypeSignature"
     }
   }
   private[jsonschema] val N = new ConstantNames
 
   // T is for Types
   private[jsonschema] class ConstantTypes {
-    val string        = typeOf[String]
-    val array         = typeOf[Array[_]]
-    val iterable      = typeOf[Iterable[_]]
-    val option        = weakTypeOf[Option[_]]
-    val toValue       = weakTypeOf[ToValue[_]]
-    val set           = weakTypeOf[Set[_]]
-    val map           = weakTypeOf[Map[_, _]]
-    val lazyRef       = typeOf[json.Schema.`ref`[_]]
-    val keyPattern    = typeOf[KeyPattern[_]]
-    val schemaC       = typeOf[json.Schema[_]].typeConstructor
-    val predefC       = typeOf[json.schema.Predef[_]].typeConstructor
+    val string     = typeOf[String]
+    val array      = typeOf[Array[_]]
+    val iterable   = typeOf[Iterable[_]]
+    val option     = weakTypeOf[Option[_]]
+    val toValue    = weakTypeOf[ToValue[_]]
+    val set        = weakTypeOf[Set[_]]
+    val map        = weakTypeOf[Map[_, _]]
+    val lazyRef    = typeOf[json.Schema.`ref`[_]]
+    val keyPattern = typeOf[KeyPattern[_]]
+    val schemaC    = typeOf[json.Schema[_]].typeConstructor
+    val predefC    = typeOf[json.schema.Predef[_]].typeConstructor
 
     object annotation {
-      val title             = typeOf[json.schema.title]
-      val description       = typeOf[json.schema.description]
-      val definition        = typeOf[json.schema.definition]
-      val discriminator     = typeOf[json.schema.discriminator]
-      val discriminatorKey  = typeOf[json.schema.discriminatorKey]
-      val typeHint          = typeOf[json.schema.typeHint[_]]
-      val readOnly          = typeOf[json.schema.readOnly]
-      val writeOnly         = typeOf[json.schema.writeOnly]
+      val title            = typeOf[json.schema.title]
+      val description      = typeOf[json.schema.description]
+      val definition       = typeOf[json.schema.definition]
+      val discriminator    = typeOf[json.schema.discriminator]
+      val discriminatorKey = typeOf[json.schema.discriminatorKey]
+      val typeHint         = typeOf[json.schema.typeHint[_]]
+      val readOnly         = typeOf[json.schema.readOnly]
+      val writeOnly        = typeOf[json.schema.writeOnly]
     }
 
     def isNothing(t: Type): Boolean = t.dealias match {
@@ -139,12 +141,15 @@ private[jsonschema] trait UCommons extends SchemaTypes with ULogging { this: UCo
   def resolveSumTypeRecursively(
     tpe: Type,
     include: Type => Boolean,
-    otherwise: Symbol => Type): Seq[Type] = {
+    otherwise: Symbol => Type
+  ): Seq[Type] = {
 
     if (tpe.typeSymbol.isClass) {
       val leaves = tpe.typeSymbol.asClass.knownDirectSubclasses.toSeq flatMap { s =>
         val cs = s.asClass
-        val subTpe = if (cs.typeParams.isEmpty) cs.toType else resolveGenericType(cs.toType, cs.typeParams, tpe.typeArgs)
+        val subTpe =
+          if (cs.typeParams.isEmpty) cs.toType
+          else resolveGenericType(cs.toType, cs.typeParams, tpe.typeArgs)
         if (isSealed(subTpe)) resolveSumTypeRecursively(subTpe, include, otherwise)
         else if (include(subTpe)) Seq(subTpe)
         else Seq(otherwise(s))
@@ -165,7 +170,8 @@ private[jsonschema] trait UCommons extends SchemaTypes with ULogging { this: UCo
   }
 
   implicit class OptionCompanionOps(val x: Option.type) {
-    def whenever[T](predicate: Boolean)(block: => Option[T]): Option[T] = if (predicate) block else None
+    def whenever[T](predicate: Boolean)(block: => Option[T]): Option[T] =
+      if (predicate) block else None
   }
 
   implicit def asSome[T](x: T): Option[T] = Some(x)
@@ -176,7 +182,8 @@ private[jsonschema] trait UCommons extends SchemaTypes with ULogging { this: UCo
     effectiveTpe: Type,
     annotations: List[Annotation],
     default: Option[Tree],
-    isOption: Boolean) {
+    isOption: Boolean
+  ) {
 
     def hasDefault: Boolean = default.isDefined
 

@@ -6,8 +6,7 @@ private[jsonschema] trait UJsonValueType { this: UTypeAnnotations with UContext 
 
   import c.universe._
 
-  /** Extracts Schemas from json creation trees
-    * e.g.
+  /** Extracts Schemas from json creation trees e.g.
     * {{{
     *   Value.str("abc") -> SchemaType.Str    (typeOf[String], q"None")
     *   Value.num(5)     -> SchemaType.Integer()
@@ -24,7 +23,22 @@ private[jsonschema] trait UJsonValueType { this: UTypeAnnotations with UContext 
 //      dbg("LEAF1: " + showRaw(x))
 
       xx match {
-        case Apply(Select(Select(Select(Select(Select(Select(Ident(termNames.ROOTPKG), TermName("com")), TermName("github")), TermName("andyglow")), TermName("json")), TermName("Value")), TermName("num")), List(v)) =>
+        case Apply(
+              Select(
+                Select(
+                  Select(
+                    Select(
+                      Select(Select(Ident(termNames.ROOTPKG), TermName("com")), TermName("github")),
+                      TermName("andyglow")
+                    ),
+                    TermName("json")
+                  ),
+                  TermName("Value")
+                ),
+                TermName("num")
+              ),
+              List(v)
+            ) =>
           v match {
             case Literal(Constant(_: Int))    => SchemaType.Integer()
             case Literal(Constant(_: Byte))   => SchemaType.Integer()
@@ -34,8 +48,8 @@ private[jsonschema] trait UJsonValueType { this: UTypeAnnotations with UContext 
             case Literal(Constant(_: Long))   => SchemaType.Number(typeOf[Long])
             case Literal(Constant(_: BigInt)) => SchemaType.Number(typeOf[BigInt])
           }
-        case _                                                                                                                                                                                                         =>
-          val tx = c.typecheck(x)
+        case _ =>
+          val tx  = c.typecheck(x)
           val tpe = tx.tpe
 //          dbg("LEAF2: " + showRaw(tx))
 //          dbg("LEAF3: " + showRaw(tpe))
