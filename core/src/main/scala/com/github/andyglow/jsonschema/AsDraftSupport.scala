@@ -10,7 +10,6 @@ import scala.collection.mutable.ListBuffer
 
 import com.github.andyglow.scalamigration._
 
-
 trait AsDraftSupport {
 
   private[jsonschema] def isDraft04 = this.isInstanceOf[AsDraft04]
@@ -26,9 +25,9 @@ trait AsDraftSupport {
   def apply(x: json.Schema[_]): obj = apply(x, None, includeType = true, isRoot = true)
 
   def apply(x: json.Schema[_], parent: ParentSchema, includeType: Boolean, isRoot: Boolean): obj = {
-    val validationList    = inferValidations(x)
-    val specifics         = inferSpecifics.lift((validationList, x, parent, isRoot)) getOrElse obj.empty
-    val base              = x match {
+    val validationList = inferValidations(x)
+    val specifics      = inferSpecifics.lift((validationList, x, parent, isRoot)) getOrElse obj.empty
+    val base = x match {
       case _: `def`[_] | _: `allof`[_] | _: `oneof`[_] | _: `ref`[_] => obj.empty
       case `value-class`(x) if includeType                           => obj("type" -> x.jsonType)
       case _ if includeType                                          => obj("type" -> x.jsonType)
@@ -49,14 +48,13 @@ trait AsDraftSupport {
       val default     = field.default map { d => obj("default" -> d) } getOrElse obj.empty
       val description = field.description map { d => obj("description" -> d) } getOrElse obj()
       val tpe         = apply(field.tpe, Some(x), includeType = true, isRoot = false)
-      val rw          = field.rwMode match {
+      val rw = field.rwMode match {
         case RWMode.ReadOnly  => obj("readOnly" -> true)
         case RWMode.WriteOnly => obj("writeOnly" -> true)
         case RWMode.ReadWrite => obj()
       }
 
-      field.name -> (
-        default ++
+      field.name -> (default ++
         tpe ++
         rw ++
         description)
@@ -76,72 +74,86 @@ trait AsDraftSupport {
     val canHaveAdditionalProperties = x.isInstanceOf[`object`.Free]
 
     obj(
-      ("description"         , x.description),
-      ("title"               , x.title),
+      ("description", x.description),
+      ("title", x.title),
       ("additionalProperties", canHaveAdditionalProperties),
-      ("properties"          , if (props.isEmpty) None else Some(obj(props))),
-      ("required"            , if (required.isEmpty) None else Some(arr(required.toSeq))))
+      ("properties", if (props.isEmpty) None else Some(obj(props))),
+      ("required", if (required.isEmpty) None else Some(arr(required.toSeq)))
+    )
   }
 
   def mkDict(vl: ValidationList, comp: Schema[_], par: ParentSchema): obj = {
-    val pattern = vl.extract(_.validation == V.Instance.`patternProperties`) map { _.json.asInstanceOf[str].value } getOrElse "^.*$"
-    obj("patternProperties" -> obj(
-      pattern -> apply(comp, Some(comp), includeType = true, isRoot = false)))
+    val pattern = vl.extract(_.validation == V.Instance.`patternProperties`) map {
+      _.json.asInstanceOf[str].value
+    } getOrElse "^.*$"
+    obj(
+      "patternProperties" -> obj(
+        pattern -> apply(comp, Some(comp), includeType = true, isRoot = false)
+      )
+    )
   }
 
   def mkArr(vl: ValidationList, comp: Schema[_], unique: Boolean, par: ParentSchema): obj = {
     obj(
-      "items" -> apply(comp, par, includeType = true, isRoot = false),
-      "uniqueItems" -> (if (unique) Some(true) else None))
+      "items"       -> apply(comp, par, includeType = true, isRoot = false),
+      "uniqueItems" -> (if (unique) Some(true) else None)
+    )
   }
 
   def mkEnum(vl: ValidationList, x: `enum`[_], par: ParentSchema): obj = {
-    obj(
-      "type" -> x.tpe.jsonType,
-      "enum" -> arr(x.values.toSeq))
+    obj("type" -> x.tpe.jsonType, "enum" -> arr(x.values.toSeq))
   }
 
   def mkOneOf(vl: ValidationList, x: `oneof`[_], isRoot: Boolean, par: ParentSchema): obj = {
     val subTypesSeq = x.subTypes.toSeq
-    val tpe = subTypesSeq.find {
-      case `def`(_, _) => false
-      case `ref`(_)    => false
-      case _           => true
-    }.map { _.jsonType }
+    val tpe = subTypesSeq
+      .find {
+        case `def`(_, _) => false
+        case `ref`(_)    => false
+        case _           => true
+      }
+      .map { _.jsonType }
     val sameType = subTypesSeq.tail.foldLeft(tpe.isDefined) {
       case (false, _) => false
       case (true, t)  => t.jsonType == tpe.get
     }
-    def rootType = tpe filter { _ => !isRoot } map { t => obj("type"  -> `str`(t)) } getOrElse obj()
+    def rootType = tpe filter { _ => !isRoot } map { t => obj("type" -> `str`(t)) } getOrElse obj()
     if (sameType) {
       rootType ++ obj(
         "oneOf" -> `arr`(
           apply(subTypesSeq.head, Some(x), includeType = false, isRoot = false),
-          subTypesSeq.tail.map(t => apply(t, Some(x), includeType = false, isRoot = false)): _*))
+          subTypesSeq.tail.map(t => apply(t, Some(x), includeType = false, isRoot = false)): _*
+        )
+      )
     } else
       obj(
         "oneOf" -> `arr`(
           apply(subTypesSeq.head, Some(x), includeType = true, isRoot = false),
-          subTypesSeq.tail.map(apply(_, Some(x), includeType = true, isRoot = false)): _*))
+          subTypesSeq.tail.map(apply(_, Some(x), includeType = true, isRoot = false)): _*
+        )
+      )
   }
 
   def mkAllOf(vl: ValidationList, x: `allof`[_], isRoot: Boolean, par: ParentSchema): obj = {
     val subTypesSeq = x.subTypes.toSeq
-    val tpe = subTypesSeq.head.jsonType
-    val sameType = subTypesSeq.tail.foldLeft(true) { case (agg, t) => agg && (t.jsonType == tpe) }
+    val tpe         = subTypesSeq.head.jsonType
+    val sameType    = subTypesSeq.tail.foldLeft(true) { case (agg, t) => agg && (t.jsonType == tpe) }
     if (sameType) {
       obj(
-        "type"  -> (if (!isRoot) Some(`str`(tpe)) else None),
+        "type" -> (if (!isRoot) Some(`str`(tpe)) else None),
         "allOf" -> `arr`(
           apply(subTypesSeq.head, Some(x), includeType = false, isRoot = false),
-          subTypesSeq.tail.map(t => apply(t, Some(x), includeType = false, isRoot = false)): _*))
+          subTypesSeq.tail.map(t => apply(t, Some(x), includeType = false, isRoot = false)): _*
+        )
+      )
     } else
       obj(
         "allOf" -> `arr`(
           apply(subTypesSeq.head, Some(x), includeType = true, isRoot = false),
-          subTypesSeq.tail.map(apply(_, Some(x), includeType = true, isRoot = false)): _*))
+          subTypesSeq.tail.map(apply(_, Some(x), includeType = true, isRoot = false)): _*
+        )
+      )
   }
-
 
   def mkNot(vl: ValidationList, x: `not`[_], par: ParentSchema): obj = {
     obj("not" -> apply(x.tpe, Some(x), includeType = false, isRoot = false))
@@ -159,9 +171,9 @@ trait AsDraftSupport {
 
   def mkConst(vl: ValidationList, x: `const`[_], par: ParentSchema): obj = {
     obj(
-      ("description"  , x.description),
-      ("title"        , x.title),
-      ("const"        ,x.value)
+      ("description", x.description),
+      ("title", x.title),
+      ("const", x.value)
     )
   }
 
@@ -194,7 +206,7 @@ trait AsDraftSupport {
     // if matching found returns it, removing it from mutable elements collection at the same time
     def extract(accept: V.Def[_, _] => Boolean): Option[V.Def[_, _]] = {
       var res: Option[V.Def[_, _]] = None
-      var i = 0
+      var i                        = 0
       while (res.isEmpty && i < elements.length) {
         if (accept(elements(i))) {
           res = Some(elements(i))
@@ -233,13 +245,14 @@ trait AsDraftSupport {
 
   def inferDefinitions(x: Schema[_]): obj = {
     def extractDefs(tpe: json.Schema[_], par: ParentSchema): Seq[(String, obj)] = tpe match {
-      case x: `def`[_]          => extractDefs(x.tpe.withValidationsAddedFrom(x), par) :+ inferDefinition(x, par)
-      case x: `allof`[_]        => x.subTypes.toSeq flatMap { extractDefs(_, Some(x)) }
-      case x: `oneof`[_]        => x.subTypes.toSeq flatMap { extractDefs(_, Some(x)) }
-      case x @ `array`(ref, _)  => extractDefs(ref, Some(x))
-      case x @`dictionary`(ref) => extractDefs(ref, Some(x))
-      case x @ `object`(fields) => fields.toSeq map { _.tpe } flatMap { extractDefs(_, Some(x)) }
-      case _                    => Seq.empty
+      case x: `def`[_] =>
+        extractDefs(x.tpe.withValidationsAddedFrom(x), par) :+ inferDefinition(x, par)
+      case x: `allof`[_]         => x.subTypes.toSeq flatMap { extractDefs(_, Some(x)) }
+      case x: `oneof`[_]         => x.subTypes.toSeq flatMap { extractDefs(_, Some(x)) }
+      case x @ `array`(ref, _)   => extractDefs(ref, Some(x))
+      case x @ `dictionary`(ref) => extractDefs(ref, Some(x))
+      case x @ `object`(fields)  => fields.toSeq map { _.tpe } flatMap { extractDefs(_, Some(x)) }
+      case _                     => Seq.empty
     }
 
     obj {

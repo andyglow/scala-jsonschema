@@ -3,12 +3,13 @@ package com.github.andyglow.jsonschema
 import scala.reflect.NameTransformer
 import scala.reflect.internal.util.NoSourceFile
 
-
-private[jsonschema] trait UProductTypes { this: UContext with UCommons with UScaladocs with UFieldDecorations with UScalaParsers =>
+private[jsonschema] trait UProductTypes {
+  this: UContext with UCommons with UScaladocs with UFieldDecorations with UScalaParsers =>
   import c.universe._
 
-
-  private[UProductTypes] def fieldAnnotationMap(tpe: Type): Map[String, List[c.universe.Annotation]] = {
+  private[UProductTypes] def fieldAnnotationMap(
+      tpe: Type
+  ): Map[String, List[c.universe.Annotation]] = {
     // old implementation of annotation extractor
     def annotations0 = tpe.decls.collect {
 
@@ -21,11 +22,12 @@ private[jsonschema] trait UProductTypes { this: UContext with UCommons with USca
     }.toMap
 
     // new implementation of annotation extractor
-    def annotations1 = tpe.typeSymbol.asClass.primaryConstructor.typeSignature.paramLists.headOption flatMap { paramList: List[Symbol] =>
-      Some(paramList.collect {
-        case s => s.name.toString.trim -> s.annotations
-      }.toMap)
-    } getOrElse Map.empty
+    def annotations1 =
+      tpe.typeSymbol.asClass.primaryConstructor.typeSignature.paramLists.headOption flatMap { paramList: List[Symbol] =>
+        Some(paramList.collect { case s =>
+          s.name.toString.trim -> s.annotations
+        }.toMap)
+      } getOrElse Map.empty
 
     annotations0 ++ annotations1
   }
@@ -36,14 +38,15 @@ private[jsonschema] trait UProductTypes { this: UContext with UCommons with USca
     val subjectCompanion    = subjectCompanionSym.asClass.companion.asModule
 
     def toField(fieldSym: TermSymbol, i: Int): Field = {
-      val name        = NameTransformer.decode(fieldSym.name.toString)
-      val fieldTpe    = fieldSym.typeSignature.dealias // In(tpe).dealias
-      val isOption    = fieldTpe <:< T.option
-      val hasDefault  = fieldSym.isParamWithDefault
-      val default     = Option.whenever (hasDefault) {
+      val name       = NameTransformer.decode(fieldSym.name.toString)
+      val fieldTpe   = fieldSym.typeSignature.dealias // In(tpe).dealias
+      val isOption   = fieldTpe <:< T.option
+      val hasDefault = fieldSym.isParamWithDefault
+      val default = Option.whenever(hasDefault) {
         val defaultGetterTree = parseFCQN(subjectCompanion.fullName + ".apply$default$" + (i + 1))
-        val defaultGetterSym  = subjectCompanion.typeSignature.member(TermName(s"apply$$default$$${i+1}")).asTerm
-        val hasSource         = defaultGetterSym.pos.source != NoSourceFile
+        val defaultGetterSym =
+          subjectCompanion.typeSignature.member(TermName(s"apply$$default$$${i + 1}")).asTerm
+        val hasSource = defaultGetterSym.pos.source != NoSourceFile
         // we don't want to infer default value for `scala.None`
         val isNone = if (isOption && !is211) {
           val effectiveDefaultGetterTree =
@@ -54,25 +57,36 @@ private[jsonschema] trait UProductTypes { this: UContext with UCommons with USca
                   parseFCQN(tpe.typeSymbol.fullName + ".apply$default$" + (i + 1))
                 } else {
                   // for full-rebuild
-                  val defaultGetterSym = subjectCompanion.typeSignature.member(TermName(s"apply$$default$$${i+1}")).asTerm
+                  val defaultGetterSym = subjectCompanion.typeSignature
+                    .member(TermName(s"apply$$default$$${i + 1}"))
+                    .asTerm
                   // we are in hasDefault block, so default.get should be ok
                   parseFCQN(parseParameter(defaultGetterSym).default.get)
                 }
               }
             }
 
-          try c.eval(c.Expr[Boolean](q"$effectiveDefaultGetterTree.isEmpty")) catch {
+          try c.eval(c.Expr[Boolean](q"$effectiveDefaultGetterTree.isEmpty"))
+          catch {
             case ex: Throwable =>
-              throw new Exception(s"Unable to check isNone for ${show(tpe)}.${show(fieldSym)}: ${show(fieldTpe)}. May be try non-full rebuild. Throws on evaluation of:\n```\n${showCode(q"$effectiveDefaultGetterTree.isEmpty")}\n```", ex)
+              throw new Exception(
+                s"Unable to check isNone for ${show(tpe)}.${show(fieldSym)}: ${show(
+                  fieldTpe
+                )}. May be try non-full rebuild. Throws on evaluation of:\n```\n${showCode(q"$effectiveDefaultGetterTree.isEmpty")}\n```",
+                ex
+              )
           }
         } else false
 
-        Some.when (!isNone) {
+        Some.when(!isNone) {
           val toV = c.inferImplicitValue(appliedType(T.toValue, fieldTpe))
-          if (toV.nonEmpty) q"Some($toV($defaultGetterTree))" else {
+          if (toV.nonEmpty) q"Some($toV($defaultGetterTree))"
+          else {
             val errorSuffix = {
               if (hasSource) try {
-                val defaultGetterSym = subjectCompanion.typeSignature.member(TermName(s"apply$$default$$${i+1}")).asTerm
+                val defaultGetterSym = subjectCompanion.typeSignature
+                  .member(TermName(s"apply$$default$$${i + 1}"))
+                  .asTerm
                 val defaultValueCode = parseParameter(defaultGetterSym).default.get
                 s"`$tpe(..., $name: $fieldTpe = $defaultValueCode)`."
               } catch {
@@ -80,29 +94,31 @@ private[jsonschema] trait UProductTypes { this: UContext with UCommons with USca
                   s"""`$tpe(..., $name: $fieldTpe)``.
                      |Can't parse source code defining the value: ${err.getMessage}.
                      |""".stripMargin
-              } else {
+              }
+              else {
                 s"`$tpe(..., $name: $fieldTpe)`"
               }
             }
 
-            c.abort(c.enclosingPosition,
+            c.abort(
+              c.enclosingPosition,
               s"""Can't infer json value for default value of $errorSuffix
                  |Please provide `ToValue[$fieldTpe]` type class. It can also be automatically derived in case
                  |- your json library knows how to convert `$fieldTpe` into json and
                  |- the bridge between scala-jsonschema and your library is configured. Namely
                  | - corresponding library is in classpath (eg. scala-jsonschema-spray-json, scala-jsonschema-play-json, scala-jsonschema-circe-json, etc)
                  | - corresponding import is taking place (eg. `import com.github.andyglow.jsonschema.AsSpray._`, `import com.github.andyglow.jsonschema.AsPlay._`, `import com.github.andyglow.jsonschema.AsCirce._` etc)
-                 |${if (isOption && is211) "NOTE: Functionality of recognizing `scala.None` is not available for scala 2.11." else ""}
-                 |""".stripMargin)
+                 |${if (isOption && is211)
+                "NOTE: Functionality of recognizing `scala.None` is not available for scala 2.11."
+              else ""}
+                 |""".stripMargin
+            )
           }
         }
       }
 
       def effectiveType = if (tpe.typeArgs.nonEmpty && tpe.typeSymbol.isClass) {
-        resolveGenericType(
-          fieldTpe,
-          tpe.typeSymbol.asClass.typeParams,
-          tpe.typeArgs)
+        resolveGenericType(fieldTpe, tpe.typeSymbol.asClass.typeParams, tpe.typeArgs)
       } else
         fieldTpe
 
@@ -112,12 +128,13 @@ private[jsonschema] trait UProductTypes { this: UContext with UCommons with USca
           effectiveType
 
       Field(
-        name          = TermName(name),
-        tpe           = fieldTpe,
-        effectiveTpe  = specifiedType,
-        annotations   = annotationMap.getOrElse(name, List.empty),
-        default       = default,
-        isOption      = isOption)
+        name = TermName(name),
+        tpe = fieldTpe,
+        effectiveTpe = specifiedType,
+        annotations = annotationMap.getOrElse(name, List.empty),
+        default = default,
+        isOption = isOption
+      )
     }
 
     // this initializes defaults
@@ -130,14 +147,13 @@ private[jsonschema] trait UProductTypes { this: UContext with UCommons with USca
     fields getOrElse Seq.empty
   }
 
-
-
   class CaseClassExtractor {
     import FieldDecorations._
 
     def unapply(tpe: Type)(implicit
-      ctx: ResolutionContext,
-      specFD: FieldDecorations = FieldDecorations.Empty): Option[U.Obj] = {
+        ctx: ResolutionContext,
+        specFD: FieldDecorations = FieldDecorations.Empty
+    ): Option[U.Obj] = {
 
       forNonValueCaseClass(tpe) {
         // scaladoc
@@ -176,14 +192,15 @@ private[jsonschema] trait UProductTypes { this: UContext with UCommons with USca
           // create a field model
           f.default map { default =>
             // if default value is specified
-            U.Obj.Field.FromJson(f
-              .effectiveTpe,
+            U.Obj.Field.FromJson(
+              f.effectiveTpe,
               name,
               fieldSchema,
               q"${!f.isOption && !f.hasDefault}",
               default,
               description,
-              rwMode)
+              rwMode
+            )
           } getOrElse {
             // if no default is specified
             U.Obj.Field.Apply(
@@ -193,7 +210,8 @@ private[jsonschema] trait UProductTypes { this: UContext with UCommons with USca
               Some(q"${!f.isOption && !f.hasDefault}"),
               None,
               description,
-              rwMode)
+              rwMode
+            )
           }
         }
 
@@ -209,11 +227,12 @@ private[jsonschema] trait UProductTypes { this: UContext with UCommons with USca
   class CaseObjectExtractor {
 
     def unapply(tpe: Type)(implicit
-      ctx: ResolutionContext,
-      specFD: FieldDecorations = FieldDecorations.Empty): Option[CaseObjectSymbol] = {
+        ctx: ResolutionContext,
+        specFD: FieldDecorations = FieldDecorations.Empty
+    ): Option[CaseObjectSymbol] = {
 
       val sym = tpe.typeSymbol
-      Some.when (sym.isClass && sym.isModuleClass) {
+      Some.when(sym.isClass && sym.isModuleClass) {
         CaseObjectSymbol(sym)
       }
     }
@@ -274,7 +293,6 @@ private[jsonschema] trait UProductTypes { this: UContext with UCommons with USca
 //    }
 //  }
 
-
   private[UProductTypes] def bestApply(sym: Symbol): Option[MethodSymbol] = {
     val tpe = sym.typeSignature
 
@@ -283,19 +301,20 @@ private[jsonschema] trait UProductTypes { this: UContext with UCommons with USca
       case NoSymbol =>
         c.abort(c.enclosingPosition, s"No apply function found for ${sym.fullName}")
 
-      case x => x.asTerm.alternatives.flatMap { apply =>
-        val method = apply.asMethod
+      case x =>
+        x.asTerm.alternatives.flatMap { apply =>
+          val method = apply.asMethod
 
-        def areAllImplicit(pss: List[List[Symbol]]): Boolean = pss forall {
-          case p :: _ => p.isImplicit
-          case _      => false
-        }
+          def areAllImplicit(pss: List[List[Symbol]]): Boolean = pss forall {
+            case p :: _ => p.isImplicit
+            case _      => false
+          }
 
-        method.paramLists match {
-          case ps :: pss if ps.nonEmpty && areAllImplicit(pss) => Some(method)
-          case _                                               => None
-        }
-      }.headOption
+          method.paramLists match {
+            case ps :: pss if ps.nonEmpty && areAllImplicit(pss) => Some(method)
+            case _                                               => None
+          }
+        }.headOption
     }
   }
 

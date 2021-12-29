@@ -14,7 +14,6 @@ import org.scalatest.funsuite._
 
 import com.github.andyglow.jsonschema.RefinedSupport._
 
-
 class RefinedEscapedSpec extends AnyFunSuite {
 
   test("JsonFormatter escapes regex specified by matchesRegexp ") {
@@ -25,9 +24,9 @@ class RefinedEscapedSpec extends AnyFunSuite {
 
     d04 shouldBe
       s"""{
-        |  "$$schema": "http://json-schema.org/draft-04/schema#",
-        |  "type": "string",
-        |  "pattern": "\\\\d{3}[- ]\\\\d{3}[- ]\\\\d{4}"
-        |}""".stripMargin
+         |  "$$schema": "http://json-schema.org/draft-04/schema#",
+         |  "type": "string",
+         |  "pattern": "\\\\d{3}[- ]\\\\d{3}[- ]\\\\d{4}"
+         |}""".stripMargin
   }
 }

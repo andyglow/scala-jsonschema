@@ -2,23 +2,24 @@ package com.github.andyglow.jsonschema
 
 import scala.reflect.macros.blackbox
 
-trait MacroCake extends UContext
-  with UCommons
-  with UFlags
-  with UImplicits
-  with USignatures
-  with UScaladocs
-  with UArrays
-  with UDictionaries
-  with UEnums
-  with URecursiveTypes
-  with UValueTypes
-  with UProductTypes
-  with USumTypes
-  with UTypeAnnotations
-  with UJsonValueType
-  with UFieldDecorations
-  with UScalaParsers {
+trait MacroCake
+    extends UContext
+    with UCommons
+    with UFlags
+    with UImplicits
+    with USignatures
+    with UScaladocs
+    with UArrays
+    with UDictionaries
+    with UEnums
+    with URecursiveTypes
+    with UValueTypes
+    with UProductTypes
+    with USumTypes
+    with UTypeAnnotations
+    with UJsonValueType
+    with UFieldDecorations
+    with UScalaParsers {
 
   import c.universe._
 
@@ -36,16 +37,16 @@ trait MacroCake extends UContext
     }
   }
 
-
   /** Derives a Predef
     *
     * @tparam T
     * @return
     */
-  def derivePredef[T: c.WeakTypeTag]: c.Expr[json.schema.Predef[T]] = c.Expr[json.schema.Predef[T]] {
-    val schema = deriveInternal[T, json.Schema]()
-    q"${N.Predef}($schema)"
-  }
+  def derivePredef[T: c.WeakTypeTag]: c.Expr[json.schema.Predef[T]] =
+    c.Expr[json.schema.Predef[T]] {
+      val schema = deriveInternal[T, json.Schema]()
+      q"${N.Predef}($schema)"
+    }
 
   /** Derives a Schema
     *
@@ -59,7 +60,9 @@ trait MacroCake extends UContext
     * @tparam T
     * @return
     */
-  def deriveObjectSchema[T: c.WeakTypeTag](decorations: c.Expr[(String, String)]*): c.Expr[json.Schema.`object`[T]] = {
+  def deriveObjectSchema[T: c.WeakTypeTag](
+      decorations: c.Expr[(String, String)]*
+  ): c.Expr[json.Schema.`object`[T]] = {
     val tpe = weakTypeOf[T]
     validateNonValueCaseClass(tpe, "Json.objectSchema") {
       val specFD = FieldDecorations.fromSpec(decorations)
@@ -67,17 +70,16 @@ trait MacroCake extends UContext
     }
   }
 
-
   protected def deriveInternal[T: c.WeakTypeTag, S[_]](
-    specFD: FieldDecorations = FieldDecorations.Empty,
-    noImplicitSearch: Boolean = false
+      specFD: FieldDecorations = FieldDecorations.Empty,
+      noImplicitSearch: Boolean = false
   ): c.Expr[S[T]] = {
     val tpe = weakTypeOf[T]
 
     val typeDeco = TypeAnnotations(tpe)
 
     val recursiveTypes = new RecursiveTypes
-    implicit val ctx = new ResolutionContext(Nil, recursiveTypes.append)
+    implicit val ctx   = new ResolutionContext(Nil, recursiveTypes.append)
 
     val out = {
 
@@ -85,9 +87,12 @@ trait MacroCake extends UContext
         resolve(tpe, ctx, specFD, noImplicitSearch)
       )
 
-      st.withExtra(st.extra.copy(
-        title = typeDeco.texts.flatMap(_.title),
-        description = typeDeco.texts.flatMap(_.description)))
+      st.withExtra(
+        st.extra.copy(
+          title = typeDeco.texts.flatMap(_.title),
+          description = typeDeco.texts.flatMap(_.description)
+        )
+      )
 
     }.tree
 
@@ -99,10 +104,10 @@ trait MacroCake extends UContext
   }
 
   def resolve(
-    tpe: Type,
-    ctx: ResolutionContext,
-    specFD: FieldDecorations = FieldDecorations.Empty,
-    noImplicitSearch: Boolean = false
+      tpe: Type,
+      ctx: ResolutionContext,
+      specFD: FieldDecorations = FieldDecorations.Empty,
+      noImplicitSearch: Boolean = false
   ): SchemaType = {
     if (ctx contains tpe) {
       val sig = signature(tpe)
@@ -122,7 +127,10 @@ trait MacroCake extends UContext
         case CaseClass(x)  => x
         case ValueClass(x) => x
         case _ =>
-          c.abort(c.enclosingPosition, s"schema for $tpe is not supported, ${ctx.stack mkString " :: "}")
+          c.abort(
+            c.enclosingPosition,
+            s"schema for $tpe is not supported, ${ctx.stack mkString " :: "}"
+          )
       }
 
       if (noImplicitSearch) genTree else Implicit.getOrElse(tpe, genTree)

@@ -20,14 +20,17 @@ class AsDraft06Spec extends AnyWordSpec {
 
       val e = obj(
         f"$$schema" -> "https://json-schema.org/draft/2019-09/schema",
-        f"$$id" -> "http://example.com/foobarbaz.json",
+        f"$$id"     -> "http://example.com/foobarbaz.json",
         "oneOf" -> arr(
           obj("const" -> "foo", "title" -> "Foo", "description" -> "f-o-o"),
           obj("const" -> "bar", "title" -> "Bar", "description" -> "b-a-r")
         )
       )
 
-      AsValue.schema(a, Draft09(id = "http://example.com/foobarbaz.json")) should beStructurallyEqualTo(e)
+      AsValue.schema(
+        a,
+        Draft09(id = "http://example.com/foobarbaz.json")
+      ) should beStructurallyEqualTo(e)
     }
 
     "emit Object" in {
@@ -36,22 +39,27 @@ class AsDraft06Spec extends AnyWordSpec {
       val o = `object`(
         Field("foo", `string`[String]),
         Field("bar", `integer`, required = false),
-        Field("baz", `def`[Boolean]("my-bool", `boolean`)))
+        Field("baz", `def`[Boolean]("my-bool", `boolean`))
+      )
 
-      AsValue.schema(o, Draft06(id = "http://example.com/foobarbaz.json")) should beStructurallyEqualTo(obj(
-      f"$$schema" -> "http://json-schema.org/draft-06/schema#",
-      f"$$id" -> "http://example.com/foobarbaz.json",
-      "type" -> "object",
-      "additionalProperties" -> false,
-      "required" -> arr("foo", "baz"),
-      "properties" -> obj(
-        "foo" -> obj("type" -> "string"),
-        "bar" -> obj("type" -> "integer"),
-        "baz" -> obj(f"$$ref" -> "#my-bool")),
-      "definitions" -> obj(
-        "my-bool" -> obj(
-          f"$$id" -> "#my-bool",
-          "type" -> "boolean"))))
+      AsValue.schema(
+        o,
+        Draft06(id = "http://example.com/foobarbaz.json")
+      ) should beStructurallyEqualTo(
+        obj(
+          f"$$schema"            -> "http://json-schema.org/draft-06/schema#",
+          f"$$id"                -> "http://example.com/foobarbaz.json",
+          "type"                 -> "object",
+          "additionalProperties" -> false,
+          "required"             -> arr("foo", "baz"),
+          "properties" -> obj(
+            "foo" -> obj("type" -> "string"),
+            "bar" -> obj("type" -> "integer"),
+            "baz" -> obj(f"$$ref" -> "#my-bool")
+          ),
+          "definitions" -> obj("my-bool" -> obj(f"$$id" -> "#my-bool", "type" -> "boolean"))
+        )
+      )
     }
   }
 }

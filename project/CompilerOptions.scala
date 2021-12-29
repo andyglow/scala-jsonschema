@@ -1,12 +1,6 @@
 object CompilerOptions {
 
-  private val base = Seq(
-    "-encoding", "UTF-8",
-    "-feature",
-    "-unchecked",
-    "-deprecation",
-    "-language:existentials",
-    "-language:higherKinds")
+  private val base = Seq("-encoding", "UTF-8", "-feature", "-unchecked", "-deprecation", "-language:existentials", "-language:higherKinds")
 
   private val opts211 = base ++ Seq(
     "-Xfuture",
@@ -14,18 +8,15 @@ object CompilerOptions {
     "-Ywarn-dead-code",
     "-Ywarn-numeric-widen",
     "-Ywarn-value-discard",
-    "-Ywarn-unused"
-  )
+    "-Ywarn-unused")
 
   private val opts212 = base ++ Seq(
     "-Ywarn-unused:imports,-patvars,-privates,-locals,-implicits",
-    "-Xlint:-unused,_"
-  )
+    "-Xlint:-unused,_")
 
   private val opts213 = base ++ Seq(
     "-Ywarn-unused:imports,-patvars,-privates,-locals,-implicits",
-    "-Xsource:2.13"
-  )
+    "-Xsource:2.13")
 
   def apply(v: ScalaVer): Seq[String] = {
     v match {

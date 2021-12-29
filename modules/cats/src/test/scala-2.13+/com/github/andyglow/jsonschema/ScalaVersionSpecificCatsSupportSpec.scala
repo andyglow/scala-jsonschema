@@ -9,7 +9,6 @@ import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec.AnyWordSpec
 import CatsSupport._
 
-
 class ScalaVersionSpecificCatsSupportSpec extends AnyWordSpec {
   import ScalaVersionSpecificCatsSupportSpec._
 
@@ -20,7 +19,8 @@ class ScalaVersionSpecificCatsSupportSpec extends AnyWordSpec {
       "be exposed as object" in {
         nellEventSchema shouldBe `object`(
           Field("id", `string`),
-          Field("arr", `array`[String, NonEmptyLazyList](`string`).withValidation(`minItems` := 1)))
+          Field("arr", `array`[String, NonEmptyLazyList](`string`).withValidation(`minItems` := 1))
+        )
       }
     }
   }

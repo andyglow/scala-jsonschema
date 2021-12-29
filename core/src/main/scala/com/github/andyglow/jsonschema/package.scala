@@ -9,7 +9,8 @@ package object jsonschema {
 
     def stringify: String = json.JsonFormatter.format(AsValue.schema(x, v.Raw))
 
-    def stringify[V <: s.Version : AsValueBuilder](v: V): String = json.JsonFormatter.format(AsValue.schema(x, v))
+    def stringify[V <: s.Version: AsValueBuilder](v: V): String =
+      json.JsonFormatter.format(AsValue.schema(x, v))
 
     def draft04: String = stringify(v.Draft04())
 

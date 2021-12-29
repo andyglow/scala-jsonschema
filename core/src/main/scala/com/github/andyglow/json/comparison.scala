@@ -6,15 +6,15 @@ object comparison {
 
   sealed trait Segment { def str: String }
   object Segment {
-    case class ByName(name: String) extends Segment { def str: String = name }
-    case class ByIndex(index: Int) extends Segment { def str: String = index.toString }
+    case class ByName(name: String) extends Segment { def str: String = name           }
+    case class ByIndex(index: Int)  extends Segment { def str: String = index.toString }
     implicit def stringToSegment(x: String): Segment = ByName(x)
-    implicit def intToSegment(x: Int): Segment = ByIndex(x)
+    implicit def intToSegment(x: Int): Segment       = ByIndex(x)
   }
 
   case class Path(segments: List[Segment]) {
     def /(x: Segment): Path = copy(segments = segments :+ x)
-    def str: String = segments.map(_.str).mkString("/")
+    def str: String         = segments.map(_.str).mkString("/")
   }
 
   object Path {
@@ -22,7 +22,7 @@ object comparison {
     val Empty: Path = Path(Nil)
 
     implicit def stringToPath(x: String): Path = new Path(List(x))
-    implicit def intToPath(x: Int): Path = new Path(List(x))
+    implicit def intToPath(x: Int): Path       = new Path(List(x))
   }
 
   sealed trait Result {
@@ -61,7 +61,7 @@ object comparison {
     case class ArrayLengthMismatch(path: Path, expected: Int, actual: Int) extends Diff {
       def str = s"Array Length Mismatch at [${path.str}]. Expected: $expected. Actual: $actual"
     }
-    case class MissingElement(path: Path, expected: Value) extends Diff  {
+    case class MissingElement(path: Path, expected: Value) extends Diff {
       def str = s"Missing Element at [${path.str}]. Expected: $expected"
     }
 

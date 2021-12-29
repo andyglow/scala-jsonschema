@@ -12,7 +12,7 @@ object UserProfileJson {
   // this makes it use standard notion
   implicit def OptionWriterOverride[T: Writer]: Writer[Option[T]] =
     implicitly[Writer[T]].comap[Option[T]] {
-      case None => null.asInstanceOf[T]
+      case None    => null.asInstanceOf[T]
       case Some(x) => x
     }
 
@@ -21,24 +21,20 @@ object UserProfileJson {
   implicit val NotesW: Writer[Notes] = macroW[Notes]
 
   implicit val BetaFeatureW: Writer[BetaFeature] = new Writer[BetaFeature] {
-    override def write0[V](
-      out: Visitor[_, V],
-      o: BetaFeature): V = o match {
-      case F0  => out.visitString("feature-0-name", 0)
-      case F1  => out.visitString("feature-1-name", 0)
-      case F2  => out.visitString("feature-2-name", 0)
+    override def write0[V](out: Visitor[_, V], o: BetaFeature): V = o match {
+      case F0 => out.visitString("feature-0-name", 0)
+      case F1 => out.visitString("feature-1-name", 0)
+      case F2 => out.visitString("feature-2-name", 0)
     }
   }
 
   implicit val RoleW: Writer[Role] = new Writer[Role] {
     import Role._
 
-    override def write0[V](
-      out: Visitor[_, V],
-      o: Role): V = o match {
-      case User  => out.visitString("e-user", 0)
-      case Manager  => out.visitString("e-manager", 0)
-      case Admin  => out.visitString("e-admin", 0)
+    override def write0[V](out: Visitor[_, V], o: Role): V = o match {
+      case User    => out.visitString("e-user", 0)
+      case Manager => out.visitString("e-manager", 0)
+      case Admin   => out.visitString("e-admin", 0)
     }
   }
 }

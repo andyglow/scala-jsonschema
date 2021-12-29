@@ -1,6 +1,5 @@
 package com.github.andyglow.jsonschema.refined
 
-
 private[jsonschema] trait AST { this: Math with HasContext with HasLog =>
   import c.universe._
 
@@ -18,12 +17,16 @@ private[jsonschema] trait AST { this: Math with HasContext with HasLog =>
     case class Size(t: Type, d: Size.Def) extends Pred {
       import Size.Def._
       override def tree = d match {
-        case Min(v) if t =:= typeOf[String]    => q"json.Json.schema[$t].withValidation( `minLength` := $v )"
-        case Min(v)                            => q"json.Json.schema[$t].withValidation( `minItems` := $v )"
-        case Max(v) if t =:= typeOf[String]    => q"json.Json.schema[$t].withValidation( `maxLength` := $v )"
-        case Max(v)                            => q"json.Json.schema[$t].withValidation( `maxItems` := $v )"
-        case Const(v) if t =:= typeOf[String]  => q"json.Json.schema[$t].withValidation( `minLength` := $v, `maxLength` := $v )"
-        case Const(v)                          => q"json.Json.schema[$t].withValidation( `minItems` := $v, `maxItems` := $v )"
+        case Min(v) if t =:= typeOf[String] =>
+          q"json.Json.schema[$t].withValidation( `minLength` := $v )"
+        case Min(v) => q"json.Json.schema[$t].withValidation( `minItems` := $v )"
+        case Max(v) if t =:= typeOf[String] =>
+          q"json.Json.schema[$t].withValidation( `maxLength` := $v )"
+        case Max(v) => q"json.Json.schema[$t].withValidation( `maxItems` := $v )"
+        case Const(v) if t =:= typeOf[String] =>
+          q"json.Json.schema[$t].withValidation( `minLength` := $v, `maxLength` := $v )"
+        case Const(v) =>
+          q"json.Json.schema[$t].withValidation( `minItems` := $v, `maxItems` := $v )"
       }
     }
     object Size {
@@ -31,8 +34,8 @@ private[jsonschema] trait AST { this: Math with HasContext with HasLog =>
         def v: Int
       }
       object Def {
-        case class Min(v: Int) extends Def
-        case class Max(v: Int) extends Def
+        case class Min(v: Int)   extends Def
+        case class Max(v: Int)   extends Def
         case class Const(v: Int) extends Def
       }
     }
@@ -65,15 +68,18 @@ private[jsonschema] trait AST { this: Math with HasContext with HasLog =>
     }
 
     case class UUID(t: Type) extends Pred {
-      override def tree = q"""`string`[$t].withValidation( `pattern` := "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$$" )"""
+      override def tree =
+        q"""`string`[$t].withValidation( `pattern` := "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$$" )"""
     }
 
     case class XML(t: Type) extends Pred {
-      override def tree = q"""`string`[$t].withValidation( `contentMediaType` := "text/xml", `contentEncoding` := "utf8" )"""
+      override def tree =
+        q"""`string`[$t].withValidation( `contentMediaType` := "text/xml", `contentEncoding` := "utf8" )"""
     }
 
     case class Trimmed(t: Type) extends Pred {
-      override def tree = q"""`string`[$t].withValidation( `pattern` := "^(?!\\s)[\\S ]*(?<!\\s)$$" )"""
+      override def tree =
+        q"""`string`[$t].withValidation( `pattern` := "^(?!\\s)[\\S ]*(?<!\\s)$$" )"""
     }
 
     // -------
@@ -82,12 +88,12 @@ private[jsonschema] trait AST { this: Math with HasContext with HasLog =>
 
     sealed trait NumPred extends Pred {
       def isInt: Boolean = t =:= typeOf[Int] || t =:= typeOf[java.lang.Integer]
-      def prefix: Tree = if (isInt) q"`integer`" else q"`number`[$t]"
+      def prefix: Tree   = if (isInt) q"`integer`" else q"`number`[$t]"
     }
 
-    def Pos(t: Type) = Ge(t, 0)
+    def Pos(t: Type)    = Ge(t, 0)
     def NonPos(t: Type) = Le(t, 0, inclusive = true)
-    def Neg(t: Type) = Le(t, 0)
+    def Neg(t: Type)    = Le(t, 0)
     def NonNeg(t: Type) = Ge(t, 0, inclusive = true)
 
     sealed trait NumericPred {
@@ -106,17 +112,18 @@ private[jsonschema] trait AST { this: Math with HasContext with HasLog =>
 
     // inside or
     // outside
-    case class Bounded(
-      t: Type,
-      min: NumericPred,
-      max: NumericPred) extends NumPred {
+    case class Bounded(t: Type, min: NumericPred, max: NumericPred) extends NumPred {
 
       override def tree: Tree = {
         (min.inclusive, max.inclusive) match {
-          case (true , true)  => q"$prefix.withValidation( `minimum` := ${min.vv}, `maximum` := ${max.vv} )"
-          case (true , false) => q"$prefix.withValidation( `minimum` := ${min.vv}, `exclusiveMaximum` := ${max.vv} )"
-          case (false, true)  => q"$prefix.withValidation( `exclusiveMinimum` := ${min.vv}, `maximum` := ${max.vv} )"
-          case (false, false) => q"$prefix.withValidation( `exclusiveMinimum` := ${min.vv}, `exclusiveMaximum` := ${max.vv} )"
+          case (true, true) =>
+            q"$prefix.withValidation( `minimum` := ${min.vv}, `maximum` := ${max.vv} )"
+          case (true, false) =>
+            q"$prefix.withValidation( `minimum` := ${min.vv}, `exclusiveMaximum` := ${max.vv} )"
+          case (false, true) =>
+            q"$prefix.withValidation( `exclusiveMinimum` := ${min.vv}, `maximum` := ${max.vv} )"
+          case (false, false) =>
+            q"$prefix.withValidation( `exclusiveMinimum` := ${min.vv}, `exclusiveMaximum` := ${max.vv} )"
         }
         // TODO: if minv == maxv => const
       }
@@ -171,7 +178,7 @@ private[jsonschema] trait AST { this: Math with HasContext with HasLog =>
     // -------
 
     case class Not(p: Pred) extends Pred {
-      def t = p.t
+      def t             = p.t
       override def tree = q"`not`[$t](${p.tree})"
       override def norm: Pred = {
         def compile(p: Pred): Pred = p match {
@@ -187,7 +194,7 @@ private[jsonschema] trait AST { this: Math with HasContext with HasLog =>
     }
 
     case class OneOf(t: Type, preds: ::[Pred]) extends Pred {
-      override def tree = q"`oneof`[$t](Set(..${preds map { _.tree } }))"
+      override def tree = q"`oneof`[$t](Set(..${preds map { _.tree }}))"
       override def norm: Pred = {
         val ppreds = preds.flatMap {
           case OneOf(tt, ppreds) => require(t =:= tt); ppreds
@@ -216,7 +223,7 @@ private[jsonschema] trait AST { this: Math with HasContext with HasLog =>
     }
 
     case class AllOf(t: Type, preds: ::[Pred]) extends Pred {
-      override def tree = q"`allof`[$t](Set(..${preds map { _.tree } }))"
+      override def tree = q"`allof`[$t](Set(..${preds map { _.tree }}))"
       override def norm: Pred = {
         val ppreds = preds.flatMap {
           case AllOf(tt, ppreds) => require(t =:= tt); ppreds
@@ -233,11 +240,12 @@ private[jsonschema] trait AST { this: Math with HasContext with HasLog =>
       override def norm: Pred = {
 
         def compile(l: Pred, r: Pred): Pred = (l, r) match {
-          case (l: Ge, r: Ge)    => l max r
-          case (l: Le, r: Le)    => l min r
-          case Inside(min, max)  => Bounded(t, min, max)
-          case Outside(min, max) => err(s"There are no values inside of specified range [${min.vv} .. ${max.vv}]")
-          case (l, r)            => AllOf(t, ::(l, r :: Nil))
+          case (l: Ge, r: Ge)   => l max r
+          case (l: Le, r: Le)   => l min r
+          case Inside(min, max) => Bounded(t, min, max)
+          case Outside(min, max) =>
+            err(s"There are no values inside of specified range [${min.vv} .. ${max.vv}]")
+          case (l, r) => AllOf(t, ::(l, r :: Nil))
         }
 
         compile(l, r)

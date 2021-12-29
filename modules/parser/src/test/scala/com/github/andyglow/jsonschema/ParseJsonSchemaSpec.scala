@@ -8,7 +8,6 @@ import scala.util.Try
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.funsuite.AnyFunSuite
 
-
 class ParseJsonSchemaSpec extends AnyFunSuite {
   import Schema._
 

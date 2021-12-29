@@ -5,22 +5,21 @@ import java.io.{ByteArrayInputStream, InputStream}
 import scala.collection.mutable
 import scala.util.Try
 
-
 object ParseJson {
 
   def apply(x: String): Try[Value] = apply(new ByteArrayInputStream(x.getBytes))
 
   def apply(x: InputStream): Try[Value] = Try {
-    var root: MutableValue = null
+    var root: MutableValue  = null
     var currentName: String = null
-    val stack = mutable.Stack[MutableValue]()
+    val stack               = mutable.Stack[MutableValue]()
 
     def handleValue(v: MutableValue): Unit = {
       if (root == null) root = v
       stack.headOption foreach {
-        case arr: MutableValue.arr => arr += v
+        case arr: MutableValue.arr                        => arr += v
         case obj: MutableValue.obj if currentName != null => obj.update(currentName, v)
-        case _ =>
+        case _                                            =>
       }
     }
 

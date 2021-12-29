@@ -7,7 +7,6 @@ import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec._
 import JsonMatchers._
 
-
 // moved on top because of
 // - knownDirectSubclasses of Pet observed before subclass Cat registered
 object DiscriminatorSpec {
@@ -16,7 +15,7 @@ object DiscriminatorSpec {
   object case0 {
     @discriminator sealed trait Root
     object Root {
-      final case class Member1(value: Int) extends Root
+      final case class Member1(value: Int)    extends Root
       final case class Member2(value: String) extends Root
     }
   }
@@ -25,7 +24,7 @@ object DiscriminatorSpec {
   object case1 {
     @discriminator(field = "type", phantom = false) sealed trait Root
     object Root {
-      final case class Member1(`type`: String, value: Int) extends Root
+      final case class Member1(`type`: String, value: Int)    extends Root
       final case class Member2(`type`: String, value: String) extends Root
     }
   }
@@ -36,7 +35,7 @@ object DiscriminatorSpec {
   object case2 {
     @discriminator(field = "tpe", phantom = false) sealed trait Root
     object Root {
-      final case class Member1(`type`: String, value: Int) extends Root
+      final case class Member1(`type`: String, value: Int)    extends Root
       final case class Member2(`type`: String, value: String) extends Root
     }
   }
@@ -45,7 +44,7 @@ object DiscriminatorSpec {
   object case3 {
     @discriminator(field = "tpe", phantom = false) sealed trait Root
     object Root {
-      final case class Member1(tpe: String, value: Int) extends Root
+      final case class Member1(tpe: String, value: Int)    extends Root
       final case class Member2(tpe: String, value: String) extends Root
     }
   }
@@ -54,7 +53,7 @@ object DiscriminatorSpec {
   object case4 {
     @discriminator sealed trait Root
     object Root {
-      @discriminatorKey("m1") final case class Member1(value: Int) extends Root
+      @discriminatorKey("m1") final case class Member1(value: Int)    extends Root
       @discriminatorKey("m2") final case class Member2(value: String) extends Root
     }
   }
@@ -63,7 +62,7 @@ object DiscriminatorSpec {
   object case5 {
     @discriminator sealed trait Root
     object Root {
-      @definition("m1") @discriminatorKey("m1") final case class Member1(value: Int) extends Root
+      @definition("m1") @discriminatorKey("m1") final case class Member1(value: Int)    extends Root
       @definition("m2") @discriminatorKey("m2") final case class Member2(value: String) extends Root
     }
   }
@@ -78,120 +77,211 @@ class DiscriminatorSpec extends AnyWordSpec {
 
       "phantom, no specific keys" in {
         val s = Json.schema[case0.Root]
-        s shouldBe `oneof`.of(
-          `object`(F("value", `integer`, required = true)).withDiscriminationKey("com.github.andyglow.jsonschema.DiscriminatorSpec.case0.Root.Member1"),
-          `object`(F("value", `string`, required = true)).withDiscriminationKey("com.github.andyglow.jsonschema.DiscriminatorSpec.case0.Root.Member2")).discriminatedBy("type")
+        s shouldBe `oneof`
+          .of(
+            `object`(F("value", `integer`, required = true)).withDiscriminationKey(
+              "com.github.andyglow.jsonschema.DiscriminatorSpec.case0.Root.Member1"
+            ),
+            `object`(F("value", `string`, required = true)).withDiscriminationKey(
+              "com.github.andyglow.jsonschema.DiscriminatorSpec.case0.Root.Member2"
+            )
+          )
+          .discriminatedBy("type")
 
         AsValue.schema(s, v.Raw) should containJson {
-          obj("oneOf" -> arr(
-            obj(
-              "additionalProperties" -> false,
-              "required" -> arr("type", "value"),
-              "properties" -> obj(
-                "type" -> obj("enum" -> arr("com.github.andyglow.jsonschema.DiscriminatorSpec.case0.Root.Member1")),
-                "value" -> obj("type" -> "integer"))),
-            obj(
-              "additionalProperties" -> false,
-              "required" -> arr("type", "value"),
-              "properties" -> obj(
-                "type" -> obj("enum" -> arr("com.github.andyglow.jsonschema.DiscriminatorSpec.case0.Root.Member2")),
-                "value" -> obj("type" -> "string")))))
+          obj(
+            "oneOf" -> arr(
+              obj(
+                "additionalProperties" -> false,
+                "required"             -> arr("type", "value"),
+                "properties" -> obj(
+                  "type" -> obj(
+                    "enum" -> arr(
+                      "com.github.andyglow.jsonschema.DiscriminatorSpec.case0.Root.Member1"
+                    )
+                  ),
+                  "value" -> obj("type" -> "integer")
+                )
+              ),
+              obj(
+                "additionalProperties" -> false,
+                "required"             -> arr("type", "value"),
+                "properties" -> obj(
+                  "type" -> obj(
+                    "enum" -> arr(
+                      "com.github.andyglow.jsonschema.DiscriminatorSpec.case0.Root.Member2"
+                    )
+                  ),
+                  "value" -> obj("type" -> "string")
+                )
+              )
+            )
+          )
         }
       }
 
       "non-phantom, no specific keys" in {
         val s = Json.schema[case1.Root]
-        s shouldBe `oneof`.of(
-          `object`(F("type", `string`, required = true), F("value", `integer`, required = true)).withDiscriminationKey("com.github.andyglow.jsonschema.DiscriminatorSpec.case1.Root.Member1"),
-          `object`(F("type", `string`, required = true), F("value", `string`, required = true)).withDiscriminationKey("com.github.andyglow.jsonschema.DiscriminatorSpec.case1.Root.Member2")).discriminatedBy("type")
+        s shouldBe `oneof`
+          .of(
+            `object`(F("type", `string`, required = true), F("value", `integer`, required = true))
+              .withDiscriminationKey(
+                "com.github.andyglow.jsonschema.DiscriminatorSpec.case1.Root.Member1"
+              ),
+            `object`(F("type", `string`, required = true), F("value", `string`, required = true))
+              .withDiscriminationKey(
+                "com.github.andyglow.jsonschema.DiscriminatorSpec.case1.Root.Member2"
+              )
+          )
+          .discriminatedBy("type")
 
         AsValue.schema(s, v.Raw) should containJson {
-          obj("oneOf" -> arr(
-            obj(
-              "additionalProperties" -> false,
-              "required" -> arr("type", "value"),
-              "properties" -> obj(
-                "type" -> obj("enum" -> arr("com.github.andyglow.jsonschema.DiscriminatorSpec.case1.Root.Member1")),
-                "value" -> obj("type" -> "integer"))),
-            obj(
-              "additionalProperties" -> false,
-              "required" -> arr("type", "value"),
-              "properties" -> obj(
-                "type" -> obj("enum" -> arr("com.github.andyglow.jsonschema.DiscriminatorSpec.case1.Root.Member2")),
-                "value" -> obj("type" -> "string")))))
+          obj(
+            "oneOf" -> arr(
+              obj(
+                "additionalProperties" -> false,
+                "required"             -> arr("type", "value"),
+                "properties" -> obj(
+                  "type" -> obj(
+                    "enum" -> arr(
+                      "com.github.andyglow.jsonschema.DiscriminatorSpec.case1.Root.Member1"
+                    )
+                  ),
+                  "value" -> obj("type" -> "integer")
+                )
+              ),
+              obj(
+                "additionalProperties" -> false,
+                "required"             -> arr("type", "value"),
+                "properties" -> obj(
+                  "type" -> obj(
+                    "enum" -> arr(
+                      "com.github.andyglow.jsonschema.DiscriminatorSpec.case1.Root.Member2"
+                    )
+                  ),
+                  "value" -> obj("type" -> "string")
+                )
+              )
+            )
+          )
         }
       }
 
       "phantom, specific field, no specific keys" in {
         val s = Json.schema[case3.Root]
-        s shouldBe `oneof`.of(
-          `object`(F("tpe", `string`, required = true), F("value", `integer`, required = true)).withDiscriminationKey("com.github.andyglow.jsonschema.DiscriminatorSpec.case3.Root.Member1"),
-          `object`(F("tpe", `string`, required = true), F("value", `string`, required = true)).withDiscriminationKey("com.github.andyglow.jsonschema.DiscriminatorSpec.case3.Root.Member2")).discriminatedBy("tpe")
+        s shouldBe `oneof`
+          .of(
+            `object`(F("tpe", `string`, required = true), F("value", `integer`, required = true))
+              .withDiscriminationKey(
+                "com.github.andyglow.jsonschema.DiscriminatorSpec.case3.Root.Member1"
+              ),
+            `object`(F("tpe", `string`, required = true), F("value", `string`, required = true))
+              .withDiscriminationKey(
+                "com.github.andyglow.jsonschema.DiscriminatorSpec.case3.Root.Member2"
+              )
+          )
+          .discriminatedBy("tpe")
 
         AsValue.schema(s, v.Raw) should containJson {
-          obj("oneOf" -> arr(
-            obj(
-              "additionalProperties" -> false,
-              "required" -> arr("tpe", "value"),
-              "properties" -> obj(
-                "tpe" -> obj("enum" -> arr("com.github.andyglow.jsonschema.DiscriminatorSpec.case3.Root.Member1")),
-                "value" -> obj("type" -> "integer"))),
-            obj(
-              "additionalProperties" -> false,
-              "required" -> arr("tpe", "value"),
-              "properties" -> obj(
-                "tpe" -> obj("enum" -> arr("com.github.andyglow.jsonschema.DiscriminatorSpec.case3.Root.Member2")),
-                "value" -> obj("type" -> "string")))))
+          obj(
+            "oneOf" -> arr(
+              obj(
+                "additionalProperties" -> false,
+                "required"             -> arr("tpe", "value"),
+                "properties" -> obj(
+                  "tpe" -> obj(
+                    "enum" -> arr(
+                      "com.github.andyglow.jsonschema.DiscriminatorSpec.case3.Root.Member1"
+                    )
+                  ),
+                  "value" -> obj("type" -> "integer")
+                )
+              ),
+              obj(
+                "additionalProperties" -> false,
+                "required"             -> arr("tpe", "value"),
+                "properties" -> obj(
+                  "tpe" -> obj(
+                    "enum" -> arr(
+                      "com.github.andyglow.jsonschema.DiscriminatorSpec.case3.Root.Member2"
+                    )
+                  ),
+                  "value" -> obj("type" -> "string")
+                )
+              )
+            )
+          )
         }
       }
 
       "phantom, specific keys" in {
         val s = Json.schema[case4.Root]
-        s shouldBe `oneof`.of(
-          `object`(F("value", `integer`, required = true)).withDiscriminationKey("m1"),
-          `object`(F("value", `string`, required = true)).withDiscriminationKey("m2")).discriminatedBy("type")
+        s shouldBe `oneof`
+          .of(
+            `object`(F("value", `integer`, required = true)).withDiscriminationKey("m1"),
+            `object`(F("value", `string`, required = true)).withDiscriminationKey("m2")
+          )
+          .discriminatedBy("type")
 
         AsValue.schema(s, v.Raw) should containJson {
-          obj("oneOf" -> arr(
-            obj(
-              "additionalProperties" -> false,
-              "required" -> arr("type", "value"),
-              "properties" -> obj(
-                "type" -> obj("enum" -> arr("m1")),
-                "value" -> obj("type" -> "integer"))),
-            obj(
-              "additionalProperties" -> false,
-              "required" -> arr("type", "value"),
-              "properties" -> obj(
-                "type" -> obj("enum" -> arr("m2")),
-                "value" -> obj("type" -> "string")))))
+          obj(
+            "oneOf" -> arr(
+              obj(
+                "additionalProperties" -> false,
+                "required"             -> arr("type", "value"),
+                "properties" -> obj(
+                  "type"  -> obj("enum" -> arr("m1")),
+                  "value" -> obj("type" -> "integer")
+                )
+              ),
+              obj(
+                "additionalProperties" -> false,
+                "required"             -> arr("type", "value"),
+                "properties" -> obj(
+                  "type"  -> obj("enum" -> arr("m2")),
+                  "value" -> obj("type" -> "string")
+                )
+              )
+            )
+          )
         }
       }
 
       "definition, phantom, specific keys" in {
         val s = Json.schema[case5.Root]
-        s shouldBe `oneof`.of(
-          `def`("m1", `object`(F("value", `integer`, required = true)).withDiscriminationKey("m1")),
-          `def`("m2", `object`(F("value", `string`, required = true)).withDiscriminationKey("m2"))).discriminatedBy("type")
+        s shouldBe `oneof`
+          .of(
+            `def`(
+              "m1",
+              `object`(F("value", `integer`, required = true)).withDiscriminationKey("m1")
+            ),
+            `def`("m2", `object`(F("value", `string`, required = true)).withDiscriminationKey("m2"))
+          )
+          .discriminatedBy("type")
 
         AsValue.schema(s, v.Raw) should containJson {
           obj(
             "oneOf" -> arr(
               obj(f"$$ref" -> "#/definitions/m1"),
-              obj(f"$$ref" -> "#/definitions/m2")),
+              obj(f"$$ref" -> "#/definitions/m2")
+            ),
             "definitions" -> obj(
               "m1" -> obj(
                 "additionalProperties" -> false,
-                "required" -> arr("type", "value"),
+                "required"             -> arr("type", "value"),
                 "properties" -> obj(
-                  "type" -> obj("enum" -> arr("m1")),
-                  "value" -> obj("type" -> "integer"))),
+                  "type"  -> obj("enum" -> arr("m1")),
+                  "value" -> obj("type" -> "integer")
+                )
+              ),
               "m2" -> obj(
                 "additionalProperties" -> false,
-                "required" -> arr("type", "value"),
+                "required"             -> arr("type", "value"),
                 "properties" -> obj(
-                  "type" -> obj("enum" -> arr("m2")),
-                  "value" -> obj("type" -> "string")))
+                  "type"  -> obj("enum" -> arr("m2")),
+                  "value" -> obj("type" -> "string")
+                )
+              )
             )
           )
         }
@@ -212,4 +302,3 @@ class DiscriminatorSpec extends AnyWordSpec {
     }
   }
 }
-

@@ -11,32 +11,32 @@ class ValueSpec extends AnyWordSpec {
     "it comes to arrays" should {
 
       "handle empty" in {
-        arr.empty               shouldEqual arr()
+        arr.empty shouldEqual arr()
       }
 
       "handle ++" in {
-        arr() ++ arr("z")       shouldEqual arr("z")
-        arr(1) ++ arr("z", 15)  shouldEqual arr(1, "z", 15)
+        arr() ++ arr("z") shouldEqual arr("z")
+        arr(1) ++ arr("z", 15) shouldEqual arr(1, "z", 15)
       }
 
       "handle :+" in {
-        arr() :+ "z"            shouldEqual arr("z")
-        arr(1) :+ "z"           shouldEqual arr(1, "z")
+        arr() :+ "z" shouldEqual arr("z")
+        arr(1) :+ "z" shouldEqual arr(1, "z")
       }
 
       "handle append" in {
-        arr() append "z"        shouldEqual arr("z")
-        arr(1) append "z"       shouldEqual arr(1, "z")
+        arr() append "z" shouldEqual arr("z")
+        arr(1) append "z" shouldEqual arr(1, "z")
       }
 
       "handle +:" in {
-        "z" +: arr()            shouldEqual arr("z")
-        "z" +: arr(1)           shouldEqual arr("z", 1)
+        "z" +: arr() shouldEqual arr("z")
+        "z" +: arr(1) shouldEqual arr("z", 1)
       }
 
       "handle prepend" in {
-        arr() prepend "z"       shouldEqual arr("z")
-        arr(1) prepend "z"      shouldEqual arr("z", 1)
+        arr() prepend "z" shouldEqual arr("z")
+        arr(1) prepend "z" shouldEqual arr("z", 1)
       }
     }
 
@@ -47,69 +47,53 @@ class ValueSpec extends AnyWordSpec {
       }
 
       "handle keys" in {
-        obj(
-          "foo" -> "foo",
-          "bar" -> "bar").keys should contain.only("foo", "bar")
+        obj("foo" -> "foo", "bar" -> "bar").keys should contain.only("foo", "bar")
       }
 
       "handle values" in {
-        obj(
-          "foo" -> "foo",
-          "bar" -> "bar").values should contain.only(str("foo"), str("bar"))
+        obj("foo" -> "foo", "bar" -> "bar").values should contain.only(str("foo"), str("bar"))
       }
 
       "handle value" in {
-        obj(
-          "foo" -> "foo",
-          "bar" -> "bar").value shouldEqual Map(
-
+        obj("foo" -> "foo", "bar" -> "bar").value shouldEqual Map(
           "foo" -> str("foo"),
-          "bar" -> str("bar"))
+          "bar" -> str("bar")
+        )
       }
 
       "handle fieldSet" in {
-        obj(
-          "foo" -> "foo",
-          "bar" -> "bar").fieldSet.toMap shouldEqual Map(
-
+        obj("foo" -> "foo", "bar" -> "bar").fieldSet.toMap shouldEqual Map(
           "foo" -> str("foo"),
-          "bar" -> str("bar"))
+          "bar" -> str("bar")
+        )
       }
 
       "handle fields" in {
-        obj(
-          "foo" -> "foo",
-          "bar" -> "bar").fields.toMap shouldEqual Map(
-
+        obj("foo" -> "foo", "bar" -> "bar").fields.toMap shouldEqual Map(
           "foo" -> str("foo"),
-          "bar" -> str("bar"))
+          "bar" -> str("bar")
+        )
       }
 
       "handle -" in {
-        obj(
-          "foo" -> "foo",
-          "bar" -> "bar") - "bar"  shouldEqual obj("foo" -> "foo")
+        obj("foo" -> "foo", "bar" -> "bar") - "bar" shouldEqual obj("foo" -> "foo")
       }
 
       "handle +" in {
-        obj("foo" -> "foo") + ("bar" -> "bar") shouldEqual obj(
-          "foo" -> "foo",
-          "bar" -> "bar")
+        obj("foo" -> "foo") + ("bar" -> "bar") shouldEqual obj("foo" -> "foo", "bar" -> "bar")
       }
 
       "handle ++" in {
-        obj("foo" -> "foo") ++ obj("bar" -> "bar") shouldEqual obj(
-          "foo" -> "foo",
-          "bar" -> "bar")
+        obj("foo" -> "foo") ++ obj("bar" -> "bar") shouldEqual obj("foo" -> "foo", "bar" -> "bar")
       }
 
       "handle ++option" in {
         obj("foo" -> "foo") ++ Some(obj("bar" -> "bar")) shouldEqual obj(
           "foo" -> "foo",
-          "bar" -> "bar")
+          "bar" -> "bar"
+        )
 
-        obj("foo" -> "foo") ++ None shouldEqual obj(
-          "foo" -> "foo")
+        obj("foo" -> "foo") ++ None shouldEqual obj("foo" -> "foo")
       }
 
       "handle deepMerge" in {
@@ -118,10 +102,8 @@ class ValueSpec extends AnyWordSpec {
         val o2 = obj("field" -> obj("foo" -> "foo2", "baz" -> "baz"))
 
         o1 deepMerge o2 shouldEqual obj(
-          "field" -> obj(
-            "foo" -> "foo2",
-            "baz" -> "baz",
-            "bar" -> "bar"))
+          "field" -> obj("foo" -> "foo2", "baz" -> "baz", "bar" -> "bar")
+        )
       }
     }
   }

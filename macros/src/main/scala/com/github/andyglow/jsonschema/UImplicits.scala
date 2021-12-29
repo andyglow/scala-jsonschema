@@ -2,7 +2,6 @@ package com.github.andyglow.jsonschema
 
 import scala.reflect.internal.util.NoSourceFile
 
-
 private[jsonschema] trait UImplicits { this: UContext with UCommons with USignatures =>
   import c.universe._
 
@@ -13,7 +12,7 @@ private[jsonschema] trait UImplicits { this: UContext with UCommons with USignat
     sealed trait ImplicitSchema
     case class FromPredef(x: Tree) extends ImplicitSchema
     case class FromSchema(x: Tree) extends ImplicitSchema
-    case object NotFound extends ImplicitSchema
+    case object NotFound           extends ImplicitSchema
 
     // FIXME: this method is pretty ugly
     //   it is trying to handle situation like this
@@ -33,12 +32,12 @@ private[jsonschema] trait UImplicits { this: UContext with UCommons with USignat
         pos.source match {
           case NoSourceFile => false
           case src =>
-            val end = src.lineToOffset(src.offsetToLine(pos.point))
+            val end   = src.lineToOffset(src.offsetToLine(pos.point))
             var start = end - 2
 
             while ({
               !src.isLineBreak(start) &&
-                !src.isEndOfLine(start)
+              !src.isEndOfLine(start)
             }) start = start - 1
 
             val str = new String(src.content, start, pos.point - start)
@@ -68,18 +67,19 @@ private[jsonschema] trait UImplicits { this: UContext with UCommons with USignat
           case EmptyTree =>
             // predef
             c.inferImplicitValue(pType) match {
-              case EmptyTree  => NotFound
-              case x          => FromPredef(q"$x.schema")
+              case EmptyTree => NotFound
+              case x         => FromPredef(q"$x.schema")
             }
           case x if isSelfRef(x) => NotFound
-          case x => FromSchema(x)
+          case x                 => FromSchema(x)
         }
       }
 
       lookupSchema match {
         case NotFound      => None
         case FromPredef(x) => Some(U.`-from-tree-`(tpe, x))
-        case FromSchema(x) => Some(U.`-from-tree-`(tpe, q"""${N.Schema}.`def`[$tpe]($x)(${signature(tpe)})"""))
+        case FromSchema(x) =>
+          Some(U.`-from-tree-`(tpe, q"""${N.Schema}.`def`[$tpe]($x)(${signature(tpe)})"""))
       }
     }
 

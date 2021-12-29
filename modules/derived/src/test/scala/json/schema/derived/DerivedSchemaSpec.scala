@@ -4,7 +4,6 @@ import json.{Json, Schema}
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.funsuite._
 
-
 class DerivedSchemaSpec extends AnyFunSuite {
   import DerivedSchemaSpec._
 

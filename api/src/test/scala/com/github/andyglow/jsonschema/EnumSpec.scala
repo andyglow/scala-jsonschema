@@ -19,25 +19,31 @@ object EnumSpec {
     case object V2 extends case0
   }
 
-  @typeHint[String] sealed trait case1
+  @typeHint[String]
+  sealed trait case1
   object case1 {
     case object V1 extends case1
     case object V2 extends case1
   }
 
-  @typeHint[String] sealed trait case2
+  @typeHint[String]
+  sealed trait case2
   object case2 {
-    @typeHint[String] case object V1 extends case2
-    @typeHint[String] case object V2 extends case2
+    @typeHint[String]
+    case object V1 extends case2
+    @typeHint[String]
+    case object V2 extends case2
   }
 
-  @typeHint[Int] sealed trait case3
+  @typeHint[Int]
+  sealed trait case3
   object case3 {
     case object V1 extends case3
     case object V2 extends case3
   }
 
-  @typeHint[Int] sealed trait case4
+  @typeHint[Int]
+  sealed trait case4
   object case4 {
     case object V1 extends case4
     case object V2 extends case4
@@ -61,8 +67,10 @@ object EnumSpec {
 
   sealed trait case6
   object case6 {
-    @typeHint[Int] case object V1 extends case6
-    @typeHint[Int] case object V2 extends case6
+    @typeHint[Int]
+    case object V1 extends case6
+    @typeHint[Int]
+    case object V2 extends case6
 
     implicit val asValue: ToValue[case6] = ToValue mk {
       case V1 => 1
@@ -72,8 +80,10 @@ object EnumSpec {
 
   sealed trait case7
   object case7 {
-    @typeHint[Int] case object V1 extends case7
-    @typeHint[Double] case object V2 extends case7
+    @typeHint[Int]
+    case object V1 extends case7
+    @typeHint[Double]
+    case object V2 extends case7
 
     implicit val asValue: ToValue[case7] = ToValue mk {
       case V1 => 1

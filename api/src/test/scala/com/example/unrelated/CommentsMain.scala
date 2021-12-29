@@ -11,9 +11,7 @@ object CommentsMain {
   }
 
   def main(args: Array[String]): Unit = {
-    val s0 = json.Json.objectSchema[models.Foo](
-      "c" -> "C, C, ccc",
-      "b" -> "bcd")
+    val s0 = json.Json.objectSchema[models.Foo]("c" -> "C, C, ccc", "b" -> "bcd")
 
     printSchema(s0)
 

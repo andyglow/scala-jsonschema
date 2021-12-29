@@ -1,6 +1,5 @@
 package com.github.andyglow.jsonschema
 
-
 import json._
 import json.Schema._
 import json.Schema.`object`._
@@ -39,31 +38,38 @@ class DefinitionsSpec extends AnyWordSpec {
     "be exposed if specified by annotations" in {
       val petS = Json.schema[Pet]
       petS shouldBe `oneof`.of[Pet](
-        `def`[Pet.Cat]("com.github.andyglow.jsonschema.DefinitionsSpec.Pet.Cat", `object`(Field("color", `string`, required = true))),
-        `def`[Pet.Alligator]("alligator", `object`(Field("toothLeft", `integer`, required = true))))
+        `def`[Pet.Cat](
+          "com.github.andyglow.jsonschema.DefinitionsSpec.Pet.Cat",
+          `object`(Field("color", `string`, required = true))
+        ),
+        `def`[Pet.Alligator]("alligator", `object`(Field("toothLeft", `integer`, required = true)))
+      )
 
       AsValue.schema(petS, Version.Draft07(id = "pets")) should containJson {
         obj(
           f"$$schema" -> "http://json-schema.org/draft-07/schema#",
-          f"$$id" -> "pets",
+          f"$$id"     -> "pets",
           "oneOf" -> arr(
             obj(f"$$ref" -> "#com.github.andyglow.jsonschema.DefinitionsSpec.Pet.Cat"),
-            obj(f"$$ref" -> "#alligator")),
+            obj(f"$$ref" -> "#alligator")
+          ),
           "definitions" -> obj(
             "com.github.andyglow.jsonschema.DefinitionsSpec.Pet.Cat" -> obj(
-              f"$$id" -> "#com.github.andyglow.jsonschema.DefinitionsSpec.Pet.Cat",
-              "type" -> "object",
-              "properties" -> obj(
-                "color" -> obj("type" -> "string")),
+              f"$$id"                -> "#com.github.andyglow.jsonschema.DefinitionsSpec.Pet.Cat",
+              "type"                 -> "object",
+              "properties"           -> obj("color" -> obj("type" -> "string")),
               "additionalProperties" -> false,
-              "required" -> arr("color")),
+              "required"             -> arr("color")
+            ),
             "alligator" -> obj(
-              f"$$id" -> "#alligator",
-              "type" -> "object",
-              "properties" -> obj(
-                "toothLeft" -> obj("type" -> "integer")),
+              f"$$id"                -> "#alligator",
+              "type"                 -> "object",
+              "properties"           -> obj("toothLeft" -> obj("type" -> "integer")),
               "additionalProperties" -> false,
-              "required" -> arr("toothLeft"))))
+              "required"             -> arr("toothLeft")
+            )
+          )
+        )
       }
     }
 
@@ -74,26 +80,38 @@ class DefinitionsSpec extends AnyWordSpec {
       val userS = Json.schema[User]
 
       userS shouldBe `object`(
-        Field("id"  , `def`[UserId]("com.github.andyglow.jsonschema.DefinitionsSpec.UserId", `integer`)),
-        Field("name", `def`[UserName]("com.github.andyglow.jsonschema.DefinitionsSpec.UserName", `string`)))
+        Field(
+          "id",
+          `def`[UserId]("com.github.andyglow.jsonschema.DefinitionsSpec.UserId", `integer`)
+        ),
+        Field(
+          "name",
+          `def`[UserName]("com.github.andyglow.jsonschema.DefinitionsSpec.UserName", `string`)
+        )
+      )
 
       AsValue.schema(userS, Version.Draft07(id = "users")) should containJson {
         obj(
-          f"$$schema" -> "http://json-schema.org/draft-07/schema#",
-          f"$$id" -> "users",
+          f"$$schema"            -> "http://json-schema.org/draft-07/schema#",
+          f"$$id"                -> "users",
           "additionalProperties" -> false,
-          "type" -> "object",
+          "type"                 -> "object",
           "properties" -> obj(
             "id"   -> obj(f"$$ref" -> "#com.github.andyglow.jsonschema.DefinitionsSpec.UserId"),
-            "name" -> obj(f"$$ref" -> "#com.github.andyglow.jsonschema.DefinitionsSpec.UserName")),
+            "name" -> obj(f"$$ref" -> "#com.github.andyglow.jsonschema.DefinitionsSpec.UserName")
+          ),
           "required" -> arr("id", "name"),
           "definitions" -> obj(
             "com.github.andyglow.jsonschema.DefinitionsSpec.UserId" -> obj(
               f"$$id" -> "#com.github.andyglow.jsonschema.DefinitionsSpec.UserId",
-              "type" -> "integer"),
+              "type"  -> "integer"
+            ),
             "com.github.andyglow.jsonschema.DefinitionsSpec.UserName" -> obj(
               f"$$id" -> "#com.github.andyglow.jsonschema.DefinitionsSpec.UserName",
-              "type" -> "string")))
+              "type"  -> "string"
+            )
+          )
+        )
       }
     }
 
@@ -109,27 +127,26 @@ class DefinitionsSpec extends AnyWordSpec {
       val userS = Json.schema[User]
 
       userS shouldBe `object`(
-        Field("id"  , `def`[UserId]("user-id", `integer`)),
-        Field("name", `def`[UserName]("user-name", `string`.withValidation(`maxLength` := 100))))
+        Field("id", `def`[UserId]("user-id", `integer`)),
+        Field("name", `def`[UserName]("user-name", `string`.withValidation(`maxLength` := 100)))
+      )
 
       AsValue.schema(userS, Version.Draft07(id = "users")) should beStructurallyEqualTo {
         obj(
-          f"$$schema" -> "http://json-schema.org/draft-07/schema#",
-          f"$$id" -> "users",
+          f"$$schema"            -> "http://json-schema.org/draft-07/schema#",
+          f"$$id"                -> "users",
           "additionalProperties" -> false,
-          "type" -> "object",
+          "type"                 -> "object",
           "properties" -> obj(
             "id"   -> obj(f"$$ref" -> "#user-id"),
-            "name" -> obj(f"$$ref" -> "#user-name")),
+            "name" -> obj(f"$$ref" -> "#user-name")
+          ),
           "required" -> arr("id", "name"),
           "definitions" -> obj(
-            "user-id" -> obj(
-              f"$$id" -> "#user-id",
-              "type" -> "integer"),
-            "user-name" -> obj(
-              f"$$id" -> "#user-name",
-              "type" -> "string",
-              "maxLength" -> 100)))
+            "user-id"   -> obj(f"$$id" -> "#user-id", "type" -> "integer"),
+            "user-name" -> obj(f"$$id" -> "#user-name", "type" -> "string", "maxLength" -> 100)
+          )
+        )
       }
     }
 
@@ -140,26 +157,38 @@ class DefinitionsSpec extends AnyWordSpec {
       val userS = Json.schema[User]
 
       userS shouldBe `object`(
-        Field("id"  , `def`[UserId]("com.github.andyglow.jsonschema.DefinitionsSpec.UserId", `integer`)),
-        Field("name", `def`[UserName]("com.github.andyglow.jsonschema.DefinitionsSpec.UserName", `string`)))
+        Field(
+          "id",
+          `def`[UserId]("com.github.andyglow.jsonschema.DefinitionsSpec.UserId", `integer`)
+        ),
+        Field(
+          "name",
+          `def`[UserName]("com.github.andyglow.jsonschema.DefinitionsSpec.UserName", `string`)
+        )
+      )
 
       AsValue.schema(userS, Version.Draft07(id = "users")) should containJson {
         obj(
-          f"$$schema" -> "http://json-schema.org/draft-07/schema#",
-          f"$$id" -> "users",
+          f"$$schema"            -> "http://json-schema.org/draft-07/schema#",
+          f"$$id"                -> "users",
           "additionalProperties" -> false,
-          "type" -> "object",
+          "type"                 -> "object",
           "properties" -> obj(
             "id"   -> obj(f"$$ref" -> "#com.github.andyglow.jsonschema.DefinitionsSpec.UserId"),
-            "name" -> obj(f"$$ref" -> "#com.github.andyglow.jsonschema.DefinitionsSpec.UserName")),
+            "name" -> obj(f"$$ref" -> "#com.github.andyglow.jsonschema.DefinitionsSpec.UserName")
+          ),
           "required" -> arr("id", "name"),
           "definitions" -> obj(
             "com.github.andyglow.jsonschema.DefinitionsSpec.UserId" -> obj(
               f"$$id" -> "#com.github.andyglow.jsonschema.DefinitionsSpec.UserId",
-              "type" -> "integer"),
+              "type"  -> "integer"
+            ),
             "com.github.andyglow.jsonschema.DefinitionsSpec.UserName" -> obj(
               f"$$id" -> "#com.github.andyglow.jsonschema.DefinitionsSpec.UserName",
-              "type" -> "string")))
+              "type"  -> "string"
+            )
+          )
+        )
       }
     }
 
@@ -170,26 +199,26 @@ class DefinitionsSpec extends AnyWordSpec {
       val userS = Json.schema[User]
 
       userS shouldBe `object`(
-        Field("id"  , `def`[UserId]("user-id", `integer`)),
-        Field("name", `def`[UserName]("user-name", `string`)))
+        Field("id", `def`[UserId]("user-id", `integer`)),
+        Field("name", `def`[UserName]("user-name", `string`))
+      )
 
       AsValue.schema(userS, Version.Draft07(id = "users")) should containJson {
         obj(
-          f"$$schema" -> "http://json-schema.org/draft-07/schema#",
-          f"$$id" -> "users",
+          f"$$schema"            -> "http://json-schema.org/draft-07/schema#",
+          f"$$id"                -> "users",
           "additionalProperties" -> false,
-          "type" -> "object",
+          "type"                 -> "object",
           "properties" -> obj(
             "id"   -> obj(f"$$ref" -> "#user-id"),
-            "name" -> obj(f"$$ref" -> "#user-name")),
+            "name" -> obj(f"$$ref" -> "#user-name")
+          ),
           "required" -> arr("id", "name"),
           "definitions" -> obj(
-            "user-id" -> obj(
-              f"$$id" -> "#user-id",
-              "type" -> "integer"),
-            "user-name" -> obj(
-              f"$$id" -> "#user-name",
-              "type" -> "string")))
+            "user-id"   -> obj(f"$$id" -> "#user-id", "type" -> "integer"),
+            "user-name" -> obj(f"$$id" -> "#user-name", "type" -> "string")
+          )
+        )
       }
     }
   }

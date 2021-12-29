@@ -28,7 +28,10 @@ object Instance {
 
   case object `contentMediaType` extends Instance[String, String]()(str.apply)
 
-  case object `contentSchema` extends Instance[String, json.Schema[_]]()(AsValue.schema(_, Draft04())) // FIXME: shouldn't specify a Version at this level
+  case object `contentSchema`
+      extends Instance[String, json.Schema[_]]()(
+        AsValue.schema(_, Draft04())
+      ) // FIXME: shouldn't specify a Version at this level
 
   case object `maxLength` extends Instance[String, Int]()(num.apply)
 
@@ -52,4 +55,3 @@ object Instance {
 
   case object `patternProperties` extends Instance[Map[_, _], String]()(str.apply)
 }
-

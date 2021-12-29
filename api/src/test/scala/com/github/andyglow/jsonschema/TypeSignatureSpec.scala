@@ -20,9 +20,13 @@ class TypeSignatureSpec extends AnyWordSpec {
 
       Json.sig[Y.type].signature shouldEqual "com.github.andyglow.jsonschema.TypeSignatureSpec.Y"
 
-      Json.sig[Map[String, String]].signature shouldEqual "scala.Predef.Map[scala.Predef.String,scala.Predef.String]"
+      Json
+        .sig[Map[String, String]]
+        .signature shouldEqual "scala.Predef.Map[scala.Predef.String,scala.Predef.String]"
 
-      Json.sig[X[BigDecimal]].signature shouldEqual "com.github.andyglow.jsonschema.TypeSignatureSpec.X[scala.BigDecimal]"
+      Json
+        .sig[X[BigDecimal]]
+        .signature shouldEqual "com.github.andyglow.jsonschema.TypeSignatureSpec.X[scala.BigDecimal]"
 
       Json.sig[Value].signature shouldEqual "com.github.andyglow.jsonschema.TypeSignatureSpec.Value"
     }

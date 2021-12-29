@@ -5,14 +5,14 @@ import json.Schema._
 import json.schema.Predef
 import org.joda.time._
 
-
 object JodaTimeSupport {
 
   implicit val jtDateTimeSchema: Schema[DateTime] = `string`[DateTime](`string`.Format.`date-time`)
 
   implicit val jtInstantSchema: Schema[Instant] = `string`[Instant](`string`.Format.`date-time`)
 
-  implicit val jtLocalDateTimeSchema: Schema[LocalDateTime] = `string`[LocalDateTime](`string`.Format.`date-time`)
+  implicit val jtLocalDateTimeSchema: Schema[LocalDateTime] =
+    `string`[LocalDateTime](`string`.Format.`date-time`)
 
   implicit val jtLocalDateSchema: Schema[LocalDate] = `string`[LocalDate](`string`.Format.`date`)
 

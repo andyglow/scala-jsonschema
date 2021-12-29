@@ -20,14 +20,17 @@ class AsDraft09Spec extends AnyWordSpec {
 
       val e = obj(
         f"$$schema" -> "https://json-schema.org/draft/2019-09/schema",
-        f"$$id" -> "http://example.com/foobarbaz.json",
+        f"$$id"     -> "http://example.com/foobarbaz.json",
         "oneOf" -> arr(
           obj("const" -> "foo", "title" -> "Foo", "description" -> "f-o-o"),
           obj("const" -> "bar", "title" -> "Bar", "description" -> "b-a-r")
         )
       )
 
-      AsValue.schema(a, Draft09(id = "http://example.com/foobarbaz.json")) should beStructurallyEqualTo(e)
+      AsValue.schema(
+        a,
+        Draft09(id = "http://example.com/foobarbaz.json")
+      ) should beStructurallyEqualTo(e)
     }
 
     "emit Object" in {
@@ -37,27 +40,28 @@ class AsDraft09Spec extends AnyWordSpec {
         Field("foo", `string`[String]),
         Field("uuid", `string`(`string`.Format.`uuid`)),
         Field("bar", `integer`, required = false),
-        Field("baz", `def`[Boolean]("my-bool", `boolean`)))
+        Field("baz", `def`[Boolean]("my-bool", `boolean`))
+      )
 
       val e = obj(
-        f"$$schema" -> "https://json-schema.org/draft/2019-09/schema",
-        f"$$id" -> "http://example.com/foobarbaz.json",
-        "type" -> "object",
+        f"$$schema"            -> "https://json-schema.org/draft/2019-09/schema",
+        f"$$id"                -> "http://example.com/foobarbaz.json",
+        "type"                 -> "object",
         "additionalProperties" -> false,
-        "required" -> arr("foo", "baz", "uuid"),
+        "required"             -> arr("foo", "baz", "uuid"),
         "properties" -> obj(
-          "foo" -> obj("type" -> "string"),
-          "uuid"-> obj("type" -> "string", "format" -> "uuid"),
-          "bar" -> obj("type" -> "integer"),
-          "baz" -> obj(f"$$ref" -> "#my-bool")),
-        "$defs" -> obj(
-          "my-bool" -> obj(
-            f"$$anchor" -> "my-bool",
-            "type" -> "boolean")))
+          "foo"  -> obj("type" -> "string"),
+          "uuid" -> obj("type" -> "string", "format" -> "uuid"),
+          "bar"  -> obj("type" -> "integer"),
+          "baz"  -> obj(f"$$ref" -> "#my-bool")
+        ),
+        "$defs" -> obj("my-bool" -> obj(f"$$anchor" -> "my-bool", "type" -> "boolean"))
+      )
 
-      AsValue.schema(a, Draft09(id = "http://example.com/foobarbaz.json")) should beStructurallyEqualTo(e)
+      AsValue.schema(
+        a,
+        Draft09(id = "http://example.com/foobarbaz.json")
+      ) should beStructurallyEqualTo(e)
     }
   }
 }
-
-

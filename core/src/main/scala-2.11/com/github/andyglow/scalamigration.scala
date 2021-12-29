@@ -4,7 +4,6 @@ import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
 import scala.util.control.NonFatal
 
-
 object scalamigration {
 
   implicit class SpecificStringOps(private val x: String) extends AnyVal {
@@ -31,7 +30,6 @@ object scalamigration {
     }
   }
 
-
   implicit class TryMigOps[+T](private val e: Try[T]) extends AnyVal {
 
     def fold[U](fa: Throwable => U, fb: T => U): U = e match {
@@ -55,7 +53,6 @@ object scalamigration {
 
     def find[U](pf: PartialFunction[T, U]): Try[U] = e collect pf
   }
-
 
   implicit class ListBufferCompanionMigOps(private val lb: ListBuffer.type) extends AnyVal {
 
