@@ -54,8 +54,8 @@ case class DoubleGenericCC[T](str: String, gen: GenericCC[T])
 case class DoubleGenericCCWithDefaults[T](str: String = "abc", gen: GenericCC[T])
 
 case class DoubleGenericCCWithPredefinedDefaults[T](
-    str: String = GenericSchemaMacroSpec.defaultStr1 + "-" + GenericSchemaMacroSpec.defaultStr2,
-    gen: GenericCC[T]
+  str: String = GenericSchemaMacroSpec.defaultStr1 + "-" + GenericSchemaMacroSpec.defaultStr2,
+  gen: GenericCC[T]
 )
 
 object GenericSchemaMacroSpec {

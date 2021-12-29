@@ -11,8 +11,8 @@ import json.schema.validation.Instance._
 
 import scala.concurrent.duration.Duration
 
-/** The idea behind Predef is a continuation of the idea about exposing schemas that was found in implicit scope as `ref`. Namely, if schema is
-  * derived - it will be defined in-place inside of a json-schema, but if it's implicitly available - going to be a `ref`.
+/** The idea behind Predef is a continuation of the idea about exposing schemas that was found in implicit scope as `ref`. Namely, if schema is derived - it will be defined in-place inside of a
+  * json-schema, but if it's implicitly available - going to be a `ref`.
   *
   * So Predef changes it by adding another class of implicitly defined schemas which won't become a `ref`
   *

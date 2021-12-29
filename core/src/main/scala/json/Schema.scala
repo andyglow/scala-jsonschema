@@ -14,7 +14,7 @@ sealed trait Schema[+T] {
   private var _validations: collection.Seq[V.Def[_, _]] = Seq.empty
   def jsonType: String
   def withValidation[TT >: T, B](v: V.Def[B, _], vs: V.Def[B, _]*)(implicit
-      bound: V.Magnet[TT, B]
+    bound: V.Magnet[TT, B]
   ): Self = {
     val copy = this.duplicate()
     copy._validations = (v +: vs).foldLeft(_validations) { case (agg, v) =>
@@ -64,9 +64,9 @@ sealed trait Schema[+T] {
   }
   protected def mkCopy(): Self
   def duplicate(
-      description: Option[String] = this._description,
-      title: Option[String] = this._title,
-      discriminationKey: Option[String] = this._discriminationKey
+    description: Option[String] = this._description,
+    title: Option[String] = this._title,
+    discriminationKey: Option[String] = this._discriminationKey
   ): Self = {
 
     val copy = mkCopy()
@@ -198,8 +198,7 @@ object Schema {
       case object `duration`     extends Format // The duration format is from the ISO 8601 ABNF as given in Appendix A of RFC 3339
       case object `idn-hostname` extends Format // Use RFC 1123 instead of RFC 1034; this allows for a leading digit,
       // `hostname` is also RFC 1123 since 2019-09
-      case object `uuid`
-          extends Format // A string instance is valid against this attribute if it is a valid string representation of a UUID, according to RFC4122
+      case object `uuid` extends Format // A string instance is valid against this attribute if it is a valid string representation of a UUID, according to RFC4122
     }
   }
 
@@ -325,12 +324,12 @@ object Schema {
       }
     }
     final case class Field[T](
-        name: String,
-        tpe: Schema[T],
-        required: Boolean,
-        default: Option[Value],
-        description: Option[String],
-        rwMode: Field.RWMode
+      name: String,
+      tpe: Schema[T],
+      required: Boolean,
+      default: Option[Value],
+      description: Option[String],
+      rwMode: Field.RWMode
     ) {
       def canEqual(that: Any): Boolean = that.isInstanceOf[Field[T]]
       override def equals(that: Any): Boolean = canEqual(that) && {
@@ -372,20 +371,20 @@ object Schema {
         new Field(name, tpe, required, default = None, description = None, RWMode.ReadWrite)
 
       def apply[T: ToValue](
-          name: String,
-          tpe: Schema[T],
-          required: Boolean,
-          default: T,
-          rwMode: RWMode = RWMode.ReadWrite
+        name: String,
+        tpe: Schema[T],
+        required: Boolean,
+        default: T,
+        rwMode: RWMode = RWMode.ReadWrite
       ): Field[T] =
         new Field(name, tpe, required, Some(ToValue(default)), description = None, rwMode = rwMode)
 
       def fromJson[T](
-          name: String,
-          tpe: Schema[T],
-          required: Boolean,
-          default: Option[Value],
-          rwMode: RWMode = RWMode.ReadWrite
+        name: String,
+        tpe: Schema[T],
+        required: Boolean,
+        default: Option[Value],
+        rwMode: RWMode = RWMode.ReadWrite
       ): Field[T] = new Field(name, tpe, required, default, description = None, rwMode = rwMode)
     }
 
@@ -526,7 +525,7 @@ object Schema {
       sb append ")"
     }
     override def withValidation[TT >: T, B](v: V.Def[B, _], vs: V.Def[B, _]*)(implicit
-        bound: V.Magnet[TT, B]
+      bound: V.Magnet[TT, B]
     ): `def`[T] = copy(tpe = tpe.asInstanceOf[Schema[TT]].withValidation(v, vs: _*))
     override def toDefinition[TT >: T](sig: String): `def`[TT] = {
       def deepCopy(x: Schema[_]): Schema[_] = {

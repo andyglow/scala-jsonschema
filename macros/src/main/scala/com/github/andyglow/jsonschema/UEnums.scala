@@ -15,18 +15,14 @@ private[jsonschema] trait UEnums {
       if (ss.isEmpty) {
         abort(s"Error inferring schema for enum: ${show(tpe)}. No items defined")
       } else if (ss.size > 1) {
-        val details = ss.toSeq
-          .sortBy { schema => showCode(schema.tree) }
-          .map { schema =>
-            val schemaDetails = schemas(schema)
-              .sortBy { member => show(member.tpe) }
-              .map { member =>
-                s"  - ${show(member.tpe)}.${if (member.typeHint != NoType) s" Type Hint: ${show(member.typeHint)}"
-                else ""}"
-              }
-              .mkString("\n")
-            s"- ${showCode(schema.tree)}:\n$schemaDetails"
+        val details = ss.toSeq.sortBy { schema => showCode(schema.tree) }.map { schema =>
+          val schemaDetails = schemas(schema).sortBy { member => show(member.tpe) }.map { member =>
+            s"  - ${show(member.tpe)}.${if (member.typeHint != NoType) s" Type Hint: ${show(member.typeHint)}"
+            else ""}"
           }
+            .mkString("\n")
+          s"- ${showCode(schema.tree)}:\n$schemaDetails"
+        }
           .mkString("\n")
         abort(
           s"Error inferring schema for enum: ${show(tpe)}. Some family members come with different schemas:\n$details"
@@ -67,9 +63,7 @@ private[jsonschema] trait UEnums {
         (effectiveSchema, enumItem)
       }
 
-      schemas
-        .groupBy { case (schema, _) => schema }
-        .map { case (schema, tuples) => (schema, tuples map { case (_, item) => item }) }
+      schemas.groupBy { case (schema, _) => schema }.map { case (schema, tuples) => (schema, tuples map { case (_, item) => item }) }
     }
   }
 

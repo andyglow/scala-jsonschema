@@ -19,10 +19,10 @@ private[jsonschema] trait UCommons extends SchemaTypes with ULogging {
   }
 
   def resolve(
-      tpe: Type,
-      ctx: ResolutionContext,
-      specFD: FieldDecorations = FieldDecorations.Empty,
-      noImplicit: Boolean = false
+    tpe: Type,
+    ctx: ResolutionContext,
+    specFD: FieldDecorations = FieldDecorations.Empty,
+    noImplicit: Boolean = false
   ): SchemaType
 
   def resolveGenericType(x: Type, from: List[Symbol], to: List[Type]): Type = {
@@ -139,9 +139,9 @@ private[jsonschema] trait UCommons extends SchemaTypes with ULogging {
   // BORROWED:
   // https://github.com/plokhotnyuk/jsoniter-scala/blob/3612fddf19a8ce23ac973d71e85ef02f79c06fff/jsoniter-scala-macros/src/main/scala/com/github/plokhotnyuk/jsoniter_scala/macros/JsonCodecMaker.scala#L351-L365
   def resolveSumTypeRecursively(
-      tpe: Type,
-      include: Type => Boolean,
-      otherwise: Symbol => Type
+    tpe: Type,
+    include: Type => Boolean,
+    otherwise: Symbol => Type
   ): Seq[Type] = {
 
     if (tpe.typeSymbol.isClass) {
@@ -177,12 +177,12 @@ private[jsonschema] trait UCommons extends SchemaTypes with ULogging {
   implicit def asSome[T](x: T): Option[T] = Some(x)
 
   case class Field(
-      name: TermName,
-      tpe: Type,
-      effectiveTpe: Type,
-      annotations: List[Annotation],
-      default: Option[Tree],
-      isOption: Boolean
+    name: TermName,
+    tpe: Type,
+    effectiveTpe: Type,
+    annotations: List[Annotation],
+    default: Option[Tree],
+    isOption: Boolean
   ) {
 
     def hasDefault: Boolean = default.isDefined

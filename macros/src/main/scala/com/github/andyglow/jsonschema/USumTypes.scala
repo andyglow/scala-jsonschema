@@ -20,9 +20,9 @@ private[jsonschema] trait USumTypes {
     private object Extraction {
       private[USumTypes] case class Simple(tpe: Type, schema: SchemaType) extends Extraction
       private[USumTypes] case class Enumerated(
-          tpe: Type,
-          schema: SchemaType,
-          members: Seq[EnumItem]
+        tpe: Type,
+        schema: SchemaType,
+        members: Seq[EnumItem]
       ) extends Extraction
     }
 

@@ -6,8 +6,7 @@ import json.Schema.`string`
 
 trait Pre09 { this: AsDraftSupport =>
 
-  /** Adds `format` attribute if Format is defined and it defines formats known prior to 2012-09. In case it's `uuid` and `pattern` validation is not
-    * defined manually, it will add pattern attribute.
+  /** Adds `format` attribute if Format is defined and it defines formats known prior to 2012-09. In case it's `uuid` and `pattern` validation is not defined manually, it will add pattern attribute.
     */
   def mkStr(vl: ValidationList, x: `string`[_], par: ParentSchema): obj = {
     import `string`.Format._

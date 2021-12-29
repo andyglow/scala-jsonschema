@@ -306,7 +306,7 @@ class AsDraft04Spec extends AnyWordSpec {
       }
 
       def numCase[T: Numeric](schema: json.Schema[T], t: String = "number")(implicit
-          bound: V.Magnet[T, Number]
+        bound: V.Magnet[T, Number]
       ): Unit = {
         asDraft04 {
           schema.withValidation(

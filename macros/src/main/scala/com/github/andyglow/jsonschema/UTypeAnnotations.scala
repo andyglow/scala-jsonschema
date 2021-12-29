@@ -20,8 +20,7 @@ private[jsonschema] trait UTypeAnnotations {
     def fromScaladoc(scaladoc: Scaladoc): Texts = {
       Texts(
         None,
-        scaladoc.tags
-          .collect { case Tag.Description(descr) => descr.trimmed.plainString }
+        scaladoc.tags.collect { case Tag.Description(descr) => descr.trimmed.plainString }
           .mkString("\n")
       )
     }
@@ -63,11 +62,11 @@ private[jsonschema] trait UTypeAnnotations {
   case class DiscriminatorKey(value: String)
 
   case class TypeAnnotations(
-      texts: Option[Texts],
-      definition: Option[DefinitionKey],
-      discriminator: Option[Discriminator],
-      discriminatorKey: Option[DiscriminatorKey],
-      typeHint: Type
+    texts: Option[Texts],
+    definition: Option[DefinitionKey],
+    discriminator: Option[Discriminator],
+    discriminatorKey: Option[DiscriminatorKey],
+    typeHint: Type
   ) {
 
     def wrapIntoDefIfRequired(tpe: Type, schema: SchemaType): SchemaType = {

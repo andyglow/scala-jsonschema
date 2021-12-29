@@ -37,11 +37,11 @@ class CRLFSourceSpec extends AnyFunSuite {
 object CRLFSourceSpec {
 
   case class CC(
-      set: Set[Int] = Set(1, 5, 9),
-      list: List[Boolean] = List(true, false),
-      vector: Vector[Long] = Vector(9L, 7L),
-      strMap: Map[String, Double] = Map("foo" -> .12),
-      intMap: Map[Int, String] = Map(1 -> "1", 2 -> "2")
+    set: Set[Int] = Set(1, 5, 9),
+    list: List[Boolean] = List(true, false),
+    vector: Vector[Long] = Vector(9L, 7L),
+    strMap: Map[String, Double] = Map("foo" -> .12),
+    intMap: Map[Int, String] = Map(1 -> "1", 2 -> "2")
   )
 
   object CC {

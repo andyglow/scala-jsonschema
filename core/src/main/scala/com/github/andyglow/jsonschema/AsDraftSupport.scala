@@ -106,13 +106,11 @@ trait AsDraftSupport {
 
   def mkOneOf(vl: ValidationList, x: `oneof`[_], isRoot: Boolean, par: ParentSchema): obj = {
     val subTypesSeq = x.subTypes.toSeq
-    val tpe = subTypesSeq
-      .find {
-        case `def`(_, _) => false
-        case `ref`(_)    => false
-        case _           => true
-      }
-      .map { _.jsonType }
+    val tpe = subTypesSeq.find {
+      case `def`(_, _) => false
+      case `ref`(_)    => false
+      case _           => true
+    }.map { _.jsonType }
     val sameType = subTypesSeq.tail.foldLeft(tpe.isDefined) {
       case (false, _) => false
       case (true, t)  => t.jsonType == tpe.get

@@ -41,26 +41,19 @@ object FsExampleMsg {
 
   @discriminator sealed trait Storage
   object Storage {
-    @definition("diskDevice") @discriminatorKey("disk") final case class DiskDevice(
-        device: String Refined MatchesRegex[W.`"^/dev/[^/]+(/[^/]+)*$"`.T]
-    ) extends Storage
-    @definition("diskUUID") @discriminatorKey("disk") final case class DiskUUID(
-        label: java.util.UUID
-    ) extends Storage
-    @definition("nfs") @discriminatorKey("nfs") final case class NFS(
-        remotePath: String Refined MatchesRegex[W.`"^(/[^/]+)+$"`.T],
-        server: String
-    ) extends Storage
-    @definition("tmpfs") @discriminatorKey("tmpfs") final case class TmpFS(
-        sizeInMB: Refined[Int, GreaterEqual[W.`16`.T] And LessEqual[W.`512`.T]]
-    ) extends Storage
+    // format: off
+    @definition("diskDevice") @discriminatorKey("disk")  final case class DiskDevice(device: String Refined MatchesRegex[W.`"^/dev/[^/]+(/[^/]+)*$"`.T]) extends Storage
+    @definition("diskUUID")   @discriminatorKey("disk")  final case class DiskUUID(label: java.util.UUID) extends Storage
+    @definition("nfs")        @discriminatorKey("nfs")   final case class NFS(remotePath: String Refined MatchesRegex[W.`"^(/[^/]+)+$"`.T], server: String) extends Storage
+    @definition("tmpfs")      @discriminatorKey("tmpfs") final case class TmpFS(sizeInMB: Refined[Int, GreaterEqual[W.`16`.T] And LessEqual[W.`512`.T]]) extends Storage
+    // format: on
   }
 
   case class FS(
-      storage: Storage,
-      fstype: Option[FsType],
-      readonly: Option[Boolean],
-      options: Option[Set[String] Refined MinSize[W.`1`.T]]
+    storage: Storage,
+    fstype: Option[FsType],
+    readonly: Option[Boolean],
+    options: Option[Set[String] Refined MinSize[W.`1`.T]]
   )
 
 }

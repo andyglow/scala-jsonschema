@@ -4,7 +4,7 @@ private[jsonschema] trait UFlags { this: UContext =>
   import c.universe._
 
   case class Flags(
-      enumsAsOneOf: Boolean = false
+    enumsAsOneOf: Boolean = false
   )
 
   lazy val flags: Flags = {

@@ -51,14 +51,14 @@ object ExampleMsg {
     *   Is Active or not
     */
   case class Person(
-      firstName: String,
-      middleName: Option[String],
-      lastName: String,
-      gender: Gender,
-      birthDay: LocalDateTime,
-      company: Company,
-      cars: Seq[Car],
-      active: Boolean = true
+    firstName: String,
+    middleName: Option[String],
+    lastName: String,
+    gender: Gender,
+    birthDay: LocalDateTime,
+    company: Company,
+    cars: Seq[Car],
+    active: Boolean = true
   )
 
 }

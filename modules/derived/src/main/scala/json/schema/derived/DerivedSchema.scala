@@ -18,7 +18,7 @@ class DerivedSchemaMacros(val c: whitebox.Context) extends MacroCake {
   import c.universe._
 
   def deriveDerivedSchema[T](implicit
-      T: c.WeakTypeTag[T]
+    T: c.WeakTypeTag[T]
   ): c.Expr[DerivedSchema[T]] = {
     val schemaTree        = deriveInternal[T, json.Schema](noImplicitSearch = true).tree
     val derivedSchemaTree = q"_root_.json.schema.derived.DerivedSchema($schemaTree)"

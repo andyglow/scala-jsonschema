@@ -52,10 +52,10 @@ private[jsonschema] trait SchemaTypes {
 
   object SchemaType {
     case class Extra(
-        validations: Seq[Tree] = Seq.empty,
-        title: Option[String] = None,
-        description: Option[String] = None,
-        discriminationKey: Option[String] = None
+      validations: Seq[Tree] = Seq.empty,
+      title: Option[String] = None,
+      description: Option[String] = None,
+      discriminationKey: Option[String] = None
     )
 
     case class Bool(extra: Extra = Extra()) extends SchemaType {
@@ -75,11 +75,11 @@ private[jsonschema] trait SchemaTypes {
       def withExtra(x: SchemaType.Extra) = copy(extra = x)
     }
     case class Arr(
-        elementTpe: Type,
-        containerTpe: Type,
-        elementSchema: SchemaType,
-        unique: Boolean,
-        extra: Extra = Extra()
+      elementTpe: Type,
+      containerTpe: Type,
+      elementSchema: SchemaType,
+      unique: Boolean,
+      extra: Extra = Extra()
     ) extends SchemaType {
       type Self = Arr;
       def prefix =
@@ -88,11 +88,11 @@ private[jsonschema] trait SchemaTypes {
       def withExtra(x: SchemaType.Extra) = copy(extra = x)
     }
     case class Dict(
-        keyTpe: Type,
-        valueTpe: Type,
-        containerTpe: Type,
-        valueSchema: SchemaType,
-        extra: Extra = Extra()
+      keyTpe: Type,
+      valueTpe: Type,
+      containerTpe: Type,
+      valueSchema: SchemaType,
+      extra: Extra = Extra()
     ) extends SchemaType {
       type Self = Dict;
       def prefix =
@@ -105,10 +105,10 @@ private[jsonschema] trait SchemaTypes {
       def withExtra(x: SchemaType.Extra) = copy(extra = x)
     }
     case class Enum(
-        tpe: Type,
-        schema: SchemaType,
-        values: Seq[(Tree, Option[String])],
-        extra: Extra = Extra()
+      tpe: Type,
+      schema: SchemaType,
+      values: Seq[(Tree, Option[String])],
+      extra: Extra = Extra()
     ) extends SchemaType {
       type Self = Enum;
       def prefix =
@@ -116,10 +116,10 @@ private[jsonschema] trait SchemaTypes {
       def withExtra(x: SchemaType.Extra) = copy(extra = x)
     }
     case class OneOf(
-        tpe: Type,
-        memberSchema: Seq[SchemaType],
-        discriminatorField: Option[String],
-        extra: Extra = Extra()
+      tpe: Type,
+      memberSchema: Seq[SchemaType],
+      discriminatorField: Option[String],
+      extra: Extra = Extra()
     ) extends SchemaType {
       type Self = OneOf;
       def prefix =
@@ -173,13 +173,13 @@ private[jsonschema] trait SchemaTypes {
       }
       object Field {
         case class Apply(
-            tpe: Type,
-            name: String,
-            schema: SchemaType,
-            required: Option[Tree],
-            default: Option[Tree],
-            description: Option[String],
-            rwMode: Option[Tree]
+          tpe: Type,
+          name: String,
+          schema: SchemaType,
+          required: Option[Tree],
+          default: Option[Tree],
+          description: Option[String],
+          rwMode: Option[Tree]
         ) extends Field {
           def prefix = (required, default) match {
             case (Some(required), Some(default)) =>
@@ -193,13 +193,13 @@ private[jsonschema] trait SchemaTypes {
           def mapSchema(fn: SchemaType => SchemaType): Field = copy(schema = fn(schema))
         }
         case class FromJson(
-            tpe: Type,
-            name: String,
-            schema: SchemaType,
-            required: Tree,
-            default: Tree,
-            description: Option[String],
-            rwMode: Option[Tree]
+          tpe: Type,
+          name: String,
+          schema: SchemaType,
+          required: Tree,
+          default: Tree,
+          description: Option[String],
+          rwMode: Option[Tree]
         ) extends Field {
           def prefix =
             q"${N.Schema}.`object`.Field.fromJson[$tpe]($name, ${schema.tree}, $required, $default)"

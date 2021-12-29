@@ -8,7 +8,7 @@ private[jsonschema] trait UProductTypes {
   import c.universe._
 
   private[UProductTypes] def fieldAnnotationMap(
-      tpe: Type
+    tpe: Type
   ): Map[String, List[c.universe.Annotation]] = {
     // old implementation of annotation extractor
     def annotations0 = tpe.decls.collect {
@@ -151,8 +151,8 @@ private[jsonschema] trait UProductTypes {
     import FieldDecorations._
 
     def unapply(tpe: Type)(implicit
-        ctx: ResolutionContext,
-        specFD: FieldDecorations = FieldDecorations.Empty
+      ctx: ResolutionContext,
+      specFD: FieldDecorations = FieldDecorations.Empty
     ): Option[U.Obj] = {
 
       forNonValueCaseClass(tpe) {
@@ -227,8 +227,8 @@ private[jsonschema] trait UProductTypes {
   class CaseObjectExtractor {
 
     def unapply(tpe: Type)(implicit
-        ctx: ResolutionContext,
-        specFD: FieldDecorations = FieldDecorations.Empty
+      ctx: ResolutionContext,
+      specFD: FieldDecorations = FieldDecorations.Empty
     ): Option[CaseObjectSymbol] = {
 
       val sym = tpe.typeSymbol

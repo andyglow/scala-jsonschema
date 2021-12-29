@@ -7,8 +7,8 @@ class RefinedMacro(val c: blackbox.Context) extends Logic {
   import c.universe._
 
   def forTypeParams[A, B](implicit
-      a: c.WeakTypeTag[A],
-      b: c.WeakTypeTag[B]
+    a: c.WeakTypeTag[A],
+    b: c.WeakTypeTag[B]
   ): c.Expr[json.schema.Predef[Refined[A, B]]] = {
     val t    = typeOf[eu.timepit.refined.api.Refined[_, _]]
     val tt   = appliedType(t.typeConstructor, List(a.tpe, b.tpe))

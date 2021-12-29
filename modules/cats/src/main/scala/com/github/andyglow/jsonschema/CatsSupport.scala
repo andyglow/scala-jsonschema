@@ -22,14 +22,14 @@ trait LowPriorityCatsSupport extends ScalaVersionSpecificLowPriorityCatsSupport 
   implicit def oneAndVB[F[_], X]: Magnet[OneAnd[F, X], Iterable[_]] = mk[OneAnd[F, X], Iterable[_]]
 
   protected def mkNEx[T, C[_]](schema: Schema[T], unique: Boolean = false)(implicit
-      b: Magnet[C[T], Iterable[_]]
+    b: Magnet[C[T], Iterable[_]]
   ) = {
     val defn          = `array`[T, C](schema).withValidation(`minItems` := 1)
     val effectiveDefn = if (unique) defn.withValidation(`uniqueItems` := true) else defn
     Predef(effectiveDefn)
   }
   protected def mkNESM[K, V](vSchema: Schema[V], keyP: KeyPattern[K])(implicit
-      b: Magnet[NonEmptyMap[K, V], Map[_, _]]
+    b: Magnet[NonEmptyMap[K, V], Map[_, _]]
   ) = Predef {
     val schema = `dictionary`[K, V, NonEmptyMap](vSchema).withValidation(`minProperties` := 1)
     if (keyP == `dictionary`.KeyPattern.StringKeyPattern) schema
@@ -42,8 +42,8 @@ trait LowPriorityCatsSupport extends ScalaVersionSpecificLowPriorityCatsSupport 
     mkNEx[T, Chain](p.schema)
 
   implicit def oneAndSchemaFromPredef[F[_], T](implicit
-      p: Predef[T],
-      evidence$1: Predef[F[T]]
+    p: Predef[T],
+    evidence$1: Predef[F[T]]
   ): Predef[OneAnd[F, T]] = Predef(
     `array`[T, ({ type Z[X] = OneAnd[F, X] })#Z](p.schema).withValidation(`minItems` := 1)
   )
@@ -61,8 +61,8 @@ trait LowPriorityCatsSupport extends ScalaVersionSpecificLowPriorityCatsSupport 
     mkNEx[T, NonEmptyChain](p.schema)
 
   implicit def nemStrSchemaFromPredef[K, V](implicit
-      p: Predef[V],
-      keyP: KeyPattern[K]
+    p: Predef[V],
+    keyP: KeyPattern[K]
   ): Predef[NonEmptyMap[K, V]] = mkNESM(p.schema, keyP)
 }
 
@@ -71,8 +71,8 @@ object CatsSupport extends LowPriorityCatsSupport with ScalaVersionSpecificCatsS
   implicit def chainSchema[T](implicit ss: Schema[T]): Predef[Chain[T]] = mkNEx[T, Chain](ss)
 
   implicit def oneAndSchema[F[_], T](implicit
-      ss: Schema[T],
-      _1: Schema[F[T]]
+    ss: Schema[T],
+    _1: Schema[F[T]]
   ): Predef[OneAnd[F, T]] = Predef(
     `array`[T, ({ type Z[X] = OneAnd[F, X] })#Z](ss).withValidation(`minItems` := 1)
   )
@@ -90,8 +90,8 @@ object CatsSupport extends LowPriorityCatsSupport with ScalaVersionSpecificCatsS
     mkNEx[T, NonEmptyChain](ss)
 
   implicit def nemStrSchema[K, V](implicit
-      ss: Schema[V],
-      keyP: KeyPattern[K]
+    ss: Schema[V],
+    keyP: KeyPattern[K]
   ): Predef[NonEmptyMap[K, V]] = mkNESM(ss, keyP)
 
 }

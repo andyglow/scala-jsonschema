@@ -61,7 +61,7 @@ trait MacroCake
     * @return
     */
   def deriveObjectSchema[T: c.WeakTypeTag](
-      decorations: c.Expr[(String, String)]*
+    decorations: c.Expr[(String, String)]*
   ): c.Expr[json.Schema.`object`[T]] = {
     val tpe = weakTypeOf[T]
     validateNonValueCaseClass(tpe, "Json.objectSchema") {
@@ -71,8 +71,8 @@ trait MacroCake
   }
 
   protected def deriveInternal[T: c.WeakTypeTag, S[_]](
-      specFD: FieldDecorations = FieldDecorations.Empty,
-      noImplicitSearch: Boolean = false
+    specFD: FieldDecorations = FieldDecorations.Empty,
+    noImplicitSearch: Boolean = false
   ): c.Expr[S[T]] = {
     val tpe = weakTypeOf[T]
 
@@ -104,10 +104,10 @@ trait MacroCake
   }
 
   def resolve(
-      tpe: Type,
-      ctx: ResolutionContext,
-      specFD: FieldDecorations = FieldDecorations.Empty,
-      noImplicitSearch: Boolean = false
+    tpe: Type,
+    ctx: ResolutionContext,
+    specFD: FieldDecorations = FieldDecorations.Empty,
+    noImplicitSearch: Boolean = false
   ): SchemaType = {
     if (ctx contains tpe) {
       val sig = signature(tpe)
