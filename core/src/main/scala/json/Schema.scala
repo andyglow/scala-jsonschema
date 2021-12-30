@@ -281,14 +281,15 @@ object Schema {
     }
 
     def dropField(pred: Field[_] => Boolean): `object`[T] =
-      copy(fields = this.fields.filterNot(pred))
-    def withField(f: Field[_]): `object`[T] = copy(fields = fields + f)
+      copy(fields = this.fields.filterNot(pred)).withExtraFrom(this)
+    def withField(f: Field[_]): `object`[T]                                            = copy(fields = fields + f).withExtraFrom(this)
+    def withField(name: String, tpe: Schema[_], required: Boolean = true): `object`[T] = withField(Field(name, tpe, required))
     def withFieldsUpdated(pf: PartialFunction[Field[_], Field[_]]): `object`[T] = copy(
       fields = fields collect {
         case f if pf isDefinedAt f => pf(f)
         case f                     => f
       }
-    )
+    ).withExtraFrom(this)
     override def jsonType: String = "object"
     override def toString: String = ToString { sb =>
       sb append "object("
@@ -367,6 +368,7 @@ object Schema {
 
       def apply[T](name: String, tpe: Schema[T]): Field[T] =
         new Field(name, tpe, required = true, default = None, description = None, RWMode.ReadWrite)
+
       def apply[T](name: String, tpe: Schema[T], required: Boolean): Field[T] =
         new Field(name, tpe, required, default = None, description = None, RWMode.ReadWrite)
 
@@ -526,7 +528,7 @@ object Schema {
     }
     override def withValidation[TT >: T, B](v: V.Def[B, _], vs: V.Def[B, _]*)(implicit
       bound: V.Magnet[TT, B]
-    ): `def`[T] = copy(tpe = tpe.asInstanceOf[Schema[TT]].withValidation(v, vs: _*))
+    ): `def`[T] = copy(tpe = tpe.asInstanceOf[Schema[TT]].withValidation(v, vs: _*)).withExtraFrom(this)
     override def toDefinition[TT >: T](sig: String): `def`[TT] = {
       def deepCopy(x: Schema[_]): Schema[_] = {
         val y = x match {
@@ -543,7 +545,7 @@ object Schema {
         y withExtraFrom x
       }
 
-      copy(sig = sig, tpe = deepCopy(tpe))
+      copy(sig = sig, tpe = deepCopy(tpe)).withExtraFrom(this)
     }
   }
 
