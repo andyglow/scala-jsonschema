@@ -1,4 +1,4 @@
 #!/bin/sh
 set -e
 
-/usr/local/bin/scalafmt-native
+/usr/local/bin/scalafmt-native --test
