@@ -96,12 +96,12 @@ sealed trait Schema[+T] {
   override def equals(obj: Any): Boolean = obj match {
     case s: Schema[_] =>
       s.canEqual(this) &&
-        this.title == s.title &&
-        this.description == s.description &&
-        this.discriminationKey == s.discriminationKey &&
-        // compare collections disregarding order
-        this.validations.forall(s.validations.contains) &&
-        s.validations.forall(this.validations.contains)
+      this.title == s.title &&
+      this.description == s.description &&
+      this.discriminationKey == s.discriminationKey &&
+      // compare collections disregarding order
+      this.validations.forall(s.validations.contains) &&
+      s.validations.forall(this.validations.contains)
 
     case _ => false
   }
