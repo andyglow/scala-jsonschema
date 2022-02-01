@@ -87,8 +87,16 @@ lazy val macros = { project in file("macros") }
     )
   )
 
+lazy val testModels = { project in file("test-models") }.settings(
+  commonSettings,
+  name := "scala-jsonschema-test-models",
+  crossScalaVersions := Nil,
+  publish / skip     := true,
+  publishArtifact    := false,
+  update / aggregate := false)
+
 lazy val api = { project in file("api") }
-  .dependsOn(core, macros)
+  .dependsOn(core, macros, testModels % "test->compile")
   .settings(
     commonSettings,
     name := "scala-jsonschema"

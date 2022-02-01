@@ -18,6 +18,11 @@ object case2 {
   case class Foo(value: Option[String] = None)
 }
 
+object case3 {
+  import case2._
+  case class Bar(value: Option[Foo] = None)
+}
+
 class NoneForDefaultValueSpec extends AnyFunSuite {
   import NoneForDefaultValueCases._
 
@@ -31,5 +36,13 @@ class NoneForDefaultValueSpec extends AnyFunSuite {
 
     // type is specified in same file, companion object
     Json.schema[case1.Foo] shouldBe `object`(Field("value", `string`, required = false))
+
+    // type hierarchy
+    // same source file
+    Json.schema[case3.Bar] shouldBe `object`(Field("value", `object`(Field("value", `string`, required = false)), required = false))
+    // external source file
+    Json.schema[NoneForDefaultModelsCase4] shouldBe `object`(Field("value", `object`(Field("value", `string`, required = false)), required = false))
+    // external module
+    Json.schema[ExternalNoneForDefaultModelsCase5] shouldBe `object`(Field("value", `object`(Field("value", `string`, required = false)), required = false))
   }
 }
