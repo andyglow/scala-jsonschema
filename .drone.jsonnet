@@ -37,11 +37,11 @@ local SbtCleanTest(ver) = BuildStep(ver) + {
 local Coverage(name, ver) = BuildStep(ver) + {
   name: name,
   commands: [
-     "sbt clean coverage test",
-     "sbt coverageAggregate",
-     "wget -O .codecov https://codecov.io/bash",
-     "chmod +x .codecov",
-     "./.codecov -X gcov -X coveragepy -X xcode -X gcovout"
+    "sbt clean coverage test",
+    "sbt coverageAggregate",
+    "curl -Os https://uploader.codecov.io/latest/alpine/codecov",
+    "chmod +x codecov",
+    "./codecov -t ${CODECOV_TOKEN}",
   ]
 };
 
