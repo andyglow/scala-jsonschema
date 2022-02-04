@@ -153,9 +153,9 @@
          "commands": [
             "sbt clean coverage test",
             "sbt coverageAggregate",
-            "wget -O .codecov https://codecov.io/bash",
-            "chmod +x .codecov",
-            "./.codecov -X gcov -X coveragepy -X xcode -X gcovout"
+            "curl -Os https://uploader.codecov.io/latest/alpine/codecov",
+            "chmod +x codecov",
+            "./codecov -t ${CODECOV_TOKEN}"
          ],
          "environment": {
             "CODECOV_TOKEN": {
