@@ -71,8 +71,8 @@ private[jsonschema] trait UProductTypes {
             case ex: Throwable =>
               throw new Exception(
                 s"Unable to check isNone for ${show(tpe)}.${show(fieldSym)}: ${show(
-                  fieldTpe
-                )}. May be try non-full rebuild. Throws on evaluation of:\n```\n${showCode(q"$effectiveDefaultGetterTree.isEmpty")}\n```",
+                    fieldTpe
+                  )}. May be try non-full rebuild. Throws on evaluation of:\n```\n${showCode(q"$effectiveDefaultGetterTree.isEmpty")}\n```",
                 ex
               )
           }
@@ -109,8 +109,8 @@ private[jsonschema] trait UProductTypes {
                  | - corresponding library is in classpath (eg. scala-jsonschema-spray-json, scala-jsonschema-play-json, scala-jsonschema-circe-json, etc)
                  | - corresponding import is taking place (eg. `import com.github.andyglow.jsonschema.AsSpray._`, `import com.github.andyglow.jsonschema.AsPlay._`, `import com.github.andyglow.jsonschema.AsCirce._` etc)
                  |${if (isOption && is211)
-                "NOTE: Functionality of recognizing `scala.None` is not available for scala 2.11."
-              else ""}
+                  "NOTE: Functionality of recognizing `scala.None` is not available for scala 2.11."
+                else ""}
                  |""".stripMargin
             )
           }

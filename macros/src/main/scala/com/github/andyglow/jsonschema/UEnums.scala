@@ -18,7 +18,7 @@ private[jsonschema] trait UEnums {
         val details = ss.toSeq.sortBy { schema => showCode(schema.tree) }.map { schema =>
           val schemaDetails = schemas(schema).sortBy { member => show(member.tpe) }.map { member =>
             s"  - ${show(member.tpe)}.${if (member.typeHint != NoType) s" Type Hint: ${show(member.typeHint)}"
-            else ""}"
+              else ""}"
           }
             .mkString("\n")
           s"- ${showCode(schema.tree)}:\n$schemaDetails"
