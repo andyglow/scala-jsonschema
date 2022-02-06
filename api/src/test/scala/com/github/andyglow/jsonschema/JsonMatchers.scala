@@ -31,8 +31,8 @@ trait JsonMatchers {
           MatchResult(
             matches = false,
             s"```\n${JsonFormatter format left}\n```\nis not structurally equal to\n```\n${JsonFormatter format right}\n```\nDifferences:\n${diffs
-              .map(_.str)
-              .mkString("- ", "\n- ", "")}",
+                .map(_.str)
+                .mkString("- ", "\n- ", "")}",
             ""
           )
       }
