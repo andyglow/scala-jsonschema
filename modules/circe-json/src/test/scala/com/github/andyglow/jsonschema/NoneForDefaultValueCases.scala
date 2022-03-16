@@ -25,6 +25,7 @@ object case2 {
 }
 
 class NoneForDefaultCirceSpec extends AnyFunSuite {
+  import AsCirceSpec.jsValEq
   import NoneForDefaultCirceCases._
   import json.schema.Version.Draft07
   import io.circe.{ Json => Circe }
@@ -34,7 +35,7 @@ class NoneForDefaultCirceSpec extends AnyFunSuite {
   test("scala.None for default value") {
 
     // type id specified in external file
-    Json.schema[case0.Foo].asCirce(Draft07("s0")) shouldBe Circe.obj(
+    Json.schema[case0.Foo].asCirce(Draft07("s0")) shouldEqual Circe.obj(
       """$id""" -> Circe.fromString("s0"),
       """$schema""" -> Circe.fromString("http://json-schema.org/draft-07/schema#"),
       "properties" -> Circe.obj(
@@ -47,7 +48,7 @@ class NoneForDefaultCirceSpec extends AnyFunSuite {
     )
 
     // type is specified in same file
-    Json.schema[case2.Foo].asCirce(Draft07("s2")) shouldBe Circe.obj(
+    Json.schema[case2.Foo].asCirce(Draft07("s2")) shouldEqual Circe.obj(
       """$id""" -> Circe.fromString("s2"),
       """$schema""" -> Circe.fromString("http://json-schema.org/draft-07/schema#"),
       "properties" -> Circe.obj(
@@ -60,7 +61,7 @@ class NoneForDefaultCirceSpec extends AnyFunSuite {
     )
 
     // type is specified in same file, companion object
-    Json.schema[case1.Foo].asCirce(Draft07("s1")) shouldBe Circe.obj(
+    Json.schema[case1.Foo].asCirce(Draft07("s1")) shouldEqual Circe.obj(
       """$id""" -> Circe.fromString("s1"),
       """$schema""" -> Circe.fromString("http://json-schema.org/draft-07/schema#"),
       "properties" -> Circe.obj(
@@ -73,7 +74,7 @@ class NoneForDefaultCirceSpec extends AnyFunSuite {
     )
 
     // type is specified in same file, companion object
-    Json.schema[case3.Foo].asCirce(Draft07("s3")) shouldBe Circe.obj(
+    Json.schema[case3.Foo].asCirce(Draft07("s3")) shouldEqual Circe.obj(
       """$id""" -> Circe.fromString("s3"),
       """$schema""" -> Circe.fromString("http://json-schema.org/draft-07/schema#"),
       "type" -> Circe.fromString("object"),
