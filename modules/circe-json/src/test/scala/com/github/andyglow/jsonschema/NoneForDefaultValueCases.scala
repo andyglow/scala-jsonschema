@@ -28,6 +28,7 @@ class NoneForDefaultCirceSpec extends AnyFunSuite {
   import NoneForDefaultCirceCases._
   import json.schema.Version.Draft07
   import io.circe.{ Json => Circe }
+  import io.circe.generic.auto._
   import AsCirce._
 
   test("scala.None for default value") {
