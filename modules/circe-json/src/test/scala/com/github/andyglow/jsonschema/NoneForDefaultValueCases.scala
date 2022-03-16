@@ -91,7 +91,7 @@ class NoneForDefaultCirceSpec extends AnyFunSuite {
               "type" -> Circe.fromString("string")
             ),
             "innerLevel2" -> Circe.obj(
-              "type" -> Circe.fromString("string"),
+              "type" -> Circe.fromString("string")
             )
           )
         )
