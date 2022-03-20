@@ -175,7 +175,7 @@ lazy val `joda-time` = { project in file("modules/joda-time") }
   .settings(
     commonSettings,
     name                              := "scala-jsonschema-joda-time",
-    libraryDependencies += "joda-time" % "joda-time" % "2.10.13"
+    libraryDependencies += "joda-time" % "joda-time" % "2.10.14"
   )
 
 lazy val `cats` = { project in file("modules/cats") }
