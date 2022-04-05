@@ -154,7 +154,7 @@ lazy val `json4s-json` = { project in file("modules/json4s-json") }
     Compile / compile := (Compile / compile).dependsOn(buildInfo).value,
     Test / compile    := (Test / compile).dependsOn(buildInfo).value,
     name              := "scala-jsonschema-json4s-json",
-    libraryDependencies ++= Seq("org.json4s" %% "json4s-core" % "4.0.5", "org.json4s" %% "json4s-native" % "4.0.4" % Test)
+    libraryDependencies ++= Seq("org.json4s" %% "json4s-core" % "4.0.5", "org.json4s" %% "json4s-native" % "4.0.5" % Test)
   )
 
 lazy val `u-json` = { project in file("modules/u-json") }
