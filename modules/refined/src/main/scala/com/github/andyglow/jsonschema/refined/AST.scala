@@ -87,7 +87,7 @@ private[jsonschema] trait AST { this: Math with HasContext with HasLog =>
     // -------
 
     sealed trait NumPred extends Pred {
-      def isInt: Boolean = t =:= typeOf[Int] || t =:= typeOf[java.lang.Integer]
+      def isInt: Boolean = t =:= typeOf[Int] || t =:= typeOf[java.lang.Integer] || t =:= typeOf[Long] || t =:= typeOf[java.lang.Long]
       def prefix: Tree   = if (isInt) q"`integer`" else q"`number`[$t]"
     }
 
