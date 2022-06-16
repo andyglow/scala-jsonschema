@@ -50,6 +50,44 @@ class RefinedNumbersSpec extends AnyFunSuite {
     schema[Int Refined Divisible[W.`20`.T]] shouldBe `integer`.withValidation(`multipleOf` := 20)
   }
 
+  test("long positive") {
+    schema[Long Refined Positive] shouldBe `integer`.withValidation(`exclusiveMinimum` := 0)
+  }
+
+  test("long negative") {
+    schema[Long Refined Negative] shouldBe `integer`.withValidation(`exclusiveMaximum` := 0)
+  }
+
+  test("long non positive") {
+    schema[Long Refined NonPositive] shouldBe `integer`.withValidation(`maximum` := 0)
+  }
+
+  test("long non negative") {
+    schema[Long Refined NonNegative] shouldBe `integer`.withValidation(`minimum` := 0)
+  }
+
+  test("long > n") {
+    schema[Long Refined Greater[W.`20`.T]] shouldBe `integer`.withValidation(
+      `exclusiveMinimum` := 20
+    )
+  }
+
+  test("long < n") {
+    schema[Long Refined Less[W.`20`.T]] shouldBe `integer`.withValidation(`exclusiveMaximum` := 20)
+  }
+
+  test("long <= n") {
+    schema[Long Refined GreaterEqual[W.`20`.T]] shouldBe `integer`.withValidation(`minimum` := 20)
+  }
+
+  test("long >= n") {
+    schema[Long Refined LessEqual[W.`20`.T]] shouldBe `integer`.withValidation(`maximum` := 20)
+  }
+
+  test("long mod n") {
+    schema[Long Refined Divisible[W.`20`.T]] shouldBe `integer`.withValidation(`multipleOf` := 20)
+  }
+
   test("double positive") {
     schema[Double Refined Positive] shouldBe `number`[Double].withValidation(
       `exclusiveMinimum` := 0
