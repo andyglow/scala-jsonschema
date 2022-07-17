@@ -72,11 +72,6 @@ private[jsonschema] trait AST { this: Math with HasContext with HasLog =>
         q"""`string`[$t].withValidation( `pattern` := "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$$" )"""
     }
 
-    case class XML(t: Type) extends Pred {
-      override def tree =
-        q"""`string`[$t].withValidation( `contentMediaType` := "text/xml", `contentEncoding` := "utf8" )"""
-    }
-
     case class Trimmed(t: Type) extends Pred {
       override def tree =
         q"""`string`[$t].withValidation( `pattern` := "^(?!\\s)[\\S ]*(?<!\\s)$$" )"""
