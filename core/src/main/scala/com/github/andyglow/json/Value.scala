@@ -1,5 +1,6 @@
 package com.github.andyglow.json
 
+import com.github.andyglow.scalamigration._
 import scala.collection._
 import comparison._
 
@@ -226,13 +227,13 @@ object Value {
       case obj(thatFields) =>
         // TODO: should we store comparison direction as a field?
         // like: missed on left, missed on right
-        val missed = ((thatFields.keySet -- underlying.keySet).map(k => (k, thatFields(k))) ++
-          (underlying.keySet -- thatFields.keySet).map(k => (k, underlying(k)))) map { case (k, v) =>
+        val missed = ((thatFields.immutableKeys -- underlying.immutableKeys).map(k => (k, thatFields(k))) ++
+          (underlying.immutableKeys -- thatFields.immutableKeys).map(k => (k, underlying(k)))) map { case (k, v) =>
           Diff.MissingProperty(path / k, v)
         }
         val init = if (missed.isEmpty) Result.Equal else Result.Different(missed.toList)
 
-        (thatFields.keySet intersect underlying.keySet).foldLeft[Result](init) { case (acc, k) =>
+        (thatFields.immutableKeys intersect underlying.immutableKeys).foldLeft[Result](init) { case (acc, k) =>
           val thisV = underlying(k)
           val thatV = thatFields(k)
           acc ++ thisV.internalDiff(thatV, path / k)

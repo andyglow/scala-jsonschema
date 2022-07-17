@@ -112,6 +112,7 @@ object AsJson4sSpec {
       case JString(a) if b.isInstanceOf[JString]   => b.asInstanceOf[JString].s == a
       case a: JArray                               => jsArrEq.areEqual(a, b)
       case a: JObject                              => jsObjEq.areEqual(a, b)
+      case _                                       => false
     }
   }
 

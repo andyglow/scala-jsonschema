@@ -1,5 +1,5 @@
-import sbt.Keys.{crossScalaVersions, scalaVersion}
-import sbt.settingKey
+import sbt._
+import Keys._
 
 sealed abstract class ScalaVer(val full: String)
 
@@ -30,5 +30,11 @@ object ScalaVer {
     scalaVersion       := (ScalaVer.fromEnv getOrElse ScalaVer.default).full,
     crossScalaVersions := ScalaVer.values.map(_.full),
     scalaV             := ScalaVer.fromString(scalaVersion.value) getOrElse ScalaVer.default
+  )
+
+  def settings213 = Seq(
+    scalaVersion       := _213.full,
+    crossScalaVersions := Seq(_213.full),
+    scalaV             := _213
   )
 }

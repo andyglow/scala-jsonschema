@@ -234,6 +234,7 @@ object AsUSpec {
       case ujson.Str(a) if b.isInstanceOf[ujson.Str] => b.asInstanceOf[ujson.Str].value == a
       case a: ujson.Arr                              => jsArrEq.areEqual(a, b)
       case a: ujson.Obj                              => jsObjEq.areEqual(a, b)
+      case _                                         => false
     }
   }
 

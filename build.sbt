@@ -263,6 +263,7 @@ lazy val docs = { project in file("documentation") }
   .dependsOn(api, `joda-time`)
   .settings(
     commonSettings,
+    ScalaVer.settings213,
     mdocIn        := baseDirectory.value / "main" / "paradox",
     mdocVariables := Map("VERSION" -> version.value, "SCALA_VERSION" -> scalaVersion.value),
     paradoxProperties ++= Map("project.name" -> "Scala JsonSchema", "github.base_url" -> "https://github.com/andyglow/scala-jsonschema"),
@@ -301,18 +302,30 @@ lazy val docs = { project in file("documentation") }
     ,
     // #analytics
 //    Compile / paradoxMaterialTheme ~= {
-//      _.withGoogleAnalytics("UA-107934279-1") // Remember to change this!
+//      _.withSocial(uri("https://github.com/andyglow"))
 //    }
-    // #analytics
+//    // #social
 //    ,
-    // #copyright
-    Compile / paradoxMaterialTheme ~= {
-      _.withCopyright("""
-        Inspired by <a href="https://github.com/coursera/autoschema">AutoSchema</a>
-        by <a href="https://github.com/coursera">Coursera</a>
-      """)
-    }
-    // #copyright
+//    // #language
+//    Compile / paradoxMaterialTheme ~= {
+//      _.withLanguage(java.util.Locale.ENGLISH)
+//    }
+//    // #language
+//    ,
+//    // #analytics
+////    Compile / paradoxMaterialTheme ~= {
+////      _.withGoogleAnalytics("UA-107934279-1") // Remember to change this!
+////    }
+//    // #analytics
+////    ,
+//    // #copyright
+//    Compile / paradoxMaterialTheme ~= {
+//      _.withCopyright("""
+//        Inspired by <a href="https://github.com/coursera/autoschema">AutoSchema</a>
+//        by <a href="https://github.com/coursera">Coursera</a>
+//      """)
+//    }
+//    // #copyright
   )
 
 lazy val root = { project in file(".") }
