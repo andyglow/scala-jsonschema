@@ -27,7 +27,6 @@ private[jsonschema] trait Extractors { this: HasLog with AST with HasContext =>
   private lazy val sMatchesRegex = smbOf[string.MatchesRegex[_]]
   private lazy val sIPv4         = smbOf[string.IPv4]
   private lazy val sIPv6         = smbOf[string.IPv6]
-  private lazy val sXML          = smbOf[string.Xml]
   private lazy val sTrimmed      = smbOf[string.Trimmed]
 
   // numeric
@@ -108,7 +107,6 @@ private[jsonschema] trait Extractors { this: HasLog with AST with HasContext =>
               case TypeRef(_, `sMatchesRegex`, List(C(v))) => Some(MatchesRegex(t, v.toString))
               case TypeRef(_, `sIPv4`, _)                  => Some(IPv4(t))
               case TypeRef(_, `sIPv6`, _)                  => Some(IPv6(t))
-              case TypeRef(_, `sXML`, _)                   => Some(XML(t))
               case TypeRef(_, `sTrimmed`, _)               => Some(Trimmed(t))
               // numeric
               case TypeRef(_, `sPositive`, _)              => Some(Pos(t))

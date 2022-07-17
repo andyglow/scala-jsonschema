@@ -65,13 +65,6 @@ class RefinedStringsSpec extends AnyFunSuite {
     schema[String Refined IPv6] shouldBe `string`(Format.`ipv6`)
   }
 
-  test("xml") {
-    schema[String Refined Xml] shouldBe `string`.withValidation(
-      `contentMediaType` := "text/xml",
-      `contentEncoding`  := "utf8"
-    )
-  }
-
   test("size") {
     schema[String Refined Size[W.`6`.T]] shouldBe `string`.withValidation(
       `maxLength` := 6,
