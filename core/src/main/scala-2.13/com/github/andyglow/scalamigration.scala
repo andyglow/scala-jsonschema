@@ -1,8 +1,13 @@
 package com.github.andyglow
 
+import scala.collection.immutable
 import scala.util.Try
 
 object scalamigration {
+
+  implicit class collectionMapOps[K, V](private val kv: scala.collection.Map[K, V]) extends AnyVal {
+    @inline def immutableKeys: immutable.Set[K] = kv.keySet.to(immutable.Set)
+  }
 
   implicit class SpecificStringOps(private val x: String) extends AnyVal {
 

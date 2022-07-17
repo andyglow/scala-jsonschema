@@ -50,9 +50,6 @@ private[jsonschema] trait UDictionaries {
           dict
         }
 
-        c.info(c.enclosingPosition, "1: " + show(dict), force = true)
-        c.info(c.enclosingPosition, "2: " + show(effectiveDict), force = true)
-
         effectiveDict
       }
     }

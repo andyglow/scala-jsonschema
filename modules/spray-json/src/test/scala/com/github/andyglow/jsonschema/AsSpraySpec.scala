@@ -111,6 +111,7 @@ object AsSpraySpec {
       case JsString(a) if b.isInstanceOf[JsString] => b.asInstanceOf[JsString].value == a
       case a: JsArray                              => jsArrEq.areEqual(a, b)
       case a: JsObject                             => jsObjEq.areEqual(a, b)
+      case _                                       => false
     }
   }
 

@@ -1,10 +1,15 @@
 package com.github.andyglow
 
+import scala.collection.immutable
 import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
 import scala.util.control.NonFatal
 
 object scalamigration {
+
+  implicit class collectionMapOps[K, V](private val kv: scala.collection.Map[K, V]) extends AnyVal {
+    @inline def immutableKeys: immutable.Set[K] = kv.keySet.toSet
+  }
 
   implicit class SpecificStringOps(private val x: String) extends AnyVal {
 

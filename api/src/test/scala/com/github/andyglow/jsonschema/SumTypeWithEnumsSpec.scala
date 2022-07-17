@@ -2,7 +2,7 @@ package com.github.andyglow.jsonschema
 
 import json._
 import json.Schema._
-import json.schema._
+//import json.schema._
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec._
 

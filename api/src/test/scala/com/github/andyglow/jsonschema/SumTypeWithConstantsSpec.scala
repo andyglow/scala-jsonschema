@@ -6,7 +6,7 @@ import json.schema._
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec._
 
-class SumeTypeWithConstantsSpec extends AnyWordSpec {
+class SumTypeWithConstantsSpec extends AnyWordSpec {
   import SumTypeModels._
 
   "Macro" should {
