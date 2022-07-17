@@ -201,7 +201,7 @@ lazy val `refined` = { project in file("modules/refined") }
     libraryDependencies += {
       val refinedV = CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, 11)) => "0.9.12"
-        case _             => "0.9.27"
+        case _             => "0.10.1"
       }
 
       "eu.timepit" %% "refined" % refinedV
@@ -260,9 +260,8 @@ lazy val docs = { project in file("documentation") }
     // publishing to GitHub Pages
     GhpagesPlugin
   )
-  .dependsOn(api, `joda-time`)
+//  .dependsOn(api, `joda-time`)
   .settings(
-    commonSettings,
     ScalaVer.settings213,
     mdocIn        := baseDirectory.value / "main" / "paradox",
     mdocVariables := Map("VERSION" -> version.value, "SCALA_VERSION" -> scalaVersion.value),
