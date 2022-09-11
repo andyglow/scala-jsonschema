@@ -29,6 +29,10 @@ trait LowPriorityAsValueBuilder {
   implicit val draft09: AsValueBuilder[Draft09] = new AsValueBuilder[Draft09] {
     override def apply(v: Draft09): AsValue = new AsDraft09(v)
   }
+
+  implicit val draft12: AsValueBuilder[Draft12] = new AsValueBuilder[Draft12] {
+    override def apply(v: Draft12): AsValue = new AsDraft12(v)
+  }
 }
 
 object AsValueBuilder extends LowPriorityAsValueBuilder
