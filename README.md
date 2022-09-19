@@ -46,7 +46,7 @@ The goal of this library is to make JSON Schema generation done the way all popu
 Inspired by Coursera Autoschema but uses `Scala Macros` instead of `Java Reflection`.
 
 ## Features
-- Supports Json Schema `draft-04`, `draft-06`, `draft-07`, `draft-09`
+- Supports Json Schema `draft-04`, `draft-06`, `draft-07`, `draft-09`, `draft-12`
 - Supports `case classes`
 - Supports `value classes`
 - Supports `sealed trait enums`
