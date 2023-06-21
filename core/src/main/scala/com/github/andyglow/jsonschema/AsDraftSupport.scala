@@ -20,6 +20,8 @@ trait AsDraftSupport {
 
   private[jsonschema] def isDraft09 = this.isInstanceOf[AsDraft09]
 
+  private[jsonschema] def isDraft12 = this.isInstanceOf[AsDraft12]
+
   type ParentSchema = Option[json.Schema[_]]
 
   def apply(x: json.Schema[_]): obj = apply(x, None, includeType = true, isRoot = true)
