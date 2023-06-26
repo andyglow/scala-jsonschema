@@ -138,7 +138,7 @@ class Renderer(maxWidth: Int, indentStep: Int) {
           maxWidth,
           leftOffset,
           indentCount,
-          indentStep,
+          indentStep
         )
       )
       new Truncated(str, maxWidth, height = 99999999).toResult
