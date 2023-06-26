@@ -79,7 +79,7 @@ private[jsonschema] trait UImplicits { this: UContext with UCommons with USignat
         case NotFound      => None
         case FromPredef(x) => Some(U.`-from-tree-`(tpe, x))
         case FromSchema(x) =>
-          Some(U.`-from-tree-`(tpe, q"""${N.Schema}.`def`[$tpe]($x)(${signature(tpe)})"""))
+          Some(U.`-from-tree-`(tpe, q"""${N.Schema}.`def`.adapt[$tpe]($x, ${signature(tpe)})"""))
       }
     }
 

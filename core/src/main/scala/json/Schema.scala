@@ -2,6 +2,7 @@ package json
 
 import com.github.andyglow.json.Value.ValueAdapter
 import com.github.andyglow.json._
+import com.github.andyglow.jsonschema.AsTree
 import json.Schema.`object`.Field.RWMode
 import json.schema.{validation => V}
 
@@ -32,6 +33,7 @@ sealed trait Schema[+T] {
   //  [error]  found   : Seq[json.ValidationDef[_, _]] (in scala.collection)
   //  [error]  required: Seq[json.ValidationDef[_, _]] (in scala.collection.immutable)
   def validations: Seq[V.Def[_, _]] = _validations.toSeq
+  def toDebugString: String = AsTree(this).rendered
   protected object ToString {
     def apply(fn: StringBuilder => Any): String = {
       val sb = new StringBuilder
@@ -538,7 +540,7 @@ object Schema {
           case `oneof`(ys, df)      => `oneof`(ys map deepCopy, df)
           case `allof`(ys)          => `allof`(ys map deepCopy)
           case `not`(y)             => `not`(deepCopy(y))
-          case `def`(s, y)          => `def`(s, deepCopy(y))
+          case `def`(s, y)          => `def`(sig, deepCopy(y))
           case `ref`(s) if s == sig => `ref`(sig)
           case y                    => y
         }
@@ -550,10 +552,12 @@ object Schema {
   }
 
   object `def` {
-    def apply[T](tpe: Schema[_])(sig: => String): `def`[T] = tpe match {
-      case `def`(originalSig, innerTpe) => `def`(originalSig, innerTpe)
-      case `value-class`(innerTpe)      => `def`(sig, innerTpe)
-      case _                            => `def`(sig, tpe)
+    def adapt[T](tpe: Schema[_], sig: => String): `def`[T] = {
+      tpe match {
+        case `def`(originalSig, innerTpe) => `def`(originalSig, innerTpe)
+        case `value-class`(innerTpe)      => `def`(sig, innerTpe)
+        case _                            => `def`(sig, tpe)
+      }
     }
   }
 
