@@ -1,3 +1,6 @@
+- **0.7.10**
+  - draft 2020-12 implemented
+  - dependencies updated 
 - **0.7.1**
   - draft 2019-09 implemented
   - initial json-diff functionality added  
@@ -10,7 +13,7 @@
     - discriminator/discriminatorKey  
 - **0.6.1**
   - added support for scala.Enumeration
-  - default values won't be infered for scala.None
+  - default values won't be inferred for scala.None
 - **0.6.0**
   ...
 - **0.2.7-M1**

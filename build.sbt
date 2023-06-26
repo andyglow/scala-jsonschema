@@ -67,7 +67,7 @@ lazy val commonSettings = ScalaVer.settings ++ Seq(
     ReleaseStep(action = Command.process("sonatypeReleaseAll", _), enableCrossBuild = true),
     pushChanges
   ),
-  libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.12" % Test
+  libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.16" % Test,
 )
 
 lazy val core = { project in file("core") }.settings(
@@ -125,7 +125,7 @@ lazy val `circe-json` = { project in file("modules/circe-json") }
     libraryDependencies ++= {
       val circeV = CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, 11)) => "0.12.0-M3"
-        case _             => "0.14.1"
+        case _             => "0.14.5"
       }
 
       Seq(
@@ -154,7 +154,7 @@ lazy val `json4s-json` = { project in file("modules/json4s-json") }
     Compile / compile := (Compile / compile).dependsOn(buildInfo).value,
     Test / compile    := (Test / compile).dependsOn(buildInfo).value,
     name              := "scala-jsonschema-json4s-json",
-    libraryDependencies ++= Seq("org.json4s" %% "json4s-core" % "4.0.5", "org.json4s" %% "json4s-native" % "4.0.5" % Test)
+    libraryDependencies ++= Seq("org.json4s" %% "json4s-core" % "4.0.6", "org.json4s" %% "json4s-native" % "4.0.6" % Test)
   )
 
 lazy val `u-json` = { project in file("modules/u-json") }
@@ -163,7 +163,10 @@ lazy val `u-json` = { project in file("modules/u-json") }
     commonSettings,
     name := "scala-jsonschema-ujson",
     libraryDependencies ++= {
-      val uV = "1.4.3"
+      val uV = CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, 11)) => "2.0.0"
+        case _             => "3.1.0"
+      }
 
       Seq("com.lihaoyi" %% "ujson" % uV, "com.lihaoyi" %% "upickle" % uV)
 
@@ -175,7 +178,7 @@ lazy val `joda-time` = { project in file("modules/joda-time") }
   .settings(
     commonSettings,
     name                              := "scala-jsonschema-joda-time",
-    libraryDependencies += "joda-time" % "joda-time" % "2.10.14"
+    libraryDependencies += "joda-time" % "joda-time" % "2.12.5"
   )
 
 lazy val `cats` = { project in file("modules/cats") }
@@ -186,7 +189,7 @@ lazy val `cats` = { project in file("modules/cats") }
     libraryDependencies += {
       val catsV = CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, 11)) => "2.0.0"
-        case _             => "2.6.1"
+        case _             => "2.9.0"
       }
 
       "org.typelevel" %% "cats-core" % catsV
@@ -201,7 +204,7 @@ lazy val `refined` = { project in file("modules/refined") }
     libraryDependencies += {
       val refinedV = CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, 11)) => "0.9.12"
-        case _             => "0.10.1"
+        case _             => "0.11.0"
       }
 
       "eu.timepit" %% "refined" % refinedV
@@ -233,7 +236,7 @@ lazy val enumeratum = { project in file("modules/enumeratum") }
   .settings(
     commonSettings,
     name                                  := "scala-jsonschema-enumeratum",
-    libraryDependencies += "com.beachape" %% "enumeratum" % "1.7.0"
+    libraryDependencies += "com.beachape" %% "enumeratum" % "1.7.2"
   )
 
 lazy val derived = { project in file("modules/derived") }
