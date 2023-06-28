@@ -19,7 +19,7 @@ ThisBuild / githubWorkflowBuildPostamble := Seq(
       "sbt coverageAggregate",
       "./codecov -t ${CODECOV_TOKEN}",
     ),
-    name = Some("Coverage Report"),
+    name = Some("Build and Publish Code Coverage Report"),
     cond = Some(s"matrix.scala == '${ScalaVer._213.full}'"),
     env = Map (
       "CODECOV_TOKEN" -> "${{ secrets.CODECOV_TOKEN }}",
