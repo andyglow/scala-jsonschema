@@ -8,6 +8,26 @@ ThisBuild / publishTo := sonatypePublishTo.value
 
 ThisBuild / versionScheme := Some("pvp")
 
+ThisBuild / crossScalaVersions := ScalaVer.values.map(_.full)
+
+ThisBuild / githubWorkflowPublishTargetBranches := Seq()
+ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("11"))
+ThisBuild / githubWorkflowBuildPostamble := Seq(
+  WorkflowStep.Run(
+    commands = List(
+      "sbt clean coverage test",
+      "sbt coverageAggregate",
+      "curl -Os https://uploader.codecov.io/latest/alpine/codecov",
+      "chmod +x codecov",
+      "./codecov -t ${CODECOV_TOKEN}",
+    ),
+    name = Some("Coverage Report"),
+    env = Map (
+      "CODECOV_TOKEN" -> "${{ secrets.CODECOV_TOKEN }}",
+    )
+  )
+)
+
 lazy val buildInfo = taskKey[Unit]("Prints Build Info")
 
 lazy val commonSettings = ScalaVer.settings ++ Seq(
