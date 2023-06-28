@@ -5,11 +5,8 @@ import ScalaVer.scalaV
 
 // https://github.com/xerial/sbt-sonatype/issues/71
 ThisBuild / publishTo := sonatypePublishTo.value
-
 ThisBuild / versionScheme := Some("pvp")
-
 ThisBuild / crossScalaVersions := ScalaVer.values.map(_.full)
-
 ThisBuild / githubWorkflowPublishTargetBranches := Seq()
 ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("11"))
 ThisBuild / githubWorkflowBuildPostamble := Seq(
@@ -27,6 +24,7 @@ ThisBuild / githubWorkflowBuildPostamble := Seq(
     )
   )
 )
+ThisBuild / scmInfo := Some(ScmInfo(url("https://github.com/andyglow/scala-jsonschema"), "scm:git@github.com:andyglow/scala-jsonschema.git"))
 
 lazy val buildInfo = taskKey[Unit]("Prints Build Info")
 
@@ -34,7 +32,7 @@ lazy val commonSettings = ScalaVer.settings ++ Seq(
   // logBuffered := false,
 
   organization     := "com.github.andyglow",
-  homepage         := Some(new URL("http://github.com/andyglow/scala-jsonschema")),
+  homepage         := Some(new URI("http://github.com/andyglow/scala-jsonschema").toURL),
   startYear        := Some(2017),
   organizationName := "andyglow",
   Compile / unmanagedSourceDirectories ++= {
@@ -67,7 +65,6 @@ lazy val commonSettings = ScalaVer.settings ++ Seq(
   sonatypeProfileName    := "com.github.andyglow",
   publishMavenStyle      := true,
   sonatypeProjectHosting := Some(GitHubHosting("andyglow", "scala-jsonschema", "andyglow@gmail.com")),
-  scmInfo                := Some(ScmInfo(url("https://github.com/andyglow/scala-jsonschema"), "scm:git@github.com:andyglow/scala-jsonschema.git")),
   developers := List(
     Developer(id = "andyglow", name = "Andriy Onyshchuk", email = "andyglow@gmail.com", url = url("https://ua.linkedin.com/in/andyglow"))
   ),

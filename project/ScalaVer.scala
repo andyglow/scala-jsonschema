@@ -24,7 +24,7 @@ object ScalaVer {
     case _                        => None
   }
 
-  lazy val scalaV = settingKey[ScalaVer]("Current Scala Version")
+  lazy val scalaV = settingKey[ScalaVer]("Current Scala Version").withRank(KeyRanks.Invisible)
 
   def settings = Seq(
     scalaVersion       := (ScalaVer.fromEnv getOrElse ScalaVer.default).full,
