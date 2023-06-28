@@ -50,16 +50,13 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         run: |
-          echo "$0"
           curl -o $(pwd)/codecov https://uploader.codecov.io/latest/alpine/codecov
-          chmod +x ./codecov
-          head ./codecov
-          ls -lA
-          echo "$0"
+          chmod +x $(pwd)/codecov
+          head $(pwd)/codecov
           sbt clean coverage test
-          echo "$0"
           sbt coverageAggregate
-          echo "$0"
-          ls -lA
+          echo "-------------------"
+          cat $(echo "$0")
+          echo "-------------------"
           pwd
-          ./codecov -t ${CODECOV_TOKEN}
+          $(pwd)/codecov -t ${CODECOV_TOKEN}
