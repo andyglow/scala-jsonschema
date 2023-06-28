@@ -59,4 +59,4 @@ jobs:
           cat $(echo "$0")
           echo "-------------------"
           pwd
-          $(pwd)/codecov -t ${CODECOV_TOKEN}
+          $(pwd)/codecov -t ${CODECOV_TOKEN} || ls -lA $(pwd)/codecov

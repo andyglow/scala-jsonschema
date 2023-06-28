@@ -21,7 +21,7 @@ ThisBuild / githubWorkflowBuildPostamble := Seq(
       "cat $(echo \"$0\")",
       "echo \"-------------------\"",
       "pwd",
-      "$(pwd)/codecov -t ${CODECOV_TOKEN}",
+      "$(pwd)/codecov -t ${CODECOV_TOKEN} || ls -lA $(pwd)/codecov",
     ),
     name = Some("Build and Publish Code Coverage Report"),
     cond = Some(s"matrix.scala == '${ScalaVer._213.full}'"),
