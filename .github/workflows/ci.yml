@@ -46,6 +46,7 @@ jobs:
         run: sbt '++ ${{ matrix.scala }}' test
 
       - name: Coverage Report
+        if: matrix.scala == '2.13.11'
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         run: |
