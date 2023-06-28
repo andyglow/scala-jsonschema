@@ -52,9 +52,9 @@ jobs:
         run: |
           pwd
           curl -o $(pwd)/upload_cc https://uploader.codecov.io/latest/alpine/codecov
-          ls -lA
+          ls -ld $PWD/*
           chmod +x $(pwd)/upload_cc
-          ls -lA
+          ls -ld $PWD/*
           head $(pwd)/upload_cc
           $(pwd)/upload_cc || ls -lA $(pwd)/upload_cc
           $(pwd)/upload_cc -t ${CODECOV_TOKEN}

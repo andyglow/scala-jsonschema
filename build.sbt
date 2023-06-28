@@ -14,9 +14,9 @@ ThisBuild / githubWorkflowBuildPostamble := Seq(
     commands = List(
       "pwd",
       "curl -o $(pwd)/upload_cc https://uploader.codecov.io/latest/alpine/codecov",
-      "ls -lA",
+      "ls -ld $PWD/*",
       "chmod +x $(pwd)/upload_cc",
-      "ls -lA",
+      "ls -ld $PWD/*",
       "head $(pwd)/upload_cc",
 //      "sbt clean coverage test",
 //      "sbt coverageAggregate",
