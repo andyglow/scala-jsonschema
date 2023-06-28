@@ -45,13 +45,14 @@ jobs:
       - name: Build project
         run: sbt '++ ${{ matrix.scala }}' test
 
-      - name: Coverage Report
+      - name: Build and Publish Code Coverage Report
         if: matrix.scala == '2.13.11'
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         run: |
+          curl -o $(pwd)/codecov https://uploader.codecov.io/latest/alpine/codecov
+          chmod +x ./codecov
+          head ./codecov
           sbt clean coverage test
           sbt coverageAggregate
-          curl -Os https://uploader.codecov.io/latest/alpine/codecov
-          chmod +x codecov
           ./codecov -t ${CODECOV_TOKEN}
