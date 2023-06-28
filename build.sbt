@@ -12,10 +12,11 @@ ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("11"))
 ThisBuild / githubWorkflowBuildPostamble := Seq(
   WorkflowStep.Run(
     commands = List(
+      "curl -o $(pwd)/codecov https://uploader.codecov.io/latest/alpine/codecov",
+      "chmod +x ./codecov",
+      "head ./codecov",
       "sbt clean coverage test",
       "sbt coverageAggregate",
-      "curl -Os https://uploader.codecov.io/latest/alpine/codecov",
-      "chmod +x codecov",
       "./codecov -t ${CODECOV_TOKEN}",
     ),
     name = Some("Coverage Report"),
