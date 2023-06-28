@@ -53,6 +53,9 @@ jobs:
           curl -o $(pwd)/codecov https://uploader.codecov.io/latest/alpine/codecov
           chmod +x ./codecov
           head ./codecov
+          ls -lA
           sbt clean coverage test
           sbt coverageAggregate
+          ls -lA
+          pwd
           ./codecov -t ${CODECOV_TOKEN}
