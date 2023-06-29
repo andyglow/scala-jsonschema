@@ -12,7 +12,7 @@ ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("11"))
 ThisBuild / githubWorkflowBuildPostamble := Seq(
   WorkflowStep.Sbt(
     name = Some("Generate Code Coverage Report"),
-    commands = List("clean", "codecov", "test"),
+    commands = List("clean", "coverage", "test"),
     cond = Some(s"matrix.scala == '${ScalaVer._213.full}'")
   ),
   WorkflowStep.Use(
