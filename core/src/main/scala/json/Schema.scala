@@ -33,7 +33,7 @@ sealed trait Schema[+T] {
   //  [error]  found   : Seq[json.ValidationDef[_, _]] (in scala.collection)
   //  [error]  required: Seq[json.ValidationDef[_, _]] (in scala.collection.immutable)
   def validations: Seq[V.Def[_, _]] = _validations.toSeq
-  def toDebugString: String = AsTree(this).rendered
+  def toDebugString: String         = AsTree(this).rendered
   protected object ToString {
     def apply(fn: StringBuilder => Any): String = {
       val sb = new StringBuilder

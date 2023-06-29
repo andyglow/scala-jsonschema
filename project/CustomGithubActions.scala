@@ -18,8 +18,8 @@ object CustomGithubActions {
     name = Some("Upload Code Coverage Report"),
     ref = UseRef.Public("codecov", "codecov-action", "v3"),
     cond = Some(s"matrix.scala == '${ScalaVer._213.full}'"),
-    params = Map (
-      "token" -> "${{ secrets.CODECOV_TOKEN }}",
+    params = Map(
+      "token" -> "${{ secrets.CODECOV_TOKEN }}"
     )
   )
 }

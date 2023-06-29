@@ -5,12 +5,12 @@ import ScalaVer.scalaV
 import CustomGithubActions._
 
 // https://github.com/xerial/sbt-sonatype/issues/71
-ThisBuild / publishTo := sonatypePublishTo.value
-ThisBuild / versionScheme := Some("pvp")
-ThisBuild / crossScalaVersions := ScalaVer.values.map(_.full)
+ThisBuild / publishTo                           := sonatypePublishTo.value
+ThisBuild / versionScheme                       := Some("pvp")
+ThisBuild / crossScalaVersions                  := ScalaVer.values.map(_.full)
 ThisBuild / githubWorkflowPublishTargetBranches := Seq()
-ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("11"))
-ThisBuild / githubWorkflowBuildPostamble := Seq(generateCC, aggregateCC, uploadCC)
+ThisBuild / githubWorkflowJavaVersions          := Seq(JavaSpec.temurin("11"))
+ThisBuild / githubWorkflowBuildPostamble        := Seq(generateCC, aggregateCC, uploadCC)
 
 ThisBuild / scmInfo := Some(ScmInfo(url("https://github.com/andyglow/scala-jsonschema"), "scm:git@github.com:andyglow/scala-jsonschema.git"))
 
@@ -72,7 +72,7 @@ lazy val commonSettings = ScalaVer.settings ++ Seq(
     ReleaseStep(action = Command.process("sonatypeReleaseAll", _), enableCrossBuild = true),
     pushChanges
   ),
-  libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.16" % Test,
+  libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.16" % Test
 )
 
 lazy val core = { project in file("core") }.settings(
@@ -306,7 +306,6 @@ lazy val docs = { project in file("documentation") }
       _.withLanguage(java.util.Locale.ENGLISH)
     }
     // #language
-    ,
     // #analytics
 //    Compile / paradoxMaterialTheme ~= {
 //      _.withSocial(uri("https://github.com/andyglow"))
