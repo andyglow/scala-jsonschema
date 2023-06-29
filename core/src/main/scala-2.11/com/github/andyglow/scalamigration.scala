@@ -20,6 +20,16 @@ object scalamigration {
   implicit class EitherOps[L, R](private val x: Either[L, R]) extends AnyVal {
 
     @inline def opt: Option[R] = x.right.toOption
+
+    @inline def flatMap[L1 >: L, R1](f: R => Either[L1, R1]): Either[L1, R1] = x match {
+      case Right(b) => f(b)
+      case _        => x.asInstanceOf[Either[L1, R1]]
+    }
+
+    @inline def map[R1](f: R => R1): Either[L, R1] = x match {
+      case Right(b) => Right(f(b))
+      case _        => x.asInstanceOf[Either[L, R1]]
+    }
   }
 
   implicit class MapMigOps[K, V](private val x: Map[K, V]) extends AnyVal {

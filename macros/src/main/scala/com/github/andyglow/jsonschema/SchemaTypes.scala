@@ -100,7 +100,7 @@ private[jsonschema] trait SchemaTypes {
       val tpe                            = appliedType(containerTpe, List(keyTpe, valueTpe));
       def withExtra(x: SchemaType.Extra) = copy(extra = x)
     }
-    case class Obj(tpe: Type, fields: Seq[Obj.Field], extra: Extra = Extra()) extends SchemaType {
+    case class Obj(tpe: Type, fields: List[Obj.Field], extra: Extra = Extra()) extends SchemaType {
       type Self = Obj; def prefix = q"${N.Schema}.`object`[$tpe](..${fields map { _.tree }})";
       def withExtra(x: SchemaType.Extra) = copy(extra = x)
     }

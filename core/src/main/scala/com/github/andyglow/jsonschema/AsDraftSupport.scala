@@ -80,7 +80,7 @@ trait AsDraftSupport {
       ("title", x.title),
       ("additionalProperties", canHaveAdditionalProperties),
       ("properties", if (props.isEmpty) None else Some(obj(props))),
-      ("required", if (required.isEmpty) None else Some(arr(required.toSeq)))
+      ("required", if (required.isEmpty) None else Some(arr(required.distinct)))
     )
   }
 

@@ -105,9 +105,9 @@ object ParseJsonSchema {
         x.value.obj("properties").map { _.value }.toSuccess("properties is not defined") flatMap { props =>
           val fields = props.collect { case (k, v: obj) =>
             `object`.Field(k, makeType(v).get, required.contains(k))
-          }.toSet
+          }.toList
 
-          Success(new `object`(fields))
+          Success(`object`(fields))
         }
     }
 
