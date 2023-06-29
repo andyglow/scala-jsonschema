@@ -2,6 +2,7 @@ import xerial.sbt.Sonatype._
 import ReleaseTransformations._
 import scala.sys.process._
 import ScalaVer.scalaV
+import CustomGithubActions._
 
 // https://github.com/xerial/sbt-sonatype/issues/71
 ThisBuild / publishTo := sonatypePublishTo.value
@@ -9,21 +10,8 @@ ThisBuild / versionScheme := Some("pvp")
 ThisBuild / crossScalaVersions := ScalaVer.values.map(_.full)
 ThisBuild / githubWorkflowPublishTargetBranches := Seq()
 ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("11"))
-ThisBuild / githubWorkflowBuildPostamble := Seq(
-  WorkflowStep.Sbt(
-    name = Some("Generate Code Coverage Report"),
-    commands = List("clean", "coverage", "test"),
-    cond = Some(s"matrix.scala == '${ScalaVer._213.full}'")
-  ),
-  WorkflowStep.Use(
-    name = Some("Upload Code Coverage Report"),
-    ref = UseRef.Public("codecov", "codecov-action", "v3"),
-    cond = Some(s"matrix.scala == '${ScalaVer._213.full}'"),
-    params = Map (
-      "token" -> "${{ secrets.CODECOV_TOKEN }}",
-    )
-  )
-)
+ThisBuild / githubWorkflowBuildPostamble := Seq(generateCC, aggregateCC, uploadCC)
+
 ThisBuild / scmInfo := Some(ScmInfo(url("https://github.com/andyglow/scala-jsonschema"), "scm:git@github.com:andyglow/scala-jsonschema.git"))
 
 lazy val buildInfo = taskKey[Unit]("Prints Build Info")

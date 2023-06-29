@@ -45,9 +45,13 @@ jobs:
       - name: Build project
         run: sbt '++ ${{ matrix.scala }}' test
 
-      - name: Generate Code Coverage Report
+      - name: Generate Code Coverage Reports
         if: matrix.scala == '2.13.11'
         run: sbt '++ ${{ matrix.scala }}' clean coverage test
+
+      - name: Aggregate Code Coverage Report
+        if: matrix.scala == '2.13.11'
+        run: sbt '++ ${{ matrix.scala }}' coverageAggregate
 
       - name: Upload Code Coverage Report
         if: matrix.scala == '2.13.11'
