@@ -36,7 +36,7 @@ ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("11"))
 //)
 ThisBuild / githubWorkflowBuildPostamble := Seq(
   WorkflowStep.Use(
-    ref = UseRef.Public("codecov", "codecov-action", "3"),
+    ref = UseRef.Public("codecov", "codecov-action", "v3"),
     name = Some("Build and Publish Code Coverage Report"),
     cond = Some(s"matrix.scala == '${ScalaVer._213.full}'"),
     params = Map (

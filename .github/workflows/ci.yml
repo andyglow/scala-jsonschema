@@ -47,6 +47,6 @@ jobs:
 
       - name: Build and Publish Code Coverage Report
         if: matrix.scala == '2.13.11'
-        uses: codecov/codecov-action@3
+        uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
