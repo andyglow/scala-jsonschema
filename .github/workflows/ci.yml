@@ -47,14 +47,6 @@ jobs:
 
       - name: Build and Publish Code Coverage Report
         if: matrix.scala == '2.13.11'
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-        run: |
-          pwd
-          curl -o $(pwd)/upload_cc https://uploader.codecov.io/latest/alpine/codecov
-          ls -ld $PWD/*
-          chmod +x $(pwd)/upload_cc
-          ls -ld $PWD/*
-          head $(pwd)/upload_cc
-          $(pwd)/upload_cc || ls -lA $(pwd)/upload_cc
-          $(pwd)/upload_cc -t ${CODECOV_TOKEN}
+        uses: codecov/codecov-action@3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
