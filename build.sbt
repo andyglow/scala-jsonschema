@@ -4,11 +4,11 @@ import scala.sys.process._
 import ScalaVer.scalaV
 
 // https://github.com/xerial/sbt-sonatype/issues/71
-ThisBuild / publishTo := sonatypePublishTo.value
-ThisBuild / versionScheme := Some("pvp")
-ThisBuild / crossScalaVersions := ScalaVer.values.map(_.full)
+ThisBuild / publishTo                           := sonatypePublishTo.value
+ThisBuild / versionScheme                       := Some("pvp")
+ThisBuild / crossScalaVersions                  := ScalaVer.values.map(_.full)
 ThisBuild / githubWorkflowPublishTargetBranches := Seq()
-ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("11"))
+ThisBuild / githubWorkflowJavaVersions          := Seq(JavaSpec.temurin("11"))
 ThisBuild / githubWorkflowBuildPostamble := Seq(
   WorkflowStep.Sbt(
     name = Some("Generate Code Coverage Report"),
@@ -19,8 +19,8 @@ ThisBuild / githubWorkflowBuildPostamble := Seq(
     name = Some("Upload Code Coverage Report"),
     ref = UseRef.Public("codecov", "codecov-action", "v3"),
     cond = Some(s"matrix.scala == '${ScalaVer._213.full}'"),
-    params = Map (
-      "token" -> "${{ secrets.CODECOV_TOKEN }}",
+    params = Map(
+      "token" -> "${{ secrets.CODECOV_TOKEN }}"
     )
   )
 )
@@ -84,7 +84,7 @@ lazy val commonSettings = ScalaVer.settings ++ Seq(
     ReleaseStep(action = Command.process("sonatypeReleaseAll", _), enableCrossBuild = true),
     pushChanges
   ),
-  libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.16" % Test,
+  libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.16" % Test
 )
 
 lazy val core = { project in file("core") }.settings(
@@ -318,7 +318,6 @@ lazy val docs = { project in file("documentation") }
       _.withLanguage(java.util.Locale.ENGLISH)
     }
     // #language
-    ,
     // #analytics
 //    Compile / paradoxMaterialTheme ~= {
 //      _.withSocial(uri("https://github.com/andyglow"))
