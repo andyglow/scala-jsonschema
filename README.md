@@ -1,10 +1,8 @@
 # Scala JSON Schema
-[![Build Status](https://cloud.drone.io/api/badges/andyglow/scala-jsonschema/status.svg)](https://cloud.drone.io/andyglow/scala-jsonschema)
+[![Build](https://github.com/andyglow/scala-jsonschema/actions/workflows/ci.yml/badge.svg?event=push)](https://github.com/andyglow/scala-jsonschema/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/andyglow/scala-jsonschema/branch/master/graph/badge.svg?token=e8E62N8PiJ)](https://codecov.io/gh/andyglow/scala-jsonschema)
-![](https://img.shields.io/static/v1.svg?label=Versions&message=-->&color=gray)
-[![mvn: 2.11](https://img.shields.io/badge/dynamic/json.svg?label=mvn%3A%202.11&query=%24.response.docs%5B0%5D.latestVersion&url=https%3A%2F%2Fsearch.maven.org%2Fsolrsearch%2Fselect%3Fq%3Dscala-jsonschema-core_2.13%26start%3D0%26rows%3D1)](https://search.maven.org/artifact/com.github.andyglow/scala-jsonschema-core_2.11/)
-[![mvn: 2.12](https://img.shields.io/badge/dynamic/json.svg?label=mvn%3A%202.12&query=%24.response.docs%5B0%5D.latestVersion&url=https%3A%2F%2Fsearch.maven.org%2Fsolrsearch%2Fselect%3Fq%3Dscala-jsonschema-core_2.13%26start%3D0%26rows%3D1)](https://search.maven.org/artifact/com.github.andyglow/scala-jsonschema-core_2.12/)
-[![mvn: 2.13](https://img.shields.io/badge/dynamic/json.svg?label=mvn%3A%202.13&query=%24.response.docs%5B0%5D.latestVersion&url=https%3A%2F%2Fsearch.maven.org%2Fsolrsearch%2Fselect%3Fq%3Dscala-jsonschema-core_2.13%26start%3D0%26rows%3D1)](https://search.maven.org/artifact/com.github.andyglow/scala-jsonschema-core_2.13/)
+![](https://img.shields.io/static/v1.svg?label=2.11,2.12,2.13&message=Supporting&color=gray)
+[![Version](https://img.shields.io/badge/dynamic/json.svg?label=mvn%3A%202.13&query=%24.response.docs%5B0%5D.latestVersion&url=https%3A%2F%2Fsearch.maven.org%2Fsolrsearch%2Fselect%3Fq%3Dscala-jsonschema-core_2.13%26start%3D0%26rows%3D1)](https://search.maven.org/artifact/com.github.andyglow/scala-jsonschema-core_2.13/)
 
 *SBT dependencies:*
 
