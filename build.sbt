@@ -9,35 +9,15 @@ ThisBuild / versionScheme := Some("pvp")
 ThisBuild / crossScalaVersions := ScalaVer.values.map(_.full)
 ThisBuild / githubWorkflowPublishTargetBranches := Seq()
 ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("11"))
-//ThisBuild / githubWorkflowBuildPostamble := Seq(
-//  WorkflowStep.Run(
-//    commands = List(
-//      "pwd",
-//      "curl -o $(pwd)/upload_cc https://uploader.codecov.io/latest/alpine/codecov",
-//      "ls -ld $PWD/*",
-//      "chmod +x $(pwd)/upload_cc",
-//      "ls -ld $PWD/*",
-//      "head $(pwd)/upload_cc",
-////      "sbt clean coverage test",
-////      "sbt coverageAggregate",
-////      "echo \"-------------------\"",
-////      "cat $(echo \"$0\")",
-////      "echo \"-------------------\"",
-////      "pwd",
-//      "$(pwd)/upload_cc || ls -lA $(pwd)/upload_cc",
-//      "$(pwd)/upload_cc -t ${CODECOV_TOKEN}",
-//    ),
-//    name = Some("Build and Publish Code Coverage Report"),
-//    cond = Some(s"matrix.scala == '${ScalaVer._213.full}'"),
-//    env = Map (
-//      "CODECOV_TOKEN" -> "${{ secrets.CODECOV_TOKEN }}",
-//    )
-//  )
-//)
 ThisBuild / githubWorkflowBuildPostamble := Seq(
+  WorkflowStep.Sbt(
+    name = Some("Generate Code Coverage Report"),
+    commands = List("clean", "codecov", "test"),
+    cond = Some(s"matrix.scala == '${ScalaVer._213.full}'")
+  ),
   WorkflowStep.Use(
+    name = Some("Upload Code Coverage Report"),
     ref = UseRef.Public("codecov", "codecov-action", "v3"),
-    name = Some("Build and Publish Code Coverage Report"),
     cond = Some(s"matrix.scala == '${ScalaVer._213.full}'"),
     params = Map (
       "token" -> "${{ secrets.CODECOV_TOKEN }}",

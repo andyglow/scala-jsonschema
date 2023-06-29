@@ -45,7 +45,11 @@ jobs:
       - name: Build project
         run: sbt '++ ${{ matrix.scala }}' test
 
-      - name: Build and Publish Code Coverage Report
+      - name: Generate Code Coverage Report
+        if: matrix.scala == '2.13.11'
+        run: sbt '++ ${{ matrix.scala }}' clean codecov test
+
+      - name: Upload Code Coverage Report
         if: matrix.scala == '2.13.11'
         uses: codecov/codecov-action@v3
         with:
