@@ -6,6 +6,8 @@ import com.github.andyglow.jsonschema.AsTree
 import json.Schema.`object`.Field.RWMode
 import json.schema.{validation => V}
 
+import scala.collection.immutable.ListMap
+
 sealed trait Schema[+T] {
   type Self <: Schema[T]
 
@@ -272,24 +274,24 @@ object Schema {
   // | Object
   // +---------------
   //
-  sealed case class `object`[T](fields: Set[`object`.Field[_]]) extends Schema[T] {
+  sealed case class `object`[T] private (fields: List[`object`.Field[_]]) extends Schema[T] {
     import `object`._
     type Self = `object`[T]
     def mkCopy()                              = copy()
     override def canEqual(that: Any): Boolean = that.isInstanceOf[`object`[_]]
     override def equals(obj: Any): Boolean = obj match {
-      case `object`(f) => fields == f && super.equals(obj)
+      case `object`(f) => fields.toSet == f.toSet && super.equals(obj)
       case _           => false
     }
 
     def dropField(pred: Field[_] => Boolean): `object`[T] =
       copy(fields = this.fields.filterNot(pred)).withExtraFrom(this)
-    def withField(f: Field[_]): `object`[T]                                            = copy(fields = fields + f).withExtraFrom(this)
+    def withField(f: Field[_]): `object`[T]                                            = copy(fields = fields :+ f).withExtraFrom(this)
     def withField(name: String, tpe: Schema[_], required: Boolean = true): `object`[T] = withField(Field(name, tpe, required))
     def withFieldsUpdated(pf: PartialFunction[Field[_], Field[_]]): `object`[T] = copy(
       fields = fields collect {
         case f if pf isDefinedAt f => pf(f)
-        case f                     => f
+        case x                          => x
       }
     ).withExtraFrom(this)
     override def jsonType: String = "object"
@@ -320,9 +322,9 @@ object Schema {
     }
     object Free {
       def apply[T](): `object`[T] with Free = {
-        new `object`[T](Set.empty) with Free {
+        new `object`[T](List.empty) with Free {
           type Type = T
-          override def strict: `object`[T] = new `object`[T](Set.empty)
+          override def strict: `object`[T] = new `object`[T](List.empty)
         }
       }
     }
@@ -392,9 +394,13 @@ object Schema {
       ): Field[T] = new Field(name, tpe, required, default, description = None, rwMode = rwMode)
     }
 
-    def apply[T](field: Field[_], xs: Field[_]*): `object`[T] = new `object`(
-      (field +: xs.toSeq).toSet
-    )
+    def apply[T](field: Field[_], xs: Field[_]*): `object`[T] = {
+      fromList(field +: xs.toList)
+    }
+
+    def fromList[T](fields: List[Field[_]]): `object`[T] = {
+      `object`(fields.distinct)
+    }
   }
 
   // +------------
@@ -534,7 +540,7 @@ object Schema {
     override def toDefinition[TT >: T](sig: String): `def`[TT] = {
       def deepCopy(x: Schema[_]): Schema[_] = {
         val y = x match {
-          case `object`(fields)     => new `object`(fields.map { f => f.copy(tpe = deepCopy(f.tpe)) })
+          case `object`(fields)     => `object`(fields.map { f => f.copy(tpe = deepCopy(f.tpe)) })
           case `array`(y, u)        => `array`(deepCopy(y), u)
           case `dictionary`(y)      => `dictionary`(deepCopy(y))
           case `oneof`(ys, df)      => `oneof`(ys map deepCopy, df)

@@ -32,7 +32,7 @@ private[jsonschema] trait UProductTypes {
     annotations0 ++ annotations1
   }
 
-  private[UProductTypes] def resolveFields(tpe: Type): Seq[Field] = {
+  private[UProductTypes] def resolveFields(tpe: Type): List[Field] = {
     val annotationMap       = fieldAnnotationMap(tpe)
     val subjectCompanionSym = tpe.typeSymbol
     val subjectCompanion    = subjectCompanionSym.asClass.companion.asModule
@@ -144,7 +144,7 @@ private[jsonschema] trait UProductTypes {
       params.map { _.asTerm }.zipWithIndex map { case (f, i) => toField(f, i) }
     }
 
-    fields getOrElse Seq.empty
+    fields getOrElse List.empty
   }
 
   class CaseClassExtractor {
