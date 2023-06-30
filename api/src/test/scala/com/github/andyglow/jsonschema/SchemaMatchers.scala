@@ -1,6 +1,6 @@
 package com.github.andyglow.jsonschema
 
-import com.github.andyglow.jsonschema.SchemaEquality.{ Equal, UnEqual }
+import com.github.andyglow.jsonschema.SchemaEquality.{Equal, UnEqual}
 import json.Schema
 import org.scalatest.enablers.Sequencing
 import org.scalatest.matchers.{MatchResult, Matcher}
@@ -12,7 +12,7 @@ class SchemaMatchers(right: Schema[_], checkOrder: Boolean) extends Matcher[Sche
 
     val eq = SchemaEquality(checkOrder).compute(left, right)
     val explanation = eq match {
-      case Equal => ""
+      case Equal         => ""
       case UnEqual(diff) => " due to " + diff.toDebugString
     }
 
