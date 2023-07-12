@@ -67,7 +67,7 @@ class SchemaEqualitySpec extends AnyWordSpec {
             F("c", `integer`, required = false),
             F("b", `string`, required = true)
           )
-        ) shouldBe UnEqual(NotMatchingFieldOrder(Nil,List("a", "b", "c"),List("a", "c", "b")))
+        ) shouldBe UnEqual(NotMatchingFieldOrder(Nil, List("a", "b", "c"), List("a", "c", "b")))
       }
 
       "missed fields" in {
