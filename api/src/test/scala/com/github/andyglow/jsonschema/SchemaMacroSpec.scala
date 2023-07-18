@@ -27,43 +27,49 @@ class SchemaMacroSpec extends AnyWordSpec {
     "generate schema for case class of optional primitive fields" in {
       import `object`.Field
 
-      Json.schema[Foo2] should matchSchema(`object`(
-        Field("name", `string`, required = false),
-        Field("bar", `integer`, required = false)
-      ))
+      Json.schema[Foo2] should matchSchema(
+        `object`(
+          Field("name", `string`, required = false),
+          Field("bar", `integer`, required = false)
+        )
+      )
     }
 
     "generate schema for case class of primitive fields with default values" in {
       import `object`.Field
 
-      Json.schema[Foo3] should matchSchema(`object`(
-        Field("name", `string`, required = false, default = "xxx"),
-        Field("bar", `integer`, required = false, default = 5),
-        Field("active", `boolean`, required = false, default = true)
-      ))
+      Json.schema[Foo3] should matchSchema(
+        `object`(
+          Field("name", `string`, required = false, default = "xxx"),
+          Field("bar", `integer`, required = false, default = 5),
+          Field("active", `boolean`, required = false, default = true)
+        )
+      )
     }
 
     "generate schema for case class of array fields with default values" in {
       import `object`.Field
 
-      Json.schema[Bar9] should matchSchema(`object`(
-        Field("set", `array`(`integer`, unique = true), required = false, default = Set(1, 5, 9)),
-        Field("list", `array`(`boolean`), required = false, default = List(true, false)),
-        Field("vector", `array`(`number`[Long]), required = false, default = Vector(9, 7)),
-        Field(
-          "strMap",
-          `dictionary`(`number`[Double]),
-          required = false,
-          default = Map("foo" -> .12)
-        ),
-        Field(
-          "intMap",
-          `dictionary`[Int, String, Map](`string`)
-            .withValidation(`patternProperties` := "^[0-9]+$"),
-          required = false,
-          default = Map(1 -> "1", 2 -> "2")
+      Json.schema[Bar9] should matchSchema(
+        `object`(
+          Field("set", `array`(`integer`, unique = true), required = false, default = Set(1, 5, 9)),
+          Field("list", `array`(`boolean`), required = false, default = List(true, false)),
+          Field("vector", `array`(`number`[Long]), required = false, default = Vector(9, 7)),
+          Field(
+            "strMap",
+            `dictionary`(`number`[Double]),
+            required = false,
+            default = Map("foo" -> .12)
+          ),
+          Field(
+            "intMap",
+            `dictionary`[Int, String, Map](`string`)
+              .withValidation(`patternProperties` := "^[0-9]+$"),
+            required = false,
+            default = Map(1 -> "1", 2 -> "2")
+          )
         )
-      ))
+      )
     }
 
     "generate references for implicitly defined dependencies" in {
@@ -79,16 +85,18 @@ class SchemaMacroSpec extends AnyWordSpec {
 
         val schema = Json.schema[Foo4]
 
-        schema should matchSchema(`object`(
-          Field(
-            "component",
-            `def`[Compo1](
-              "com.github.andyglow.jsonschema.SchemaMacroSpec.Compo1",
-              `string`[Compo1]
-            ),
-            required = true
+        schema should matchSchema(
+          `object`(
+            Field(
+              "component",
+              `def`[Compo1](
+                "com.github.andyglow.jsonschema.SchemaMacroSpec.Compo1",
+                `string`[Compo1]
+              ),
+              required = true
+            )
           )
-        ))
+        )
       }
     }
 
@@ -102,15 +110,17 @@ class SchemaMacroSpec extends AnyWordSpec {
       Json
         .schema[WeekDay.type] should matchSchema(`enum`.of("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"))
 
-      Json.schema[WeekDay.Value] should matchSchema(`enum`.of(
-        "Mon",
-        "Tue",
-        "Wed",
-        "Thu",
-        "Fri",
-        "Sat",
-        "Sun"
-      ))
+      Json.schema[WeekDay.Value] should matchSchema(
+        `enum`.of(
+          "Mon",
+          "Tue",
+          "Wed",
+          "Thu",
+          "Fri",
+          "Sat",
+          "Sun"
+        )
+      )
 
       Json.schema[WeekDay.T] should matchSchema(`enum`.of("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"))
 
@@ -133,20 +143,24 @@ class SchemaMacroSpec extends AnyWordSpec {
         val Neptune   = PlanetVal(1.024e+26, 2.4746e7)
       }
 
-      Json.schema[Planet.type] should matchSchema(`enum`.of(
-        "Mercury",
-        "Venus",
-        "Earth",
-        "Mars",
-        "Jupiter",
-        "Saturn",
-        "Uranus",
-        "Neptune"
-      ))
+      Json.schema[Planet.type] should matchSchema(
+        `enum`.of(
+          "Mercury",
+          "Venus",
+          "Earth",
+          "Mars",
+          "Jupiter",
+          "Saturn",
+          "Uranus",
+          "Neptune"
+        )
+      )
 
-      Json.schema[Map[WeekDay.type, String]] should matchSchema(`dictionary`[WeekDay.type, String, Map](
-        `string`
-      ).withValidation(`patternProperties` := "^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)$"))
+      Json.schema[Map[WeekDay.type, String]] should matchSchema(
+        `dictionary`[WeekDay.type, String, Map](
+          `string`
+        ).withValidation(`patternProperties` := "^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)$")
+      )
     }
 
     "generate schema for Sealed Trait Enums" in {
@@ -169,90 +183,110 @@ class SchemaMacroSpec extends AnyWordSpec {
 
       Json.schema[Color] should matchSchema(`enum`.of("Red", "Green", "Blue"))
 
-      Json.schema[Map[Color, String]] should matchSchema(`dictionary`[Color, String, Map](`string`)
-        .withValidation(`patternProperties` := "^(?:Red|Green|Blue)$"))
+      Json.schema[Map[Color, String]] should matchSchema(
+        `dictionary`[Color, String, Map](`string`)
+          .withValidation(`patternProperties` := "^(?:Red|Green|Blue)$")
+      )
     }
 
     "generate schema for Sealed Trait subclasses" in {
       import `object`.Field
 
-      Json.schema[FooBar] should matchSchema(`oneof`(
-        Set(`object`(Field("foo", `number`[Double])), `object`(Field("bar", `number`[Double])))
-      ))
+      Json.schema[FooBar] should matchSchema(
+        `oneof`(
+          Set(`object`(Field("foo", `number`[Double])), `object`(Field("bar", `number`[Double])))
+        )
+      )
     }
 
     "generate schema for Multi Level Sealed Trait subclasses" in {
       import `object`.Field
 
-      Json.schema[MultiLevelSealedTraitRoot] should matchSchema(`oneof`(
-        Set(
-          `object`(Field("a", `integer`)),
-          `object`(Field("b", `string`)),
-          `object`(Field("c", `boolean`)),
-          `object`(Field("d", `number`[Double])),
-          `object`(Field("e", `array`[String, List](`string`)))
+      Json.schema[MultiLevelSealedTraitRoot] should matchSchema(
+        `oneof`(
+          Set(
+            `object`(Field("a", `integer`)),
+            `object`(Field("b", `string`)),
+            `object`(Field("c", `boolean`)),
+            `object`(Field("d", `number`[Double])),
+            `object`(Field("e", `array`[String, List](`string`)))
+          )
         )
-      ))
+      )
     }
 
     "generate schema for Sealed Trait subclasses defined inside of it's companion object" in {
       import `object`.Field
 
-      Json.schema[FooBarInsideCompanion] should matchSchema(`oneof`(
-        Set(`object`(Field("foo", `number`[Double])), `object`(Field("bar", `number`[Double])))
-      ))
+      Json.schema[FooBarInsideCompanion] should matchSchema(
+        `oneof`(
+          Set(`object`(Field("foo", `number`[Double])), `object`(Field("bar", `number`[Double])))
+        )
+      )
     }
 
     "generate schema for hybrid Sealed Trait family" in {
       import `object`.Field
 
-      Json.schema[HybridSum] should matchSchema(`oneof`(
-        Set(`object`(Field("id", `integer`), Field("name", `string`)), `enum`.of("V2", "V3"))
-      ))
+      Json.schema[HybridSum] should matchSchema(
+        `oneof`(
+          Set(`object`(Field("id", `integer`), Field("name", `string`)), `enum`.of("V2", "V3"))
+        )
+      )
     }
 
     "generate schema for hybrid generic Sealed Trait family" in {
       import `object`.Field
 
-      Json.schema[HybridGenericSum[Double]] should matchSchema(`oneof`(
-        Set(`object`(Field("id", `integer`), Field("value", `number`[Double])), `enum`.of("V2"))
-      ))
+      Json.schema[HybridGenericSum[Double]] should matchSchema(
+        `oneof`(
+          Set(`object`(Field("id", `integer`), Field("value", `number`[Double])), `enum`.of("V2"))
+        )
+      )
     }
 
     "generate schema for hybrid recursive Sealed Trait family" in {
       import `object`.Field
 
-      Json.schema[HybridRecursiveSum] should matchSchema(`oneof`(
-        Set(
-          `object`(Field("err", `string`, required = false), Field("intVal", `integer`)),
-          `object`(Field("tpe", `string`)),
-          `object`(Field("error", `string`)),
-          `object`(Field("value", `integer`)),
-          `enum`.of("L1V3", "L2V1", "L2V2")
+      Json.schema[HybridRecursiveSum] should matchSchema(
+        `oneof`(
+          Set(
+            `object`(Field("err", `string`, required = false), Field("intVal", `integer`)),
+            `object`(Field("tpe", `string`)),
+            `object`(Field("error", `string`)),
+            `object`(Field("value", `integer`)),
+            `enum`.of("L1V3", "L2V1", "L2V2")
+          )
         )
-      ))
+      )
     }
 
     "generate schema for Map which Sealed Values Family for values" in {
 
-      Json.schema[Map[String, AnyFooBar]] should matchSchema(`dictionary`[String, AnyFooBar, Map](
-        `oneof`.of(`value-class`(`string`), `value-class`(`integer`))
-      ))
+      Json.schema[Map[String, AnyFooBar]] should matchSchema(
+        `dictionary`[String, AnyFooBar, Map](
+          `oneof`.of(`value-class`(`string`), `value-class`(`integer`))
+        )
+      )
     }
 
     "generate schema for List which Sealed Values Family for values" in {
 
-      Json.schema[List[AnyFooBar]] should matchSchema(`array`[AnyFooBar, List](
-        `oneof`.of(`value-class`(`string`), `value-class`(`integer`))
-      ))
+      Json.schema[List[AnyFooBar]] should matchSchema(
+        `array`[AnyFooBar, List](
+          `oneof`.of(`value-class`(`string`), `value-class`(`integer`))
+        )
+      )
     }
 
     "generate schema for case class that includes another case class" in {
       import `object`.Field
 
-      Json.schema[Bar5] should matchSchema(`object`(
-        Field("foo", `object`(Field("name", `string`), Field("bar", `integer`)))
-      ))
+      Json.schema[Bar5] should matchSchema(
+        `object`(
+          Field("foo", `object`(Field("name", `string`), Field("bar", `integer`)))
+        )
+      )
     }
 
     "generate schema for case class using collection of string" in {
@@ -278,9 +312,11 @@ class SchemaMacroSpec extends AnyWordSpec {
 
       Json.schema[Map[String, Int]] should matchSchema(`dictionary`(`integer`))
 
-      Json.schema[Map[String, Foo9]] should matchSchema(`dictionary`[String, Foo9, Map](
-        `object`(Field("name", `string`))
-      ))
+      Json.schema[Map[String, Foo9]] should matchSchema(
+        `dictionary`[String, Foo9, Map](
+          `object`(Field("name", `string`))
+        )
+      )
 
       Json.schema[Map[Bar8, Int]] should matchSchema(`dictionary`[Bar8, Int, Map](`integer`))
 
@@ -297,22 +333,32 @@ class SchemaMacroSpec extends AnyWordSpec {
     "generate schema for Map[_: MapKeyPattern, _]" in {
       import `object`.Field
 
-      Json.schema[Map[Long, Long]] should matchSchema(`dictionary`[Long, Long, Map](`number`[Long])
-        .withValidation(`patternProperties` := "^[0-9]+$"))
+      Json.schema[Map[Long, Long]] should matchSchema(
+        `dictionary`[Long, Long, Map](`number`[Long])
+          .withValidation(`patternProperties` := "^[0-9]+$")
+      )
 
-      Json.schema[Map[Char, Long]] should matchSchema(`dictionary`[Char, Long, Map](`number`[Long])
-        .withValidation(`patternProperties` := "^.{1}$"))
+      Json.schema[Map[Char, Long]] should matchSchema(
+        `dictionary`[Char, Long, Map](`number`[Long])
+          .withValidation(`patternProperties` := "^.{1}$")
+      )
 
-      Json.schema[Map[Int, String]] should matchSchema(`dictionary`[Int, String, Map](`string`)
-        .withValidation(`patternProperties` := "^[0-9]+$"))
+      Json.schema[Map[Int, String]] should matchSchema(
+        `dictionary`[Int, String, Map](`string`)
+          .withValidation(`patternProperties` := "^[0-9]+$")
+      )
 
-      Json.schema[Map[Int, Int]] should matchSchema(`dictionary`[Int, Int, Map](`integer`).withValidation(
-        `patternProperties` := "^[0-9]+$"
-      ))
+      Json.schema[Map[Int, Int]] should matchSchema(
+        `dictionary`[Int, Int, Map](`integer`).withValidation(
+          `patternProperties` := "^[0-9]+$"
+        )
+      )
 
-      Json.schema[Map[Int, Foo9]] should matchSchema(`dictionary`[Int, Foo9, Map](
-        `object`(Field("name", `string`))
-      ).withValidation(`patternProperties` := "^[0-9]+$"))
+      Json.schema[Map[Int, Foo9]] should matchSchema(
+        `dictionary`[Int, Foo9, Map](
+          `object`(Field("name", `string`))
+        ).withValidation(`patternProperties` := "^[0-9]+$")
+      )
     }
   }
 }
