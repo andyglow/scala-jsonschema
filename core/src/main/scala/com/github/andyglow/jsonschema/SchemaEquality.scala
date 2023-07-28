@@ -6,7 +6,7 @@ import Schema.`def`
 import Schema.`oneof`
 import Schema.`allof`
 import Schema.`not`
-import`object`.Field
+import `object`.Field
 
 import com.github.andyglow.scalamigration._
 
@@ -17,14 +17,14 @@ object SchemaEquality {
 
   sealed trait Segment
   object Segment {
-    case class Field(name: String) extends Segment
-    case class Def(ref: String) extends Segment
+    case class Field(name: String)      extends Segment
+    case class Def(ref: String)         extends Segment
     case class Schema(typeName: String) extends Segment
   }
 
   type Path = List[Segment]
 
-  case object Equal extends SchemaEquality
+  case object Equal                    extends SchemaEquality
   case class UnEqual(diff: Difference) extends SchemaEquality
 
   sealed trait Difference {
@@ -75,8 +75,8 @@ object SchemaEquality {
   }
 
   def apply(checkOrder: Boolean = true): Context = Context(checkOrder)
-  def unordered: Context = Context(checkOrder = false)
-  def ordered: Context = Context(checkOrder = true)
+  def unordered: Context                         = Context(checkOrder = false)
+  def ordered: Context                           = Context(checkOrder = true)
 
   def compute(l: Schema[_], r: Schema[_]): SchemaEquality = ordered.compute(l, r)
 
@@ -116,7 +116,6 @@ object SchemaEquality {
       if (l == r) Equal else UnEqual(ClashingSchemas(path, l, r))
   }
 
-
   private def checkMissingFields(path: Path, l: `object`[_], r: `object`[_]): Either[MissingFields, Unit] = {
     val lf = l.fields.map(f => f.name -> f).toMap[String, F]
     val rf = r.fields.map(f => f.name -> f).toMap[String, F]
@@ -134,7 +133,7 @@ object SchemaEquality {
     val lf = l.fields.map(f => f.name -> f).toMap[String, F]
     val rf = r.fields.map(f => f.name -> f).toMap[String, F]
 
-    val fields  = rf.keySet intersect lf.keySet
+    val fields = rf.keySet intersect lf.keySet
 
     fields.foldLeft[Either[Difference, Unit]](Right(())) {
       case (Left(diff), _) => Left(diff)
@@ -142,9 +141,10 @@ object SchemaEquality {
         val ll = lf(fn)
         val rr = rf(fn)
 
-        if (ll.required != rr.required) Left(FieldRequirednessMismatch(path :+ Segment.Field(fn), ll.required, rr.required)) else {
+        if (ll.required != rr.required) Left(FieldRequirednessMismatch(path :+ Segment.Field(fn), ll.required, rr.required))
+        else {
           internalCompute(path :+ Segment.Field(fn), ll.tpe, rr.tpe, ctx) match {
-            case Equal => Right(())
+            case Equal         => Right(())
             case UnEqual(diff) => Left(diff)
           }
         }
