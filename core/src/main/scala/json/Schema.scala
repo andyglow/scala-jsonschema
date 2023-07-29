@@ -291,7 +291,7 @@ object Schema {
     def withFieldsUpdated(pf: PartialFunction[Field[_], Field[_]]): `object`[T] = copy(
       fields = fields collect {
         case f if pf isDefinedAt f => pf(f)
-        case x                          => x
+        case x                     => x
       }
     ).withExtraFrom(this)
     override def jsonType: String = "object"
