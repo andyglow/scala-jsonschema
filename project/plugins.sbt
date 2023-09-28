@@ -4,7 +4,7 @@ addSbtPlugin("com.github.sbt" % "sbt-release"   % "1.1.0")
 addSbtPlugin("com.github.sbt" % "sbt-pgp"       % "2.2.1")
 
 // github actions
-addSbtPlugin("com.github.sbt" % "sbt-github-actions" % "0.16.0")
+addSbtPlugin("com.github.sbt" % "sbt-github-actions" % "0.17.0")
 
 // Format
 addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.5.2")
