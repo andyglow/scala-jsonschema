@@ -72,7 +72,7 @@ lazy val commonSettings = ScalaVer.settings ++ Seq(
     ReleaseStep(action = Command.process("sonatypeReleaseAll", _), enableCrossBuild = true),
     pushChanges
   ),
-  libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.17" % Test
+  libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.18" % Test
 )
 
 lazy val core = { project in file("core") }.settings(
@@ -183,7 +183,7 @@ lazy val `joda-time` = { project in file("modules/joda-time") }
   .settings(
     commonSettings,
     name                              := "scala-jsonschema-joda-time",
-    libraryDependencies += "joda-time" % "joda-time" % "2.12.5"
+    libraryDependencies += "joda-time" % "joda-time" % "2.12.7"
   )
 
 lazy val `cats` = { project in file("modules/cats") }
