@@ -72,15 +72,20 @@ lazy val commonSettings = ScalaVer.settings ++ Seq(
     ReleaseStep(action = Command.process("sonatypeReleaseAll", _), enableCrossBuild = true),
     pushChanges
   ),
-  libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.19" % Test
+  libraryDependencies += "org.scalatest" %%% "scalatest" % "3.2.19" % Test
 )
 
-lazy val core = { project in file("core") }.settings(
+lazy val core = crossProject(JSPlatform, JVMPlatform)
+  .crossType(CrossType.Pure)
+  .in(file("core"))
+  .settings(
   commonSettings,
   name := "scala-jsonschema-core"
 )
 
-lazy val macros = { project in file("macros") }
+lazy val macros = crossProject(JSPlatform, JVMPlatform)
+  .crossType(CrossType.Pure)
+  .in(file("macros"))
   .dependsOn(core)
   .settings(
     commonSettings,
@@ -92,14 +97,18 @@ lazy val macros = { project in file("macros") }
     )
   )
 
-lazy val api = { project in file("api") }
+lazy val api = crossProject(JSPlatform, JVMPlatform)
+  .crossType(CrossType.Pure)
+  .in(file("api"))
   .dependsOn(core, macros)
   .settings(
     commonSettings,
     name := "scala-jsonschema"
   )
 
-lazy val `play-json` = { project in file("modules/play-json") }
+lazy val `play-json` = crossProject(JSPlatform, JVMPlatform)
+  .crossType(CrossType.Pure)
+  .in(file("modules/play-json"))
   .dependsOn(core, api % "compile->compile;test->test")
   .settings(
     commonSettings,
@@ -114,7 +123,9 @@ lazy val `play-json` = { project in file("modules/play-json") }
     }
   )
 
-lazy val `spray-json` = { project in file("modules/spray-json") }
+lazy val `spray-json` = crossProject(JSPlatform, JVMPlatform)
+  .crossType(CrossType.Pure)
+  .in(file("modules/spray-json"))
   .dependsOn(core, api % "compile->compile;test->test")
   .settings(
     commonSettings,
@@ -122,7 +133,9 @@ lazy val `spray-json` = { project in file("modules/spray-json") }
     libraryDependencies += "io.spray" %% "spray-json" % "1.3.6"
   )
 
-lazy val `circe-json` = { project in file("modules/circe-json") }
+lazy val `circe-json` = crossProject(JSPlatform, JVMPlatform)
+  .crossType(CrossType.Pure)
+  .in(file("modules/circe-json"))
   .dependsOn(core, api % "compile->compile;test->test")
   .settings(
     commonSettings,
@@ -141,7 +154,9 @@ lazy val `circe-json` = { project in file("modules/circe-json") }
     }
   )
 
-lazy val `json4s-json` = { project in file("modules/json4s-json") }
+lazy val `json4s-json` = crossProject(JSPlatform, JVMPlatform)
+  .crossType(CrossType.Pure)
+  .in(file("modules/json4s-json"))
   .dependsOn(core, api % "compile->compile;test->test")
   .settings(
     commonSettings,
@@ -162,7 +177,9 @@ lazy val `json4s-json` = { project in file("modules/json4s-json") }
     libraryDependencies ++= Seq("org.json4s" %% "json4s-core" % "4.0.6", "org.json4s" %% "json4s-native" % "4.0.6" % Test)
   )
 
-lazy val `u-json` = { project in file("modules/u-json") }
+lazy val `u-json` = crossProject(JSPlatform, JVMPlatform)
+  .crossType(CrossType.Pure)
+  .in(file("modules/u-json"))
   .dependsOn(core, api % "compile->compile;test->test")
   .settings(
     commonSettings,
@@ -173,12 +190,14 @@ lazy val `u-json` = { project in file("modules/u-json") }
         case _             => "3.1.0"
       }
 
-      Seq("com.lihaoyi" %% "ujson" % uV, "com.lihaoyi" %% "upickle" % uV)
+      Seq("com.lihaoyi" %%% "ujson" % uV, "com.lihaoyi" %%% "upickle" % uV)
 
     }
   )
 
-lazy val `joda-time` = { project in file("modules/joda-time") }
+lazy val `joda-time` = crossProject(JSPlatform, JVMPlatform)
+  .crossType(CrossType.Pure)
+  .in(file("modules/joda-time"))
   .dependsOn(core, api)
   .settings(
     commonSettings,
@@ -186,7 +205,9 @@ lazy val `joda-time` = { project in file("modules/joda-time") }
     libraryDependencies += "joda-time" % "joda-time" % "2.13.0"
   )
 
-lazy val `cats` = { project in file("modules/cats") }
+lazy val `cats` = crossProject(JSPlatform, JVMPlatform)
+  .crossType(CrossType.Pure)
+  .in(file("modules/cats"))
   .dependsOn(core, api)
   .settings(
     commonSettings,
@@ -197,11 +218,13 @@ lazy val `cats` = { project in file("modules/cats") }
         case _             => "2.9.0"
       }
 
-      "org.typelevel" %% "cats-core" % catsV
+      "org.typelevel" %%% "cats-core" % catsV
     }
   )
 
-lazy val `refined` = { project in file("modules/refined") }
+lazy val `refined` = crossProject(JSPlatform, JVMPlatform)
+  .crossType(CrossType.Pure)
+  .in(file("modules/refined"))
   .dependsOn(core, api)
   .settings(
     commonSettings,
@@ -229,22 +252,28 @@ lazy val `refined` = { project in file("modules/refined") }
     }
   )
 
-lazy val parser = { project in file("modules/parser") }
+lazy val parser = crossProject(JSPlatform, JVMPlatform)
+  .crossType(CrossType.Pure)
+  .in(file("modules/parser"))
   .dependsOn(core % "compile->compile;test->test", api)
   .settings(
     commonSettings,
     name := "scala-jsonschema-parser"
   )
 
-lazy val enumeratum = { project in file("modules/enumeratum") }
+lazy val enumeratum = crossProject(JSPlatform, JVMPlatform)
+  .crossType(CrossType.Pure)
+  .in(file("modules/enumeratum"))
   .dependsOn(core, api)
   .settings(
     commonSettings,
     name                                  := "scala-jsonschema-enumeratum",
-    libraryDependencies += "com.beachape" %% "enumeratum" % "1.7.2"
+    libraryDependencies += "com.beachape" %%% "enumeratum" % "1.7.2"
   )
 
-lazy val derived = { project in file("modules/derived") }
+lazy val derived = crossProject(JSPlatform, JVMPlatform)
+  .crossType(CrossType.Pure)
+  .in(file("modules/derived"))
   .dependsOn(core, api, macros)
   .settings(
     commonSettings,
@@ -334,21 +363,23 @@ lazy val docs = { project in file("documentation") }
 //    // #copyright
   )
 
-lazy val root = { project in file(".") }
+lazy val root = crossProject(JSPlatform, JVMPlatform)
+  .crossType(CrossType.Pure)
+  .in(file("."))
   .aggregate(
     core,
     macros,
     derived,
     api,
-    parser,
+    // parser,
     refined,
-    enumeratum,
+    // enumeratum,
     `joda-time`,
     `cats`,
-    `play-json`,
-    `circe-json`,
-    `spray-json`,
-    `json4s-json`,
+    // `play-json`,
+    // `circe-json`,
+    // `spray-json`,
+    // `json4s-json`,
     `u-json`
   )
   .settings(
