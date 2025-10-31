@@ -7,7 +7,7 @@ addSbtPlugin("com.github.sbt" % "sbt-pgp"       % "2.2.1")
 addSbtPlugin("com.github.sbt" % "sbt-github-actions" % "0.24.0")
 
 // Format
-addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.5.2")
+addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.5.6")
 
 // Documentation
 addSbtPlugin("com.lightbend.paradox" % "sbt-paradox"                % "0.10.6")
