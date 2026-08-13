@@ -13,7 +13,7 @@ addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.5.2")
 addSbtPlugin("com.lightbend.paradox" % "sbt-paradox"                % "0.10.6")
 addSbtPlugin("com.github.sbt"        % "sbt-paradox-material-theme" % "0.7.0")
 addSbtPlugin("com.typesafe.sbt"      % "sbt-site"                   % "1.4.1")
-addSbtPlugin("com.typesafe.sbt"      % "sbt-ghpages"                % "0.6.3")
+addSbtPlugin("com.github.sbt"        % "sbt-ghpages"                % "0.10.0")
 addSbtPlugin("org.scalameta"         % "sbt-mdoc"                   % "2.5.4")
 
 ThisBuild / libraryDependencySchemes += "org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always
