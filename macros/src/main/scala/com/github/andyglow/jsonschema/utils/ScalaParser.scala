@@ -5,7 +5,7 @@ import com.github.andyglow.jsonschema.ScalaParts._
 object ScalaParser {
 
   def parseField(chars: Array[Char], start: Int): Either[String, ParsedParameter] =
-    readFieldDefinition(chars, start).right map ParsedParameter.fromString
+    readFieldDefinition(chars, start) map ParsedParameter.fromString
 
   def readFieldDefinition(chars: Array[Char], start: Int): Either[String, String] = {
     var ch: Char        = 0

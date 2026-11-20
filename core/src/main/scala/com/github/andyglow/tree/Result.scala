@@ -1,7 +1,5 @@
 package com.github.andyglow.tree
 
-import scala.annotation.tailrec
-
 /** The intermediate return type of the pretty-print system: provides an iterator which produces the actual string output, as well as metadata around that output that is only available after the
   * iterator is exhausted
   */

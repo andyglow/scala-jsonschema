@@ -8,6 +8,8 @@ import org.scalatest.exceptions.TestFailedException
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec._
 
+import scala.annotation.nowarn
+
 // need to come first as otherwise scala 2.11 fail with
 // [error] knownDirectSubclasses of case0 observed before subclass V1 registered
 // [error] knownDirectSubclasses of case0 observed before subclass V2 registered
@@ -139,7 +141,8 @@ class EnumSpec extends AnyWordSpec {
       }
 
       "all case objects, Int for root type hint" in {
-        Json.schema[case3] shouldBe `enum`.of("V1", "V2")
+        // the macro is expected to warn that `@typeHint[Int]` is ignored here
+        (Json.schema[case3]: @nowarn("msg=is ignored")) shouldBe `enum`.of("V1", "V2")
       }
 
       "all case objects, ToValue is in implicit scope, Int for root type hint" in {

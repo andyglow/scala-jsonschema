@@ -1,7 +1,5 @@
 package com.github.andyglow.jsonschema
 
-import com.github.andyglow.scalamigration._
-
 private[jsonschema] trait USumTypes {
   this: UContext with UCommons with UFlags with UValueTypes with UProductTypes with UImplicits with UTypeAnnotations with USignatures with UEnums =>
   import c.universe._
