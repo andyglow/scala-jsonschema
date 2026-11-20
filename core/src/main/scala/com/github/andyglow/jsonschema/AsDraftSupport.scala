@@ -8,8 +8,6 @@ import json.Schema.`object`.Field.RWMode
 
 import scala.collection.mutable.ListBuffer
 
-import com.github.andyglow.scalamigration._
-
 trait AsDraftSupport {
 
   private[jsonschema] def isDraft04 = this.isInstanceOf[AsDraft04]
@@ -235,7 +233,7 @@ trait AsDraftSupport {
 //    }
 //
 //    (validations, pp)
-    new ValidationList(ListBuffer.from(x.validations))
+    new ValidationList(ListBuffer.empty[V.Def[_, _]] ++= x.validations)
   }
 
   def inferDefinition(x: `def`[_], par: ParentSchema): (String, obj) = {

@@ -8,8 +8,6 @@ import Schema.`allof`
 import Schema.`not`
 import `object`.Field
 
-import com.github.andyglow.scalamigration._
-
 sealed trait SchemaEquality
 
 object SchemaEquality {

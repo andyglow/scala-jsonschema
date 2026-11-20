@@ -27,5 +27,5 @@ object Tree {
 
   implicit def stringAsLit(x: String): Lit                                  = Lit(x)
   implicit def pairAsKV[T](pair: (String, T))(implicit conv: T => Tree): KV = KV(pair._1, pair._2)
-  implicit def mapAsKVIter(pairs: Map[String, Tree]): Iterator[KV]          = pairs.map { case (k, v) => KV(k, v) }.toIterator
+  implicit def mapAsKVIter(pairs: Map[String, Tree]): Iterator[KV]          = pairs.map { case (k, v) => KV(k, v) }.iterator
 }

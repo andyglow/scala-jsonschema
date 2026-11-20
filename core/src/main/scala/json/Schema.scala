@@ -6,8 +6,6 @@ import com.github.andyglow.jsonschema.AsTree
 import json.Schema.`object`.Field.RWMode
 import json.schema.{validation => V}
 
-import scala.collection.immutable.ListMap
-
 sealed trait Schema[+T] {
   type Self <: Schema[T]
 
@@ -336,9 +334,9 @@ object Schema {
       description: Option[String],
       rwMode: Field.RWMode
     ) {
-      def canEqual(that: Any): Boolean        = that.isInstanceOf[Field[T]]
+      def canEqual(that: Any): Boolean        = that.isInstanceOf[Field[_]]
       override def equals(that: Any): Boolean = canEqual(that) && {
-        val other = that.asInstanceOf[Field[T]]
+        val other = that.asInstanceOf[Field[_]]
         this.name == other.name &&
         this.required == other.required &&
         this.tpe == other.tpe &&

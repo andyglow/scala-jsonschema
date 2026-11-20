@@ -9,10 +9,10 @@ import com.github.andyglow.json.Value
 object AsTree {
 
   def apply(schema: Schema[_]): Tree = schema match {
-    case `boolean`                   => "boolean"
-    case `integer`                   => "integer"
+    case _: `boolean`                => "boolean"
+    case _: `integer`                => "integer"
     case _: `number`[_]              => "number"
-    case `string`(fmt)               => fmt.fold[Tree]("number")(fmt => Apply("string", Iterator("format" -> fmt.productPrefix)))
+    case `string`(fmt)               => fmt.fold[Tree]("string")(fmt => Apply("string", Iterator("format" -> fmt.productPrefix)))
     case `array`(elementTpe, unique) => Apply("array", Map("component" -> AsTree(elementTpe), "unique" -> Lit(unique.toString)))
     case `dictionary`(valueTpe)      => Apply("dictionary", Iterator("value" -> AsTree(valueTpe)))
     case `object`(fields)            =>
@@ -20,7 +20,7 @@ object AsTree {
         "object",
         fields.map { f =>
           Infix(f.name, "=", AsTree(f.tpe))
-        }.toIterator
+        }.iterator
       )
     case `enum`(tpe, vals) =>
       Apply(
@@ -34,15 +34,15 @@ object AsTree {
       Apply(
         "oneof",
         Iterator(
-          Apply("variants", subTypes.map(AsTree(_)).toIterator),
+          Apply("variants", subTypes.map(AsTree(_)).iterator),
           "discriminatorField" -> discriminationField.getOrElse("empty")
         )
       )
     case `allof`(subTypes) =>
       Apply(
-        "ollof",
+        "allof",
         Iterator(
-          Apply("variants", subTypes.map(AsTree(_)).toIterator)
+          Apply("variants", subTypes.map(AsTree(_)).iterator)
         )
       )
     case `not`(tpe)         => Apply("not", Iterator(AsTree(tpe)))
