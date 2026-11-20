@@ -1,63 +1,63 @@
 package com.github.andyglow.json
 
+import java.io.InputStream
+
 import scala.io.Source
 import scala.util.{Failure, Success}
 import org.scalatest.funsuite.AnyFunSuite
 
+/** Runs the cases of https://github.com/nst/JSONTestSuite against [[ParseJson]].
+  *
+  *   - `y_*` must be accepted
+  *   - `n_*` must be rejected
+  *   - `i_*` are implementation-defined: either outcome is fine, but parsing must not blow up
+  */
 class ParseJsonBulkSpec extends AnyFunSuite {
 
-  private lazy val clazz = classOf[ParseJsonBulkSpec]
+  private def resource(path: String): InputStream = {
+    val is = classOf[ParseJsonBulkSpec].getResourceAsStream(path)
+    if (is == null) throw new IllegalStateException(s"resource not found: $path")
+    is
+  }
 
-  private lazy val CI_WS_PATH = {
-    def env[T](x: String)(fn: String => T): Option[T] = {
-      sys.env
-        .get(x)
-        .flatMap { x =>
-          try Some(fn(x))
-          catch { case _: Throwable => None }
+  private def bytes(name: String): Array[Byte] = {
+    val is = resource("/" + name)
+    try Iterator.continually(is.read()).takeWhile(_ != -1).map(_.toByte).toArray
+    finally is.close()
+  }
+
+  private val names: List[String] = {
+    val src = Source.fromInputStream(resource("/examples"), "UTF-8")
+    try src.getLines().map(_.trim).filter(_.nonEmpty).toList
+    finally src.close()
+  }
+
+  names foreach { name =>
+    def parse() = ParseJson(bytes(name))
+
+    name.take(2) match {
+      case "y_" =>
+        test(s"$name should succeed") {
+          parse() match {
+            case Failure(err) => fail(s"$name should have succeeded", err)
+            case Success(_)   =>
+          }
+        }
+      case "n_" =>
+        test(s"$name should fail") {
+          parse() match {
+            case Success(x) => fail(s"$name should have failed, but got: $x")
+            case Failure(_) =>
+          }
+        }
+      case "i_" =>
+        test(s"$name may succeed or fail") {
+          parse()
+        }
+      case _ =>
+        test(s"$name is a known test case") {
+          fail(s"unexpected test case name: $name")
         }
     }
-    def CI                   = env("CI")(_.toBoolean) getOrElse false
-    def DRONE                = env("DRONE")(_.toBoolean) getOrElse false
-    def DRONE_WORKSPACE_PATH = env("DRONE_WORKSPACE_PATH")(
-      identity
-    ) // custom env var according to https://docs.drone.io/pipeline/environment/reference/
-
-    if (CI & DRONE) {
-      DRONE_WORKSPACE_PATH orElse Some("/drone/src")
-    } else None
-  }
-
-  // for running in parallel in drone
-  private def open(resourcePath: String, attempt: Int = 0): Source = {
-    Thread.sleep(attempt * 1000L)
-    try {
-      CI_WS_PATH
-        .map(_ + "/modules/parser/src/test/resources" + resourcePath)
-        .map(Source.fromFile)
-        .getOrElse(Source.fromInputStream(clazz.getResourceAsStream(resourcePath)))
-    } catch {
-      case _: Throwable if attempt < 5 =>
-        open(resourcePath, attempt + 1)
-    }
-  }
-
-  lazy val examples = open("/examples")
-
-  examples.getLines() foreach { name =>
-    def run(expect: Boolean) = {
-      val json = open("/" + name).mkString
-      ParseJson(json) match {
-        case Success(x) if !expect => fail(json + " should have fail, but: " + x)
-        case Failure(x) if expect  => fail(json + " should have succeed", x)
-        case Success(_)            =>
-        case Failure(_)            =>
-      }
-    }
-
-    if (name.startsWith("i_") || name.startsWith("y_"))
-      ignore(name + " should succeed") { run(true) }
-    else
-      ignore(name + " should fail") { run(false) }
   }
 }

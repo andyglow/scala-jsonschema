@@ -137,7 +137,7 @@ class ParseJsonSchemaSpec extends AnyFunSuite {
   test("integer") {
     parseType {
       """{
-        | "type": "integer",
+        | "type": "integer"
         |}
       """.stripMargin
     }.value shouldBe `integer`
@@ -146,7 +146,7 @@ class ParseJsonSchemaSpec extends AnyFunSuite {
   test("number") {
     parseType {
       """{
-        | "type": "number",
+        | "type": "number"
         |}
       """.stripMargin
     }.value shouldBe `number`[Int]
@@ -155,7 +155,7 @@ class ParseJsonSchemaSpec extends AnyFunSuite {
   test("boolean") {
     parseType {
       """{
-        | "type": "boolean",
+        | "type": "boolean"
         |}
       """.stripMargin
     }.value shouldBe `boolean`
@@ -171,6 +171,61 @@ class ParseJsonSchemaSpec extends AnyFunSuite {
         |}
       """.stripMargin
     }.value shouldBe `array`(`string`)
+  }
+
+  test("object: properties keep their order, required is respected") {
+    parseType {
+      """{
+        | "type": "object",
+        | "properties": {
+        |   "b": { "type": "string" },
+        |   "a": { "type": "integer" },
+        |   "c": { "type": "boolean" }
+        | },
+        | "required": ["a"]
+        |}
+      """.stripMargin
+    }.value match {
+      case o: `object`[_] => o.fields.map(f => (f.name, f.required)) shouldBe List("b" -> false, "a" -> true, "c" -> false)
+      case other          => fail(s"expected object, got $other")
+    }
+  }
+
+  test("object: invalid property schema is reported, not thrown") {
+    parseType {
+      """{
+        | "type": "object",
+        | "properties": { "a": { "title": "no type" } }
+        |}
+      """.stripMargin
+    }.isFailure shouldBe true
+  }
+
+  test("unsupported type is a failure") {
+    parseType("""{ "type": "null" }""").isFailure shouldBe true
+  }
+
+  test("apply: accepts a draft-04 schema") {
+    ParseJsonSchema {
+      """{
+        | "$schema": "http://json-schema.org/draft-04/schema#",
+        | "type": "string"
+        |}
+      """.stripMargin
+    }.value shouldBe `string`
+  }
+
+  test("apply: accepts the draft-04 uri without fragment") {
+    ParseJsonSchema("""{ "$schema": "http://json-schema.org/draft-04/schema", "type": "string" }""").value shouldBe `string`
+  }
+
+  test("apply: rejects input without $schema unless the check is disabled") {
+    ParseJsonSchema("""{ "type": "string" }""").isFailure shouldBe true
+    ParseJson("""{ "type": "string" }""").flatMap(ParseJsonSchema(_, checkSchema = false)).value shouldBe `string`
+  }
+
+  test("apply: rejects invalid json") {
+    ParseJsonSchema("""{ "type": "string", }""").isFailure shouldBe true
   }
 
   def parseType(x: String): Try[Schema[_]] =
