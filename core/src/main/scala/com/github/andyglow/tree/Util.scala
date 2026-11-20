@@ -58,7 +58,7 @@ object Util {
     case '\n' => sb.append("\\n")
     case '\r' => sb.append("\\r")
     case '\t' => sb.append("\\t")
-    case c =>
+    case c    =>
       if (c < ' ' || (c > '~' && unicode)) sb.append("\\u%04x" format c.toInt)
       else sb.append(c)
   }

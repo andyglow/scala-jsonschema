@@ -323,7 +323,7 @@ class SchemaMacroSpec extends AnyWordSpec {
       import com.github.andyglow.json.Value._
 
       AsValue.schema(Json.schema[Map[Bar8, Int]], Raw) shouldEqual obj(
-        "type" -> "object",
+        "type"              -> "object",
         "patternProperties" -> obj(
           "^.*$" -> obj("type" -> "integer")
         )

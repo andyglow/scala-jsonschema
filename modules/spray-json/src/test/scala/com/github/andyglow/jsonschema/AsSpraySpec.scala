@@ -42,13 +42,13 @@ class AsSpraySpec extends AnyPropSpec {
       f"$$schema"            -> JsString("http://json-schema.org/draft-04/schema#"),
       "type"                 -> JsString("object"),
       "additionalProperties" -> JsFalse,
-      "properties" -> JsObject(
+      "properties"           -> JsObject(
         "firstName"   -> JsObject("type" -> JsString("string")),
         "middleName"  -> JsObject("type" -> JsString("string")),
         "lastName"    -> JsObject("type" -> JsString("string")),
         "age"         -> JsObject("type" -> JsString("integer")),
         "lastLoginMs" -> JsObject("type" -> JsString("number")),
-        "role" -> JsObject(
+        "role"        -> JsObject(
           "type"    -> JsString("string"),
           "default" -> JsString("e-user"),
           "enum"    -> JsArray(JsString("e-admin"), JsString("e-manager"), JsString("e-user"))
@@ -62,7 +62,7 @@ class AsSpraySpec extends AnyPropSpec {
           "type"        -> JsString("array"),
           "uniqueItems" -> JsTrue,
           "default"     -> JsArray(JsString("feature-0-name"), JsString("feature-1-name")),
-          "items" -> JsObject(
+          "items"       -> JsObject(
             "type" -> JsString("string"),
             "enum" -> JsArray(
               JsString("feature-0-name"),
@@ -75,7 +75,7 @@ class AsSpraySpec extends AnyPropSpec {
           "type"                 -> JsString("object"),
           "additionalProperties" -> JsFalse,
           "required"             -> JsArray(JsString("login"), JsString("password")),
-          "properties" -> JsObject(
+          "properties"           -> JsObject(
             "login"    -> JsObject("type" -> JsString("string")),
             "password" -> JsObject("type" -> JsString("string"))
           ),
@@ -85,7 +85,7 @@ class AsSpraySpec extends AnyPropSpec {
           "type"                 -> JsString("object"),
           "additionalProperties" -> JsFalse,
           "required"             -> JsArray(JsString("head"), JsString("tail")),
-          "properties" -> JsObject(
+          "properties"           -> JsObject(
             "head" -> JsObject("type" -> JsString("string")),
             "tail" -> JsObject(
               "type"  -> JsString("array"),

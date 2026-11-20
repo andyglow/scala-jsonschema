@@ -42,13 +42,13 @@ class AsPlaySpec extends AnyPropSpec {
       f"$$schema"            -> "http://json-schema.org/draft-04/schema#",
       "type"                 -> "object",
       "additionalProperties" -> false,
-      "properties" -> Json.obj(
+      "properties"           -> Json.obj(
         "firstName"   -> Json.obj("type" -> "string"),
         "middleName"  -> Json.obj("type" -> "string"),
         "lastName"    -> Json.obj("type" -> "string"),
         "age"         -> Json.obj("type" -> "integer"),
         "lastLoginMs" -> Json.obj("type" -> "number"),
-        "role" -> Json.obj(
+        "role"        -> Json.obj(
           "type"    -> "string",
           "default" -> "e-user",
           "enum"    -> Json.arr("e-admin", "e-manager", "e-user")
@@ -59,7 +59,7 @@ class AsPlaySpec extends AnyPropSpec {
           "type"        -> "array",
           "uniqueItems" -> true,
           "default"     -> Json.arr("feature-0-name", "feature-1-name"),
-          "items" -> Json.obj(
+          "items"       -> Json.obj(
             "type" -> "string",
             "enum" -> Json.arr("feature-0-name", "feature-1-name", "feature-2-name")
           )
@@ -68,7 +68,7 @@ class AsPlaySpec extends AnyPropSpec {
           "type"                 -> "object",
           "additionalProperties" -> false,
           "required"             -> Json.arr("login", "password"),
-          "properties" -> Json.obj(
+          "properties"           -> Json.obj(
             "login"    -> Json.obj("type" -> "string"),
             "password" -> Json.obj("type" -> "string")
           ),
@@ -78,7 +78,7 @@ class AsPlaySpec extends AnyPropSpec {
           "type"                 -> "object",
           "additionalProperties" -> false,
           "required"             -> Json.arr("head", "tail"),
-          "properties" -> Json.obj(
+          "properties"           -> Json.obj(
             "head" -> Json.obj("type" -> "string"),
             "tail" -> Json.obj("type" -> "array", "items" -> Json.obj("type" -> "string"))
           ),
@@ -98,12 +98,12 @@ class AsPlaySpec extends AnyPropSpec {
       f"$$schema"            -> "http://json-schema.org/draft-04/schema#",
       "type"                 -> "object",
       "additionalProperties" -> false,
-      "properties" -> Json.obj(
+      "properties"           -> Json.obj(
         "id"       -> Json.obj("type" -> "string"),
         "name"     -> Json.obj("type" -> "string"),
         "metadata" -> Json.obj(f"$$ref" -> "#/definitions/play.api.libs.json.JsObject")
       ),
-      "required" -> Json.arr("id", "name", "metadata"),
+      "required"    -> Json.arr("id", "name", "metadata"),
       "definitions" -> Json.obj(
         "play.api.libs.json.JsObject" -> Json.obj(
           "type"                 -> "object",
@@ -123,7 +123,7 @@ class AsPlaySpec extends AnyPropSpec {
       f"$$schema"            -> "http://json-schema.org/draft-04/schema#",
       "type"                 -> "object",
       "additionalProperties" -> false,
-      "properties" -> Json.obj(
+      "properties"           -> Json.obj(
         "id"       -> Json.obj("type" -> "string"),
         "name"     -> Json.obj("type" -> "string"),
         "metadata" -> Json.obj("type" -> "object", "additionalProperties" -> true)

@@ -10,7 +10,7 @@ class SchemaMatchers(right: Schema[_], checkOrder: Boolean) extends Matcher[Sche
   override def apply(left: Schema[_]): MatchResult = {
     import Schema._, `object`.Field
 
-    val eq = SchemaEquality(checkOrder).compute(left, right)
+    val eq          = SchemaEquality(checkOrder).compute(left, right)
     val explanation = eq match {
       case Equal         => ""
       case UnEqual(diff) => " due to " + diff.toDebugString

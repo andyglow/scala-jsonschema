@@ -8,10 +8,10 @@ private[jsonschema] trait UDictionaries {
 
     def unapply(tpe: Type)(implicit ctx: ResolutionContext): Option[U.Dict] = {
       Option.whenever(tpe <:< T.map) {
-        val containerTpe = tpe.typeConstructor
-        val keyTpe       = tpe.typeArgs.head
-        val valueTpe     = tpe.typeArgs.tail.head
-        val valueSchema  = resolve(valueTpe, ctx :+ tpe)
+        val containerTpe         = tpe.typeConstructor
+        val keyTpe               = tpe.typeArgs.head
+        val valueTpe             = tpe.typeArgs.tail.head
+        val valueSchema          = resolve(valueTpe, ctx :+ tpe)
         val (keyIsString, keyVC) = keyTpe match {
           case T.string                                    => (true, None)
           case ValueClass(U.ValueClass(_, T.string, _, _)) => (true, Some(T.string))

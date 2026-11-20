@@ -137,7 +137,7 @@ object SchemaEquality {
 
     fields.foldLeft[Either[Difference, Unit]](Right(())) {
       case (Left(diff), _) => Left(diff)
-      case (Right(_), fn) =>
+      case (Right(_), fn)  =>
         val ll = lf(fn)
         val rr = rf(fn)
 

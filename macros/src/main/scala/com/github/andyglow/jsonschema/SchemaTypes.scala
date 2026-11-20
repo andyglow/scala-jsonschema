@@ -46,7 +46,7 @@ private[jsonschema] trait SchemaTypes {
     // to group enums by type
     final override def hashCode(): Int              = productPrefix.hashCode
     final override def canEqual(that: Any): Boolean = that.getClass.isAssignableFrom(getClass)
-    final override def equals(obj: Any): Boolean =
+    final override def equals(obj: Any): Boolean    =
       if (canEqual(obj)) obj.asInstanceOf[SchemaType].tree.equalsStructure(tree) else false
   }
 
@@ -243,7 +243,7 @@ private[jsonschema] trait SchemaTypes {
       case s: Not        => s.copy(schema = transformSchema(s.schema)(pf))
       case s: Def        => s.copy(schema = transformSchema(s.schema)(pf))
       case s: ValueClass => s.copy(schema = transformSchema(s.schema)(pf))
-      case s: Obj =>
+      case s: Obj        =>
         s.copy(fields = s.fields map { f =>
           f.mapSchema(transformSchema(_)(pf))
         })

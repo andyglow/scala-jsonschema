@@ -15,7 +15,7 @@ object AsTree {
     case `string`(fmt)               => fmt.fold[Tree]("number")(fmt => Apply("string", Iterator("format" -> fmt.productPrefix)))
     case `array`(elementTpe, unique) => Apply("array", Map("component" -> AsTree(elementTpe), "unique" -> Lit(unique.toString)))
     case `dictionary`(valueTpe)      => Apply("dictionary", Iterator("value" -> AsTree(valueTpe)))
-    case `object`(fields) =>
+    case `object`(fields)            =>
       Apply(
         "object",
         fields.map { f =>

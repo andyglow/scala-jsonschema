@@ -94,7 +94,7 @@ class Truncated(chunks0: Iterator[String], width: Int, height: Int, truncationMa
     val buffer        = mutable.Buffer.empty[String]
     var charsLeftOver = false
     consumeChunkUntilLine(lastChunkLeftover, height) match {
-      case None => buffer.append(lastChunkLeftover)
+      case None    => buffer.append(lastChunkLeftover)
       case Some(i) =>
         charsLeftOver = true
         buffer.append(lastChunkLeftover.substring(0, i - 1))
@@ -103,7 +103,7 @@ class Truncated(chunks0: Iterator[String], width: Int, height: Int, truncationMa
       val chunk = chunks.next()
 
       consumeChunkUntilLine(chunk, height) match {
-        case None => buffer.append(chunk)
+        case None    => buffer.append(chunk)
         case Some(i) =>
           charsLeftOver = true
           buffer.append(chunk.substring(0, i))

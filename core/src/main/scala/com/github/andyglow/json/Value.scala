@@ -18,8 +18,8 @@ sealed trait Value {
 object Value {
 
   case object `null` extends Value {
-    override def toString = "null"
-    override def tpe      = "null"
+    override def toString                                                 = "null"
+    override def tpe                                                      = "null"
     protected def internalDiff(y: Value, path: Path = Path.Empty): Result = y match {
       case `null` => Result.Equal
       case _      => Result.Different(Diff.ValueMismatch(path, `null`, y))
@@ -194,7 +194,7 @@ object Value {
       def merge(existingObject: obj, otherObject: obj): obj = {
         val result = existingObject.underlying ++ otherObject.underlying.map { case (otherKey, otherValue) =>
           val maybeExistingValue = existingObject.underlying.get(otherKey)
-          val newValue = (maybeExistingValue, otherValue) match {
+          val newValue           = (maybeExistingValue, otherValue) match {
             case (Some(e: obj), o: obj) => merge(e, o)
             case _                      => otherValue
           }
@@ -355,7 +355,7 @@ object Value {
       case (l: str, r: str)   => l.value < r.value
       case (l: num, r: num)   => l.value < r.value
       case (l: bool, r: bool) => l.value < r.value
-      case (l: arr, r: arr) =>
+      case (l: arr, r: arr)   =>
         if (l.value.length == r.value.length)
           l.value.zip(r.value).forall { case (l, r) => valueOrdering.lt(l, r) }
         else
@@ -370,7 +370,7 @@ object Value {
         } else
           l.value.keySet.toSeq.sorted.mkString < r.value.keySet.toSeq.sorted.mkString
       case (`null`, _) => true
-      case (l, r) =>
+      case (l, r)      =>
         def weight(x: Value): Int = x match {
           case `null`  => 100
           case _: bool => 50

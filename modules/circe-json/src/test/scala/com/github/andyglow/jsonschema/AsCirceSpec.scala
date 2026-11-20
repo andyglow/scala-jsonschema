@@ -45,16 +45,16 @@ class AsCirceSpec extends AnyPropSpec {
       f"$$schema"            -> Json.fromString("http://json-schema.org/draft-04/schema#"),
       "type"                 -> Json.fromString("object"),
       "additionalProperties" -> Json.False,
-      "properties" -> Json.obj(
+      "properties"           -> Json.obj(
         "firstName"   -> Json.obj("type" -> Json.fromString("string")),
         "middleName"  -> Json.obj("type" -> Json.fromString("string")),
         "lastName"    -> Json.obj("type" -> Json.fromString("string")),
         "age"         -> Json.obj("type" -> Json.fromString("integer")),
         "lastLoginMs" -> Json.obj("type" -> Json.fromString("number")),
-        "role" -> Json.obj(
+        "role"        -> Json.obj(
           "type"    -> Json.fromString("string"),
           "default" -> Json.fromString("e-user"),
-          "enum" -> Json.arr(
+          "enum"    -> Json.arr(
             Json.fromString("e-admin"),
             Json.fromString("e-manager"),
             Json.fromString("e-user")
@@ -63,13 +63,13 @@ class AsCirceSpec extends AnyPropSpec {
         "active" -> Json.obj(
           "type"    -> Json.fromString("string"),
           "default" -> Json.fromString("On"),
-          "enum" -> Json
+          "enum"    -> Json
             .arr(Json.fromString("On"), Json.fromString("Off"), Json.fromString("Suspended"))
         ),
         "enabledFeatures" -> Json.obj(
           "type"        -> Json.fromString("array"),
           "uniqueItems" -> Json.True,
-          "default" -> Json
+          "default"     -> Json
             .arr(Json.fromString("feature-0-name"), Json.fromString("feature-1-name")),
           "items" -> Json.obj(
             "type" -> Json.fromString("string"),
@@ -84,7 +84,7 @@ class AsCirceSpec extends AnyPropSpec {
           "type"                 -> Json.fromString("object"),
           "additionalProperties" -> Json.False,
           "required"             -> Json.arr(Json.fromString("login"), Json.fromString("password")),
-          "properties" -> Json.obj(
+          "properties"           -> Json.obj(
             "login"    -> Json.obj("type" -> Json.fromString("string")),
             "password" -> Json.obj("type" -> Json.fromString("string"))
           ),
@@ -95,7 +95,7 @@ class AsCirceSpec extends AnyPropSpec {
           "type"                 -> Json.fromString("object"),
           "additionalProperties" -> Json.False,
           "required"             -> Json.arr(Json.fromString("head"), Json.fromString("tail")),
-          "properties" -> Json.obj(
+          "properties"           -> Json.obj(
             "head" -> Json.obj("type" -> Json.fromString("string")),
             "tail" -> Json.obj(
               "type"  -> Json.fromString("array"),
@@ -118,9 +118,9 @@ object AsCirceSpec {
 
   implicit val jsValEq: Equality[Json] = new Equality[Json] {
     override def areEqual(a: Json, b: Any): Boolean = a match {
-      case Json.Null  => b == Json.Null
-      case Json.True  => b == Json.True
-      case Json.False => b == Json.False
+      case Json.Null                 => b == Json.Null
+      case Json.True                 => b == Json.True
+      case Json.False                => b == Json.False
       case _ if b.isInstanceOf[Json] =>
         val bb = b.asInstanceOf[Json]
         if (a.isNumber && bb.isNumber) a.asNumber == bb.asNumber

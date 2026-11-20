@@ -44,16 +44,16 @@ class AsUSpec extends AnyPropSpec {
       f"$$schema"            -> ujson.Str("http://json-schema.org/draft-04/schema#"),
       "type"                 -> ujson.Str("object"),
       "additionalProperties" -> ujson.False,
-      "properties" -> ujson.Obj(
+      "properties"           -> ujson.Obj(
         "rating" -> ujson.Obj(
           f"$$ref" -> ujson.Str("#/definitions/com.github.andyglow.jsonschema.AsUSpec.Rating")
         ),
         "age"    -> ujson.Obj("type" -> ujson.Str("integer")),
         "active" -> ujson.Obj("type" -> ujson.Str("boolean"), "default" -> ujson.True),
-        "name" -> ujson.Obj(
+        "name"   -> ujson.Obj(
           "type"                 -> ujson.Str("object"),
           "additionalProperties" -> ujson.False,
-          "properties" -> ujson.Obj(
+          "properties"           -> ujson.Obj(
             "first"  -> ujson.Obj("type" -> ujson.Str("string")),
             "middle" -> ujson.Obj("type" -> ujson.Str("string")),
             "last"   -> ujson.Obj("type" -> ujson.Str("string"))
@@ -61,7 +61,7 @@ class AsUSpec extends AnyPropSpec {
           "required" -> ujson.Arr(ujson.Str("first"), ujson.Str("last"))
         )
       ),
-      "required" -> ujson.Arr(ujson.Str("age"), ujson.Str("name"), ujson.Str("rating")),
+      "required"    -> ujson.Arr(ujson.Str("age"), ujson.Str("name"), ujson.Str("rating")),
       "definitions" -> ujson.Obj(
         "com.github.andyglow.jsonschema.AsUSpec.Rating" -> ujson.Obj(
           "type"                 -> ujson.Str("object"),
@@ -86,16 +86,16 @@ class AsUSpec extends AnyPropSpec {
       f"$$id"                -> ujson.Str("http://models.org/userProfile.json"),
       "type"                 -> ujson.Str("object"),
       "additionalProperties" -> ujson.False,
-      "properties" -> ujson.Obj(
+      "properties"           -> ujson.Obj(
         "rating" -> ujson.Obj(
           f"$$ref" -> ujson.Str("#com.github.andyglow.jsonschema.AsUSpec.Rating")
         ),
         "age"    -> ujson.Obj("type" -> ujson.Str("integer")),
         "active" -> ujson.Obj("type" -> ujson.Str("boolean"), "default" -> ujson.True),
-        "name" -> ujson.Obj(
+        "name"   -> ujson.Obj(
           "type"                 -> ujson.Str("object"),
           "additionalProperties" -> ujson.False,
-          "properties" -> ujson.Obj(
+          "properties"           -> ujson.Obj(
             "first"  -> ujson.Obj("type" -> ujson.Str("string")),
             "middle" -> ujson.Obj("type" -> ujson.Str("string")),
             "last"   -> ujson.Obj("type" -> ujson.Str("string"))
@@ -103,7 +103,7 @@ class AsUSpec extends AnyPropSpec {
           "required" -> ujson.Arr(ujson.Str("first"), ujson.Str("last"))
         )
       ),
-      "required" -> ujson.Arr(ujson.Str("age"), ujson.Str("name"), ujson.Str("rating")),
+      "required"    -> ujson.Arr(ujson.Str("age"), ujson.Str("name"), ujson.Str("rating")),
       "definitions" -> ujson.Obj(
         "com.github.andyglow.jsonschema.AsUSpec.Rating" -> ujson.Obj(
           f"$$id"                -> ujson.Str("#com.github.andyglow.jsonschema.AsUSpec.Rating"),
@@ -129,16 +129,16 @@ class AsUSpec extends AnyPropSpec {
       f"$$id"                -> ujson.Str("http://models.org/userProfile.json"),
       "type"                 -> ujson.Str("object"),
       "additionalProperties" -> ujson.False,
-      "properties" -> ujson.Obj(
+      "properties"           -> ujson.Obj(
         "rating" -> ujson.Obj(
           f"$$ref" -> ujson.Str("#com.github.andyglow.jsonschema.AsUSpec.Rating")
         ),
         "age"    -> ujson.Obj("type" -> ujson.Str("integer")),
         "active" -> ujson.Obj("type" -> ujson.Str("boolean"), "default" -> ujson.True),
-        "name" -> ujson.Obj(
+        "name"   -> ujson.Obj(
           "type"                 -> ujson.Str("object"),
           "additionalProperties" -> ujson.False,
-          "properties" -> ujson.Obj(
+          "properties"           -> ujson.Obj(
             "first"  -> ujson.Obj("type" -> ujson.Str("string")),
             "middle" -> ujson.Obj("type" -> ujson.Str("string")),
             "last"   -> ujson.Obj("type" -> ujson.Str("string"))
@@ -146,7 +146,7 @@ class AsUSpec extends AnyPropSpec {
           "required" -> ujson.Arr(ujson.Str("first"), ujson.Str("last"))
         )
       ),
-      "required" -> ujson.Arr(ujson.Str("age"), ujson.Str("name"), ujson.Str("rating")),
+      "required"    -> ujson.Arr(ujson.Str("age"), ujson.Str("name"), ujson.Str("rating")),
       "definitions" -> ujson.Obj(
         "com.github.andyglow.jsonschema.AsUSpec.Rating" -> ujson.Obj(
           f"$$id"                -> ujson.Str("#com.github.andyglow.jsonschema.AsUSpec.Rating"),
@@ -166,13 +166,13 @@ class AsUSpec extends AnyPropSpec {
       f"$$schema"            -> "http://json-schema.org/draft-04/schema#",
       "type"                 -> "object",
       "additionalProperties" -> false,
-      "properties" -> ujson.Obj(
+      "properties"           -> ujson.Obj(
         "firstName"   -> ujson.Obj("type" -> "string"),
         "middleName"  -> ujson.Obj("type" -> "string"),
         "lastName"    -> ujson.Obj("type" -> "string"),
         "age"         -> ujson.Obj("type" -> "integer"),
         "lastLoginMs" -> ujson.Obj("type" -> "number"),
-        "role" -> ujson.Obj(
+        "role"        -> ujson.Obj(
           "type"    -> "string",
           "default" -> "e-user",
           "enum"    -> ujson.Arr("e-admin", "e-manager", "e-user")
@@ -186,7 +186,7 @@ class AsUSpec extends AnyPropSpec {
           "type"        -> "array",
           "uniqueItems" -> true,
           "default"     -> ujson.Arr("feature-0-name", "feature-1-name"),
-          "items" -> ujson.Obj(
+          "items"       -> ujson.Obj(
             "type" -> "string",
             "enum" -> ujson.Arr("feature-0-name", "feature-1-name", "feature-2-name")
           )
@@ -195,7 +195,7 @@ class AsUSpec extends AnyPropSpec {
           "type"                 -> "object",
           "additionalProperties" -> false,
           "required"             -> ujson.Arr("login", "password"),
-          "properties" -> ujson.Obj(
+          "properties"           -> ujson.Obj(
             "login"    -> ujson.Obj("type" -> "string"),
             "password" -> ujson.Obj("type" -> "string")
           ),
@@ -205,7 +205,7 @@ class AsUSpec extends AnyPropSpec {
           "type"                 -> "object",
           "additionalProperties" -> false,
           "required"             -> ujson.Arr("head", "tail"),
-          "properties" -> ujson.Obj(
+          "properties"           -> ujson.Obj(
             "head" -> ujson.Obj("type" -> "string"),
             "tail" -> ujson.Obj("type" -> "array", "items" -> ujson.Obj("type" -> "string"))
           ),

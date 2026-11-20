@@ -72,7 +72,7 @@ object AsJson4s {
     implicit val falseAdapter: Aux[`false`.type, JBool]    = make(_ => JBool.False, _ => `false`)
     implicit val numAdapter: Aux[num, JDecimal]            = make(x => JDecimal(x.value), x => num(x.values))
     implicit val strAdapter: Aux[str, JString]             = make(x => JString(x.value), x => str(x.values))
-    implicit val arrAdapter: Aux[arr, JArray] =
+    implicit val arrAdapter: Aux[arr, JArray]              =
       make(x => JArray { x.value.toList map { adapt(_) } }, x => arr { x.arr map { unadapt(_) } })
     implicit val objAdapter: Aux[obj, JObject] = make(
       { x =>

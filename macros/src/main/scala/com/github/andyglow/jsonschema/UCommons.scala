@@ -10,8 +10,6 @@ private[jsonschema] trait UCommons extends SchemaTypes with ULogging {
   this: UContext with UFieldDecorations with UTypeAnnotations with UFlags =>
   import c.universe._
 
-  lazy val is211 = util.Properties.versionNumberString.startsWith("2.11")
-
   class ResolutionContext(val stack: List[Type], val onCycle: Type => Unit) {
     def isEmpty: Boolean               = stack.isEmpty
     def contains(x: Type): Boolean     = stack exists { y => x =:= y }
@@ -146,7 +144,7 @@ private[jsonschema] trait UCommons extends SchemaTypes with ULogging {
 
     if (tpe.typeSymbol.isClass) {
       val leaves = tpe.typeSymbol.asClass.knownDirectSubclasses.toSeq flatMap { s =>
-        val cs = s.asClass
+        val cs     = s.asClass
         val subTpe =
           if (cs.typeParams.isEmpty) cs.toType
           else resolveGenericType(cs.toType, cs.typeParams, tpe.typeArgs)

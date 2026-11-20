@@ -45,13 +45,13 @@ class AsJson4sSpec extends AnyPropSpec {
       f"$$schema"            -> JString("http://json-schema.org/draft-04/schema#"),
       "type"                 -> JString("object"),
       "additionalProperties" -> JBool(false),
-      "properties" -> JObject(
+      "properties"           -> JObject(
         "firstName"   -> JObject("type" -> JString("string")),
         "middleName"  -> JObject("type" -> JString("string")),
         "lastName"    -> JObject("type" -> JString("string")),
         "age"         -> JObject("type" -> JString("integer")),
         "lastLoginMs" -> JObject("type" -> JString("number")),
-        "role" -> JObject(
+        "role"        -> JObject(
           "type"    -> JString("string"),
           "default" -> JString("e-user"),
           "enum"    -> JArray(List(JString("e-admin"), JString("e-manager"), JString("e-user")))
@@ -65,7 +65,7 @@ class AsJson4sSpec extends AnyPropSpec {
           "type"        -> JString("array"),
           "uniqueItems" -> JBool.True,
           "default"     -> JArray(List(JString("feature-0-name"), JString("feature-1-name"))),
-          "items" -> JObject(
+          "items"       -> JObject(
             "type" -> JString("string"),
             "enum" -> JArray(
               List(JString("feature-0-name"), JString("feature-1-name"), JString("feature-2-name"))
@@ -76,7 +76,7 @@ class AsJson4sSpec extends AnyPropSpec {
           "type"                 -> JString("object"),
           "additionalProperties" -> JBool.False,
           "required"             -> JArray(List(JString("login"), JString("password"))),
-          "properties" -> JObject(
+          "properties"           -> JObject(
             "login"    -> JObject("type" -> JString("string")),
             "password" -> JObject("type" -> JString("string"))
           ),
@@ -86,7 +86,7 @@ class AsJson4sSpec extends AnyPropSpec {
           "type"                 -> JString("object"),
           "additionalProperties" -> JBool.False,
           "required"             -> JArray(List(JString("head"), JString("tail"))),
-          "properties" -> JObject(
+          "properties"           -> JObject(
             "head" -> JObject("type" -> JString("string")),
             "tail" -> JObject(
               "type"  -> JString("array"),

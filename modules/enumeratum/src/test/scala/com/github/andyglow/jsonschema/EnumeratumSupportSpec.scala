@@ -85,7 +85,7 @@ class EnumeratumSupportSpec extends AnyWordSpec {
 object EnumeratumSupportSpec {
 
   sealed trait E0 extends EnumEntry
-  object E0 extends Enum[E0] {
+  object E0       extends Enum[E0] {
     case object AaAa extends E0
     case object BbBb extends E0
     case object CcCc extends E0
@@ -93,7 +93,7 @@ object EnumeratumSupportSpec {
   }
 
   sealed abstract class E1(override val entryName: String) extends EnumEntry
-  object E1 extends Enum[E1] {
+  object E1                                                extends Enum[E1] {
     case object AaAa extends E1("a")
     case object BbBb extends E1("b")
     case object CcCc extends E1("c")
@@ -101,7 +101,7 @@ object EnumeratumSupportSpec {
   }
 
   sealed trait E2 extends EnumEntry with Hyphencase
-  object E2 extends Enum[E2] {
+  object E2       extends Enum[E2] {
     case object AaAa extends E2
     case object BbBb extends E2
     case object CcCc extends E2
@@ -109,7 +109,7 @@ object EnumeratumSupportSpec {
   }
 
   sealed abstract class IntV(val value: Int) extends IntEnumEntry
-  object IntV extends IntEnum[IntV] {
+  object IntV                                extends IntEnum[IntV] {
     case object AaAa extends IntV(0)
     case object BbBb extends IntV(1)
     case object CcCc extends IntV(2)
@@ -117,7 +117,7 @@ object EnumeratumSupportSpec {
   }
 
   sealed abstract class LongV(val value: Long) extends LongEnumEntry
-  object LongV extends LongEnum[LongV] {
+  object LongV                                 extends LongEnum[LongV] {
     case object AaAa extends LongV(0L)
     case object BbBb extends LongV(1L)
     case object CcCc extends LongV(2L)
@@ -125,7 +125,7 @@ object EnumeratumSupportSpec {
   }
 
   sealed abstract class ByteV(val value: Byte) extends ByteEnumEntry
-  object ByteV extends ByteEnum[ByteV] {
+  object ByteV                                 extends ByteEnum[ByteV] {
     case object AaAa extends ByteV(0)
     case object BbBb extends ByteV(1)
     case object CcCc extends ByteV(2)
@@ -133,7 +133,7 @@ object EnumeratumSupportSpec {
   }
 
   sealed abstract class ShortV(val value: Short) extends ShortEnumEntry
-  object ShortV extends ShortEnum[ShortV] {
+  object ShortV                                  extends ShortEnum[ShortV] {
     case object AaAa extends ShortV(0)
     case object BbBb extends ShortV(1)
     case object CcCc extends ShortV(2)
@@ -141,7 +141,7 @@ object EnumeratumSupportSpec {
   }
 
   sealed abstract class CharV(val value: Char) extends CharEnumEntry
-  object CharV extends CharEnum[CharV] {
+  object CharV                                 extends CharEnum[CharV] {
     case object AaAa extends CharV('a')
     case object BbBb extends CharV('b')
     case object CcCc extends CharV('c')
@@ -149,7 +149,7 @@ object EnumeratumSupportSpec {
   }
 
   sealed abstract class StringV(val value: String) extends StringEnumEntry
-  object StringV extends StringEnum[StringV] {
+  object StringV                                   extends StringEnum[StringV] {
     case object AaAa extends StringV("a1")
     case object BbBb extends StringV("b2")
     case object CcCc extends StringV("c3")
@@ -157,7 +157,7 @@ object EnumeratumSupportSpec {
   }
 
   sealed abstract class StringVWithAlias(val value: String) extends StringEnumEntry with AllowAlias
-  object StringVWithAlias extends StringEnum[StringVWithAlias] {
+  object StringVWithAlias                                   extends StringEnum[StringVWithAlias] {
     case object AaAa extends StringVWithAlias("q")
     case object BbBb extends StringVWithAlias("q")
     case object CcCc extends StringVWithAlias("z")

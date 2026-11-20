@@ -68,7 +68,7 @@ object AsSpray {
     implicit val falseAdapter: Aux[`false`.type, JsBoolean] = make(_ => JsFalse, _ => `false`)
     implicit val numAdapter: Aux[num, JsNumber]             = make(x => JsNumber(x.value), x => num(x.value))
     implicit val strAdapter: Aux[str, JsString]             = make(x => JsString(x.value), x => str(x.value))
-    implicit val arrAdapter: Aux[arr, JsArray] = make(
+    implicit val arrAdapter: Aux[arr, JsArray]              = make(
       x => JsArray { x.value.toVector map { adapt(_) } },
       x => arr { x.elements map { unadapt(_) } }
     )

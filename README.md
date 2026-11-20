@@ -2,7 +2,7 @@
 [![Support ukraine](https://img.shields.io/static/v1?label=United24&message=Support%20Ukraine&color=lightgrey&link=https%3A%2F%2Fu24.gov.ua&logo=data%3Aimage%2Fpng%3Bbase64%2CiVBORw0KGgoAAAANSUhEUgAAASwAAADICAYAAABS39xVAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAANKSURBVHhe7dZBThRhFEbRnx1IgvtFiIoxbgemOHLAhAoJ1QyaBahroKxqE%2BMS6iZncPKSbwE3b4yr6W58en4Z148zwC5tjbqabrdgvZ59PS5nn2eAfVobtbbquAXrcBquJ4B9Wht1%2BrQEC9g9wQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8j4F6zL%2BTA%2BHpfxYR0A9mhr1OXzPC5u7g%2Fvv%2F1YLr58B9ilU6Nu7ufx6%2BH88Hs6X9YLsEtbo34%2BvJvH29M4LC9jWZ4Admpt1NqqNVjTGqz5bFkmgJ1aG%2FX2KFhAgWABGYIFZAgWkCFYQIZgARmCBWQIFpAhWECGYAEZggVkCBaQIVhAhmABGYIFZAgWkCFYQIZgARmCBWQIFpAhWECGYAEZggVkCBaQIVhAhmABGYIFZAgWkCFYQIZgARmCBWQIFpAhWECGYAEZggVkCBaQIVhAhmABGYIFZAgWkCFYQIZgARmCBWQIFpAhWECGYAEZggVkCBaQIVhAhmABGYIFZAgWkCFYQIZgARmCBWQIFpAhWECGYAEZggVkCBaQIVhAhmABGYIFZAgWkCFYQIZgARmCBWQIFpAhWECGYAEZggVkCBaQIVhAhmABGYIFZAgWkCFYQIZgARmCBWQIFpAhWECGYAEZggVkCBaQIVhAhmABGYIFZAgWkCFYQIZgARmCBWQIFpAhWECGYAEZggVk%2FBes1%2BX4dwDYpbVRa6uOW7Du3p7Hy1YvgF3aGjWN2z9qCgwkg1n6XwAAAABJRU5ErkJggg%3D%3D)](https://u24.gov.ua)
 [![Build](https://github.com/andyglow/scala-jsonschema/actions/workflows/ci.yml/badge.svg?event=push)](https://github.com/andyglow/scala-jsonschema/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/andyglow/scala-jsonschema/branch/master/graph/badge.svg?token=e8E62N8PiJ)](https://codecov.io/gh/andyglow/scala-jsonschema)
-![](https://img.shields.io/static/v1.svg?label=Supported&nbsp;Scala&message=2.11,2.12,2.13&color=gray)
+![](https://img.shields.io/static/v1.svg?label=Supported&nbsp;Scala&message=2.12,2.13&color=gray)
 [![Version](https://img.shields.io/badge/dynamic/json.svg?label=Released&nbsp;Version&query=%24.response.docs%5B0%5D.latestVersion&url=https%3A%2F%2Fsearch.maven.org%2Fsolrsearch%2Fselect%3Fq%3Dscala-jsonschema-core_2.13%26start%3D0%26rows%3D1)](https://search.maven.org/artifact/com.github.andyglow/scala-jsonschema-core_2.13/)
 
 *SBT dependencies:*
@@ -37,6 +37,26 @@ libraryDependencies ++= Seq(
   "com.github.andyglow" %% "scala-jsonschema-parser" % <version>             // <-- optional
 )
 ```
+
+*Compatibility:*
+
+- Scala 2.12 and 2.13 (Scala 2.11 support ended with `0.7.x`), JDK 11+
+- Bridges and integrations are built against
+
+  | module                          | library                                    |
+  |---------------------------------|--------------------------------------------|
+  | `scala-jsonschema-play-json`    | `org.playframework:play-json` 3.0.x        |
+  | `scala-jsonschema-spray-json`   | `io.spray:spray-json` 1.3.x                |
+  | `scala-jsonschema-circe-json`   | `io.circe:circe-*` 0.14.x                  |
+  | `scala-jsonschema-json4s-json`  | `org.json4s:json4s-core` 4.0.x             |
+  | `scala-jsonschema-ujson`        | `com.lihaoyi:ujson`/`upickle` 4.x          |
+  | `scala-jsonschema-joda-time`    | `joda-time:joda-time` 2.x                  |
+  | `scala-jsonschema-cats`         | `org.typelevel:cats-core` 2.x              |
+  | `scala-jsonschema-refined`      | `eu.timepit:refined` 0.11.x                |
+  | `scala-jsonschema-enumeratum`   | `com.beachape:enumeratum` 1.9.x            |
+
+  Note that Play JSON 3 is published under `org.playframework`; projects still on
+  `com.typesafe.play:play-json` 2.x should stay on `scala-jsonschema` `0.7.x`.
 
 
 ## Generate JSON Schema from Scala classes
@@ -94,7 +114,7 @@ Inspired by Coursera Autoschema but uses `Scala Macros` instead of `Java Reflect
     - `cats.data.NonEmptySet`
     - `cats.data.NonEmptyChain`
     - `cats.data.NonEmptyMap`
-    - `cats.data.NonEmptyStream` (for scala 2.11, 2.12)
+    - `cats.data.NonEmptyStream` (for scala 2.12)
     - `cats.data.NonEmptyLazyList` (for scala 2.13)
     - `cats.data.OneAnd`
 - with Refined module imported you can refine original types with these

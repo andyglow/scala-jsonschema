@@ -94,7 +94,7 @@ class DiscriminatorSpec extends AnyWordSpec {
               obj(
                 "additionalProperties" -> false,
                 "required"             -> arr("type", "value"),
-                "properties" -> obj(
+                "properties"           -> obj(
                   "type" -> obj(
                     "enum" -> arr(
                       "com.github.andyglow.jsonschema.DiscriminatorSpec.case0.Root.Member1"
@@ -106,7 +106,7 @@ class DiscriminatorSpec extends AnyWordSpec {
               obj(
                 "additionalProperties" -> false,
                 "required"             -> arr("type", "value"),
-                "properties" -> obj(
+                "properties"           -> obj(
                   "type" -> obj(
                     "enum" -> arr(
                       "com.github.andyglow.jsonschema.DiscriminatorSpec.case0.Root.Member2"
@@ -141,7 +141,7 @@ class DiscriminatorSpec extends AnyWordSpec {
               obj(
                 "additionalProperties" -> false,
                 "required"             -> arr("type", "value"),
-                "properties" -> obj(
+                "properties"           -> obj(
                   "type" -> obj(
                     "enum" -> arr(
                       "com.github.andyglow.jsonschema.DiscriminatorSpec.case1.Root.Member1"
@@ -153,7 +153,7 @@ class DiscriminatorSpec extends AnyWordSpec {
               obj(
                 "additionalProperties" -> false,
                 "required"             -> arr("type", "value"),
-                "properties" -> obj(
+                "properties"           -> obj(
                   "type" -> obj(
                     "enum" -> arr(
                       "com.github.andyglow.jsonschema.DiscriminatorSpec.case1.Root.Member2"
@@ -188,7 +188,7 @@ class DiscriminatorSpec extends AnyWordSpec {
               obj(
                 "additionalProperties" -> false,
                 "required"             -> arr("tpe", "value"),
-                "properties" -> obj(
+                "properties"           -> obj(
                   "tpe" -> obj(
                     "enum" -> arr(
                       "com.github.andyglow.jsonschema.DiscriminatorSpec.case3.Root.Member1"
@@ -200,7 +200,7 @@ class DiscriminatorSpec extends AnyWordSpec {
               obj(
                 "additionalProperties" -> false,
                 "required"             -> arr("tpe", "value"),
-                "properties" -> obj(
+                "properties"           -> obj(
                   "tpe" -> obj(
                     "enum" -> arr(
                       "com.github.andyglow.jsonschema.DiscriminatorSpec.case3.Root.Member2"
@@ -229,7 +229,7 @@ class DiscriminatorSpec extends AnyWordSpec {
               obj(
                 "additionalProperties" -> false,
                 "required"             -> arr("type", "value"),
-                "properties" -> obj(
+                "properties"           -> obj(
                   "type"  -> obj("enum" -> arr("m1")),
                   "value" -> obj("type" -> "integer")
                 )
@@ -237,7 +237,7 @@ class DiscriminatorSpec extends AnyWordSpec {
               obj(
                 "additionalProperties" -> false,
                 "required"             -> arr("type", "value"),
-                "properties" -> obj(
+                "properties"           -> obj(
                   "type"  -> obj("enum" -> arr("m2")),
                   "value" -> obj("type" -> "string")
                 )
@@ -269,7 +269,7 @@ class DiscriminatorSpec extends AnyWordSpec {
               "m1" -> obj(
                 "additionalProperties" -> false,
                 "required"             -> arr("type", "value"),
-                "properties" -> obj(
+                "properties"           -> obj(
                   "type"  -> obj("enum" -> arr("m1")),
                   "value" -> obj("type" -> "integer")
                 )
@@ -277,7 +277,7 @@ class DiscriminatorSpec extends AnyWordSpec {
               "m2" -> obj(
                 "additionalProperties" -> false,
                 "required"             -> arr("type", "value"),
-                "properties" -> obj(
+                "properties"           -> obj(
                   "type"  -> obj("enum" -> arr("m2")),
                   "value" -> obj("type" -> "string")
                 )

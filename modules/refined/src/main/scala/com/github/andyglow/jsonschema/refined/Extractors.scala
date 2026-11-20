@@ -90,16 +90,16 @@ private[jsonschema] trait Extractors { this: HasLog with AST with HasContext =>
               case TypeRef(_, `sNonEmpty`, _)              => Some(Size(t, Size.Def.Min(1)))
               case TypeRef(_, `sMinSize`, List(C(v: Int))) => Some(Size(t, Size.Def.Min(v)))
               case TypeRef(_, `sMaxSize`, List(C(v: Int))) => Some(Size(t, Size.Def.Max(v)))
-              case TypeRef(_, `sSize`, List(Ex(pp))) =>
+              case TypeRef(_, `sSize`, List(Ex(pp)))       =>
                 pp.norm match {
                   case pp: NumericPred => Some(Size(t, pp.asSize))
                   case _               => None
                 }
               case TypeRef(_, `sSize`, List(C(v: Int))) => Some(Size(t, Size.Def.Const(v)))
               // string
-              case TypeRef(_, `sUUID`, _) => Some(UUID(t))
-              case TypeRef(_, `sURL`, _)  => Some(URI(t))
-              case TypeRef(_, `sURI`, _)  => Some(URI(t))
+              case TypeRef(_, `sUUID`, _)                => Some(UUID(t))
+              case TypeRef(_, `sURL`, _)                 => Some(URI(t))
+              case TypeRef(_, `sURI`, _)                 => Some(URI(t))
               case TypeRef(_, `sStartsWith`, List(C(v))) =>
                 Some(MatchesRegex(t, s"^${v.toString}.*$$"))
               case TypeRef(_, `sEndsWith`, List(C(v))) =>

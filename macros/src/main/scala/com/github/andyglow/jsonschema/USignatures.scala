@@ -8,10 +8,10 @@ private[jsonschema] trait USignatures { this: UContext =>
     def compute(tpe: Type): String = {
 
       tpe match {
-        case tpe: SingleType                           => tpe.typeSymbol.fullName
-        case TypeRef(_, name, Nil)                     => name.fullName
-        case ExistentialType(_, TypeRef(_, name, Nil)) => name.fullName
-        case TypeRef(_, name, typeargs)                => name.fullName + s"[${typeargs map compute mkString ","}]"
+        case tpe: SingleType                                => tpe.typeSymbol.fullName
+        case TypeRef(_, name, Nil)                          => name.fullName
+        case ExistentialType(_, TypeRef(_, name, Nil))      => name.fullName
+        case TypeRef(_, name, typeargs)                     => name.fullName + s"[${typeargs map compute mkString ","}]"
         case ExistentialType(_, TypeRef(_, name, typeargs)) =>
           name.fullName + s"[${typeargs map compute mkString ","}]"
         case ConstantType(x) => x.value.toString

@@ -1,11 +1,20 @@
-import xerial.sbt.Sonatype._
 import ReleaseTransformations._
 import scala.sys.process._
 import ScalaVer.scalaV
 import CustomGithubActions._
 
-// https://github.com/xerial/sbt-sonatype/issues/71
-ThisBuild / publishTo                           := sonatypePublishTo.value
+// Sonatype Central Portal (sbt 1.11+ built-in): releases are staged locally by `publishSigned`
+// and uploaded + released as a single bundle by `sonaRelease`
+ThisBuild / publishTo := {
+  val centralSnapshots = "https://central.sonatype.com/repository/maven-snapshots/"
+  if (isSnapshot.value) Some("central-snapshots" at centralSnapshots)
+  else localStaging.value
+}
+// The macro evaluates `Option` defaults of case classes with `c.eval`, which is not safe when several
+// modules are compiled concurrently in the same JVM (toolbox importer races on `package com`).
+// Compile one module at a time until that is fixed in the macro.
+Global / concurrentRestrictions += Tags.limit(Tags.Compile, 1)
+
 ThisBuild / versionScheme                       := Some("pvp")
 ThisBuild / crossScalaVersions                  := ScalaVer.values.map(_.full)
 ThisBuild / githubWorkflowPublishTargetBranches := Seq()
@@ -41,7 +50,7 @@ lazy val commonSettings = ScalaVer.settings ++ Seq(
       case _                       => Nil
     }
   },
-  scalacOptions := CompilerOptions(scalaV.value),
+  scalacOptions                 := CompilerOptions(scalaV.value),
   Compile / doc / scalacOptions := {
     val muted = Seq("-Ywarn-unused")
 
@@ -49,16 +58,14 @@ lazy val commonSettings = ScalaVer.settings ++ Seq(
 
     base ++ Seq("-groups", "-implicits", "-no-link-warnings")
   },
-  licenses               := Seq(("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))),
-  sonatypeProfileName    := "com.github.andyglow",
-  publishMavenStyle      := true,
-  sonatypeProjectHosting := Some(GitHubHosting("andyglow", "scala-jsonschema", "andyglow@gmail.com")),
-  developers := List(
+  licenses          := Seq(("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))),
+  publishMavenStyle := true,
+  developers        := List(
     Developer(id = "andyglow", name = "Andriy Onyshchuk", email = "andyglow@gmail.com", url = url("https://ua.linkedin.com/in/andyglow"))
   ),
   releaseCrossBuild             := true,
   releasePublishArtifactsAction := PgpKeys.publishSigned.value,
-  releaseProcess := Seq[ReleaseStep](
+  releaseProcess                := Seq[ReleaseStep](
     checkSnapshotDependencies,
     inquireVersions,
     runClean,
@@ -69,10 +76,10 @@ lazy val commonSettings = ScalaVer.settings ++ Seq(
     ReleaseStep(action = Command.process("publishSigned", _), enableCrossBuild = true),
     setNextVersion,
     commitNextVersion,
-    ReleaseStep(action = Command.process("sonatypeReleaseAll", _), enableCrossBuild = true),
+    ReleaseStep(action = Command.process("sonaRelease", _)),
     pushChanges
   ),
-  libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.19" % Test
+  libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.20" % Test
 )
 
 lazy val core = { project in file("core") }.settings(
@@ -103,15 +110,8 @@ lazy val `play-json` = { project in file("modules/play-json") }
   .dependsOn(core, api % "compile->compile;test->test")
   .settings(
     commonSettings,
-    name := "scala-jsonschema-play-json",
-    libraryDependencies += {
-      val playV = CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2, 11)) => "2.7.4"
-        case _             => "2.9.2"
-      }
-
-      "com.typesafe.play" %% "play-json" % playV
-    }
+    name                                       := "scala-jsonschema-play-json",
+    libraryDependencies += "org.playframework" %% "play-json" % "3.0.6"
   )
 
 lazy val `spray-json` = { project in file("modules/spray-json") }
@@ -127,18 +127,11 @@ lazy val `circe-json` = { project in file("modules/circe-json") }
   .settings(
     commonSettings,
     name := "scala-jsonschema-circe-json",
-    libraryDependencies ++= {
-      val circeV = CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2, 11)) => "0.12.0-M3"
-        case _             => "0.14.5"
-      }
-
-      Seq(
-        "io.circe" %% "circe-core",
-        "io.circe" %% "circe-generic",
-        "io.circe" %% "circe-parser"
-      ) map { _ % circeV }
-    }
+    libraryDependencies ++= Seq(
+      "io.circe" %% "circe-core",
+      "io.circe" %% "circe-generic",
+      "io.circe" %% "circe-parser"
+    ) map { _ % "0.14.17" }
   )
 
 lazy val `json4s-json` = { project in file("modules/json4s-json") }
@@ -159,7 +152,7 @@ lazy val `json4s-json` = { project in file("modules/json4s-json") }
     Compile / compile := (Compile / compile).dependsOn(buildInfo).value,
     Test / compile    := (Test / compile).dependsOn(buildInfo).value,
     name              := "scala-jsonschema-json4s-json",
-    libraryDependencies ++= Seq("org.json4s" %% "json4s-core" % "4.0.6", "org.json4s" %% "json4s-native" % "4.0.6" % Test)
+    libraryDependencies ++= Seq("org.json4s" %% "json4s-core" % "4.0.7", "org.json4s" %% "json4s-native" % "4.0.7" % Test)
   )
 
 lazy val `u-json` = { project in file("modules/u-json") }
@@ -167,15 +160,7 @@ lazy val `u-json` = { project in file("modules/u-json") }
   .settings(
     commonSettings,
     name := "scala-jsonschema-ujson",
-    libraryDependencies ++= {
-      val uV = CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2, 11)) => "2.0.0"
-        case _             => "3.1.0"
-      }
-
-      Seq("com.lihaoyi" %% "ujson" % uV, "com.lihaoyi" %% "upickle" % uV)
-
-    }
+    libraryDependencies ++= Seq("com.lihaoyi" %% "ujson" % "4.4.3", "com.lihaoyi" %% "upickle" % "4.4.3")
   )
 
 lazy val `joda-time` = { project in file("modules/joda-time") }
@@ -183,50 +168,29 @@ lazy val `joda-time` = { project in file("modules/joda-time") }
   .settings(
     commonSettings,
     name                              := "scala-jsonschema-joda-time",
-    libraryDependencies += "joda-time" % "joda-time" % "2.13.0"
+    libraryDependencies += "joda-time" % "joda-time" % "2.15.1"
   )
 
 lazy val `cats` = { project in file("modules/cats") }
   .dependsOn(core, api)
   .settings(
     commonSettings,
-    name := "scala-jsonschema-cats",
-    libraryDependencies += {
-      val catsV = CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2, 11)) => "2.0.0"
-        case _             => "2.9.0"
-      }
-
-      "org.typelevel" %% "cats-core" % catsV
-    }
+    name                                   := "scala-jsonschema-cats",
+    libraryDependencies += "org.typelevel" %% "cats-core" % "2.13.0"
   )
 
 lazy val `refined` = { project in file("modules/refined") }
   .dependsOn(core, api)
   .settings(
     commonSettings,
-    name := "scala-jsonschema-refined",
-    libraryDependencies += {
-      val refinedV = CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2, 11)) => "0.9.12"
-        case _             => "0.11.0"
-      }
-
-      "eu.timepit" %% "refined" % refinedV
-    },
+    name                                := "scala-jsonschema-refined",
+    libraryDependencies += "eu.timepit" %% "refined" % "0.11.4",
     libraryDependencies += (scalaVersion apply ("org.scala-lang" % "scala-reflect" % _ % Compile)).value.withSources.withJavadoc,
 
     // mute unused imports because otherwise IN TESTS it complains on
     // unused `import com.github.andyglow.jsonschema.RefinedSupport._`
     // which is not true
-    Test / scalacOptions -= {
-      CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2, 11))           => "-Ywarn-unused-import"
-        case Some((2, 12))           => "-Ywarn-unused:imports,-patvars,-privates,-locals,-implicits"
-        case Some((2, n)) if n >= 13 => "-Ywarn-unused:imports,-patvars,-privates,-locals,-implicits"
-        case _                       => ""
-      }
-    }
+    Test / scalacOptions -= "-Ywarn-unused:imports,-patvars,-privates,-locals,-implicits"
   )
 
 lazy val parser = { project in file("modules/parser") }
@@ -241,7 +205,7 @@ lazy val enumeratum = { project in file("modules/enumeratum") }
   .settings(
     commonSettings,
     name                                  := "scala-jsonschema-enumeratum",
-    libraryDependencies += "com.beachape" %% "enumeratum" % "1.7.2"
+    libraryDependencies += "com.beachape" %% "enumeratum" % "1.9.8"
   )
 
 lazy val derived = { project in file("modules/derived") }

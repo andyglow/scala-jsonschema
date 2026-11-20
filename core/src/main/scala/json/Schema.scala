@@ -96,7 +96,7 @@ sealed trait Schema[+T] {
 
     copy
   }
-  def canEqual(that: Any): Boolean = that.isInstanceOf[Schema[_]] // && getClass == that.getClass
+  def canEqual(that: Any): Boolean       = that.isInstanceOf[Schema[_]] // && getClass == that.getClass
   override def equals(obj: Any): Boolean = obj match {
     case s: Schema[_] =>
       s.canEqual(this) &&
@@ -109,10 +109,10 @@ sealed trait Schema[+T] {
 
     case _ => false
   }
-  def withDescription(x: String): Self                     = duplicate(description = Some(x))
-  def withTitle(x: String): Self                           = duplicate(title = Some(x))
-  def withDiscriminationKey(x: String): Self               = duplicate(discriminationKey = Some(x))
-  def toDefinition[TT >: T](sig: String): Schema.`def`[TT] = Schema.`def`(sig, this)
+  def withDescription(x: String): Self                                                            = duplicate(description = Some(x))
+  def withTitle(x: String): Self                                                                  = duplicate(title = Some(x))
+  def withDiscriminationKey(x: String): Self                                                      = duplicate(discriminationKey = Some(x))
+  def toDefinition[TT >: T](sig: String): Schema.`def`[TT]                                        = Schema.`def`(sig, this)
   @deprecated("please use `toDefinition` instead", "1.0.0") def apply(refName: String): Schema[T] =
     toDefinition(refName)
 }
@@ -170,7 +170,7 @@ object Schema {
     type Self = `string`[T]
     def mkCopy()                              = new `string`[T](format)
     override def canEqual(that: Any): Boolean = that.isInstanceOf[`string`[_]]
-    override def equals(obj: Any): Boolean = obj match {
+    override def equals(obj: Any): Boolean    = obj match {
       case `string`(f) => format == f && super.equals(obj)
       case _           => false
     }
@@ -212,7 +212,7 @@ object Schema {
   //
   final case class `array`[T, C[_]](componentType: Schema[T], unique: Boolean = false) extends Schema[C[T]] {
     type Self = `array`[T, C]
-    def mkCopy() = new `array`[T, C](componentType, unique)
+    def mkCopy()                              = new `array`[T, C](componentType, unique)
     override def canEqual(that: Any): Boolean = that match {
       case `array`(_, _) => true
       case _             => false
@@ -237,8 +237,8 @@ object Schema {
   //
   final case class `dictionary`[K, V, C[_, _]](valueType: Schema[V]) extends Schema[C[K, V]] {
     type Self = `dictionary`[K, V, C]
-    override def jsonType = "object"
-    def mkCopy()          = new `dictionary`[K, V, C](valueType)
+    override def jsonType                     = "object"
+    def mkCopy()                              = new `dictionary`[K, V, C](valueType)
     override def canEqual(that: Any): Boolean = that match {
       case `dictionary`(_) => true
       case _               => false
@@ -256,7 +256,7 @@ object Schema {
   object `dictionary` {
     abstract class KeyPattern[T](val pattern: String)
     object KeyPattern {
-      def mk[T](pattern: String): KeyPattern[T] = new KeyPattern[T](pattern) {}
+      def mk[T](pattern: String): KeyPattern[T]             = new KeyPattern[T](pattern) {}
       def forEnum[T](vals: Iterable[String]): KeyPattern[T] = {
         require(vals.nonEmpty)
         mk[T](vals.toList.distinct.sorted.mkString("^(?:", "|", ")$"))
@@ -279,7 +279,7 @@ object Schema {
     type Self = `object`[T]
     def mkCopy()                              = copy()
     override def canEqual(that: Any): Boolean = that.isInstanceOf[`object`[_]]
-    override def equals(obj: Any): Boolean = obj match {
+    override def equals(obj: Any): Boolean    = obj match {
       case `object`(f) => fields.toSet == f.toSet && super.equals(obj)
       case _           => false
     }
@@ -288,7 +288,7 @@ object Schema {
       copy(fields = this.fields.filterNot(pred)).withExtraFrom(this)
     def withField(f: Field[_]): `object`[T]                                            = copy(fields = fields :+ f).withExtraFrom(this)
     def withField(name: String, tpe: Schema[_], required: Boolean = true): `object`[T] = withField(Field(name, tpe, required))
-    def withFieldsUpdated(pf: PartialFunction[Field[_], Field[_]]): `object`[T] = copy(
+    def withFieldsUpdated(pf: PartialFunction[Field[_], Field[_]]): `object`[T]        = copy(
       fields = fields collect {
         case f if pf isDefinedAt f => pf(f)
         case x                     => x
@@ -336,7 +336,7 @@ object Schema {
       description: Option[String],
       rwMode: Field.RWMode
     ) {
-      def canEqual(that: Any): Boolean = that.isInstanceOf[Field[T]]
+      def canEqual(that: Any): Boolean        = that.isInstanceOf[Field[T]]
       override def equals(that: Any): Boolean = canEqual(that) && {
         val other = that.asInstanceOf[Field[T]]
         this.name == other.name &&
@@ -345,7 +345,7 @@ object Schema {
         this.default == other.default &&
         this.rwMode == other.rwMode
       }
-      override def hashCode: Int = name.hashCode
+      override def hashCode: Int    = name.hashCode
       override def toString: String = {
         var extra = (required, default) match {
           case (true, None)     => " /R"
@@ -411,7 +411,7 @@ object Schema {
     type Self = `enum`[T]
     def mkCopy()                              = new `enum`[T](tpe, values)
     override def canEqual(that: Any): Boolean = that.isInstanceOf[`enum`[_]]
-    override def equals(obj: Any): Boolean = obj match {
+    override def equals(obj: Any): Boolean    = obj match {
       case `enum`(t, v) => t == tpe && values == v && super.equals(obj)
       case _            => false
     }
@@ -429,7 +429,7 @@ object Schema {
     }
   }
   object `enum` {
-    def of[T](tpe: Schema[_], x: Value, xs: Value*): `enum`[T] = new `enum`[T](tpe, (x +: xs).toSet)
+    def of[T](tpe: Schema[_], x: Value, xs: Value*): `enum`[T]                              = new `enum`[T](tpe, (x +: xs).toSet)
     def of[T](x: T, xs: T*)(implicit va: ValueAdapter[T], vs: ValueSchema[T]): `enum`[vs.S] = {
       new `enum`[vs.S](vs.schema, (x +: xs).toSet.map { (x: T) => va.adapt(x) })
     }
@@ -443,7 +443,7 @@ object Schema {
     type Self = `oneof`[T]
     def mkCopy()                              = new `oneof`[T](subTypes, discriminationField)
     override def canEqual(that: Any): Boolean = that.isInstanceOf[`oneof`[_]]
-    override def equals(obj: Any): Boolean = obj match {
+    override def equals(obj: Any): Boolean    = obj match {
       case `oneof`(s, d) => subTypes == s && discriminationField == d && super.equals(obj)
       case _             => false
     }
@@ -476,7 +476,7 @@ object Schema {
     override def jsonType: String             = "allof"
     def mkCopy()                              = new `allof`[T](subTypes)
     override def canEqual(that: Any): Boolean = that.isInstanceOf[`allof`[_]]
-    override def equals(obj: Any): Boolean = obj match {
+    override def equals(obj: Any): Boolean    = obj match {
       case `allof`(s) => subTypes == s && super.equals(obj)
       case _          => false
     }
@@ -503,7 +503,7 @@ object Schema {
     override def jsonType: String             = "not"
     def mkCopy()                              = new `not`[T](tpe)
     override def canEqual(that: Any): Boolean = that.isInstanceOf[`not`[_]]
-    override def equals(obj: Any): Boolean = obj match {
+    override def equals(obj: Any): Boolean    = obj match {
       case `not`(t) => tpe == t && super.equals(obj)
       case _        => false
     }
@@ -523,7 +523,7 @@ object Schema {
     override def jsonType: String             = ??? // s"$$ref"
     def mkCopy()                              = new `def`[T](sig, tpe)
     override def canEqual(that: Any): Boolean = that.isInstanceOf[`def`[_]]
-    override def equals(obj: Any): Boolean = obj match {
+    override def equals(obj: Any): Boolean    = obj match {
       case `def`(s, t) => sig == s && tpe == t && super.equals(obj)
       case _           => false
     }
@@ -536,7 +536,7 @@ object Schema {
     }
     override def withValidation[TT >: T, B](v: V.Def[B, _], vs: V.Def[B, _]*)(implicit
       bound: V.Magnet[TT, B]
-    ): `def`[T] = copy(tpe = tpe.asInstanceOf[Schema[TT]].withValidation(v, vs: _*)).withExtraFrom(this)
+    ): `def`[T]                                                = copy(tpe = tpe.asInstanceOf[Schema[TT]].withValidation(v, vs: _*)).withExtraFrom(this)
     override def toDefinition[TT >: T](sig: String): `def`[TT] = {
       def deepCopy(x: Schema[_]): Schema[_] = {
         val y = x match {
@@ -577,7 +577,7 @@ object Schema {
     override def jsonType: String             = tpe.jsonType
     def mkCopy()                              = new `value-class`[O, I](tpe)
     override def canEqual(that: Any): Boolean = that.isInstanceOf[`value-class`[_, _]]
-    override def equals(obj: Any): Boolean = obj match {
+    override def equals(obj: Any): Boolean    = obj match {
       case `value-class`(t) => tpe == t && super.equals(obj)
       case _                => false
     }
@@ -598,7 +598,7 @@ object Schema {
   final case class `ref`[T](sig: String) extends Schema[T] {
     override type Self = `ref`[T]
     override protected def mkCopy(): `ref`[T] = `ref`(sig)
-    override def jsonType: String =
+    override def jsonType: String             =
       ??? // should never call this. instead calling code should interpret it as `ref`
     override def toString: String = ToString { sb =>
       sb append "ref("
@@ -616,7 +616,7 @@ object Schema {
     override def jsonType: String = "const"
     override type Self = `const`[T]
     override protected def mkCopy(): `const`[T] = `const`(value)
-    override def toString: String = ToString { sb =>
+    override def toString: String               = ToString { sb =>
       sb append "const("
       sb append JsonFormatter.format(value)
       sb append ": "
@@ -624,7 +624,7 @@ object Schema {
       sb append ")"
     }
     override def canEqual(that: Any): Boolean = that.isInstanceOf[`const`[_]]
-    override def equals(obj: Any): Boolean = obj match {
+    override def equals(obj: Any): Boolean    = obj match {
       case `const`(v) => value == v && super.equals(obj)
       case _          => false
     }

@@ -16,7 +16,7 @@ object CustomGithubActions {
 
   lazy val uploadCC = WorkflowStep.Use(
     name = Some("Upload Code Coverage Report"),
-    ref = UseRef.Public("codecov", "codecov-action", "v3"),
+    ref = UseRef.Public("codecov", "codecov-action", "v7"),
     cond = Some(s"matrix.scala == '${ScalaVer._213.full}'"),
     params = Map(
       "token" -> "${{ secrets.CODECOV_TOKEN }}"

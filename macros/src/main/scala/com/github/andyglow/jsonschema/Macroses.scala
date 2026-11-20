@@ -126,7 +126,7 @@ trait MacroCake
         case SumType(x)    => x
         case CaseClass(x)  => x
         case ValueClass(x) => x
-        case _ =>
+        case _             =>
           c.abort(
             c.enclosingPosition,
             s"schema for $tpe is not supported, ${ctx.stack mkString " :: "}"

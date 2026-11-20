@@ -29,7 +29,7 @@ trait AsDraftSupport {
   def apply(x: json.Schema[_], parent: ParentSchema, includeType: Boolean, isRoot: Boolean): obj = {
     val validationList = inferValidations(x)
     val specifics      = inferSpecifics.lift((validationList, x, parent, isRoot)) getOrElse obj.empty
-    val base = x match {
+    val base           = x match {
       case _: `def`[_] | _: `allof`[_] | _: `oneof`[_] | _: `ref`[_] => obj.empty
       case `value-class`(x) if includeType                           => obj("type" -> x.jsonType)
       case _ if includeType                                          => obj("type" -> x.jsonType)
@@ -50,7 +50,7 @@ trait AsDraftSupport {
       val default     = field.default map { d => obj("default" -> d) } getOrElse obj.empty
       val description = field.description map { d => obj("description" -> d) } getOrElse obj()
       val tpe         = apply(field.tpe, Some(x), includeType = true, isRoot = false)
-      val rw = field.rwMode match {
+      val rw          = field.rwMode match {
         case RWMode.ReadOnly  => obj("readOnly" -> true)
         case RWMode.WriteOnly => obj("writeOnly" -> true)
         case RWMode.ReadWrite => obj()
@@ -108,7 +108,7 @@ trait AsDraftSupport {
 
   def mkOneOf(vl: ValidationList, x: `oneof`[_], isRoot: Boolean, par: ParentSchema): obj = {
     val subTypesSeq = x.subTypes.toSeq
-    val tpe = subTypesSeq.find {
+    val tpe         = subTypesSeq.find {
       case `def`(_, _) => false
       case `ref`(_)    => false
       case _           => true
@@ -140,7 +140,7 @@ trait AsDraftSupport {
     val sameType    = subTypesSeq.tail.foldLeft(true) { case (agg, t) => agg && (t.jsonType == tpe) }
     if (sameType) {
       obj(
-        "type" -> (if (!isRoot) Some(`str`(tpe)) else None),
+        "type"  -> (if (!isRoot) Some(`str`(tpe)) else None),
         "allOf" -> `arr`(
           apply(subTypesSeq.head, Some(x), includeType = false, isRoot = false),
           subTypesSeq.tail.map(t => apply(t, Some(x), includeType = false, isRoot = false)): _*

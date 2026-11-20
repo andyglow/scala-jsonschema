@@ -22,7 +22,7 @@ class AsDraft07Spec extends AnyWordSpec {
       val e = obj(
         f"$$schema" -> "https://json-schema.org/draft/2019-09/schema",
         f"$$id"     -> "http://example.com/foobarbaz.json",
-        "oneOf" -> arr(
+        "oneOf"     -> arr(
           obj("const" -> "foo", "title" -> "Foo", "description" -> "f-o-o"),
           obj("const" -> "bar", "title" -> "Bar", "description" -> "b-a-r")
         )
@@ -57,10 +57,10 @@ class AsDraft07Spec extends AnyWordSpec {
         "type"                 -> "object",
         "additionalProperties" -> false,
         "required"             -> arr("listObject", "baz", "mapObject", "foo"),
-        "properties" -> obj(
-          "foo" -> obj("type" -> "string"),
-          "bar" -> obj("type" -> "integer"),
-          "baz" -> obj(f"$$ref" -> "#my-bool"),
+        "properties"           -> obj(
+          "foo"       -> obj("type" -> "string"),
+          "bar"       -> obj("type" -> "integer"),
+          "baz"       -> obj(f"$$ref" -> "#my-bool"),
           "mapObject" -> obj(
             "type"              -> "object",
             "patternProperties" -> obj("^.*$" -> obj(f"$$ref" -> "#FooX"))
@@ -72,7 +72,7 @@ class AsDraft07Spec extends AnyWordSpec {
         ),
         "definitions" -> obj(
           "my-bool" -> obj(f"$$id" -> "#my-bool", "type" -> "boolean"),
-          "FooX" -> obj(
+          "FooX"    -> obj(
             f"$$id"                -> "#FooX",
             "type"                 -> "object",
             "additionalProperties" -> false,

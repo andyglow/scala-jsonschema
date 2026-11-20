@@ -70,7 +70,7 @@ object AsPlay {
     implicit val falseAdapter: Aux[`false`.type, JsBoolean] = make(_ => JsFalse, _ => `false`)
     implicit val numAdapter: Aux[num, JsNumber]             = make(x => JsNumber(x.value), x => num(x.value))
     implicit val strAdapter: Aux[str, JsString]             = make(x => JsString(x.value), x => str(x.value))
-    implicit val arrAdapter: Aux[arr, JsArray] =
+    implicit val arrAdapter: Aux[arr, JsArray]              =
       make(x => JsArray { x.value.toSeq map { adapt(_) } }, x => arr { x.value map { unadapt(_) } })
     implicit val objAdapter: Aux[obj, JsObject] = make(
       x => JsObject { x.value.toMap mapV { adapt(_) } },

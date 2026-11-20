@@ -49,7 +49,7 @@ class DefinitionsSpec extends AnyWordSpec {
         obj(
           f"$$schema" -> "http://json-schema.org/draft-07/schema#",
           f"$$id"     -> "pets",
-          "oneOf" -> arr(
+          "oneOf"     -> arr(
             obj(f"$$ref" -> "#com.github.andyglow.jsonschema.DefinitionsSpec.Pet.Cat"),
             obj(f"$$ref" -> "#alligator")
           ),
@@ -96,11 +96,11 @@ class DefinitionsSpec extends AnyWordSpec {
           f"$$id"                -> "users",
           "additionalProperties" -> false,
           "type"                 -> "object",
-          "properties" -> obj(
+          "properties"           -> obj(
             "id"   -> obj(f"$$ref" -> "#com.github.andyglow.jsonschema.DefinitionsSpec.UserId"),
             "name" -> obj(f"$$ref" -> "#com.github.andyglow.jsonschema.DefinitionsSpec.UserName")
           ),
-          "required" -> arr("id", "name"),
+          "required"    -> arr("id", "name"),
           "definitions" -> obj(
             "com.github.andyglow.jsonschema.DefinitionsSpec.UserId" -> obj(
               f"$$id" -> "#com.github.andyglow.jsonschema.DefinitionsSpec.UserId",
@@ -137,11 +137,11 @@ class DefinitionsSpec extends AnyWordSpec {
           f"$$id"                -> "users",
           "additionalProperties" -> false,
           "type"                 -> "object",
-          "properties" -> obj(
+          "properties"           -> obj(
             "id"   -> obj(f"$$ref" -> "#user-id"),
             "name" -> obj(f"$$ref" -> "#user-name")
           ),
-          "required" -> arr("id", "name"),
+          "required"    -> arr("id", "name"),
           "definitions" -> obj(
             "user-id"   -> obj(f"$$id" -> "#user-id", "type" -> "integer"),
             "user-name" -> obj(f"$$id" -> "#user-name", "type" -> "string", "maxLength" -> 100)
@@ -173,11 +173,11 @@ class DefinitionsSpec extends AnyWordSpec {
           f"$$id"                -> "users",
           "additionalProperties" -> false,
           "type"                 -> "object",
-          "properties" -> obj(
+          "properties"           -> obj(
             "id"   -> obj(f"$$ref" -> "#com.github.andyglow.jsonschema.DefinitionsSpec.UserId"),
             "name" -> obj(f"$$ref" -> "#com.github.andyglow.jsonschema.DefinitionsSpec.UserName")
           ),
-          "required" -> arr("id", "name"),
+          "required"    -> arr("id", "name"),
           "definitions" -> obj(
             "com.github.andyglow.jsonschema.DefinitionsSpec.UserId" -> obj(
               f"$$id" -> "#com.github.andyglow.jsonschema.DefinitionsSpec.UserId",
@@ -209,11 +209,11 @@ class DefinitionsSpec extends AnyWordSpec {
           f"$$id"                -> "users",
           "additionalProperties" -> false,
           "type"                 -> "object",
-          "properties" -> obj(
+          "properties"           -> obj(
             "id"   -> obj(f"$$ref" -> "#user-id"),
             "name" -> obj(f"$$ref" -> "#user-name")
           ),
-          "required" -> arr("id", "name"),
+          "required"    -> arr("id", "name"),
           "definitions" -> obj(
             "user-id"   -> obj(f"$$id" -> "#user-id", "type" -> "integer"),
             "user-name" -> obj(f"$$id" -> "#user-name", "type" -> "string")

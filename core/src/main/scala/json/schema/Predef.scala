@@ -26,7 +26,7 @@ trait LowPriorityPredefs {
 }
 object Predef extends LowPriorityPredefs {
   implicit val strS: Predef[String] = Predef(`string`[String])
-  implicit val chrS: Predef[Char] = Predef(
+  implicit val chrS: Predef[Char]   = Predef(
     `string`[Char].withValidation(`minLength` := 1, `maxLength` := 1, `pattern` := "^[.\\s]$")
   )
   implicit val jchrS: Predef[Character] = Predef(
@@ -59,11 +59,11 @@ object Predef extends LowPriorityPredefs {
   implicit val zonedDateTimeS: Predef[java.time.ZonedDateTime] = Predef(
     `string`[java.time.ZonedDateTime](Format.`date-time`)
   )
-  implicit val jsqlDateS: Predef[java.sql.Date] = Predef(`string`[java.sql.Date](Format.`date`))
+  implicit val jsqlDateS: Predef[java.sql.Date]        = Predef(`string`[java.sql.Date](Format.`date`))
   implicit val localDateS: Predef[java.time.LocalDate] = Predef(
     `string`[java.time.LocalDate](Format.`date`)
   )
-  implicit val jsqlTimeS: Predef[java.sql.Time] = Predef(`string`[java.sql.Time](Format.`time`))
+  implicit val jsqlTimeS: Predef[java.sql.Time]        = Predef(`string`[java.sql.Time](Format.`time`))
   implicit val localTimeS: Predef[java.time.LocalTime] = Predef(
     `string`[java.time.LocalTime](Format.`time`)
   )
