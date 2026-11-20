@@ -1,7 +1,9 @@
 import sbt._
 import Keys._
 
-sealed abstract class ScalaVer(val full: String)
+sealed abstract class ScalaVer(val full: String) {
+  def isScala3: Boolean = full startsWith "3."
+}
 
 object ScalaVer {
 
@@ -9,7 +11,9 @@ object ScalaVer {
 
   case object _213 extends ScalaVer("2.13.18")
 
-  val values: Seq[ScalaVer] = Seq(_213, _212)
+  case object _3 extends ScalaVer("3.3.9")
+
+  val values: Seq[ScalaVer] = Seq(_213, _212, _3)
 
   val default: ScalaVer = _212
 
@@ -18,6 +22,8 @@ object ScalaVer {
   def fromString(full: String): Option[ScalaVer] = full match {
     case x if x startsWith "2.12" => Some(_212)
     case x if x startsWith "2.13" => Some(_213)
+    case x if x startsWith "3."   => Some(_3)
+    case x if x == "3"            => Some(_3)
     case _                        => None
   }
 

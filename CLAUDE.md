@@ -43,8 +43,11 @@ Whether a type becomes a definition depends on which of the two implicits is in 
 
 - Format with scalafmt (`.scalafmt.conf`: maxColumn 200, aggressive alignment). Put reformat-only commits in `.git-blame-ignore-revs`.
 - Keep the build warning-free on both Scala versions.
-- Code that differs per Scala version goes in `src/{main,test}/scala-2.12` / `scala-2.13`, or `scala-2.12-` / `scala-2.13+` (the custom dirs are wired up in `build.sbt`).
-  `com.github.andyglow.scalamigration` holds the small collection shims.
+- Code that differs per Scala version: collection-API differences go in `src/{main,test}/scala-2.12-` / `scala-2.13+`
+  (`scala-2.13+` is also used by Scala 3; wired up in `build.sbt` via `versionRangeDirs`). Language differences
+  (Scala 2 macros vs Scala 3 inline/quotes) go in sbt's built-in `scala-2` / `scala-3`. Avoid the exact-binary
+  `scala-2.12` / `scala-2.13` dirs for shims: a 2.13 shim would have to be copied for Scala 3. `com.github.andyglow.scalamigration`
+  holds the small collection shims.
 - `.github/workflows/*.yml` are **generated** by sbt-github-actions. Change `build.sbt` or `project/CustomGithubActions.scala`, then run `sbt githubWorkflowGenerate`. CI fails if they're out of sync (`githubWorkflowCheck`).
 - Renderer tests compare full JSON output per draft (`api/src/test/.../AsDraftXXSpec.scala`). When output changes on purpose, update the expected JSON. When it changes by accident, it's a bug.
 - Scala 2.12 decodes `\uXXXX` anywhere in source, including comments and triple-quoted strings. Write JSON unicode escapes in test inputs as `"\\u0041"`.

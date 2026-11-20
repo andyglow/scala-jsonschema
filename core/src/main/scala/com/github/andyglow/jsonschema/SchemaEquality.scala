@@ -87,7 +87,7 @@ object SchemaEquality {
         _ <- checkFieldAttributes(path, l, r, ctx)
       } yield { Equal }
 
-      res.left.map[SchemaEquality](UnEqual).merge
+      res.left.map[SchemaEquality](UnEqual.apply).merge
 
     case (l: `def`[_], r: `def`[_]) =>
       if (l.sig == r.sig) {

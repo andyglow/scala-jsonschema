@@ -5,9 +5,9 @@ import spray.json._
 
 object UserProfileJson extends DefaultJsonProtocol {
 
-  implicit val CredentialsW: JsonWriter[Credentials] = jsonFormat2(Credentials)
+  implicit val CredentialsW: JsonWriter[Credentials] = jsonFormat2(Credentials.apply)
 
-  implicit val NotesW: JsonFormat[Notes] = jsonFormat2(Notes)
+  implicit val NotesW: JsonFormat[Notes] = jsonFormat2(Notes.apply)
 
   implicit val BetaFeatureW: JsonWriter[BetaFeature] = new JsonWriter[BetaFeature] {
     override def write(o: BetaFeature): JsValue = o match {
