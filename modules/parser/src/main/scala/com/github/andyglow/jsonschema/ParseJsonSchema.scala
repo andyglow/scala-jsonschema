@@ -1,6 +1,6 @@
 package com.github.andyglow.jsonschema
 
-import java.io.{ByteArrayInputStream, InputStream}
+import java.io.InputStream
 
 import scala.collection._
 import com.github.andyglow.json.{ParseJson, Value}
@@ -35,18 +35,18 @@ object ParseJsonSchema {
 
   }
 
-  def apply(x: String): Try[Schema[_]] = apply(new ByteArrayInputStream(x.getBytes))
+  val Draft04: Set[String] = Set("http://json-schema.org/draft-04/schema#", "http://json-schema.org/draft-04/schema")
+
+  def apply(x: String): Try[Schema[_]] = ParseJson(x) flatMap { apply(_) }
 
   def apply(x: InputStream): Try[Schema[_]] = ParseJson(x) flatMap { apply(_) }
 
   def apply(x: Value, checkSchema: Boolean = true): Try[Schema[_]] = x match {
-    case o @ obj(fields)
-        if !checkSchema || fields
-          .get("$$schema")
-          .contains(str("http://json-schema.org/draft-04/schema#")) =>
+    case o: obj if !checkSchema || o.value.str("$schema").exists(Draft04.contains) =>
       makeType(o)
 
-    case _ => Failure(new Exception("not a json schema"))
+    case _: obj => Failure(new Exception("not a json schema: expected \"$schema\": \"http://json-schema.org/draft-04/schema#\""))
+    case _      => Failure(new Exception("not a json schema: expected an object"))
   }
 
   private[jsonschema] def makeType(x: obj): Try[Schema[_]] = {
@@ -102,12 +102,14 @@ object ParseJsonSchema {
         val required = x.value.set("required") map {
           _ collect { case str(x) => x }
         } getOrElse Set.empty
-        x.value.obj("properties").map { _.value }.toSuccess("properties is not defined") flatMap { props =>
-          val fields = props.collect { case (k, v: obj) =>
-            `object`.Field(k, makeType(v).get, required.contains(k))
-          }.toList
+        x.value.obj("properties").map { _.fields }.toSuccess("properties is not defined") flatMap { props =>
+          val fields = props.toList.collect { case (k, v: obj) =>
+            makeType(v) map { `object`.Field(k, _, required.contains(k)) }
+          }
 
-          Success(`object`(fields))
+          fields.foldRight[Try[List[`object`.Field[_]]]](Success(Nil)) { (f, acc) =>
+            for { h <- f; t <- acc } yield h :: t
+          } map { `object`.fromList(_) }
         }
     }
 
@@ -118,6 +120,7 @@ object ParseJsonSchema {
       case "number"  => makeNum
       case "array"   => makeArr
       case "object"  => makeObj
+      case other     => Failure(new Exception(s"unsupported type: $other"))
     }
 
     title.map(t => result.map(_.withTitle(t))).getOrElse(result)
