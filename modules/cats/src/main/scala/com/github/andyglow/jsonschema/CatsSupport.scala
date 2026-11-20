@@ -12,11 +12,11 @@ trait LowPriorityCatsSupport extends ScalaVersionSpecificLowPriorityCatsSupport 
   import Magnet.mk
 
   // bounds
-  implicit def chainVB[X]: Magnet[Chain[X], Iterable[_]]        = mk[Chain[X], Iterable[_]]
-  implicit def nelVB[X]: Magnet[NonEmptyList[X], Iterable[_]]   = mk[NonEmptyList[X], Iterable[_]]
-  implicit def nevVB[X]: Magnet[NonEmptyVector[X], Iterable[_]] = mk[NonEmptyVector[X], Iterable[_]]
-  implicit def nesVB[X]: Magnet[NonEmptySet[X], Iterable[_]]    = mk[NonEmptySet[X], Iterable[_]]
-  implicit def necVB[X]: Magnet[NonEmptyChain[X], Iterable[_]]  = mk[NonEmptyChain[X], Iterable[_]]
+  implicit def chainVB[X]: Magnet[Chain[X], Iterable[_]]            = mk[Chain[X], Iterable[_]]
+  implicit def nelVB[X]: Magnet[NonEmptyList[X], Iterable[_]]       = mk[NonEmptyList[X], Iterable[_]]
+  implicit def nevVB[X]: Magnet[NonEmptyVector[X], Iterable[_]]     = mk[NonEmptyVector[X], Iterable[_]]
+  implicit def nesVB[X]: Magnet[NonEmptySet[X], Iterable[_]]        = mk[NonEmptySet[X], Iterable[_]]
+  implicit def necVB[X]: Magnet[NonEmptyChain[X], Iterable[_]]      = mk[NonEmptyChain[X], Iterable[_]]
   implicit def nemStrVB[K, V]: Magnet[NonEmptyMap[K, V], Map[_, _]] =
     mk[NonEmptyMap[K, V], Map[_, _]]
   implicit def oneAndVB[F[_], X]: Magnet[OneAnd[F, X], Iterable[_]] = mk[OneAnd[F, X], Iterable[_]]

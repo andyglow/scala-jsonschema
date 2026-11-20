@@ -36,7 +36,7 @@ class RWSpec extends AnyWordSpec {
           "type"                 -> "object",
           "additionalProperties" -> false,
           "required"             -> arr("id", "name", "password"),
-          "properties" -> obj(
+          "properties"           -> obj(
             "id"       -> obj("type" -> "string", "readOnly" -> true),
             "name"     -> obj("type" -> "string"),
             "password" -> obj("type" -> "string", "writeOnly" -> true)

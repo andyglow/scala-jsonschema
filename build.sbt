@@ -50,7 +50,7 @@ lazy val commonSettings = ScalaVer.settings ++ Seq(
       case _                       => Nil
     }
   },
-  scalacOptions := CompilerOptions(scalaV.value),
+  scalacOptions                 := CompilerOptions(scalaV.value),
   Compile / doc / scalacOptions := {
     val muted = Seq("-Ywarn-unused")
 
@@ -58,14 +58,14 @@ lazy val commonSettings = ScalaVer.settings ++ Seq(
 
     base ++ Seq("-groups", "-implicits", "-no-link-warnings")
   },
-  licenses               := Seq(("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))),
-  publishMavenStyle      := true,
-  developers := List(
+  licenses          := Seq(("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))),
+  publishMavenStyle := true,
+  developers        := List(
     Developer(id = "andyglow", name = "Andriy Onyshchuk", email = "andyglow@gmail.com", url = url("https://ua.linkedin.com/in/andyglow"))
   ),
   releaseCrossBuild             := true,
   releasePublishArtifactsAction := PgpKeys.publishSigned.value,
-  releaseProcess := Seq[ReleaseStep](
+  releaseProcess                := Seq[ReleaseStep](
     checkSnapshotDependencies,
     inquireVersions,
     runClean,
@@ -110,7 +110,7 @@ lazy val `play-json` = { project in file("modules/play-json") }
   .dependsOn(core, api % "compile->compile;test->test")
   .settings(
     commonSettings,
-    name := "scala-jsonschema-play-json",
+    name                                       := "scala-jsonschema-play-json",
     libraryDependencies += "org.playframework" %% "play-json" % "3.0.6"
   )
 
@@ -175,7 +175,7 @@ lazy val `cats` = { project in file("modules/cats") }
   .dependsOn(core, api)
   .settings(
     commonSettings,
-    name := "scala-jsonschema-cats",
+    name                                   := "scala-jsonschema-cats",
     libraryDependencies += "org.typelevel" %% "cats-core" % "2.13.0"
   )
 
@@ -183,7 +183,7 @@ lazy val `refined` = { project in file("modules/refined") }
   .dependsOn(core, api)
   .settings(
     commonSettings,
-    name := "scala-jsonschema-refined",
+    name                                := "scala-jsonschema-refined",
     libraryDependencies += "eu.timepit" %% "refined" % "0.11.4",
     libraryDependencies += (scalaVersion apply ("org.scala-lang" % "scala-reflect" % _ % Compile)).value.withSources.withJavadoc,
 

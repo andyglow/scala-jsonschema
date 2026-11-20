@@ -19,10 +19,10 @@ private[jsonschema] trait AST { this: Math with HasContext with HasLog =>
       override def tree = d match {
         case Min(v) if t =:= typeOf[String] =>
           q"json.Json.schema[$t].withValidation( `minLength` := $v )"
-        case Min(v) => q"json.Json.schema[$t].withValidation( `minItems` := $v )"
+        case Min(v)                         => q"json.Json.schema[$t].withValidation( `minItems` := $v )"
         case Max(v) if t =:= typeOf[String] =>
           q"json.Json.schema[$t].withValidation( `maxLength` := $v )"
-        case Max(v) => q"json.Json.schema[$t].withValidation( `maxItems` := $v )"
+        case Max(v)                           => q"json.Json.schema[$t].withValidation( `maxItems` := $v )"
         case Const(v) if t =:= typeOf[String] =>
           q"json.Json.schema[$t].withValidation( `minLength` := $v, `maxLength` := $v )"
         case Const(v) =>
@@ -126,7 +126,7 @@ private[jsonschema] trait AST { this: Math with HasContext with HasLog =>
 
     case class Ge(t: Type, v: Any, inclusive: Boolean = false) extends NumPred with NumericPred {
       def asSize: Size.Def = Size.Def.Min(vv.toInt)
-      override def tree = {
+      override def tree    = {
         inclusive match {
           case true  => q"$prefix.withValidation( `minimum` := $vv )"
           case false => q"$prefix.withValidation( `exclusiveMinimum` := $vv )"
@@ -148,7 +148,7 @@ private[jsonschema] trait AST { this: Math with HasContext with HasLog =>
 
     case class Le(t: Type, v: Any, inclusive: Boolean = false) extends NumPred with NumericPred {
       def asSize: Size.Def = Size.Def.Max(vv.toInt)
-      override def tree = {
+      override def tree    = {
         inclusive match {
           case true  => q"$prefix.withValidation( `maximum` := $vv )"
           case false => q"$prefix.withValidation( `exclusiveMaximum` := $vv )"
@@ -173,8 +173,8 @@ private[jsonschema] trait AST { this: Math with HasContext with HasLog =>
     // -------
 
     case class Not(p: Pred) extends Pred {
-      def t             = p.t
-      override def tree = q"`not`[$t](${p.tree})"
+      def t                   = p.t
+      override def tree       = q"`not`[$t](${p.tree})"
       override def norm: Pred = {
         def compile(p: Pred): Pred = p match {
           case Not(Ge(t, v, i))                => Le(t, v, !i)
@@ -189,7 +189,7 @@ private[jsonschema] trait AST { this: Math with HasContext with HasLog =>
     }
 
     case class OneOf(t: Type, preds: ::[Pred]) extends Pred {
-      override def tree = q"`oneof`[$t](Set(..${preds map { _.tree }}))"
+      override def tree       = q"`oneof`[$t](Set(..${preds map { _.tree }}))"
       override def norm: Pred = {
         val ppreds = preds.flatMap {
           case OneOf(tt, ppreds) => require(t =:= tt); ppreds
@@ -202,7 +202,7 @@ private[jsonschema] trait AST { this: Math with HasContext with HasLog =>
 
     case class Or(l: Pred, r: Pred) extends NumPred {
       require(l.t =:= r.t)
-      def t = l.t
+      def t                   = l.t
       override def norm: Pred = {
 
         def compile(l: Pred, r: Pred): Pred = (l, r) match {
@@ -218,7 +218,7 @@ private[jsonschema] trait AST { this: Math with HasContext with HasLog =>
     }
 
     case class AllOf(t: Type, preds: ::[Pred]) extends Pred {
-      override def tree = q"`allof`[$t](Set(..${preds map { _.tree }}))"
+      override def tree       = q"`allof`[$t](Set(..${preds map { _.tree }}))"
       override def norm: Pred = {
         val ppreds = preds.flatMap {
           case AllOf(tt, ppreds) => require(t =:= tt); ppreds
@@ -231,13 +231,13 @@ private[jsonschema] trait AST { this: Math with HasContext with HasLog =>
 
     case class And(l: Pred, r: Pred) extends Pred {
       require(l.t =:= r.t)
-      def t = l.t
+      def t                   = l.t
       override def norm: Pred = {
 
         def compile(l: Pred, r: Pred): Pred = (l, r) match {
-          case (l: Ge, r: Ge)   => l max r
-          case (l: Le, r: Le)   => l min r
-          case Inside(min, max) => Bounded(t, min, max)
+          case (l: Ge, r: Ge)    => l max r
+          case (l: Le, r: Le)    => l min r
+          case Inside(min, max)  => Bounded(t, min, max)
           case Outside(min, max) =>
             err(s"There are no values inside of specified range [${min.vv} .. ${max.vv}]")
           case (l, r) => AllOf(t, ::(l, r :: Nil))

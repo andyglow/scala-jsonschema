@@ -17,8 +17,8 @@ class ParseJsonBulkSpec extends AnyFunSuite {
           catch { case _: Throwable => None }
         }
     }
-    def CI    = env("CI")(_.toBoolean) getOrElse false
-    def DRONE = env("DRONE")(_.toBoolean) getOrElse false
+    def CI                   = env("CI")(_.toBoolean) getOrElse false
+    def DRONE                = env("DRONE")(_.toBoolean) getOrElse false
     def DRONE_WORKSPACE_PATH = env("DRONE_WORKSPACE_PATH")(
       identity
     ) // custom env var according to https://docs.drone.io/pipeline/environment/reference/

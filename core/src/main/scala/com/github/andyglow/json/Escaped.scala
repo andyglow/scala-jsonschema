@@ -15,7 +15,7 @@ object Escaped {
         case '\f' => sb append "\\f"
         case '\\' => sb append "\\\\"
         case '"'  => sb append "\\\""
-        case _ =>
+        case _    =>
           if (chx >= 0x10000) throw new IllegalArgumentException()
           val c = if (chx > 127) "\\u%04x".format(chx) else ch.toString
           sb append c

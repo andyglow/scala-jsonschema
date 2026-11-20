@@ -30,7 +30,7 @@ trait UFieldDecorations { this: UContext with UCommons =>
 
       def fromTree(x: Tree): String = x match {
         case Literal(Constant(v: String)) => v
-        case _ =>
+        case _                            =>
           c.abort(
             c.enclosingPosition,
             """only constant Strings are allowed in Description specification. Example: "id" -> "Record ID", ... """

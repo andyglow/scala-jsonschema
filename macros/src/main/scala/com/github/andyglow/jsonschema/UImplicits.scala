@@ -31,7 +31,7 @@ private[jsonschema] trait UImplicits { this: UContext with UCommons with USignat
         val pos = x.pos
         pos.source match {
           case NoSourceFile => false
-          case src =>
+          case src          =>
             val end   = src.lineToOffset(src.offsetToLine(pos.point))
             var start = end - 2
 

@@ -54,7 +54,7 @@ object ParseJsonSchema {
     val title = x.value.str("title")
 
     def makeStrOrEnum = x.value.arr("enum") match {
-      case None => makeStr
+      case None      => makeStr
       case Some(arr) =>
         tpe.map(_.toLowerCase) match {
           case None | Some("string") => Success { `enum`(`string`, arr.toSet) }

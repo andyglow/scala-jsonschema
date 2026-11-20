@@ -19,7 +19,7 @@ class DocumentationSpec extends AnyWordSpec {
 
   private val fromScaladoc    = Json.objectSchema[FromScaladoc]()
   private val fromAnnotations = Json.objectSchema[FromAnnotations]()
-  private val fromConfig = Json
+  private val fromConfig      = Json
     .objectSchema[FromSpec](
       "a" -> "A Param",
       "b" -> "B Param"

@@ -63,8 +63,8 @@ object AsU {
       def unadapt(x: PP): T = from(x)
     }
 
-    implicit val nullAdapter: Aux[`null`.type, ujson.Null.type] = make(_ => ujson.Null, _ => `null`)
-    implicit val trueAdapter: Aux[`true`.type, ujson.True.type] = make(_ => ujson.True, _ => `true`)
+    implicit val nullAdapter: Aux[`null`.type, ujson.Null.type]    = make(_ => ujson.Null, _ => `null`)
+    implicit val trueAdapter: Aux[`true`.type, ujson.True.type]    = make(_ => ujson.True, _ => `true`)
     implicit val falseAdapter: Aux[`false`.type, ujson.False.type] =
       make(_ => ujson.False, _ => `false`)
     implicit val numAdapter: Aux[num, ujson.Num] =

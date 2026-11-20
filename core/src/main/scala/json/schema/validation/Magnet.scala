@@ -18,7 +18,7 @@ object Magnet {
 
   implicit def numericMagnet[X: Numeric]: Magnet[X, Number] = mk[X, Number]
 
-  implicit def intMapMagnet[X]: Magnet[Map[Int, X], Map[Int, _]] = mk[Map[Int, X], Map[Int, _]]
+  implicit def intMapMagnet[X]: Magnet[Map[Int, X], Map[Int, _]]          = mk[Map[Int, X], Map[Int, _]]
   implicit def stringMapMagnet[X]: Magnet[Map[String, X], Map[String, _]] =
     mk[Map[String, X], Map[String, _]]
   implicit def mapMagnet[K, V]: Magnet[Map[K, V], Map[_, _]] = mk[Map[K, V], Map[_, _]]

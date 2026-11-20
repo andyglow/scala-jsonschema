@@ -144,7 +144,7 @@ private[jsonschema] trait UCommons extends SchemaTypes with ULogging {
 
     if (tpe.typeSymbol.isClass) {
       val leaves = tpe.typeSymbol.asClass.knownDirectSubclasses.toSeq flatMap { s =>
-        val cs = s.asClass
+        val cs     = s.asClass
         val subTpe =
           if (cs.typeParams.isEmpty) cs.toType
           else resolveGenericType(cs.toType, cs.typeParams, tpe.typeArgs)

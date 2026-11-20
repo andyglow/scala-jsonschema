@@ -139,8 +139,8 @@ private[jsonschema] trait UEnums {
       Option.whenever(tpe.typeSymbol.isClass && tpe.typeSymbol.asClass.isSealed) {
         val extractor = new SumTypeEnumExtractor(tpe)
         extractor.allResolved(silent = true) map { enumItems =>
-          val family = EnumFamily(tpe, enumItems)
-          var schema = family.singleSchema
+          val family                = EnumFamily(tpe, enumItems)
+          var schema                = family.singleSchema
           val hasFromToValueMembers = enumItems collectFirst { case _: EnumItem.FromToValue =>
             true
           } getOrElse false

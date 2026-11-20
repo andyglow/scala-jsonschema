@@ -27,7 +27,7 @@ class AsDraft04Spec extends AnyWordSpec {
       val e = obj(
         f"$$schema" -> "https://json-schema.org/draft/2019-09/schema",
         f"$$id"     -> "http://example.com/foobarbaz.json",
-        "oneOf" -> arr(
+        "oneOf"     -> arr(
           obj("const" -> "foo", "title" -> "Foo", "description" -> "f-o-o"),
           obj("const" -> "bar", "title" -> "Bar", "description" -> "b-a-r")
         )
@@ -57,8 +57,8 @@ class AsDraft04Spec extends AnyWordSpec {
           "type"                 -> "object",
           "additionalProperties" -> false,
           "required"             -> arr("foo", "meta", "baz", "uuid"),
-          "properties" -> obj(
-            "foo" -> obj("type" -> "string"),
+          "properties"           -> obj(
+            "foo"  -> obj("type" -> "string"),
             "meta" -> obj(
               "type"                 -> "object",
               "properties"           -> obj("owner" -> obj("type" -> "string")),
@@ -209,7 +209,7 @@ class AsDraft04Spec extends AnyWordSpec {
             obj(
               "additionalProperties" -> false,
               "required"             -> arr("foo"),
-              "properties" -> obj(
+              "properties"           -> obj(
                 "foo" -> obj("type" -> "string"),
                 "bar" -> obj("type" -> "integer")
               )
@@ -249,7 +249,7 @@ class AsDraft04Spec extends AnyWordSpec {
         "type"                 -> "object",
         "additionalProperties" -> false,
         "required"             -> arr("id", "name"),
-        "properties" -> obj(
+        "properties"           -> obj(
           "id"   -> obj("type" -> "integer", "minimum" -> 20),
           "name" -> obj("type" -> "string")
         )
@@ -276,7 +276,7 @@ class AsDraft04Spec extends AnyWordSpec {
         "type"                 -> "object",
         "additionalProperties" -> false,
         "required"             -> arr("foo"),
-        "properties" -> obj(
+        "properties"           -> obj(
           "foo" -> obj("type" -> "string"),
           "bar" -> obj("type" -> "integer"),
           "baz" -> obj("type" -> "boolean")

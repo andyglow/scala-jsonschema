@@ -42,9 +42,9 @@ private[jsonschema] trait UProductTypes {
       val fieldTpe   = fieldSym.typeSignature.dealias // In(tpe).dealias
       val isOption   = fieldTpe <:< T.option
       val hasDefault = fieldSym.isParamWithDefault
-      val default = Option.whenever(hasDefault) {
+      val default    = Option.whenever(hasDefault) {
         val defaultGetterTree = parseFCQN(subjectCompanion.fullName + ".apply$default$" + (i + 1))
-        val defaultGetterSym =
+        val defaultGetterSym  =
           subjectCompanion.typeSignature.member(TermName(s"apply$$default$$${i + 1}")).asTerm
         val hasSource = defaultGetterSym.pos.source != NoSourceFile
         // we don't want to infer default value for `scala.None`

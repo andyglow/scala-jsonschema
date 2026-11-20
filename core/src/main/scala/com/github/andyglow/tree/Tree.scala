@@ -18,7 +18,7 @@ object Tree {
 
   case class Apply(prefix: String, body: Iterator[Tree]) extends Tree
   case class Infix(lhs: Tree, op: String, rhs: Tree)     extends Tree
-  case class Lit(body: String) extends Tree {
+  case class Lit(body: String)                           extends Tree {
     val hasNewLine = body.exists(c => c == '\n' || c == '\r')
   }
   case class KV(key: String, value: Tree)         extends Tree

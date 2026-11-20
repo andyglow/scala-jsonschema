@@ -28,7 +28,7 @@ object AsCirce {
 
   implicit def toValue[T](implicit w: Encoder[T]): ToValue[T] = new ToValue[T] {
     override def apply(x: T): Value = {
-      val js = w.apply(x)
+      val js                         = w.apply(x)
       def translate(js: Json): Value = js match {
         case Json.Null       => `null`
         case Json.True       => `true`

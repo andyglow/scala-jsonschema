@@ -5,7 +5,7 @@ import scala.language.implicitConversions
 object comparison {
 
   sealed trait Segment { def str: String }
-  object Segment {
+  object Segment       {
     case class ByName(name: String) extends Segment { def str: String = name           }
     case class ByIndex(index: Int)  extends Segment { def str: String = index.toString }
     implicit def stringToSegment(x: String): Segment = ByName(x)
@@ -33,7 +33,7 @@ object comparison {
     }
   }
   object Result {
-    case object Equal extends Result { def +(diff: Diff): Different = Different(diff) }
+    case object Equal                             extends Result { def +(diff: Diff): Different = Different(diff) }
     case class Different(differences: List[Diff]) extends Result {
       def +(diff: Diff): Different = copy(differences = differences :+ diff)
     }

@@ -104,8 +104,8 @@ private[jsonschema] trait UTypeAnnotations {
             case Apply(_, List(Select(_, TermName("$lessinit$greater$default$1")))) =>
               DefinitionKey.Infer
             // scala 2.13.17+ inlines constant default arguments of annotations
-            case Apply(_, List(Literal(Constant("__default__"))))   => DefinitionKey.Infer
-            case Apply(_, List(Literal(Constant(text: String)))) => DefinitionKey.Defined(text)
+            case Apply(_, List(Literal(Constant("__default__")))) => DefinitionKey.Infer
+            case Apply(_, List(Literal(Constant(text: String))))  => DefinitionKey.Defined(text)
           }
 
       val discriminator: Option[Discriminator] =
@@ -116,7 +116,7 @@ private[jsonschema] trait UTypeAnnotations {
             val field = fieldTree match {
               case Literal(Constant(text: String))                    => text
               case Select(_, TermName("$lessinit$greater$default$1")) => "type"
-              case _ =>
+              case _                                                  =>
                 c.abort(
                   c.enclosingPosition,
                   "@discriminator annotation: please even if using call-by-name, use it in specified order. aka [field, phantom]"
@@ -125,7 +125,7 @@ private[jsonschema] trait UTypeAnnotations {
             val phantom = phantomTree match {
               case Literal(Constant(v: Boolean))                      => v
               case Select(_, TermName("$lessinit$greater$default$2")) => true
-              case _ =>
+              case _                                                  =>
                 c.abort(
                   c.enclosingPosition,
                   "@discriminator annotation: please even if using call-by-name, use it in specified order. aka [field, phantom]"

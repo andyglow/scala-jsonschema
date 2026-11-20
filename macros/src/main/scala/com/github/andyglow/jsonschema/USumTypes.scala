@@ -89,7 +89,7 @@ private[jsonschema] trait USumTypes {
                   )
               case SchemaType.ValueClass(_, _, inner, _) => validate(inner)
               case SchemaType.Enum(_, _, _, _)           => // skip
-              case _ =>
+              case _                                     =>
                 c.abort(
                   c.enclosingPosition,
                   "Discriminator: Only case classes/objects and value classes are supported candidates for sum type hierarchy"
@@ -131,7 +131,7 @@ private[jsonschema] trait USumTypes {
         // - if enums presented as one-of: convert all items into `const`
         // - if enums come as is: flatten same-schema enums into one big enum
         val effectiveSchemas = subExtractions.foldLeft[Seq[SchemaType]](Nil) {
-          case (acc, Extraction.Simple(_, schema)) => acc :+ schema
+          case (acc, Extraction.Simple(_, schema))              => acc :+ schema
           case (acc, Extraction.Enumerated(tpe, schema, items)) =>
             if (flags.enumsAsOneOf) {
               items.foldLeft(acc) { case (acc, i) =>
