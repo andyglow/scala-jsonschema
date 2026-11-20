@@ -103,6 +103,8 @@ private[jsonschema] trait UTypeAnnotations {
           .collectFirst {
             case Apply(_, List(Select(_, TermName("$lessinit$greater$default$1")))) =>
               DefinitionKey.Infer
+            // scala 2.13.17+ inlines constant default arguments of annotations
+            case Apply(_, List(Literal(Constant("__default__"))))   => DefinitionKey.Infer
             case Apply(_, List(Literal(Constant(text: String)))) => DefinitionKey.Defined(text)
           }
 
