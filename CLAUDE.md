@@ -55,8 +55,7 @@ Whether a type becomes a definition depends on which of the two implicits is in 
   `clean`: `scalafmtCheckAll` can pass on files it never re-checked. Touch the sources (or use a fresh checkout) before trusting it.
 - Docs: `sbt makeDocs` (switches to 2.13, runs mdoc, which compiles the ```` ```scala mdoc:compile-only ```` snippets
   against the modules, then paradox; output `docs/target/site`). Internal links must be `@ref:[text](page.md)`. mdoc wraps
-  snippets in a class, so value classes and (Scala 2) case classes with defaults can't be `mdoc` snippets; keep those plain
-  `scala` and verify them some other way. Scala 3-only snippets are plain `scala` too.
+  snippets in a class, so value classes can't be `mdoc` snippets; keep those plain `scala` and verify them some other way. Scala 3-only snippets are plain `scala` too.
 - **Run `clean` after editing anything in `macros/` or `core/src/main/scala-3/.../derivation`.** Incremental compilation doesn't recompile macro call sites, so stale tests can pass or fail misleadingly.
 - Scala 3 test builds compile with `-Yread-docs` (scaladoc from TASTy, as users need for models in other modules) and
   `-Xcheck-macros` (except play-json: its own macro fails the check).

@@ -3,7 +3,7 @@
 The library renders schemas into its own JSON AST (`com.github.andyglow.json.Value`). A bridge module renders
 into your JSON library's AST instead:
 
-```scala
+```scala mdoc:compile-only
 import json.schema.Version._
 import com.github.andyglow.jsonschema.AsPlay._
 import play.api.libs.json._

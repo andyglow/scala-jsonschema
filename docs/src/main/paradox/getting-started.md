@@ -18,7 +18,7 @@ version; see @ref:[Modules](modules/index.md).
 
 ## Quick start
 
-```scala
+```scala mdoc:compile-only
 import json._
 import json.schema.Version._
 
