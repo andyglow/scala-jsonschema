@@ -11,5 +11,18 @@ import org.scalatest.Tag
   */
 object TriageB extends Tag("TRIAGE-B")
 
+/** Group A: Scala 2 behavior that is gone on Scala 3 by design (TRIAGE.md group A). Tests assert the Scala 3 behavior and pin the Scala 2 one, switching on [[Golden.scalaBinaryVersion]].
+  */
+object TriageA extends Tag("TRIAGE-A")
+
+/** Not triaged yet: a suspected bug found while writing the characterization tests. The test pins today's behavior; the harness report lists these for the lead/owner.
+  */
+object Untriaged extends Tag("UNTRIAGED")
+
 /** Group C: behavior the owner still has to decide on. The tests pin today's output. */
 object TriageC extends Tag("TRIAGE-C")
+
+object Scala {
+  def is3: Boolean = Golden.scalaBinaryVersion == "3"
+  def is2: Boolean = !is3
+}
