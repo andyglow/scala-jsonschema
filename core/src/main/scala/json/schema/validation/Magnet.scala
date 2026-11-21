@@ -11,10 +11,15 @@ trait Magnet[F, T] {
     seq :+ item
 }
 
-object Magnet {
-  def mk[A, B]: Magnet[A, B] = new Magnet[A, B] {}
+trait LowPriorityMagnet {
 
-  implicit def identityMagnet[X]: Magnet[X, X] = mk[X, X]
+  // Low priority: on Scala 3 the `TT >: T` type parameter of `withValidation` is still open when the magnet is
+  // searched, so `identityMagnet` would otherwise be ambiguous with the more specific magnets below (e.g. `mapMagnet`).
+  implicit def identityMagnet[X]: Magnet[X, X] = Magnet.mk[X, X]
+}
+
+object Magnet extends LowPriorityMagnet {
+  def mk[A, B]: Magnet[A, B] = new Magnet[A, B] {}
 
   implicit def numericMagnet[X: Numeric]: Magnet[X, Number] = mk[X, Number]
 

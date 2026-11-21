@@ -538,7 +538,7 @@ object Schema {
     override def toDefinition[TT >: T](sig: String): `def`[TT] = {
       def deepCopy(x: Schema[_]): Schema[_] = {
         val y = x match {
-          case `object`(fields)     => `object`(fields.map { f => f.copy(tpe = deepCopy(f.tpe)) })
+          case `object`(fields)     => `object`.fromList(fields.map { f => f.copy(tpe = deepCopy(f.tpe)) })
           case `array`(y, u)        => `array`(deepCopy(y), u)
           case `dictionary`(y)      => `dictionary`(deepCopy(y))
           case `oneof`(ys, df)      => `oneof`(ys map deepCopy, df)

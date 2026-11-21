@@ -18,37 +18,68 @@ Global / concurrentRestrictions += Tags.limit(Tags.Compile, 1)
 ThisBuild / versionScheme                       := Some("pvp")
 ThisBuild / crossScalaVersions                  := ScalaVer.values.map(_.full)
 ThisBuild / githubWorkflowPublishTargetBranches := Seq()
-ThisBuild / githubWorkflowJavaVersions          := Seq(JavaSpec.temurin("11"))
+ThisBuild / githubWorkflowJavaVersions          := Seq(JavaSpec.temurin("21"))
+ThisBuild / githubWorkflowBuildPreamble         := Seq(checkFormatting)
 ThisBuild / githubWorkflowBuildPostamble        := Seq(generateCC, aggregateCC, uploadCC)
 
 ThisBuild / scmInfo := Some(ScmInfo(url("https://github.com/andyglow/scala-jsonschema"), "scm:git@github.com:andyglow/scala-jsonschema.git"))
+
+// Worktree-friendly: sbt-git (pulled in by sbt-ghpages) uses JGit, which fails on `git worktree` checkouts
+// with "Bare Repository has neither a working tree, nor an index". The console git reader works everywhere.
+useReadableConsoleGit
+
+def scalaReflect(scalaVersion: String): Seq[ModuleID] =
+  if (scalaVersion startsWith "3.") Nil else Seq(("org.scala-lang" % "scala-reflect" % scalaVersion % Compile).withSources().withJavadoc())
+
+def versionRangeDirs(base: File, scalaVersion: String): Seq[File] =
+  CrossVersion.partialVersion(scalaVersion) match {
+    case Some((2, y)) if y <= 12 => Seq(base / "scala-2.12-")
+    case Some((2, _))            => Seq(base / "scala-2.13+")
+    case Some((3, _))            => Seq(base / "scala-2.13+")
+    case _                       => Nil
+  }
+
+// ============================================================================================================
+// TEMPORARY SCAFFOLDING for the Scala 3 port. Delete this block, and its two uses below, once the Scala 3
+// derivation lands. Nothing here affects Scala 2.12/2.13 builds.
+//
+// 1. usesScala2Macro: on Scala 3, test sources that call the macro (Json.schema/objectSchema/sig, Json.auto,
+//    DerivedSchema) are skipped, because api/src/main/scala-3/json/Json.scala is still a compiletime.error
+//    placeholder. The filter is content-based: when the macro exists, deleting it re-enables every test.
+//    Used in commonSettings (Test / unmanagedSources).
+lazy val scala2MacroUsage             = """Json\.(schema|objectSchema|sig)\b|Json\.auto|auto\.derived|import json\.Json\._|DerivedSchema""".r
+def usesScala2Macro(f: File): Boolean = scala2MacroUsage.findFirstIn(IO.read(f)).isDefined
+
+// 2. scala2OnlyForNow: modules whose Scala 3 port hasn't landed yet (refined, derived). They still list
+//    Scala 3 in crossScalaVersions, because with plain crossScalaVersions `++3.x` would otherwise leave them
+//    on 2.12 while their dependencies switch to 3, which breaks resolution. On Scala 3 they compile nothing
+//    and publish nothing.
+lazy val scala2OnlyForNow = Seq(
+  Compile / unmanagedSourceDirectories := { if (scalaV.value.isScala3) Nil else (Compile / unmanagedSourceDirectories).value },
+  Test / unmanagedSourceDirectories    := { if (scalaV.value.isScala3) Nil else (Test / unmanagedSourceDirectories).value },
+  publish / skip                       := scalaV.value.isScala3 || (publish / skip).value
+)
+// ============================ end of TEMPORARY SCAFFOLDING ==================================================
+
+def runCommand(command: String): State => State =
+  Command.process(command, _, msg => sys.error(s"can't parse command `$command`: $msg"))
 
 lazy val buildInfo = taskKey[Unit]("Prints Build Info")
 
 lazy val commonSettings = ScalaVer.settings ++ Seq(
   // logBuffered := false,
 
-  organization     := "com.github.andyglow",
+  organization     := "io.github.andyglow", // groupId only; Scala packages stay com.github.andyglow.* / json.*
   homepage         := Some(new URI("http://github.com/andyglow/scala-jsonschema").toURL),
   startYear        := Some(2017),
   organizationName := "andyglow",
-  Compile / unmanagedSourceDirectories ++= {
-    val bd                                   = baseDirectory.value
-    def extraDirs(suffix: String): Seq[File] = Seq(bd / "src" / "main" / s"scala$suffix")
-    CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, y)) if y <= 12 => extraDirs("-2.12-")
-      case Some((2, y)) if y >= 13 => extraDirs("-2.13+")
-      case _                       => Nil
-    }
-  },
-  Test / unmanagedSourceDirectories ++= {
-    val bd                                   = baseDirectory.value
-    def extraDirs(suffix: String): Seq[File] = Seq(bd / "src" / "test" / s"scala$suffix")
-    CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, y)) if y <= 12 => extraDirs("-2.12-")
-      case Some((2, y)) if y >= 13 => extraDirs("-2.13+")
-      case _                       => Nil
-    }
+  // sbt adds src/{main,test}/scala-2, scala-3, scala-2.12, scala-2.13 itself.
+  // On top of that: scala-2.12- (2.12 collections) and scala-2.13+ (2.13 collections, also used by Scala 3).
+  Compile / unmanagedSourceDirectories ++= versionRangeDirs(baseDirectory.value / "src" / "main", scalaVersion.value),
+  Test / unmanagedSourceDirectories ++= versionRangeDirs(baseDirectory.value / "src" / "test", scalaVersion.value),
+  Test / unmanagedSources := { // TEMPORARY SCAFFOLDING (1), see above
+    val all = (Test / unmanagedSources).value
+    if (scalaV.value.isScala3) all filterNot usesScala2Macro else all
   },
   scalacOptions                 := CompilerOptions(scalaV.value),
   Compile / doc / scalacOptions := {
@@ -56,7 +87,7 @@ lazy val commonSettings = ScalaVer.settings ++ Seq(
 
     val base = scalacOptions.value filterNot muted.contains
 
-    base ++ Seq("-groups", "-implicits", "-no-link-warnings")
+    base ++ CompilerOptions.doc(scalaV.value)
   },
   licenses          := Seq(("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))),
   publishMavenStyle := true,
@@ -73,10 +104,11 @@ lazy val commonSettings = ScalaVer.settings ++ Seq(
     setReleaseVersion,
     commitReleaseVersion,
     tagRelease,
-    ReleaseStep(action = Command.process("publishSigned", _), enableCrossBuild = true),
+    ReleaseStep(action = runCommand("publishSigned"), enableCrossBuild = true),
+    // upload while the version is still the release one: after setNextVersion it's a SNAPSHOT and Central refuses it
+    ReleaseStep(action = runCommand("sonaRelease")),
     setNextVersion,
     commitNextVersion,
-    ReleaseStep(action = Command.process("sonaRelease", _)),
     pushChanges
   ),
   libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.20" % Test
@@ -92,11 +124,14 @@ lazy val macros = { project in file("macros") }
   .settings(
     commonSettings,
     name := "scala-jsonschema-macros",
-    libraryDependencies ++= Seq(
-      "com.github.andyglow" %% "scaladoc-ast"    % "0.0.14",
-      "com.github.andyglow" %% "scaladoc-parser" % "0.0.14",
-      (scalaVersion apply ("org.scala-lang" % "scala-reflect" % _ % Compile)).value.withSources.withJavadoc
-    )
+    libraryDependencies ++= {
+      if (scalaV.value.isScala3) Nil
+      else
+        Seq(
+          "io.github.andyglow" %% "scaladoc-ast"    % "0.1.0",
+          "io.github.andyglow" %% "scaladoc-parser" % "0.1.0"
+        ) ++ scalaReflect(scalaVersion.value)
+    }
   )
 
 lazy val api = { project in file("api") }
@@ -183,9 +218,10 @@ lazy val `refined` = { project in file("modules/refined") }
   .dependsOn(core, api)
   .settings(
     commonSettings,
+    scala2OnlyForNow, // TEMPORARY SCAFFOLDING (2)
     name                                := "scala-jsonschema-refined",
     libraryDependencies += "eu.timepit" %% "refined" % "0.11.4",
-    libraryDependencies += (scalaVersion apply ("org.scala-lang" % "scala-reflect" % _ % Compile)).value.withSources.withJavadoc,
+    libraryDependencies ++= scalaReflect(scalaVersion.value),
 
     // mute unused imports because otherwise IN TESTS it complains on
     // unused `import com.github.andyglow.jsonschema.RefinedSupport._`
@@ -212,10 +248,9 @@ lazy val derived = { project in file("modules/derived") }
   .dependsOn(core, api, macros)
   .settings(
     commonSettings,
+    scala2OnlyForNow, // TEMPORARY SCAFFOLDING (2)
     name := "scala-jsonschema-derived",
-    libraryDependencies ++= Seq(
-      (scalaVersion apply ("org.scala-lang" % "scala-reflect" % _ % Compile)).value.withSources.withJavadoc
-    )
+    libraryDependencies ++= scalaReflect(scalaVersion.value)
   )
 
 lazy val docs = { project in file("documentation") }

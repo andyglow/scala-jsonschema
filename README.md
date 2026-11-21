@@ -3,38 +3,42 @@
 [![Build](https://github.com/andyglow/scala-jsonschema/actions/workflows/ci.yml/badge.svg?event=push)](https://github.com/andyglow/scala-jsonschema/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/andyglow/scala-jsonschema/branch/master/graph/badge.svg?token=e8E62N8PiJ)](https://codecov.io/gh/andyglow/scala-jsonschema)
 ![](https://img.shields.io/static/v1.svg?label=Supported&nbsp;Scala&message=2.12,2.13&color=gray)
-[![Version](https://img.shields.io/badge/dynamic/json.svg?label=Released&nbsp;Version&query=%24.response.docs%5B0%5D.latestVersion&url=https%3A%2F%2Fsearch.maven.org%2Fsolrsearch%2Fselect%3Fq%3Dscala-jsonschema-core_2.13%26start%3D0%26rows%3D1)](https://search.maven.org/artifact/com.github.andyglow/scala-jsonschema-core_2.13/)
+[![Version](https://img.shields.io/badge/dynamic/json.svg?label=Released&nbsp;Version&query=%24.response.docs%5B0%5D.latestVersion&url=https%3A%2F%2Fsearch.maven.org%2Fsolrsearch%2Fselect%3Fq%3Dg%3Aio.github.andyglow%2BAND%2Ba%3Ascala-jsonschema-core_2.13%26start%3D0%26rows%3D1)](https://search.maven.org/artifact/io.github.andyglow/scala-jsonschema-core_2.13/)
 
 *SBT dependencies:*
+
+> **New groupId in 0.8.0:** artifacts are published as `io.github.andyglow` from 0.8.0 on, because Maven Central no longer
+> accepts new releases under `com.github.andyglow`. Releases up to 0.7.x stay under `com.github.andyglow`. Only the sbt
+> coordinates change; the Scala packages (`json.*`, `com.github.andyglow.*`) are the same, so no imports change.
 
 Main module:
 
 ```scala
-libraryDependencies += "com.github.andyglow" %% "scala-jsonschema" % <version> // <-- required
+libraryDependencies += "io.github.andyglow" %% "scala-jsonschema" % <version> // <-- required
 ```
 
 Other libraries:
 
 ```scala
 libraryDependencies ++= Seq(
-  "com.github.andyglow" %% "scala-jsonschema-core" % <version>,              // <-- transitive
-  "com.github.andyglow" %% "scala-jsonschema-macros" % <version> % Provided, // <-- transitive
+  "io.github.andyglow" %% "scala-jsonschema-core" % <version>,              // <-- transitive
+  "io.github.andyglow" %% "scala-jsonschema-macros" % <version> % Provided, // <-- transitive
   // json bridge. pick one
-  "com.github.andyglow" %% "scala-jsonschema-play-json" % <version>,         // <-- optional
-  "com.github.andyglow" %% "scala-jsonschema-spray-json" % <version>,        // <-- optional
-  "com.github.andyglow" %% "scala-jsonschema-circe-json" % <version>,        // <-- optional
-  "com.github.andyglow" %% "scala-jsonschema-json4s-json" % <version>,       // <-- optional
-  "com.github.andyglow" %% "scala-jsonschema-ujson" % <version>,             // <-- optional
+  "io.github.andyglow" %% "scala-jsonschema-play-json" % <version>,         // <-- optional
+  "io.github.andyglow" %% "scala-jsonschema-spray-json" % <version>,        // <-- optional
+  "io.github.andyglow" %% "scala-jsonschema-circe-json" % <version>,        // <-- optional
+  "io.github.andyglow" %% "scala-jsonschema-json4s-json" % <version>,       // <-- optional
+  "io.github.andyglow" %% "scala-jsonschema-ujson" % <version>,             // <-- optional
   // joda-time support
-  "com.github.andyglow" %% "scala-jsonschema-joda-time" % <version>,         // <-- optional
+  "io.github.andyglow" %% "scala-jsonschema-joda-time" % <version>,         // <-- optional
   // cats support
-  "com.github.andyglow" %% "scala-jsonschema-cats" % <version>,              // <-- optional
+  "io.github.andyglow" %% "scala-jsonschema-cats" % <version>,              // <-- optional
   // refined support
-  "com.github.andyglow" %% "scala-jsonschema-refined" % <version>,           // <-- optional
+  "io.github.andyglow" %% "scala-jsonschema-refined" % <version>,           // <-- optional
   // enumeratum support
-  "com.github.andyglow" %% "scala-jsonschema-enumeratum" % <version>,        // <-- optional
+  "io.github.andyglow" %% "scala-jsonschema-enumeratum" % <version>,        // <-- optional
   // zero-dependency json and jsonschema parser
-  "com.github.andyglow" %% "scala-jsonschema-parser" % <version>             // <-- optional
+  "io.github.andyglow" %% "scala-jsonschema-parser" % <version>             // <-- optional
 )
 ```
 
