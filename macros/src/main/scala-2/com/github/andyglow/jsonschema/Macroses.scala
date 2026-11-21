@@ -91,7 +91,7 @@ trait MacroCake
       if (requireObject && !st.isInstanceOf[U.Obj])
         c.abort(
           c.enclosingPosition,
-          s"Json.objectSchema[$tpe]: $tpe is a definition, not an object schema (an implicit json.Schema[$tpe] is in scope, or $tpe is recursive). Use Json.schema[$tpe]"
+          s"Json.objectSchema[$tpe]: $tpe doesn't derive to an object schema (an implicit json.Schema[$tpe] or json.schema.Predef[$tpe] is in scope, or $tpe is recursive). Use Json.schema[$tpe]"
         )
 
       st.withExtra(
