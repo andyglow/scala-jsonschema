@@ -75,8 +75,9 @@ for the full list):
   `[A-Za-z_][-A-Za-z0-9._]*` (a name that must start with a letter gets a `T` or `_` prefix). If two names end up the
   same, a name that already conformed keeps it and the others get `_2`, `_3`, ... in signature order. Names that
   already conform (e.g. `com.acme.Foo`) don't change. `Json.sig` and the `json.Schema` value keep the readable name.
-- **Definition names of aliased types are the dealiased name**: a root implicit `Schema[String]` is the definition
-  `java.lang.String` (was `scala.Predef.String`), the same name a `String` field already got.
+- **A definition of an aliased type is named after the dealiased type**: a root implicit `Schema[String]` is the
+  definition `java.lang.String` (was `scala.Predef.String`), the same name a `String` field already got. Only the
+  type itself is dealiased, not its type arguments: `Box[String]` is still `Box[scala.Predef.String]`.
 - **Scala 2: `Json.sig` of a backticked type is decoded** (`` `odd name` `` gives `pkg.odd name`, was
   `pkg.odd$u0020name`), as on Scala 3.
 - **An implicit `Schema` is used only for exactly its type.** An implicit `Schema[Sub]` no longer stands in for its
