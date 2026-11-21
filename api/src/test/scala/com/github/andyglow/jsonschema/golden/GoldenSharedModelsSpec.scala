@@ -95,17 +95,4 @@ class GoldenSharedModelsSpec extends AnyFunSuite {
     check("shared/RecursiveTypesSpec.case2.Node", Json.schema[case2.Node])
     check("shared/RecursiveTypesSpec.case3.User", Json.schema[case3.User])
   }
-
-  test("RWSpec models") {
-    check("shared/RWSpec.Foo", Json.schema[RWSpec.Foo])
-  }
-
-  test("DocumentationSpec models") {
-    import DocumentationSpec._
-    check("shared/DocumentationSpec.FromScaladoc", Json.schema[FromScaladoc])
-    check("shared/DocumentationSpec.FromAnnotations", Json.schema[FromAnnotations])
-    check("shared/DocumentationSpec.EscapeCheck", Json.schema[EscapeCheck])
-    check("shared/DocumentationSpec.Outer", Json.schema[Outer])
-    check("shared/DocumentationSpec.FromSpec.objectSchema", Json.objectSchema[FromSpec]("a" -> "A Param", "b" -> "B Param"))
-  }
 }

@@ -26,6 +26,8 @@
     arguments of a generic subclass are matched by name (`Impl[B, A] extends Base[A, B]`), not by position
   - a case class without fields derives an empty object; annotations on backticked/symbolic field names
     (`` `my-field` ``) are kept; a scaladoc with only `@param` tags no longer sets the description to ""
+  - Scala 2: field annotations aimed at the underlying field (`@(description @field)("...")`, `@(readOnly @field)`)
+    are read, together with the parameter's own (before, they were silently ignored)
   - a scaladoc `@param` for a field that doesn't exist is a warning, for the root and nested types alike (before:
     a compile error on the root only). An unknown field in `Json.objectSchema(...)` decorations is still an error
   - case classes local to a method or block are derived (before: a macro crash). On Scala 2 such a class can't

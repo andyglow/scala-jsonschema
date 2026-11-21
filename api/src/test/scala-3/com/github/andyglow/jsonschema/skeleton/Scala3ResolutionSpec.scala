@@ -202,7 +202,7 @@ class Scala3ResolutionSpec extends AnyFunSuite {
     o.innerSchema shouldEqual expected
   }
 
-  test("an Option field with a Some(..) default (Scala 2: crashes)") {
-    Json.schema[SomeDefault] shouldEqual `object`[SomeDefault](Field.fromJson[Int]("o", `integer`, required = false, default = Some(com.github.andyglow.json.Value.num(3))))
+  test("an Option field with a Some(..) default needs a ToValue[Option[X]], like Scala 2 (skeleton D2)") {
+    errorOf(assertCompiles("Json.schema[SomeDefault]")) should include(ErrorPhrases.NoToValueForDefault)
   }
 }

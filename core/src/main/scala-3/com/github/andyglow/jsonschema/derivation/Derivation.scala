@@ -90,7 +90,8 @@ object Derivation {
     val ObjectSchema = "Json.objectSchema"
     val sym          = TypeRepr.of[T].dealias.typeSymbol
     if (!sym.isClassDef) report.errorAndAbort(s"$ObjectSchema: can be used only against case classes")
-    else if (!sym.flags.is(Flags.Case) || sym.flags.is(Flags.Module)) report.errorAndAbort(s"$ObjectSchema: can't be used against non-case classes")
+    // a case object passes (Scala 2 parity) and then fails as `schema for X is not supported`
+    else if (!sym.flags.is(Flags.Case)) report.errorAndAbort(s"$ObjectSchema: can't be used against non-case classes")
     else if (TypeRepr.of[T] <:< TypeRepr.of[AnyVal]) report.errorAndAbort(s"$ObjectSchema: can't be used against value classes")
 
     val d    = new Derivation(Mode.ObjectSchema, decorationsOf(decorations))

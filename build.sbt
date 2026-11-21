@@ -49,20 +49,16 @@ def versionRangeDirs(base: File, scalaVersion: String): Seq[File] =
 //    entries; when the list is empty, delete the list. Paths are relative to the build root.
 //    Used in commonSettings (Test / unmanagedSources).
 lazy val scala3Pending: Map[String, String] = Map(
-  // streams 1 (products: annotations, descriptions, scaladoc, RW, default errors), 2 (sums/enums), 3 (collections/dicts)
+  // stream 2 (sums/enums); streams 1 (products) and 3 (collections/dicts) have landed
   "api/src/test/scala/com/github/andyglow/jsonschema/SchemaMacroSpec.scala"                             -> "stream 2",
-  "api/src/test/scala/com/github/andyglow/jsonschema/golden/GoldenSharedModelsSpec.scala"               -> "streams 1, 2",
-  "api/src/test/scala/com/github/andyglow/jsonschema/characterization/EntryPointsCharSpec.scala"        -> "streams 1, 2",
-  "api/src/test/scala/com/github/andyglow/jsonschema/characterization/TriageBPendingSpec.scala"         -> "streams 1, 2",
+  "api/src/test/scala/com/github/andyglow/jsonschema/golden/GoldenSharedModelsSpec.scala"               -> "stream 2",
+  "api/src/test/scala/com/github/andyglow/jsonschema/characterization/EntryPointsCharSpec.scala"        -> "stream 2 (+ skeleton: root implicit leaves its import 'unused')",
+  "api/src/test/scala/com/github/andyglow/jsonschema/characterization/TriageBPendingSpec.scala"         -> "stream 2",
   "api/src/test/scala/com/github/andyglow/jsonschema/characterization/TypeFamiliesCharSpec.scala"       -> "stream 2 (incl. enum Map keys)",
-  "api/src/test/scala/com/github/andyglow/jsonschema/characterization/FieldsAnnotationsCharSpec.scala"  -> "streams 1, 2",
-  "api/src/test/scala-3/com/github/andyglow/jsonschema/characterization/Scala3OnlyCharSpec.scala"       -> "stream 1 (needs FieldsAnnotationsCharSpec)",
+  "api/src/test/scala/com/github/andyglow/jsonschema/characterization/FieldsAnnotationsCharSpec.scala"  -> "stream 2",
   "api/src/test/scala-2.13+/com/github/andyglow/jsonschema/characterization/Scala213PlusCharSpec.scala" -> "stream 2",
-  "api/src/test/scala/com/github/andyglow/jsonschema/characterization/ScaladocCharSpec.scala"           -> "stream 1",
   "api/src/test/scala/com/github/andyglow/jsonschema/characterization/GroupCSumsSpec.scala"             -> "stream 2",
-  "api/src/test/scala/com/github/andyglow/jsonschema/DocumentationSpec.scala"                           -> "stream 1",
-  "api/src/test/scala/com/github/andyglow/jsonschema/RWSpec.scala"                                      -> "stream 1",
-  "api/src/test/scala/com/github/andyglow/jsonschema/Example.scala"                                     -> "streams 1, 2",
+  "api/src/test/scala/com/github/andyglow/jsonschema/Example.scala"                                     -> "stream 2",
   "api/src/test/scala/com/github/andyglow/jsonschema/DefinitionsSpec.scala"                             -> "stream 2",
   "api/src/test/scala/com/github/andyglow/jsonschema/DiscriminatorSpec.scala"                           -> "stream 2",
   "api/src/test/scala/com/github/andyglow/jsonschema/EnumSpec.scala"                                    -> "stream 2",

@@ -29,4 +29,17 @@ class GoldenProductModelsSpec extends AnyFunSuite {
   test("CRLFSourceSpec models") {
     check("shared/CRLFSourceSpec.CC", Json.schema[CRLFSourceSpec.CC])
   }
+
+  test("RWSpec models") {
+    check("shared/RWSpec.Foo", Json.schema[RWSpec.Foo])
+  }
+
+  test("DocumentationSpec models") {
+    import DocumentationSpec._
+    check("shared/DocumentationSpec.FromScaladoc", Json.schema[FromScaladoc])
+    check("shared/DocumentationSpec.FromAnnotations", Json.schema[FromAnnotations])
+    check("shared/DocumentationSpec.EscapeCheck", Json.schema[EscapeCheck])
+    check("shared/DocumentationSpec.Outer", Json.schema[Outer])
+    check("shared/DocumentationSpec.FromSpec.objectSchema", Json.objectSchema[FromSpec]("a" -> "A Param", "b" -> "B Param"))
+  }
 }

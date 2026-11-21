@@ -31,7 +31,11 @@ private[jsonschema] trait UProductTypes {
         }.toMap)
       } getOrElse Map.empty
 
-    annotations0 ++ annotations1
+    // merged per name, the parameter's first: `annotations1` has an entry for every parameter, so a plain `++` dropped the
+    // annotations aimed at the field (`@(description @field)`)
+    val fields = annotations0
+    val params = annotations1
+    (fields.keySet ++ params.keySet).map(k => k -> (params.getOrElse(k, Nil) ++ fields.getOrElse(k, Nil))).toMap
   }
 
   private[UProductTypes] def resolveFields(tpe: Type): List[Field] = {
