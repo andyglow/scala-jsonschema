@@ -97,6 +97,9 @@ for the full list):
   compiled with your code or comes from another module. Other aliases (`type StrMap[V] = Map[String, V]`,
   `type Users = List[User]`) and the usual spellings of the standard collections give the same names on Scala 2
   and 3.
+- **Scala 3: refined predicates take literal types**: `Int Refined Greater[5]`, `String Refined MatchesRegex["[a-z]+"]`
+  (shapeless's ``W.`5`.T`` is Scala 2 only; 2.13 accepts both). The import is the same,
+  `com.github.andyglow.jsonschema.RefinedSupport._`, and so are the schemas.
 - **Scala 2: field annotations with the `@field` meta-annotation count** (`@(description @field)("...")`,
   `@(readOnly @field)`, `@(writeOnly @field)`); they were silently ignored.
 

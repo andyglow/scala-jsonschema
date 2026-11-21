@@ -18,6 +18,10 @@
     their type parameters (e.g. `IntMap[V]`)
   - a Map other than `Map` itself (`SortedMap[Int, X]`, `ListMap[Long, X]`) with a key pattern derives (before: an
     error in the generated code)
+  - `withValidation` on a `Seq` schema (`` Json.schema[Seq[String]].withValidation(`minItems` := 1) ``) compiles
+    without explicit type arguments (new `Magnet.seqMagnet`); the collection magnets are ordered by priority
+    (exact collection > `Seq` > `Iterable`), which Scala 3 needs for `List`/`Vector`/`Set`. No existing call
+    picks a different magnet
   - more clear compile errors instead of macro crashes: `Json.sig`/definition names of structural types,
     `Json.objectSchema` with decorations that aren't literal pairs, `Json.objectSchema` of a type that resolves to
     a definition, and an `Option` default that can't be evaluated at compile time. Definition names of compound
@@ -32,6 +36,14 @@
     a compile error on the root only). An unknown field in `Json.objectSchema(...)` decorations is still an error
   - case classes local to a method or block are derived (before: a macro crash). On Scala 2 such a class can't
     have default values (a clear error)
+  - Scala 2: default values of a case class declared inside a class (`class Holder { case class Inner(a: Int = 1) }`,
+    derived inside `Holder` or as `Json.schema[h.Inner]`) work (before: an error in the generated code, `object
+    Holder is not a member of package ...`). Through a type projection (`Json.schema[Holder#Inner]`) they're a clear
+    compile error on Scala 2 and 3 (before, Scala 3 crashed)
+  - Scala 2: an implicit `Predef` defined with `Json.schema` of its own type (`implicit val p: Predef[X] =
+    Predef(Json.schema[X])`, also a `def` or `lazy val`) no longer picks itself up (before: a NullPointerException /
+    ExceptionInInitializerError at initialization, a StackOverflowError for a `def`). An implicit `Schema` defined
+    over more than two lines no longer picks itself up either (before: `def(<name>, null)`). Scala 3 already did both
   - Java enums (`java.time.DayOfWeek`, `java.time.Month`, `java.util.concurrent.TimeUnit`, ...) derive a string
     enum of their constant names, also as Map keys (before: a macro crash)
   - Scala 3: sealed families, `scala.Enumeration` and Java enums derive as on Scala 2, and Scala 3 `enum`s follow the
@@ -41,6 +53,13 @@
     anonymous ones too, but derives a local case class); a class declared inside an `Enumeration` object derives as a
     class (Scala 2: as that object's enum); an `Enumeration`'s enum lists only its `Value`s (Scala 2 also listed vals of
     any type with a base class named `Value`)
+  - Scala 3: `scala-jsonschema-refined` is published for Scala 3 (refined 0.11.4), used the same way
+    (`import com.github.andyglow.jsonschema.RefinedSupport._`) with literal types (`Greater[5]`, `MatchesRegex["[a-z]+"]`)
+    in place of shapeless's ``W.`5`.T``, and gives Scala 2's schemas. Differences from Scala 2: the implicit is
+    `refinedJsonSchema[R <: Refined[A, B], A, B]` (was `[A, B]`), and `refined[T]` has no `T <: Refined[_, _]` bound
+    (`Refined` is an opaque type on Scala 3; a non-refined `T` is a compile error). An unsupported predicate or an
+    empty range found while deriving (`Json.schema[X]` with such a field) fails with the derivation's `is not supported`
+    error, followed by the refined macro's message (Scala 2: the refined macro's message alone)
   - rendered definition names follow each draft's grammar: every character a draft doesn't allow in a definition
     name is replaced with `_` (`com.acme.Box[scala.Int]` → `com.acme.Box_scala.Int_`), for draft-04 in
     `#/definitions/...` refs, for 06/07 in `$id`/`$ref` plain-name fragments, for 2019-09/2020-12 in `$anchor`/`$ref`.

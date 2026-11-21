@@ -3,7 +3,7 @@ package com.github.andyglow.jsonschema.derivation
 /** Resolution: the core design rule. For every type met (Scala 2's `Macroses.resolve`):
   *   1. the type is already being derived (on the stack) -> a `$ref` ([[Recursion]]);
   *   2. `Nothing` -> compile error;
-  *   3. an implicit `Schema[T]` -> definition + `$ref`, else an implicit `Predef[T]` -> inlined ([[Implicits]]). Skipped for the root of `derives`;
+  *   3. an implicit `Schema[T]` -> definition + `$ref`, else an implicit `Predef[T]` -> inlined ([[Implicits]]). Skipped for the root of `derives` and of `DerivedSchema`;
   *   4. otherwise derived from the type's structure by the first family that accepts it ([[families]]).
   *
   * Every type is dealiased first (root and nested, like the Scala 2 macro since s2fix): stack entries, `$ref`s and definitions all use the dealiased type, so a root `type IntBox = Box[Int]` works and
@@ -61,14 +61,17 @@ trait Resolve { this: Derivation =>
   /** Step 4 only (no implicit search). */
   def structural(tpe: TypeRepr, ctx: Ctx): Node =
     families.iterator.map(_(tpe, ctx)).collectFirst { case Some(n) => n } getOrElse {
-      report.errorAndAbort(s"schema for ${tpe.show} is not supported, ${ctx.show}")
+      // why an implicit for it failed, if it says more than "none found" (e.g. a refined macro's error: Scala 2 reports it instead)
+      val why = implicitFailures(tpe).map(e => s"\n  an implicit for it failed: $e").mkString
+      report.errorAndAbort(s"schema for ${tpe.show} is not supported, ${ctx.show}$why")
     }
 
-  /** `derives` would only find its own given (rejected anyway). `objectSchema` does search, like Scala 2: a root with an implicit `Schema` is then a definition, which is an error there. `auto`
-    * searches too: Scala 3 picks `auto.derived[T]` for every `Predef[T]` (it is in lexical scope, so it shadows the `Predef`s in implicit scope, e.g. `Predef.intS`), and the root search lets those
-    * take over (auto declines inside the search, see [[AutoGuard]]).
+  /** `derives` would only find its own given (rejected anyway). `DerivedSchema` must not find the type's own implicit `Schema`: standing in for it is what the type class is for (e.g.
+    * `implicit val s: Schema[X] = implicitly[DerivedSchema[X]].schema`). `objectSchema` does search, like Scala 2: a root with an implicit `Schema` is then a definition, which is an error there.
+    * `auto` searches too: Scala 3 picks `auto.derived[T]` for every `Predef[T]` (it is in lexical scope, so it shadows the `Predef`s in implicit scope, e.g. `Predef.intS`), and the root search lets
+    * those take over (auto declines inside the search through its `AutoGuard.Allowed` parameter, see [[AutoGuard]]).
     */
-  private def skipRootSearch: Boolean = mode == Mode.Derived
+  private def skipRootSearch: Boolean = mode == Mode.Derived || mode == Mode.DerivedSchema
 
   // ---- helpers for families
 

@@ -57,6 +57,9 @@ object Scala3ResolutionSpec {
   case class GRec[T](v: T, next: Option[GRec[T]]) derives json.Schema
   case class TwoRecs(a: GRec[Int], b: GRec[String])
   case object Lone
+  // a candidate that fails to expand, like refined's macro for an empty range
+  trait Bounded
+  object BoundedPredef { inline given boundedP: json.schema.Predef[Bounded] = scala.compiletime.error("There are no values inside of specified range [2.0 .. 7.0]") }
   case class Ex(s: String)
   object ExDef       { given exS: Schema[Ex] = Json.schema[Ex].toDefinition("custom.Ex") }
   object PlainGivens {
@@ -169,6 +172,17 @@ class Scala3ResolutionSpec extends AnyFunSuite {
     errorOf(assertCompiles("Json.objectSchema[Lone.type]()")) should include(ErrorPhrases.NotSupported)
   }
 
+  test("an implicit that fails to expand: its reason is part of the 'not supported' error (Scala 2 reports the reason; refined)") {
+    val e = errorOf(assertCompiles("{ import BoundedPredef.given; Json.schema[Bounded] }"))
+    e should include("Scala3ResolutionSpec.Bounded " + ErrorPhrases.NotSupported)
+    e should include("There are no values inside of specified range [2.0 .. 7.0]")
+    // a plain miss adds nothing
+    errorOf(assertCompiles("Json.schema[HasOpen]")) shouldNot include("an implicit for it failed")
+    // nor does auto declining (its own given never counts)
+    errorOf(assertCompiles("{ import Json.auto.given; Json.schema[HasOpen] }")) shouldNot include("an implicit for it failed")
+    errorOf(assertCompiles("{ import Json.auto.given; summon[json.schema.Predef[HasOpen]] }")) shouldNot include("an implicit for it failed")
+  }
+
   test("a case class local to a block, with a default") {
     case class Local(x: Int, y: String = "d")
     Json.schema[Local] shouldEqual `object`[Local](Field("x", `integer`), Field.fromJson[String]("y", `string`, required = false, default = Some(com.github.andyglow.json.Value.str("d"))))
@@ -215,7 +229,7 @@ class Scala3ResolutionSpec extends AnyFunSuite {
     summon[Schema[GRec[Int]]] shouldEqual grecDef(s"$grec[$grec.T]", `integer`)
   }
 
-  test("a default of a path-dependent class goes through the path to its companion (Scala 2: doesn't compile)") {
+  test("a default of a path-dependent class goes through the path to its companion (shared tests: PathDependentDefaultsSpec)") {
     val o        = new PathOuter
     val expected = `object`.fromList[Any](List(Field.fromJson[Int]("x", `integer`, required = false, default = Some(com.github.andyglow.json.Value.num(1)))))
     Json.schema[o.Inner] shouldEqual expected

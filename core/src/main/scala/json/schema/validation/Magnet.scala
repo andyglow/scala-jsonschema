@@ -18,7 +18,19 @@ trait LowPriorityMagnet {
   implicit def identityMagnet[X]: Magnet[X, X] = Magnet.mk[X, X]
 }
 
-object Magnet extends LowPriorityMagnet {
+// Collection magnets, by priority: the exact collection (in `object Magnet`) > `Seq` > `Iterable`. On Scala 3 `TT >: T` is open, so
+// for a `List[X]` the magnets of its supertypes match too (`Iterable[X]` is a valid `TT`), and the levels keep that from being
+// ambiguous ("listMagnet vs iterableMagnet"). Scala 2 fixes `TT = T` before the search, so there only one of them ever matches.
+trait IterableMagnet extends LowPriorityMagnet {
+  implicit def iterableMagnet[X]: Magnet[Iterable[X], Iterable[_]] = Magnet.mk[Iterable[X], Iterable[_]]
+}
+
+trait SeqMagnet extends IterableMagnet {
+  // Scala 2 had no magnet for `Seq` itself (`Json.schema[Seq[X]].withValidation(...)` needed explicit type arguments)
+  implicit def seqMagnet[X]: Magnet[Seq[X], Iterable[_]] = Magnet.mk[Seq[X], Iterable[_]]
+}
+
+object Magnet extends SeqMagnet {
   def mk[A, B]: Magnet[A, B] = new Magnet[A, B] {}
 
   implicit def numericMagnet[X: Numeric]: Magnet[X, Number] = mk[X, Number]
@@ -28,11 +40,10 @@ object Magnet extends LowPriorityMagnet {
     mk[Map[String, X], Map[String, _]]
   implicit def mapMagnet[K, V]: Magnet[Map[K, V], Map[_, _]] = mk[Map[K, V], Map[_, _]]
 
-  implicit def arrayMagnet[X]: Magnet[Array[X], Iterable[_]]       = mk[Array[X], Iterable[_]]
-  implicit def iterableMagnet[X]: Magnet[Iterable[X], Iterable[_]] = mk[Iterable[X], Iterable[_]]
-  implicit def listMagnet[X]: Magnet[List[X], Iterable[_]]         = mk[List[X], Iterable[_]]
-  implicit def vectorMagnet[X]: Magnet[Vector[X], Iterable[_]]     = mk[Vector[X], Iterable[_]]
-  implicit def setMagnet[X]: Magnet[Set[X], Iterable[_]]           = mk[Set[X], Iterable[_]]
+  implicit def arrayMagnet[X]: Magnet[Array[X], Iterable[_]]   = mk[Array[X], Iterable[_]]
+  implicit def listMagnet[X]: Magnet[List[X], Iterable[_]]     = mk[List[X], Iterable[_]]
+  implicit def vectorMagnet[X]: Magnet[Vector[X], Iterable[_]] = mk[Vector[X], Iterable[_]]
+  implicit def setMagnet[X]: Magnet[Set[X], Iterable[_]]       = mk[Set[X], Iterable[_]]
 
   implicit def chrMagnet: Magnet[Char, String]            = mk[Char, String]
   implicit def characterMagnet: Magnet[Character, String] = mk[Character, String]

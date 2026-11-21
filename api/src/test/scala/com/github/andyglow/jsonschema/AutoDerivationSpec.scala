@@ -4,6 +4,7 @@ import json._
 import json.Schema._
 import json.Schema.`object`.Field
 import json.schema.Predef
+import org.scalatest.exceptions.TestFailedException
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers._
 
@@ -30,6 +31,9 @@ object AutoDerivationSpec {
   // an API that needs an implicit Predef, the reason to import Json.auto
   def predefOf[T](implicit p: Predef[T]): Schema[T] = p.schema
 
+  class NoSchema
+  case class Unsupported(n: NoSchema)
+
   // derived without the import, to compare with
   object Plain {
     val hasFoo: Schema[HasFoo]           = Json.schema[HasFoo]
@@ -51,6 +55,12 @@ class AutoDerivationSpec extends AnyFunSuite {
     import Json.auto._
     implicitly[Predef[Foo]].schema shouldEqual `object`[Foo](Field("a", `integer`))
     predefOf[Foo] shouldEqual `object`[Foo](Field("a", `integer`))
+  }
+
+  test("auto: a type it can't derive is a compile error that says why") {
+    val msg = intercept[TestFailedException](assertCompiles("{ import Json.auto._; predefOf[Unsupported] }")).getMessage
+    msg should include("schema for com.github.andyglow.jsonschema.AutoDerivationSpec.NoSchema is not supported")
+    msg shouldNot include("an implicit for it failed") // Json.auto declining isn't a failed implicit
   }
 
   test("auto: built-in Predefs still win (Int, String, List)") {
