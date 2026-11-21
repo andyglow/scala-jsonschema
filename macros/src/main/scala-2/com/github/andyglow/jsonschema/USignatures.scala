@@ -1,7 +1,14 @@
 package com.github.andyglow.jsonschema
 
+import scala.reflect.NameTransformer
+
 private[jsonschema] trait USignatures { this: UContext =>
   import c.universe._
+
+  /** The full name with every segment decoded (`odd name`, `+`), as Scala 3's `fullName` gives it; Scala 2's is encoded (`odd$u0020name`, `$plus`). Encoding happens only when rendering
+    * (see DefinitionNames in core).
+    */
+  private def decodedFullName(sym: Symbol): String = sym.fullName.split('.').map(NameTransformer.decode).mkString(".")
 
   def signature(tpe: Type): String = {
 
@@ -10,13 +17,13 @@ private[jsonschema] trait USignatures { this: UContext =>
       tpe match {
         case AnnotatedType(_, underlying)                   => compute(underlying)
         case RefinedType(parents, decls) if decls.isEmpty   => parents map compute mkString " with "
-        case tpe: SingleType                                => tpe.typeSymbol.fullName
-        case ThisType(sym)                                  => sym.fullName
-        case TypeRef(_, name, Nil)                          => name.fullName
-        case ExistentialType(_, TypeRef(_, name, Nil))      => name.fullName
-        case TypeRef(_, name, typeargs)                     => name.fullName + s"[${typeargs map compute mkString ","}]"
+        case tpe: SingleType                                => decodedFullName(tpe.typeSymbol)
+        case ThisType(sym)                                  => decodedFullName(sym)
+        case TypeRef(_, name, Nil)                          => decodedFullName(name)
+        case ExistentialType(_, TypeRef(_, name, Nil))      => decodedFullName(name)
+        case TypeRef(_, name, typeargs)                     => decodedFullName(name) + s"[${typeargs map compute mkString ","}]"
         case ExistentialType(_, TypeRef(_, name, typeargs)) =>
-          name.fullName + s"[${typeargs map compute mkString ","}]"
+          decodedFullName(name) + s"[${typeargs map compute mkString ","}]"
         case ConstantType(x) => x.value.toString
         case other           =>
           c.abort(

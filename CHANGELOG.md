@@ -33,6 +33,8 @@
     `#/definitions/...` refs, for 06/07 in `$id`/`$ref` plain-name fragments, for 2019-09/2020-12 in `$anchor`/`$ref`.
     Collisions get `_2`, `_3`, ... (in signature order; a name that already conforms keeps it). `Json.sig`, the
     `Schema` value and the raw renderer keep the readable signature
+  - Scala 2: `Json.sig` (and so definition names) of backticked or symbolic type names is decoded (`odd name`, not
+    `odd$u0020name`), as on Scala 3; the renderers make it a valid name (`odd_name`)
   - copies of a free object stay free: `withTitle`, `withDescription`, `duplicate`, `withField`, `dropField`,
     `withFieldsUpdated` and `toDefinition` no longer turn `additionalProperties: true` into `false`
 - **0.7.10**
