@@ -1,5 +1,6 @@
 package com.github.andyglow.jsonschema
 
+import com.github.andyglow.jsonschema.harness.Families.as07
 import com.github.andyglow.json.ToValue
 import json._
 import json.Schema._
@@ -114,12 +115,12 @@ class EnumSpec extends AnyWordSpec {
     "be derived" when {
 
       "all case objects, no type hints" in {
-        Json.schema[case0] shouldBe `enum`.of("V1", "V2")
+        as07(Json.schema[case0]) shouldBe `enum`.of("V1", "V2")
       }
 
       "all case objects, no type hints, enum-as-oneof" in {
         implicit val jsonSchemaFlags: Flag with Flag.EnumsAsOneOf = null
-        Json.schema[case0] shouldBe `oneof`.of[case0](
+        as07(Json.schema[case0]) shouldBe `oneof`.of[case0](
           const("V1"),
           const("V2")
         )
@@ -127,27 +128,27 @@ class EnumSpec extends AnyWordSpec {
 
       "all case objects, no type hints, enum-as-oneof decorated" in {
         implicit val jsonSchemaFlags: Flag with Flag.EnumsAsOneOf = null
-        Json.schema[case8] shouldBe `oneof`.of[case8](
+        as07(Json.schema[case8]) shouldBe `oneof`.of[case8](
           const("V1").withTitle("v1").withDescription("Version 1"),
           const("V2").withTitle("v2").withDescription("Version 2")
         )
       }
 
       "all case objects, string for root type hint" in {
-        Json.schema[case1] shouldBe `enum`.of("V1", "V2")
+        as07(Json.schema[case1]) shouldBe `enum`.of("V1", "V2")
       }
 
       "all case objects, string for root and all members type hint" in {
-        Json.schema[case2] shouldBe `enum`.of("V1", "V2")
+        as07(Json.schema[case2]) shouldBe `enum`.of("V1", "V2")
       }
 
       "all case objects, Int for root type hint" in {
         // the macro is expected to warn that `@typeHint[Int]` is ignored here
-        (Json.schema[case3]: @nowarn("msg=is ignored")) shouldBe `enum`.of("V1", "V2")
+        (as07(Json.schema[case3]): @nowarn("msg=is ignored")) shouldBe `enum`.of("V1", "V2")
       }
 
       "all case objects, ToValue is in implicit scope, Int for root type hint" in {
-        Json.schema[case4] shouldBe `enum`.of(1, 2)
+        as07(Json.schema[case4]) shouldBe `enum`.of(1, 2)
       }
 
       "all case objects, ToValue is in implicit scope, no type hints" in {
@@ -166,7 +167,7 @@ class EnumSpec extends AnyWordSpec {
       }
 
       "all case objects, ToValue is in implicit scope, Int for members type hint" in {
-        Json.schema[case6] shouldBe `enum`.of(1, 2)
+        as07(Json.schema[case6]) shouldBe `enum`.of(1, 2)
       }
 
       "all case objects, ToValue is in implicit scope, difference in type hints" in {

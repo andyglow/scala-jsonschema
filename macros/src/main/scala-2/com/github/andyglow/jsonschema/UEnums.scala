@@ -1,7 +1,7 @@
 package com.github.andyglow.jsonschema
 
 private[jsonschema] trait UEnums {
-  this: UContext with UCommons with UJsonValueType with UTypeAnnotations with UFlags =>
+  this: UContext with UCommons with UJsonValueType with UTypeAnnotations with UFlags with USignatures =>
   import c.universe._
 
   private val ScalaEnumTpe = typeOf[scala.Enumeration]
@@ -164,16 +164,28 @@ private[jsonschema] trait UEnums {
             }
           }
 
-          if (flags.enumsAsOneOf) {
-            U.OneOf(
-              tpe = tpe,
-              memberSchema = enumItems map { item =>
-                U.Const(item.tpe, schema, item.schemaTree).withTypeAnnotations(item.typeAnnotations)
-              },
-              discriminatorField = None
-            )
-          } else
-            U.Enum(tpe, schema, enumItems.map(_.tuple))
+          // the facts; Neutral/Legacy shape them as 0.7 did: one enum of the values (a const each with Flag.EnumsAsOneOf)
+          U.Family(
+            tpe,
+            enumItems.toList map { item =>
+              val sym = item.tpe.typeSymbol
+              U.Family.Member(
+                name = sym.name.decodedName.toString,
+                fullName = sym.fullName,
+                sig = signature(item.tpe),
+                kind = U.Family.Kind.Singleton,
+                schema = schema,
+                value = Some(item.schemaTree),
+                cls = Some(q"_root_.scala.Predef.classOf[${item.tpe}]"),
+                texts = item.typeAnnotations.texts,
+                discriminatorKey = item.typeAnnotations.discriminatorKey.map(_.value),
+                definition = item.typeAnnotations.definition,
+                knownString = item.knownString
+              )
+            },
+            TypeAnnotations(tpe).discriminator,
+            flags.enumsAsOneOf
+          )
         }
       }
     }

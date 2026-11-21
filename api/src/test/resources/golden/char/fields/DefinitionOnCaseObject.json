@@ -1,10 +1,12 @@
 {
   "schema": {
-    "kind": "oneof",
+    "kind": "family",
     "members": [
       {
-        "kind": "def",
-        "sig": "c",
+        "name": "C1",
+        "fullName": "com.github.andyglow.jsonschema.characterization.FieldsAnnotationsCharSpec.DefinitionOnCaseObject.C1",
+        "sig": "com.github.andyglow.jsonschema.characterization.FieldsAnnotationsCharSpec.DefinitionOnCaseObject.C1",
+        "kind": "Product",
         "schema": {
           "kind": "object",
           "fields": [
@@ -17,16 +19,21 @@
               }
             }
           ]
-        }
+        },
+        "class": "com.github.andyglow.jsonschema.characterization.FieldsAnnotationsCharSpec$DefinitionOnCaseObject$C1",
+        "definition": "Named(c)"
       },
       {
-        "kind": "enum",
-        "type": {
+        "name": "O1",
+        "fullName": "com.github.andyglow.jsonschema.characterization.FieldsAnnotationsCharSpec.DefinitionOnCaseObject.O1",
+        "sig": "com.github.andyglow.jsonschema.characterization.FieldsAnnotationsCharSpec.DefinitionOnCaseObject.O1",
+        "kind": "Singleton",
+        "schema": {
           "kind": "string"
         },
-        "values": [
-          "O1"
-        ]
+        "value": "O1",
+        "class": "com.github.andyglow.jsonschema.characterization.FieldsAnnotationsCharSpec$DefinitionOnCaseObject$O1$",
+        "definition": "Named(o)"
       }
     ]
   },

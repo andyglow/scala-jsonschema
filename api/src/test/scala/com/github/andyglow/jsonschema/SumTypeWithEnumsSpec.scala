@@ -1,5 +1,6 @@
 package com.github.andyglow.jsonschema
 
+import com.github.andyglow.jsonschema.harness.Families.as07
 import json._
 import json.Schema._
 //import json.schema._
@@ -13,7 +14,7 @@ class SumTypeWithEnumsSpec extends AnyWordSpec {
     "generate schema for Sealed Trait subclasses defined inside of it's companion object and include sub-types annotations" in {
       import `object`.Field
 
-      Json.schema[FooBarInsideCompanionWithAnnotations] shouldEqual `oneof`(
+      as07(Json.schema[FooBarInsideCompanionWithAnnotations]) shouldEqual `oneof`(
         Set(
           `object`(Field("val1", `number`[Double])).withTitle("t1").withDescription("d1"),
           `object`(Field("val2", `number`[Double])).withTitle("t2").withDescription("d2"),

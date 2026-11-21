@@ -14,17 +14,7 @@ private[jsonschema] trait USumTypes {
       isSupportedLeafSymbol(s)
     }
 
-    private sealed trait Extraction
-    private object Extraction {
-      private[USumTypes] case class Simple(tpe: Type, schema: SchemaType) extends Extraction
-      private[USumTypes] case class Enumerated(
-        tpe: Type,
-        schema: SchemaType,
-        members: Seq[EnumItem]
-      ) extends Extraction
-    }
-
-    def resolveOneOf(tpe: Type)(implicit ctx: ResolutionContext): Option[U.OneOf] = {
+    def resolveOneOf(tpe: Type)(implicit ctx: ResolutionContext): Option[SchemaType] = {
       Some.when(isSealed(tpe)) {
         // get type annotation for the root type
         // needed primarily for discriminator logic
@@ -42,30 +32,39 @@ private[jsonschema] trait USumTypes {
             )
         )
 
-        // this needs to support hybrid mode where hierarchy might
-        // include both case classes and case objects at the same time
-        val enumExtractor            = new SumTypeEnumExtractor(tpe)
-        var enumItems: Seq[EnumItem] = Seq.empty
+        val enumExtractor = new SumTypeEnumExtractor(tpe)
+        val isEither      = tpe.typeSymbol == typeOf[Either[_, _]].typeSymbol
 
-        val subExtractions = subTypes map { subTpe =>
-          // get hierarchy member type annotation
-          // for discriminator-key and the rest
-          val subTA = TypeAnnotations(subTpe)
+        // one member per leaf (nested sealed families flattened), in declaration order: the facts, no shaping
+        val members = subTypes map { subTpe =>
+          val subTA   = TypeAnnotations(subTpe)
+          val sym     = subTpe.typeSymbol
+          val name    = sym.name.decodedName.toString
+          def member(kind: U.Family.Kind, schema: SchemaType, value: Option[Tree] = None, knownString: Option[String] = None): U.Family.Member =
+            U.Family.Member(
+              name = name,
+              fullName = sym.fullName,
+              sig = signature(subTpe),
+              kind = kind,
+              schema = schema,
+              value = value,
+              cls = Some(q"_root_.scala.Predef.classOf[$subTpe]"),
+              texts = subTA.texts,
+              discriminatorKey = subTA.discriminatorKey.map(_.value),
+              definition = subTA.definition,
+              knownString = knownString
+            )
 
-          val subExtraction: Extraction = Implicit.get(subTpe) map {
-            Extraction.Simple(subTpe, _)
-          } getOrElse {
+          Implicit.get(subTpe) map { member(U.Family.Kind.Provided, _) } getOrElse {
             subTpe match {
-              case ValueClass(st) => Extraction.Simple(subTpe, st.withTypeAnnotations(subTA))
-              case CaseClass(st)  => Extraction.Simple(subTpe, st.withTypeAnnotations(subTA))
-              case CaseObject(co) if {
-                    enumItems = enumExtractor.someResolved(Seq(co.sym)) getOrElse Seq.empty
-                    enumItems.nonEmpty
-                  } =>
-                // oneof and enum at this point are used as containers..
-                // there is a code down below that flattens enums list into one instance
-                val schema = EnumFamily(tpe, enumItems).singleSchema
-                Extraction.Enumerated(tpe, schema, enumItems)
+              case ValueClass(st) =>
+                val field = sym.asClass.primaryConstructor.asMethod.paramLists.flatten.headOption.map(_.name.decodedName.toString)
+                member(U.Family.Kind.ValueClass, st).copy(valueField = field)
+              case CaseClass(st)  => member(U.Family.Kind.Product, st)
+              case CaseObject(co) if enumExtractor.someResolved(Seq(co.sym)).exists(_.nonEmpty) =>
+                val item = enumExtractor.someResolved(Seq(co.sym)).get.head
+                // the value schema 0.7 used for this singleton (EnumFamily's single schema of one item)
+                member(U.Family.Kind.Singleton, EnumFamily(tpe, Seq(item)).singleSchema, Some(item.schemaTree), item.knownString)
               case _ =>
                 c.abort(
                   c.enclosingPosition,
@@ -73,91 +72,50 @@ private[jsonschema] trait USumTypes {
                 )
             }
           }
+        }
 
-          // if discriminator is specified we need to make several checks
-          // 1. type must be a product type
-          // 2. if discriminator isn't a phantom, product must contain specified field
-          rootTA.discriminator foreach { d =>
-            def validate(t: SchemaType): Unit = t match {
-              case o: SchemaType.Obj =>
-                if (!d.phantom && !o.fields.exists(_.name == d.field))
-                  c.abort(
-                    c.enclosingPosition,
-                    s"Discriminator: Field '${d.field}' is not found in ${show(subTpe)}"
-                  )
-              case SchemaType.ValueClass(_, _, inner, _) => validate(inner)
-              case SchemaType.Enum(_, _, _, _)           => // skip
-              case _                                     =>
+        // if discriminator is specified we need to make several checks
+        // 1. type must be a product type
+        // 2. if discriminator isn't a phantom, product must contain specified field
+        rootTA.discriminator foreach { d =>
+          def validate(subTpe: Type, t: SchemaType): Unit = t match {
+            case o: SchemaType.Obj =>
+              if (!d.phantom && !o.fields.exists(_.name == d.field))
                 c.abort(
                   c.enclosingPosition,
-                  "Discriminator: Only case classes/objects and value classes are supported candidates for sum type hierarchy"
+                  s"Discriminator: Field '${d.field}' is not found in ${show(subTpe)}"
                 )
-            }
-
-            subExtraction match {
-              case Extraction.Simple(_, subSchema) => validate(subSchema)
-              case _                               =>
-            }
+            case SchemaType.ValueClass(_, _, inner, _) => validate(subTpe, inner)
+            case _                                     =>
+              c.abort(
+                c.enclosingPosition,
+                "Discriminator: Only case classes/objects and value classes are supported candidates for sum type hierarchy"
+              )
           }
 
-          // apply discriminator key if required
-          val effectiveSubExtraction = rootTA.discriminator.fold(subExtraction) { d =>
-            val key = subTA.discriminatorKey match {
-              case None                      => signature(subTpe)
-              case Some(DiscriminatorKey(x)) => x
-            }
-
-            subExtraction match {
-              case Extraction.Simple(tpe, subSchema) =>
-                Extraction.Simple(
-                  tpe,
-                  subSchema.withExtra(subSchema.extra.copy(discriminationKey = Some(key)))
-                )
-              case x => x
-            }
-          }
-
-          // if `definition` annotation is specified wrap the schema into `def`
-          // Even if this is an Enum. Let user decide. It may result in several definitions of enum containing only one element
-          effectiveSubExtraction match {
-            case Extraction.Simple(tpe, effectiveSubSchema) =>
-              Extraction.Simple(tpe, subTA.wrapIntoDefIfRequired(subTpe, effectiveSubSchema))
-            case x => x
-          }
+          subTypes.zip(members) foreach { case (subTpe, m) => if (m.kind != U.Family.Kind.Singleton) validate(subTpe, m.schema) }
         }
 
-        // - if enums presented as one-of: convert all items into `const`
-        // - if enums come as is: flatten same-schema enums into one big enum
-        val effectiveSchemas = subExtractions.foldLeft[Seq[SchemaType]](Nil) {
-          case (acc, Extraction.Simple(_, schema))              => acc :+ schema
-          case (acc, Extraction.Enumerated(tpe, schema, items)) =>
-            if (flags.enumsAsOneOf) {
-              items.foldLeft(acc) { case (acc, i) =>
-                acc :+ U.Const(tpe, schema, i.schemaTree).withTypeAnnotations(i.typeAnnotations)
-              }
-            } else {
-              // find enum (match by schema)
-              // if exists, we don't want to duplicate enums, but rather collect all the enum-items under one umbrella
-              val existingEnum = acc.collectFirst {
-                case x @ U.Enum(_, s, _, _) if s == schema => x
-              }
-              existingEnum match {
-                case Some(enum) =>
-                  val shrinkedAcc = acc.filter {
-                    case U.Enum(_, s, _, _) if s == schema => false
-                    case _                                 => true
-                  }
-                  shrinkedAcc :+ U.Enum(tpe, schema, enum.values ++ items.map { _.tuple })
-                case None => acc :+ U.Enum(tpe, schema, items.map { _.tuple })
-              }
-            }
-        }
-
-        U.OneOf(tpe, effectiveSchemas, rootTA.discriminator.map(_.field))
+        if (isEither) eitherOneOf(tpe, subTypes zip members) else U.Family(tpe, members.toList, rootTA.discriminator, flags.enumsAsOneOf)
       }
     }
 
-    def unapply(tpe: Type)(implicit ctx: ResolutionContext): Option[U.OneOf] =
+    /** `Either` stays a plain `oneOf` (pinned by the goldens): its members with their annotations. */
+    private def eitherOneOf(tpe: Type, members: Seq[(Type, U.Family.Member)]): SchemaType =
+      U.OneOf(
+        tpe,
+        members map { case (subTpe, m) =>
+          val subTA = TypeAnnotations(subTpe)
+          val typed = m.kind match {
+            case U.Family.Kind.Provided => m.schema
+            case _                      => m.schema.withTypeAnnotations(subTA)
+          }
+          subTA.wrapIntoDefIfRequired(subTpe, typed)
+        },
+        None
+      )
+
+    def unapply(tpe: Type)(implicit ctx: ResolutionContext): Option[SchemaType] =
       resolveOneOf(tpe)(ctx :+ tpe)
   }
 

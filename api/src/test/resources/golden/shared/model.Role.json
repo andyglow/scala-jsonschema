@@ -1,13 +1,40 @@
 {
   "schema": {
-    "kind": "enum",
-    "type": {
-      "kind": "string"
-    },
-    "values": [
-      "Admin",
-      "Manager",
-      "User"
+    "kind": "family",
+    "members": [
+      {
+        "name": "Admin",
+        "fullName": "com.github.andyglow.jsonschema.model.Role.Admin",
+        "sig": "com.github.andyglow.jsonschema.model.Role.Admin",
+        "kind": "Singleton",
+        "schema": {
+          "kind": "string"
+        },
+        "value": "Admin",
+        "class": "com.github.andyglow.jsonschema.model.Role$Admin$"
+      },
+      {
+        "name": "Manager",
+        "fullName": "com.github.andyglow.jsonschema.model.Role.Manager",
+        "sig": "com.github.andyglow.jsonschema.model.Role.Manager",
+        "kind": "Singleton",
+        "schema": {
+          "kind": "string"
+        },
+        "value": "Manager",
+        "class": "com.github.andyglow.jsonschema.model.Role$Manager$"
+      },
+      {
+        "name": "User",
+        "fullName": "com.github.andyglow.jsonschema.model.Role.User",
+        "sig": "com.github.andyglow.jsonschema.model.Role.User",
+        "kind": "Singleton",
+        "schema": {
+          "kind": "string"
+        },
+        "value": "User",
+        "class": "com.github.andyglow.jsonschema.model.Role$User$"
+      }
     ]
   },
   "draft-04": {

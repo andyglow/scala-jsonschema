@@ -1,5 +1,6 @@
 package com.github.andyglow.jsonschema
 
+import com.github.andyglow.jsonschema.harness.Families.as07
 import json._
 import json.Schema._
 import json.Schema.`object`._
@@ -37,7 +38,7 @@ class DefinitionsSpec extends AnyWordSpec {
 
     "be exposed if specified by annotations" in {
       val petS = Json.schema[Pet]
-      petS shouldBe `oneof`.of[Pet](
+      as07(petS) shouldBe `oneof`.of[Pet](
         `def`[Pet.Cat](
           "com.github.andyglow.jsonschema.DefinitionsSpec.Pet.Cat",
           `object`(Field("color", `string`, required = true))

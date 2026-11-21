@@ -10,33 +10,47 @@
           "kind": "def",
           "sig": "com.github.andyglow.jsonschema.characterization.EntryPointsCharSpec.Sum",
           "schema": {
-            "kind": "oneof",
+            "kind": "family",
             "members": [
               {
-                "kind": "object",
-                "fields": [
-                  {
-                    "name": "x",
-                    "required": true,
-                    "rwMode": "ReadWrite",
-                    "schema": {
-                      "kind": "integer"
+                "name": "S1",
+                "fullName": "com.github.andyglow.jsonschema.characterization.EntryPointsCharSpec.S1",
+                "sig": "com.github.andyglow.jsonschema.characterization.EntryPointsCharSpec.S1",
+                "kind": "Product",
+                "schema": {
+                  "kind": "object",
+                  "fields": [
+                    {
+                      "name": "x",
+                      "required": true,
+                      "rwMode": "ReadWrite",
+                      "schema": {
+                        "kind": "integer"
+                      }
                     }
-                  }
-                ]
+                  ]
+                },
+                "class": "com.github.andyglow.jsonschema.characterization.EntryPointsCharSpec$S1"
               },
               {
-                "kind": "object",
-                "fields": [
-                  {
-                    "name": "y",
-                    "required": true,
-                    "rwMode": "ReadWrite",
-                    "schema": {
-                      "kind": "string"
+                "name": "S2",
+                "fullName": "com.github.andyglow.jsonschema.characterization.EntryPointsCharSpec.S2",
+                "sig": "com.github.andyglow.jsonschema.characterization.EntryPointsCharSpec.S2",
+                "kind": "Product",
+                "schema": {
+                  "kind": "object",
+                  "fields": [
+                    {
+                      "name": "y",
+                      "required": true,
+                      "rwMode": "ReadWrite",
+                      "schema": {
+                        "kind": "string"
+                      }
                     }
-                  }
-                ]
+                  ]
+                },
+                "class": "com.github.andyglow.jsonschema.characterization.EntryPointsCharSpec$S2"
               }
             ]
           }

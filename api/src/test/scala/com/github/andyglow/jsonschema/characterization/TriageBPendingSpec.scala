@@ -1,5 +1,6 @@
 package com.github.andyglow.jsonschema.characterization
 
+import com.github.andyglow.jsonschema.harness.Families.as07
 import com.github.andyglow.jsonschema.harness.{ErrorPhrases, Golden, Scala, TriageB}
 import com.github.andyglow.jsonschema.harness.CompileErrors.outcome
 import json._
@@ -290,9 +291,9 @@ class TriageBPendingSpec extends AnyFunSuite {
   test("generic subclasses are substituted by name, not by position", TriageB) {
     // `SwappedImpl[B, A] extends Swapped[A, B]`, so for Swapped[Int, String]: a = Int, b = String
     val s = Json.schema[Swapped[Int, String]]
-    s shouldEqual `oneof`.of[Swapped[Int, String]](`object`(Field("a", `integer`), Field("b", `string`)))
+    as07(s) shouldEqual `oneof`.of[Swapped[Int, String]](`object`(Field("a", `integer`), Field("b", `string`)))
     // NestedImpl[T] extends Nested[List[T]]: for Nested[List[Int]], xs is a List[Int]
-    Json.schema[Nested[List[Int]]] shouldEqual `oneof`.of[Nested[List[Int]]](`object`(Field("xs", `array`[Int, List](`integer`))))
+    as07(Json.schema[Nested[List[Int]]]) shouldEqual `oneof`.of[Nested[List[Int]]](`object`(Field("xs", `array`[Int, List](`integer`))))
   }
 
   // --- covariant implicit pick (owner decision 2026-11-20: require an implicit whose type matches T exactly) ---
@@ -310,7 +311,7 @@ class TriageBPendingSpec extends AnyFunSuite {
     import Sub1Implicit._
     // was: def("...TriageBPendingSpec.Base", object(x)): the whole family is replaced by Sub1's schema, Sub2 is lost.
     // fixed: Base is derived as its sealed family (Sub1 may come out as a def of the implicit), so both x and y are there
-    fieldNames(Json.schema[Base]) shouldBe Set("x", "y")
+    fieldNames(as07(Json.schema[Base])) shouldBe Set("x", "y")
     Golden.check("triageB/covariant.Base", Json.schema[Base])
     sub1S should not be null
   }
@@ -318,7 +319,7 @@ class TriageBPendingSpec extends AnyFunSuite {
   test("an implicit Schema[Sub1] is not used for a field of type Base", TriageB) {
     import Sub1Implicit._
     // was: field b = def("...Base", object(x))
-    fieldNames(Json.schema[HasBase]) shouldBe Set("b", "x", "y")
+    fieldNames(as07(Json.schema[HasBase])) shouldBe Set("b", "x", "y")
     Golden.check("triageB/covariant.HasBase", Json.schema[HasBase])
     sub1S should not be null
   }

@@ -1,54 +1,91 @@
 {
   "schema": {
-    "kind": "oneof",
+    "kind": "family",
     "members": [
       {
-        "kind": "object",
-        "fields": [
-          {
-            "name": "val1",
-            "required": true,
-            "rwMode": "ReadWrite",
-            "schema": {
-              "kind": "number"
+        "name": "M1",
+        "fullName": "com.github.andyglow.jsonschema.SumTypeModels.FooBarInsideCompanionWithAnnotations.M1",
+        "sig": "com.github.andyglow.jsonschema.SumTypeModels.FooBarInsideCompanionWithAnnotations.M1",
+        "kind": "Product",
+        "schema": {
+          "kind": "object",
+          "fields": [
+            {
+              "name": "val1",
+              "required": true,
+              "rwMode": "ReadWrite",
+              "schema": {
+                "kind": "number"
+              }
             }
-          }
-        ],
+          ]
+        },
+        "class": "com.github.andyglow.jsonschema.SumTypeModels$FooBarInsideCompanionWithAnnotations$M1",
         "title": "t1",
         "description": "d1"
       },
       {
-        "kind": "object",
-        "fields": [
-          {
-            "name": "val2",
-            "required": true,
-            "rwMode": "ReadWrite",
-            "schema": {
-              "kind": "number"
+        "name": "M2",
+        "fullName": "com.github.andyglow.jsonschema.SumTypeModels.FooBarInsideCompanionWithAnnotations.M2",
+        "sig": "com.github.andyglow.jsonschema.SumTypeModels.FooBarInsideCompanionWithAnnotations.M2",
+        "kind": "Product",
+        "schema": {
+          "kind": "object",
+          "fields": [
+            {
+              "name": "val2",
+              "required": true,
+              "rwMode": "ReadWrite",
+              "schema": {
+                "kind": "number"
+              }
             }
-          }
-        ],
+          ]
+        },
+        "class": "com.github.andyglow.jsonschema.SumTypeModels$FooBarInsideCompanionWithAnnotations$M2",
         "title": "t2",
         "description": "d2"
       },
       {
-        "kind": "value-class",
+        "name": "M3",
+        "fullName": "com.github.andyglow.jsonschema.SumTypeModels.FooBarInsideCompanionWithAnnotations.M3",
+        "sig": "com.github.andyglow.jsonschema.SumTypeModels.FooBarInsideCompanionWithAnnotations.M3",
+        "kind": "ValueClass",
         "schema": {
-          "kind": "string"
+          "kind": "value-class",
+          "schema": {
+            "kind": "string"
+          }
         },
+        "class": "com.github.andyglow.jsonschema.SumTypeModels$FooBarInsideCompanionWithAnnotations$M3",
         "title": "t3",
         "description": "d3"
       },
       {
-        "kind": "enum",
-        "type": {
+        "name": "M4",
+        "fullName": "com.github.andyglow.jsonschema.SumTypeModels.FooBarInsideCompanionWithAnnotations.M4",
+        "sig": "com.github.andyglow.jsonschema.SumTypeModels.FooBarInsideCompanionWithAnnotations.M4",
+        "kind": "Singleton",
+        "schema": {
           "kind": "string"
         },
-        "values": [
-          "M4",
-          "M5"
-        ]
+        "value": "M4",
+        "class": "com.github.andyglow.jsonschema.SumTypeModels$FooBarInsideCompanionWithAnnotations$M4$",
+        "title": "t4",
+        "description": "d4"
+      },
+      {
+        "name": "M5",
+        "fullName": "com.github.andyglow.jsonschema.SumTypeModels.FooBarInsideCompanionWithAnnotations.M5",
+        "sig": "com.github.andyglow.jsonschema.SumTypeModels.FooBarInsideCompanionWithAnnotations.M5",
+        "kind": "Singleton",
+        "schema": {
+          "kind": "string"
+        },
+        "value": "M5",
+        "class": "com.github.andyglow.jsonschema.SumTypeModels$FooBarInsideCompanionWithAnnotations$M5$",
+        "title": "t5",
+        "description": "d5"
       }
     ]
   },

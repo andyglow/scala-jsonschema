@@ -1,32 +1,46 @@
 {
   "schema": {
-    "kind": "oneof",
+    "kind": "family",
     "members": [
       {
-        "kind": "object",
-        "fields": [
-          {
-            "name": "bar",
-            "required": true,
-            "rwMode": "ReadWrite",
-            "schema": {
-              "kind": "number"
+        "name": "FooBar1",
+        "fullName": "com.github.andyglow.jsonschema.FooBar1",
+        "sig": "com.github.andyglow.jsonschema.FooBar1",
+        "kind": "Product",
+        "schema": {
+          "kind": "object",
+          "fields": [
+            {
+              "name": "foo",
+              "required": true,
+              "rwMode": "ReadWrite",
+              "schema": {
+                "kind": "number"
+              }
             }
-          }
-        ]
+          ]
+        },
+        "class": "com.github.andyglow.jsonschema.FooBar1"
       },
       {
-        "kind": "object",
-        "fields": [
-          {
-            "name": "foo",
-            "required": true,
-            "rwMode": "ReadWrite",
-            "schema": {
-              "kind": "number"
+        "name": "FooBar2",
+        "fullName": "com.github.andyglow.jsonschema.FooBar2",
+        "sig": "com.github.andyglow.jsonschema.FooBar2",
+        "kind": "Product",
+        "schema": {
+          "kind": "object",
+          "fields": [
+            {
+              "name": "bar",
+              "required": true,
+              "rwMode": "ReadWrite",
+              "schema": {
+                "kind": "number"
+              }
             }
-          }
-        ]
+          ]
+        },
+        "class": "com.github.andyglow.jsonschema.FooBar2"
       }
     ]
   },

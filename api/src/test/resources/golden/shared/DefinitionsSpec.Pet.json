@@ -1,27 +1,12 @@
 {
   "schema": {
-    "kind": "oneof",
+    "kind": "family",
     "members": [
       {
-        "kind": "def",
-        "sig": "com.github.andyglow.jsonschema.DefinitionsSpec.Pet.Cat",
-        "schema": {
-          "kind": "object",
-          "fields": [
-            {
-              "name": "color",
-              "required": true,
-              "rwMode": "ReadWrite",
-              "schema": {
-                "kind": "string"
-              }
-            }
-          ]
-        }
-      },
-      {
-        "kind": "def",
-        "sig": "alligator",
+        "name": "Alligator",
+        "fullName": "com.github.andyglow.jsonschema.DefinitionsSpec.Pet.Alligator",
+        "sig": "com.github.andyglow.jsonschema.DefinitionsSpec.Pet.Alligator",
+        "kind": "Product",
         "schema": {
           "kind": "object",
           "fields": [
@@ -34,7 +19,30 @@
               }
             }
           ]
-        }
+        },
+        "class": "com.github.andyglow.jsonschema.DefinitionsSpec$Pet$Alligator",
+        "definition": "Named(alligator)"
+      },
+      {
+        "name": "Cat",
+        "fullName": "com.github.andyglow.jsonschema.DefinitionsSpec.Pet.Cat",
+        "sig": "com.github.andyglow.jsonschema.DefinitionsSpec.Pet.Cat",
+        "kind": "Product",
+        "schema": {
+          "kind": "object",
+          "fields": [
+            {
+              "name": "color",
+              "required": true,
+              "rwMode": "ReadWrite",
+              "schema": {
+                "kind": "string"
+              }
+            }
+          ]
+        },
+        "class": "com.github.andyglow.jsonschema.DefinitionsSpec$Pet$Cat",
+        "definition": "Inferred"
       }
     ]
   },

@@ -1,12 +1,33 @@
 {
   "schema": {
-    "kind": "enum",
-    "type": {
-      "kind": "string"
-    },
-    "values": [
-      "V1",
-      "V2"
+    "kind": "family",
+    "members": [
+      {
+        "name": "V1",
+        "fullName": "com.github.andyglow.jsonschema.EnumSpec.case8.V1",
+        "sig": "com.github.andyglow.jsonschema.EnumSpec.case8.V1",
+        "kind": "Singleton",
+        "schema": {
+          "kind": "string"
+        },
+        "value": "V1",
+        "class": "com.github.andyglow.jsonschema.EnumSpec$case8$V1$",
+        "title": "v1",
+        "description": "Version 1"
+      },
+      {
+        "name": "V2",
+        "fullName": "com.github.andyglow.jsonschema.EnumSpec.case8.V2",
+        "sig": "com.github.andyglow.jsonschema.EnumSpec.case8.V2",
+        "kind": "Singleton",
+        "schema": {
+          "kind": "string"
+        },
+        "value": "V2",
+        "class": "com.github.andyglow.jsonschema.EnumSpec$case8$V2$",
+        "title": "v2",
+        "description": "Version 2"
+      }
     ]
   },
   "draft-04": {

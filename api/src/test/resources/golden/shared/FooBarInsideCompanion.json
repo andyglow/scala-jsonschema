@@ -1,32 +1,46 @@
 {
   "schema": {
-    "kind": "oneof",
+    "kind": "family",
     "members": [
       {
-        "kind": "object",
-        "fields": [
-          {
-            "name": "bar",
-            "required": true,
-            "rwMode": "ReadWrite",
-            "schema": {
-              "kind": "number"
+        "name": "FooBarInsideCompanion1",
+        "fullName": "com.github.andyglow.jsonschema.FooBarInsideCompanion.FooBarInsideCompanion1",
+        "sig": "com.github.andyglow.jsonschema.FooBarInsideCompanion.FooBarInsideCompanion1",
+        "kind": "Product",
+        "schema": {
+          "kind": "object",
+          "fields": [
+            {
+              "name": "foo",
+              "required": true,
+              "rwMode": "ReadWrite",
+              "schema": {
+                "kind": "number"
+              }
             }
-          }
-        ]
+          ]
+        },
+        "class": "com.github.andyglow.jsonschema.FooBarInsideCompanion$FooBarInsideCompanion1"
       },
       {
-        "kind": "object",
-        "fields": [
-          {
-            "name": "foo",
-            "required": true,
-            "rwMode": "ReadWrite",
-            "schema": {
-              "kind": "number"
+        "name": "FooBarInsideCompanion2",
+        "fullName": "com.github.andyglow.jsonschema.FooBarInsideCompanion.FooBarInsideCompanion2",
+        "sig": "com.github.andyglow.jsonschema.FooBarInsideCompanion.FooBarInsideCompanion2",
+        "kind": "Product",
+        "schema": {
+          "kind": "object",
+          "fields": [
+            {
+              "name": "bar",
+              "required": true,
+              "rwMode": "ReadWrite",
+              "schema": {
+                "kind": "number"
+              }
             }
-          }
-        ]
+          ]
+        },
+        "class": "com.github.andyglow.jsonschema.FooBarInsideCompanion$FooBarInsideCompanion2"
       }
     ]
   },

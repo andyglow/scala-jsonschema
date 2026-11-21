@@ -1,37 +1,56 @@
 {
   "schema": {
-    "kind": "oneof",
+    "kind": "family",
     "members": [
       {
-        "kind": "object",
-        "fields": [
-          {
-            "name": "id",
-            "required": true,
-            "rwMode": "ReadWrite",
-            "schema": {
-              "kind": "integer"
+        "name": "V1",
+        "fullName": "com.github.andyglow.jsonschema.HybridSum.V1",
+        "sig": "com.github.andyglow.jsonschema.HybridSum.V1",
+        "kind": "Product",
+        "schema": {
+          "kind": "object",
+          "fields": [
+            {
+              "name": "id",
+              "required": true,
+              "rwMode": "ReadWrite",
+              "schema": {
+                "kind": "integer"
+              }
+            },
+            {
+              "name": "name",
+              "required": true,
+              "rwMode": "ReadWrite",
+              "schema": {
+                "kind": "string"
+              }
             }
-          },
-          {
-            "name": "name",
-            "required": true,
-            "rwMode": "ReadWrite",
-            "schema": {
-              "kind": "string"
-            }
-          }
-        ]
+          ]
+        },
+        "class": "com.github.andyglow.jsonschema.HybridSum$V1"
       },
       {
-        "kind": "enum",
-        "type": {
+        "name": "V2",
+        "fullName": "com.github.andyglow.jsonschema.HybridSum.V2",
+        "sig": "com.github.andyglow.jsonschema.HybridSum.V2",
+        "kind": "Singleton",
+        "schema": {
           "kind": "string"
         },
-        "values": [
-          "V2",
-          "V3"
-        ]
+        "value": "V2",
+        "class": "com.github.andyglow.jsonschema.HybridSum$V2$"
+      },
+      {
+        "name": "V3",
+        "fullName": "com.github.andyglow.jsonschema.HybridSum.V3",
+        "sig": "com.github.andyglow.jsonschema.HybridSum.V3",
+        "kind": "Singleton",
+        "schema": {
+          "kind": "string"
+        },
+        "value": "V3",
+        "class": "com.github.andyglow.jsonschema.HybridSum$V3$"
       }
     ]
   },
