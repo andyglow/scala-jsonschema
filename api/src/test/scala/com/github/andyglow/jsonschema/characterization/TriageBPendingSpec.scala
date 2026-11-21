@@ -174,25 +174,19 @@ class TriageBPendingSpec extends AnyFunSuite {
   // --- unsupported map keys ---
 
   test("Map with a UUID key: clear compile error naming the key type", TriageB) {
-    pendingUntilFixed {
-      // today: an error in the generated code: `scala.collection.immutable.Map takes two type parameters, expected: one`
-      failsWith(outcome(assertCompiles("Json.schema[UuidKeys]")), ClearUnsupported, "java.util.UUID")
-    }
+    // was: an error in the generated code: `scala.collection.immutable.Map takes two type parameters, expected: one`
+    failsWith(outcome(assertCompiles("Json.schema[UuidKeys]")), ClearUnsupported, "java.util.UUID")
   }
 
   test("mutable.Map: clear compile error", TriageB) {
-    pendingUntilFixed {
-      // today: `scala.collection.mutable.Map takes two type parameters, expected: one`
-      failsWith(outcome(assertCompiles("Json.schema[MutableMap]")), ClearUnsupported, "mutable.Map")
-    }
+    // was: `scala.collection.mutable.Map takes two type parameters, expected: one`
+    failsWith(outcome(assertCompiles("Json.schema[MutableMap]")), ClearUnsupported, "mutable.Map")
   }
 
   test("enum Map key with EnumsAsOneOf: clear compile error naming the key type", TriageB) {
-    pendingUntilFixed {
-      // today: `scala.collection.immutable.Map takes two type parameters, expected: one`
-      // "TriageBPendingSpec.Key" is not a substring of "...TriageBPendingSpec.EnumKeys"
-      failsWith(outcome(assertCompiles("{ implicit val f: Flag with Flag.EnumsAsOneOf = null; Json.schema[EnumKeys] }")), ClearUnsupported, "TriageBPendingSpec.Key")
-    }
+    // was: `scala.collection.immutable.Map takes two type parameters, expected: one`
+    // "TriageBPendingSpec.Key" is not a substring of "...TriageBPendingSpec.EnumKeys"
+    failsWith(outcome(assertCompiles("{ implicit val f: Flag with Flag.EnumsAsOneOf = null; Json.schema[EnumKeys] }")), ClearUnsupported, "TriageBPendingSpec.Key")
   }
 
   // --- crashes -> clear compile errors ---
@@ -203,11 +197,9 @@ class TriageBPendingSpec extends AnyFunSuite {
   }
 
   test("a non-generic Iterable (BitSet) doesn't crash", TriageB) {
-    pendingUntilFixed {
-      // today: NoSuchElementException: head of empty list
-      compilesOrFailsWith(outcome(assertCompiles("Json.schema[HasBitSet]")), ClearUnsupported, "BitSet")
-      compilesOrFailsWith(outcome(assertCompiles("Json.schema[scala.collection.immutable.BitSet]")), ClearUnsupported, "BitSet")
-    }
+    // was: NoSuchElementException: head of empty list
+    compilesOrFailsWith(outcome(assertCompiles("Json.schema[HasBitSet]")), ClearUnsupported, "BitSet")
+    compilesOrFailsWith(outcome(assertCompiles("Json.schema[scala.collection.immutable.BitSet]")), ClearUnsupported, "BitSet")
   }
 
   test("signature of refined/compound/annotated types doesn't crash", TriageB) {

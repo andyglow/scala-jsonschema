@@ -108,8 +108,9 @@ class TypeFamiliesCharSpec extends AnyFunSuite {
 
   test("T10: enum map keys with EnumsAsOneOf don't compile (TRIAGE-B, see TriageBPendingSpec)") {
     val err = errorOf(assertCompiles("{ implicit val flag: Flag with Flag.EnumsAsOneOf = null; Json.schema[EnumKeys] }"))
-    // Scala 2: an error in the generated code (`array[K, Map]`)
-    if (Scala.is2) err should include regex ("takes (two|2) type parameters")
+    // 0.7: an error in the generated code (`array[K, Map]`); now a macro error naming the key type
+    err should include(NotSupported)
+    err should include("EnumsAsOneOf")
   }
 
   test("T11: a mutable.Set is not unique") {

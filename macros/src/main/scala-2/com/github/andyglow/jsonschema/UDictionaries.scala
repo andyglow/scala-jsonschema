@@ -6,7 +6,20 @@ private[jsonschema] trait UDictionaries {
 
   class DictionaryExtractor {
 
+    private def unsupportedKey(tpe: Type, keyTpe: Type, why: String): Nothing =
+      c.abort(
+        c.enclosingPosition,
+        s"schema for $tpe is not supported: a Map key must be a String, a value class of String, an enum or a type with an implicit " +
+          s"json.Schema.dictionary.KeyPattern; the key type $keyTpe $why. Provide an implicit KeyPattern[$keyTpe], or a json.schema.Predef or json.Schema for the Map"
+      )
+
     def unapply(tpe: Type)(implicit ctx: ResolutionContext): Option[U.Dict] = {
+      if (tpe <:< T.anyMap && !(tpe <:< T.map))
+        c.abort(
+          c.enclosingPosition,
+          s"schema for $tpe is not supported: only immutable Maps (scala.collection.immutable.Map) are derived as dictionaries. Provide a json.schema.Predef or json.Schema for it"
+        )
+
       Option.whenever(tpe <:< T.map) {
         val containerTpe         = tpe.typeConstructor
         val keyTpe               = tpe.typeArgs.head
@@ -37,8 +50,9 @@ private[jsonschema] trait UDictionaries {
                   val pattern = names.mkString("^(?:", "|", ")$")
                   dict.copy(extra = dict.extra.copy(validations = Seq(q"${N.Validation}.patternProperties := $pattern")))
 
-                // return None otherwise
-                case _ => None
+                case Enum(_: U.OneOf) => unsupportedKey(tpe, keyTpe, "is an enum, but with Flag.EnumsAsOneOf its members aren't plain strings")
+                case Enum(_)          => unsupportedKey(tpe, keyTpe, "is an enum of non-string values")
+                case _                => unsupportedKey(tpe, keyTpe, "is none of these")
               }
             // +---------
             // | there is a KeyPattern type-class in the scope that brings in actual pattern

@@ -11,6 +11,9 @@
   - type aliases are seen through: `Json.schema[IntBox]` for `type IntBox = Box[Int]` works, refs and definitions
     reached through an alias get the same name, and a root implicit `Schema[String]` is the definition
     `java.lang.String` (was `scala.Predef.String`), the same name a field already got
+  - clear compile errors instead of errors in the generated code or macro crashes for: a Map key without a
+    `KeyPattern` (e.g. `UUID`), an enum key with `Flag.EnumsAsOneOf`, a `mutable.Map`, and collections whose
+    type parameter isn't the element type (e.g. `BitSet`)
   - copies of a free object stay free: `withTitle`, `withDescription`, `duplicate`, `withField`, `dropField`,
     `withFieldsUpdated` and `toDefinition` no longer turn `additionalProperties: true` into `false`
 - **0.7.10**
