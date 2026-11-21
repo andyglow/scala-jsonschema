@@ -1,6 +1,6 @@
 package com.github.andyglow.jsonschema.characterization
 
-import com.github.andyglow.jsonschema.harness.{ErrorPhrases, TriageB}
+import com.github.andyglow.jsonschema.harness.{ErrorPhrases, Golden, TriageB}
 import com.github.andyglow.jsonschema.harness.CompileErrors.outcome
 import json._
 import json.Schema.{`not` => _, _}
@@ -145,7 +145,6 @@ class TriageBPendingSpec extends AnyFunSuite {
   }
 
   test("toDefinition of a recursive type with a nested definition (bugs-1 #5)", TriageB) {
-    import com.github.andyglow.jsonschema.harness.Golden
     // was: meta became `$ref #Tree`, the Meta definition disappeared and children kept the dangling `#Node`
     val s = Json.schema[Node].toDefinition("Tree")
     val (refs, defs) = refsAndDefs(s)
@@ -287,29 +286,25 @@ class TriageBPendingSpec extends AnyFunSuite {
   }
 
   test("an implicit Schema[Sub1] is not used for Json.schema[Base]", TriageB) {
-    pendingUntilFixed {
-      import Sub1Implicit._
-      // today: def("...TriageBPendingSpec.Base", object(x)): the whole family is replaced by Sub1's schema, Sub2 is lost.
-      // fixed: Base is derived as its sealed family (Sub1 may come out as a def of the implicit), so both x and y are there
-      fieldNames(Json.schema[Base]) shouldBe Set("x", "y")
-      sub1S should not be null
-    }
+    import Sub1Implicit._
+    // today: def("...TriageBPendingSpec.Base", object(x)): the whole family is replaced by Sub1's schema, Sub2 is lost.
+    // fixed: Base is derived as its sealed family (Sub1 may come out as a def of the implicit), so both x and y are there
+    fieldNames(Json.schema[Base]) shouldBe Set("x", "y")
+    Golden.check("triageB/covariant.Base", Json.schema[Base])
+    sub1S should not be null
   }
 
   test("an implicit Schema[Sub1] is not used for a field of type Base", TriageB) {
-    pendingUntilFixed {
-      import Sub1Implicit._
-      // today: field b = def("...Base", object(x))
-      fieldNames(Json.schema[HasBase]) shouldBe Set("b", "x", "y")
-      sub1S should not be null
-    }
+    import Sub1Implicit._
+    // today: field b = def("...Base", object(x))
+    fieldNames(Json.schema[HasBase]) shouldBe Set("b", "x", "y")
+    Golden.check("triageB/covariant.HasBase", Json.schema[HasBase])
+    sub1S should not be null
   }
 
   test("an implicit Schema[OpenImpl] doesn't make a non-sealed trait derivable", TriageB) {
-    pendingUntilFixed {
-      // today: compiles, field o = def("...Open", object(z)). fixed: Open has no exact implicit and isn't derivable
-      failsWith(outcome(assertCompiles("{ import OpenImplImplicit._; Json.schema[HasOpen] }")), NotSupported, "TriageBPendingSpec.Open")
-    }
+    // today: compiles, field o = def("...Open", object(z)). fixed: Open has no exact implicit and isn't derivable
+    failsWith(outcome(assertCompiles("{ import OpenImplImplicit._; Json.schema[HasOpen] }")), NotSupported, "TriageBPendingSpec.Open")
   }
 
   // --- annotations and scaladoc ---

@@ -6,6 +6,8 @@
     definition and left refs to the old name dangling)
   - `import json.Json.auto._` works (before, any use crashed scalac with a StackOverflowError): it provides an
     implicit `Predef[T]` for any derivable `T`, and doesn't change what `Json.schema` derives
+  - an implicit `Schema` is used only for exactly its type: an implicit `Schema[Sub]` no longer stands in for
+    a sealed `Base` (which lost its other subtypes) or makes a non-sealed trait derivable
   - copies of a free object stay free: `withTitle`, `withDescription`, `duplicate`, `withField`, `dropField`,
     `withFieldsUpdated` and `toDefinition` no longer turn `additionalProperties: true` into `false`
 - **0.7.10**
