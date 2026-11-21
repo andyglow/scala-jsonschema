@@ -4,12 +4,16 @@ The full list is in the [CHANGELOG](https://github.com/andyglow/scala-jsonschema
 
 ## Output
 
-- Nothing changes unless you ask for it: the default profile (Neutral) and `JsonSchemaProfile.Legacy` render
+- Sealed families render as before unless you ask for a library profile: the default profile (Neutral) and `JsonSchemaProfile.Legacy` render
   sealed families exactly as 0.8 and 0.7 did. To get a schema that matches your codec, import your library's
   profile: see @ref:[Library profiles](rendering.md#library-profiles).
-- Sealed family members (and so the members of the rendered `oneOf` and the values of an enum) are in declaration
-  order on Scala 2 too. Before, families of 5 and more members came out in an order that could change between
-  builds. Members of a family compiled in another project (no source positions) are in name order.
+- Sealed family members are in declaration order on Scala 2 too (the `family` node; a rendered `oneOf` or `enum`
+  keeps it up to 4 entries, with more the order is fixed hash order). Before, families of 5 and more members could
+  come out in a different order from one build to the next. Members of a family compiled in another project (no
+  source positions) are in name order.
+- Two renderer bugs are fixed, also under Legacy: a `oneOf` with a definition or a `$ref` after its first member
+  threw on draft-04/06/07, and a `const` (`Flag.EnumsAsOneOf`) could render `"type": "const"`, which no document
+  matches.
 
 ## API
 

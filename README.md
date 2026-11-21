@@ -312,7 +312,8 @@ If an implicit `ToValue` for the enum type is in scope (e.g. from a JSON-library
 values are the codec's output. Their schema is your `@typeHint[T]` if you give one; otherwise it comes from the
 values themselves when the schema is rendered: strings make a string enum, any other value is a `const` of it.
 
-These are the default shapes. Members are in declaration order. To match how a JSON library writes sealed families
+These are the default shapes. The derived `family` lists the members in declaration order; a rendered `oneOf` or
+`enum` keeps that order up to 4 entries (with more, the order is fixed, but it is hash order). To match how a JSON library writes sealed families
 (play's `_type`, circe's wrapper object, ...), render with that library's profile: see
 [Library profiles](#library-profiles).
 
@@ -670,7 +671,9 @@ to encode case classes on Scala 3 itself, so its profile is for Scala 2 users.
 
 What a profile describes (the same rules for every library):
 - what the library writes, widened only by what its reader also accepts (play reads a missing `Option` field and
-  `null`, so both validate); value classes are unwrapped, as everywhere;
+  `null`, so both validate). Value classes are unwrapped (as fields, collection elements, ...); a value class that
+  is a member of a sealed family is the case class `{"<field>": value}`, as the libraries' derived sum codecs
+  write it;
 - a member's tag (`_type`, `$type`, ...) and name come from the library's configuration, not from
   `@discriminator`/`@discriminatorKey`: the library's derivation never sees those. They apply under Neutral and
   Legacy, and under the spray profile, where you write the sum codec yourself. `@title`, `@description` and
@@ -794,12 +797,16 @@ The full list is in the [CHANGELOG](CHANGELOG.md).
 
 **Output**
 
-- Nothing changes unless you ask for it: the default profile (Neutral) and `JsonSchemaProfile.Legacy` render
+- Sealed families render as before unless you ask for a library profile: the default profile (Neutral) and `JsonSchemaProfile.Legacy` render
   sealed families exactly as 0.8 and 0.7 did. To get a schema that matches your codec, import your library's
   profile (see [Library profiles](#library-profiles)).
-- Sealed family members (and so the members of the rendered `oneOf` and the values of an enum) are in declaration
-  order on Scala 2 too. Before, families of 5 and more members came out in an order that could change between
-  builds. Members of a family compiled in another project (no source positions) are in name order.
+- Sealed family members are in declaration order on Scala 2 too (the `family` node; a rendered `oneOf` or `enum`
+  keeps it up to 4 entries, with more the order is fixed hash order). Before, families of 5 and more members could
+  come out in a different order from one build to the next. Members of a family compiled in another project (no
+  source positions) are in name order.
+- Two renderer bugs are fixed, also under Legacy: a `oneOf` with a definition or a `$ref` after its first member
+  threw on draft-04/06/07, and a `const` (`Flag.EnumsAsOneOf`) could render `"type": "const"`, which no document
+  matches.
 
 **API**
 

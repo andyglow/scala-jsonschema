@@ -35,13 +35,15 @@
   **Fixed**
   - sealed family members are in declaration order on Scala 2, as on Scala 3. Before, Scala 2 listed them in
     `knownDirectSubclasses` order, which for 5 and more members varied from run to run (members of a family
-    compiled in another project, which have no source position, are in name order)
+    compiled in another project, which have no source position, are in name order). A rendered `oneOf`/`enum`
+    keeps the order up to 4 entries; with more it is a fixed hash order, as before
   - rendering a `oneOf` with a definition (`@definition`, an implicit `Schema`) or a `$ref` after its first member
     no longer throws `NotImplementedError` on draft-04/06/07 (`@definition` on a member next to case objects hit
     it), and an `allOf` with one no longer throws either. A definition takes part in the "all members have one
     type" check by its body's type
-  - a `const` in a `oneOf` of members of different types rendered `"type": "const"`, which no document matches
-    (`Flag.EnumsAsOneOf` on a family with case classes); a `const` has no `"type"` now
+  - `"type": "const"`, which no document matches, is gone: a `const` member of a `oneOf` has no `"type"` (it had one
+    among members of different types), and a `oneOf` of consts states their values' type (it stated `"const"` as a
+    field). Both came from `Flag.EnumsAsOneOf`
 
 - **0.8.0** (unreleased): Scala 3 support. See the README's "Migrating to 0.8.0" and "Scala 3 notes".
   PRs: [#429](https://github.com/andyglow/scala-jsonschema/pull/429) (build stack, Central Portal),

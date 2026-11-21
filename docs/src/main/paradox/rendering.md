@@ -166,7 +166,9 @@ to encode case classes on Scala 3 itself, so its profile is for Scala 2 users.
 What a profile describes (the same rules for every library):
 
 - what the library writes, widened only by what its reader also accepts (play reads a missing `Option` field and
-  `null`, so both validate); value classes are unwrapped, as everywhere;
+  `null`, so both validate). Value classes are unwrapped (as fields, collection elements, ...); a value class that
+  is a member of a sealed family is the case class `{"<field>": value}`, as the libraries' derived sum codecs
+  write it;
 - a member's tag (`_type`, `$type`, ...) and name come from the library's configuration, not from
   `@discriminator`/`@discriminatorKey`: the library's derivation never sees those. They apply under Neutral and
   Legacy, and under the spray profile, where you write the sum codec yourself. `@title`, `@description` and
