@@ -11,6 +11,7 @@ import org.scalatest.matchers.should.Matchers._
 
 object TriageBPendingSpec {
   case class Empty()
+  case class HasEmpty(e: Empty)
   case class GenericDefault[T](xs: List[T] = Nil)
   case class GenericValueClass[T](v: T) extends AnyVal
   case class HasGenericValueClass(id: GenericValueClass[String])
@@ -234,12 +235,10 @@ class TriageBPendingSpec extends AnyFunSuite {
   // --- case classes and generics ---
 
   test("a zero-field case class gives an empty object schema", TriageB) {
-    pendingUntilFixed {
-      // today: overloaded method value apply ... cannot be applied to () (the generated `object`[T]())
-      // TODO(fixer): this can only assert "compiles" while it fails to compile on Scala 2. Once fixed, replace the body with
-      //   Json.schema[Empty] shouldEqual `object`.fromList[Empty](Nil)
-      assertCompiles("Json.schema[Empty]")
-    }
+    // was: overloaded method value apply ... cannot be applied to () (the generated `object`[T]())
+    Json.schema[Empty] shouldEqual `object`.fromList[Empty](Nil)
+    Json.schema[HasEmpty] shouldEqual `object`[HasEmpty](Field("e", `object`.fromList[Empty](Nil)))
+    Golden.check("triageB/HasEmpty", Json.schema[HasEmpty])
   }
 
   test("a generic default `xs: List[T] = Nil`", TriageB) {
