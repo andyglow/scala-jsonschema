@@ -14,7 +14,7 @@
 | `java.time.Duration`, `scala.concurrent.duration.Duration`                  | `string`, format `duration`                     |
 | `java.util.UUID`                                                            | `string`, format `uuid`                         |
 | `java.net.URI`, `java.net.URL`                                              | `string`, format `uri`                          |
-| `Option[T]` field                                                           | `T`, not required                               |
+| `Option[T]`                                                                 | `T` or `null`; a field is not required (@ref:[more](rendering.md#option)) |
 | `Iterable[T]` (`List`, `Seq`, `Vector`, `Set`, `Array`, ...)                | `array` (`Set`: `uniqueItems`)                  |
 | `Map[String, V]`, `Map[Int, V]`, ...                                        | `object` with `patternProperties`               |
 | case class                                                                  | `object`                                        |

@@ -10,6 +10,13 @@ The full list is in the [CHANGELOG](https://github.com/andyglow/scala-jsonschema
 
 ## Output that changes
 
+- **Every `Option[X]` is "X or null"** (see @ref:[Option](rendering.md#option)). An `Option` field was X, so
+  `"o": null` (what circe and upickle write by default) didn't validate; it is now `"type": [X, "null"]`, still not
+  required. An `Option` at the root, in a collection or as a map value was `oneOf` of `{"value": X}` and `"None"`,
+  which no JSON library writes. `Option[Option[X]]` is the same as `Option[X]`. To get the 0.7 output back, render
+  with `JsonSchemaProfile.Legacy`: one implicit where you render
+  (`implicit val profile: JsonSchemaProfile = JsonSchemaProfile.Legacy`), or `schema.withProfile(JsonSchemaProfile.Legacy)`.
+  Legacy reproduces 0.7 byte for byte.
 - **Definition names in the rendered JSON follow each draft's grammar.** Characters a draft doesn't allow are
   replaced with `_` in `definitions`/`$defs` keys, `$id`, `$anchor` and `$ref`: `com.acme.Box[scala.Int]` becomes
   `com.acme.Box_scala.Int_`. Draft-04 keeps the characters valid in a URI fragment; drafts 06, 07 and 2019-09
@@ -34,6 +41,13 @@ The full list is in the [CHANGELOG](https://github.com/andyglow/scala-jsonschema
 
 ## API
 
+- **The derived `json.Schema` keeps `Option` as an `` `option` `` node.** An `Option` field is
+  `Field("o", option(integer), required = false)` (was `integer`), and an `Option` elsewhere is `option(X)` (was
+  `oneof` of `Some`/`None`). This matters if you walk the tree yourself (your own renderer, `withFieldsUpdated` on
+  `f.tpe`, comparing with a hand-written `json.Schema` in tests). `schema.withProfile(JsonSchemaProfile.Legacy)`
+  gives the 0.7 tree. The model also has a `` `null` `` leaf (`{"type": "null"}`).
+- The renderers (`AsValue.schema`, `Json.stringify`, `asPlay`, `asCirce`, ...) take an implicit
+  `JsonSchemaProfile`. Nothing changes at the call site: without one in scope, `JsonSchemaProfile.Neutral` is used.
 - `json.Schema` equality is structural: a `ref` compares its signature (any two refs used to be equal), a field
   compares its description, a free object doesn't equal the strict one.
 - `def.toDefinition(name)` renames only its own definition and the refs to it.
@@ -47,3 +61,5 @@ The full list is in the [CHANGELOG](https://github.com/andyglow/scala-jsonschema
   ``W.`5`.T``.
 - parser: `ParseJson` is a strict RFC 8259 parser (it used to accept invalid JSON and didn't decode escapes).
   Failures are `JsonParseException`s with the offset; `MutableValue` and the Java classes are gone.
+  `ParseJsonSchema` reads `"type": "null"` and `"type": [X, "null"]` (as `oneof{X, null}`), so the schemas this
+  version renders for `Option` fields parse.

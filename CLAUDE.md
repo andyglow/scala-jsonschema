@@ -31,7 +31,8 @@ docs/      the documentation site (paradox + mdoc): docs/src/main/paradox. Not a
 Tests: shared specs under `api/src/test/scala`, Scala 3-only ones under `scala-3/`. Golden files
 (`api/src/test/resources/golden`, harness in `api/src/test/.../harness/Golden.scala`) hold the target output per model;
 `<name>@<ver>.json` overrides one Scala version. Regenerate with `GOLDEN_UPDATE=1 sbt clean api/test` (a CLEAN build,
-or Scala 2 scaladoc is silently missing) and review the diff. Tags `TRIAGE-A/B/C`, `UNTRIAGED` (`harness/Triage.scala`)
+or Scala 2 scaladoc is silently missing) and review the diff. `golden-legacy/` is the frozen 0.7 output that
+`JsonSchemaProfile.Legacy` must reproduce; update mode never rewrites it. Tags `TRIAGE-A/B/C`, `UNTRIAGED` (`harness/Triage.scala`)
 mark tests of decided-but-not-current behavior.
 
 ## The core design rule

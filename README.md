@@ -77,7 +77,7 @@ println(Json.stringify(schema, Draft07("https://example.com/person.json")))
   "additionalProperties": false,
   "properties": {
     "name": { "type": "string" },
-    "nickname": { "type": "string" },
+    "nickname": { "type": ["string", "null"] },
     "age": { "default": 18, "type": "integer" },
     "company": {
       "type": "object",
@@ -90,9 +90,10 @@ println(Json.stringify(schema, Draft07("https://example.com/person.json")))
 }
 ```
 
-`Option` fields and fields with a default value are optional. A default is written into the schema when it can be
-turned into JSON: primitives, strings and collections/maps of them always can, other types need a `ToValue`, which
-the JSON-library bridges derive from your encoders (`import com.github.andyglow.jsonschema.AsPlay._` etc.).
+`Option` fields and fields with a default value are optional. An `Option[X]` is "X or null" wherever it appears
+(see [`Option`](#option)). A default is written into the schema when it can be turned into JSON: primitives, strings
+and collections/maps of them always can, other types need a `ToValue`, which the JSON-library bridges derive from
+your encoders (`import com.github.andyglow.jsonschema.AsPlay._` etc.).
 
 The same code works on Scala 3. There you can also derive the schema with the type:
 
@@ -258,7 +259,7 @@ Recursive types (`case class Node(children: List[Node])`) become a definition au
 | `java.time.Duration`, `scala.concurrent.duration.Duration`                  | `string`, format `duration`                     |
 | `java.util.UUID`                                                            | `string`, format `uuid`                         |
 | `java.net.URI`, `java.net.URL`                                              | `string`, format `uri`                          |
-| `Option[T]` field                                                           | `T`, not required                               |
+| `Option[T]`                                                                 | `T` or `null`; a field is not required ([more](#option)) |
 | `Iterable[T]` (`List`, `Seq`, `Vector`, `Set`, `Array`, ...)                | `array` (`Set`: `uniqueItems`)                  |
 | `Map[String, V]`, `Map[Int, V]`, ...                                        | `object` with `patternProperties`               |
 | case class                                                                  | `object`                                        |
@@ -531,6 +532,53 @@ import com.github.andyglow.jsonschema.AsU._       // json.Json.schema[Foo].asU(D
 These libraries have their own `Json` object, so write `json.Json.schema` when you import their package with `_`.
 The bridges also provide `ToValue` from the library's encoders, so default values of your own types get rendered.
 
+### `Option`
+
+Every `Option[X]` is "X or null": at the root, as a collection element, as a map value and as a field. An `Option`
+field is also not required, and `Option[Option[X]]` is the same as `Option[X]`. This is what circe, play-json,
+spray-json and upickle write (`None` is `null`, or the field is left out) and read back.
+
+```scala
+case class Pet(name: String, age: Option[Int], tags: List[Option[String]], owner: Option[Owner])
+```
+
+Draft-04, abridged (`Owner` has an implicit `Schema`, so it is a definition):
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": { "type": "string" },
+    "age": { "type": ["integer", "null"] },
+    "tags": { "type": "array", "items": { "type": ["string", "null"] } },
+    "owner": { "oneOf": [{ "$ref": "#/definitions/Owner" }, { "type": "null" }] }
+  },
+  "required": ["name", "tags"]
+}
+```
+
+Where X has one JSON type (a string, number, integer, boolean, array or object), the output is X with
+`"type": [X, "null"]`. Otherwise (an enum, a `$ref`, a sealed family) it is `oneOf: [X, {"type": "null"}]`.
+
+The macro keeps the fact "this is an `Option`" in the schema as an `` `option` `` node, and the renderer shapes it
+with a `json.schema.JsonSchemaProfile`. The default profile is `JsonSchemaProfile.Neutral`, as above.
+`JsonSchemaProfile.Legacy` renders exactly what 0.7 rendered: an `Option` field is X and not required, any other
+`Option[X]` is `oneOf: [{"type": "object", "properties": {"value": X}, ...}, {"type": "string", "enum": ["None"]}]`. Use it for one
+schema, or for every render where an implicit profile is in scope:
+
+```scala
+import json.schema.JsonSchemaProfile
+
+Json.schema[Pet].withProfile(JsonSchemaProfile.Legacy)               // a json.Schema with the 0.7 shapes
+
+implicit val profile: JsonSchemaProfile = JsonSchemaProfile.Legacy   // Scala 3: given JsonSchemaProfile = JsonSchemaProfile.Legacy
+Json.stringify(Json.schema[Pet], Draft07("id"))                      // also AsValue.schema, asPlay, asCirce, ...
+```
+
+`withProfile` shapes the schema right away, so a later render keeps that shape whatever profile is in scope. To
+share one profile across a project, define it in an object and import it where you render. In Scala 3, `import
+Settings.*` doesn't import a `given`: write `import Settings.given`, or declare the profile as an `implicit val`.
+
 ## Modules
 
 ### Refined
@@ -611,7 +659,7 @@ applies instead.
 
 `scala-jsonschema-parser` goes the other way: `com.github.andyglow.json.ParseJson(string)` parses JSON into the
 library's AST, and `com.github.andyglow.jsonschema.ParseJsonSchema(string)` parses a JSON Schema (a draft-04
-subset) into a `Try[json.Schema[_]]`.
+subset, including `"type": [X, "null"]`) into a `Try[json.Schema[_]]`.
 
 ## Migrating to 0.8.0
 
@@ -625,6 +673,13 @@ The full list is in the [CHANGELOG](CHANGELOG.md).
 
 **Output that changes**
 
+- **Every `Option[X]` is "X or null"** (see [`Option`](#option)). An `Option` field was X, so `"o": null` (what
+  circe and upickle write by default) didn't validate; it is now `"type": [X, "null"]`, still not required. An
+  `Option` at the root, in a collection or as a map value was `oneOf` of `{"value": X}` and `"None"`, which no JSON
+  library writes. `Option[Option[X]]` is the same as `Option[X]`. To get the 0.7 output back, render with
+  `JsonSchemaProfile.Legacy`: one implicit where you render
+  (`implicit val profile: JsonSchemaProfile = JsonSchemaProfile.Legacy`), or `schema.withProfile(JsonSchemaProfile.Legacy)`.
+  Legacy reproduces 0.7 byte for byte.
 - **Definition names in the rendered JSON follow each draft's grammar.** Characters a draft doesn't allow are
   replaced with `_` in `definitions`/`$defs` keys, `$id`, `$anchor` and `$ref`: `com.acme.Box[scala.Int]` →
   `com.acme.Box_scala.Int_`. Draft-04 keeps the characters valid in a URI fragment; drafts 06, 07 and 2019-09
@@ -649,6 +704,13 @@ The full list is in the [CHANGELOG](CHANGELOG.md).
 
 **API**
 
+- **The derived `json.Schema` keeps `Option` as an `` `option` `` node.** An `Option` field is
+  `Field("o", option(integer), required = false)` (was `integer`), and an `Option` elsewhere is `option(X)` (was
+  `oneof` of `Some`/`None`). This matters if you walk the tree yourself (your own renderer, `withFieldsUpdated` on
+  `f.tpe`, comparing with a hand-written `json.Schema` in tests). `schema.withProfile(JsonSchemaProfile.Legacy)`
+  gives the 0.7 tree. The model also has a `` `null` `` leaf (`{"type": "null"}`).
+- The renderers (`AsValue.schema`, `Json.stringify`, `asPlay`, `asCirce`, ...) take an implicit
+  `JsonSchemaProfile`. Nothing changes at the call site: without one in scope, `JsonSchemaProfile.Neutral` is used.
 - `json.Schema` equality is structural: a `ref` compares its signature (any two refs used to be equal), a field
   compares its description, a free object doesn't equal the strict one.
 - `def.toDefinition(name)` renames only its own definition and the refs to it.
@@ -662,6 +724,8 @@ The full list is in the [CHANGELOG](CHANGELOG.md).
   ``W.`5`.T``.
 - parser: `ParseJson` is a strict RFC 8259 parser (it used to accept invalid JSON and didn't decode escapes).
   Failures are `JsonParseException`s with the offset; `MutableValue` and the Java classes are gone.
+  `ParseJsonSchema` reads `"type": "null"` and `"type": [X, "null"]` (as `oneof{X, null}`), so the schemas this
+  version renders for `Option` fields parse.
 
 ## Scala 3 notes
 
