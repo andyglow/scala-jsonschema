@@ -1,6 +1,6 @@
 package com.github.andyglow.jsonschema.characterization
 
-import com.github.andyglow.jsonschema.harness.{ErrorPhrases, Golden, TriageB}
+import com.github.andyglow.jsonschema.harness.{ErrorPhrases, Golden, Scala, TriageB}
 import com.github.andyglow.jsonschema.harness.CompileErrors.outcome
 import json._
 import json.Schema.{`not` => _, _}
@@ -223,8 +223,10 @@ class TriageBPendingSpec extends AnyFunSuite {
 
   test("a non-generic Iterable (BitSet) doesn't crash", TriageB) {
     // was: NoSuchElementException: head of empty list
-    compilesOrFailsWith(outcome(assertCompiles("Json.schema[HasBitSet]")), ClearUnsupported, "BitSet")
-    compilesOrFailsWith(outcome(assertCompiles("Json.schema[scala.collection.immutable.BitSet]")), ClearUnsupported, "BitSet")
+    // Scala 2: a clear error; Scala 3 may support it
+    val check: (Option[String], Seq[String]) => Unit = if (Scala.is2) (r, ps) => failsWith(r, ps: _*) else (r, ps) => compilesOrFailsWith(r, ps: _*)
+    check(outcome(assertCompiles("Json.schema[HasBitSet]")), Seq(ClearUnsupported, "BitSet"))
+    check(outcome(assertCompiles("Json.schema[scala.collection.immutable.BitSet]")), Seq(ClearUnsupported, "BitSet"))
   }
 
   test("signature of refined/compound/annotated types doesn't crash", TriageB) {
@@ -233,6 +235,12 @@ class TriageBPendingSpec extends AnyFunSuite {
     compilesOrFailsWith(outcome(assertCompiles("Json.sig[Foo with Serializable]")), ClearUnsupported)
     compilesOrFailsWith(outcome(assertCompiles("Json.sig[Int @unchecked]")), ClearUnsupported)
     compilesOrFailsWith(outcome(assertCompiles("{ implicit val s: Schema[Foo with Serializable] = null; Json.schema[Foo with Serializable] }")), ClearUnsupported)
+    // Scala 2 (the Scala 3 macro must reproduce it): a structural type is a clear error, a compound type is named after its parents, an annotation is ignored
+    if (Scala.is2) {
+      failsWith(outcome(assertCompiles("Json.sig[AnyRef { def x: Int }]")), ClearUnsupported)
+      Json.sig[Foo with java.io.Serializable].signature shouldBe "com.github.andyglow.jsonschema.characterization.TriageBPendingSpec.Foo with java.io.Serializable"
+      Json.sig[Int @unchecked].signature shouldBe "scala.Int"
+    }
   }
 
   test("objectSchema with an unrecognized decoration shape doesn't crash", TriageB) {
