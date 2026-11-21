@@ -536,7 +536,8 @@ The bridges also provide `ToValue` from the library's encoders, so default value
 
 Every `Option[X]` is "X or null": at the root, as a collection element, as a map value and as a field. An `Option`
 field is also not required, and `Option[Option[X]]` is the same as `Option[X]`. This is what circe, play-json,
-spray-json and upickle write (`None` is `null`, or the field is left out) and read back.
+spray-json and upickle write (`None` is `null`, or the field is left out) and read back (upickle's reader wants
+the key present unless the field has a default).
 
 ```scala
 case class Pet(name: String, age: Option[Int], tags: List[Option[String]], owner: Option[Owner])
@@ -563,7 +564,7 @@ Where X has one JSON type (a string, number, integer, boolean, array or object),
 The macro keeps the fact "this is an `Option`" in the schema as an `` `option` `` node, and the renderer shapes it
 with a `json.schema.JsonSchemaProfile`. The default profile is `JsonSchemaProfile.Neutral`, as above.
 `JsonSchemaProfile.Legacy` renders exactly what 0.7 rendered: an `Option` field is X and not required, any other
-`Option[X]` is `oneOf: [{"type": "object", "properties": {"value": X}, ...}, {"type": "string", "enum": ["None"]}]`. Use it for one
+`Option[X]` is `oneOf: [{"type": "string", "enum": ["None"]}, {"type": "object", "properties": {"value": X}, ...}]`. Use it for one
 schema, or for every render where an implicit profile is in scope:
 
 ```scala

@@ -90,11 +90,11 @@ object JsonSchemaProfile {
       case OptionStyle.Nullable =>
         `oneof`[Any](Set(apply(flatten(inner)), Schema.`null`))
       case OptionStyle.Legacy =>
-        // exactly what both macros derived in 0.7
+        // exactly what the Scala 2 macro derived in 0.7, member order included (a 2-element Set iterates in insertion order, and the renderer keeps it)
         `oneof`[Any](
           Set(
-            `object`.fromList[Any](List(`object`.Field("value", apply(inner), required = true))),
-            `enum`[Any](`string`[String](None), Set[Value](Value.str("None")))
+            `enum`[Any](`string`[String](None), Set[Value](Value.str("None"))),
+            `object`.fromList[Any](List(`object`.Field("value", apply(inner), required = true)))
           ),
           None
         )

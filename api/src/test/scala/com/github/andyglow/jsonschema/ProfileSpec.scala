@@ -110,6 +110,16 @@ class ProfileSpec extends AnyFunSuite {
     Json.schema[Option[Int]].withProfile(JsonSchemaProfile.Legacy) shouldEqual legacyOption(`integer`)
   }
 
+  test("Legacy renders the 0.7 member order (the goldens sort arrays, so this is checked here)") {
+    val none                                = obj("type" -> "string", "enum" -> arr("None"))
+    val value                               = obj("type" -> "object", "additionalProperties" -> false, "properties" -> obj("value" -> obj("type" -> "integer")), "required" -> arr("value"))
+    implicit val profile: JsonSchemaProfile = JsonSchemaProfile.Legacy
+    // arr equality is ordered: 0.7 (Scala 2) rendered enum["None"] first
+    body(AsValue.schema(Json.schema[Option[Int]], Draft07("id"))) shouldEqual obj("oneOf" -> arr(none, value))
+    body(AsValue.schema(Json.schema[List[Option[Int]]], Draft07("id"))) shouldEqual obj("type" -> "array", "items" -> obj("oneOf" -> arr(none, value)))
+    JsonFormatter.format(body(AsValue.schema(Json.schema[Option[Int]], Draft04()))) shouldEqual JsonFormatter.format(obj("oneOf" -> arr(none, value)))
+  }
+
   test("Legacy as the implicit profile where the schema is rendered, or per schema with withProfile") {
     val expected = AsValue.schema(pet.withProfile(JsonSchemaProfile.Legacy), Draft07("id"))
     prop(expected, "age") shouldEqual obj("type" -> "integer")
