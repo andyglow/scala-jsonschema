@@ -28,6 +28,11 @@
     have default values (a clear error)
   - Java enums (`java.time.DayOfWeek`, `java.time.Month`, `java.util.concurrent.TimeUnit`, ...) derive a string
     enum of their constant names, also as Map keys (before: a macro crash)
+  - rendered definition names follow each draft's grammar: every character a draft doesn't allow in a definition
+    name is replaced with `_` (`com.acme.Box[scala.Int]` → `com.acme.Box_scala.Int_`), for draft-04 in
+    `#/definitions/...` refs, for 06/07 in `$id`/`$ref` plain-name fragments, for 2019-09/2020-12 in `$anchor`/`$ref`.
+    Collisions get `_2`, `_3`, ... (in signature order; a name that already conforms keeps it). `Json.sig`, the
+    `Schema` value and the raw renderer keep the readable signature
   - copies of a free object stay free: `withTitle`, `withDescription`, `duplicate`, `withField`, `dropField`,
     `withFieldsUpdated` and `toDefinition` no longer turn `additionalProperties: true` into `false`
 - **0.7.10**

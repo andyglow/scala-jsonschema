@@ -13,4 +13,8 @@ object AsRaw extends AsValue with AsDraftSupport with Post09 {
       if (definitions.fields.nonEmpty) obj("definitions" -> definitions) else obj()
     }
   }
+
+  // raw output keeps the signatures as they are (and this renderer is a shared object: no per-document state)
+  protected def sanitizeDefinitionName(sig: String): String                = sig
+  override protected def assignDefinitionNames(root: json.Schema[_]): Unit = ()
 }

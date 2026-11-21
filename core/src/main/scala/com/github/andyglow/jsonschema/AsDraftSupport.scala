@@ -22,7 +22,22 @@ trait AsDraftSupport {
 
   type ParentSchema = Option[json.Schema[_]]
 
-  def apply(x: json.Schema[_]): obj = apply(x, None, includeType = true, isRoot = true)
+  /** Makes a definition signature a valid name for this draft (see [[DefinitionNames]]). */
+  protected def sanitizeDefinitionName(sig: String): String
+
+  private var definitionNames: Map[String, String] = Map.empty
+
+  /** Computes the names of all definitions and refs of a document, before rendering it. */
+  protected def assignDefinitionNames(root: json.Schema[_]): Unit =
+    definitionNames = DefinitionNames.assign(root, sanitizeDefinitionName)
+
+  /** The name a definition signature has in the rendered document. */
+  protected def definitionName(sig: String): String = definitionNames.getOrElse(sig, sanitizeDefinitionName(sig))
+
+  def apply(x: json.Schema[_]): obj = {
+    assignDefinitionNames(x)
+    apply(x, None, includeType = true, isRoot = true)
+  }
 
   def apply(x: json.Schema[_], parent: ParentSchema, includeType: Boolean, isRoot: Boolean): obj = {
     val validationList = inferValidations(x)
@@ -158,12 +173,12 @@ trait AsDraftSupport {
   }
 
   def mkDef(vl: ValidationList, x: `def`[_], par: ParentSchema): obj = {
-    val ref = x.sig
+    val ref = definitionName(x.sig)
     obj(f"$$ref" -> buildRef(ref))
   }
 
   def mkRef(vl: ValidationList, x: `ref`[_], par: ParentSchema): obj = {
-    val ref = x.sig
+    val ref = definitionName(x.sig)
     obj(f"$$ref" -> buildRef(ref))
   }
 
@@ -237,7 +252,7 @@ trait AsDraftSupport {
   }
 
   def inferDefinition(x: `def`[_], par: ParentSchema): (String, obj) = {
-    val ref = x.sig
+    val ref = definitionName(x.sig)
     ref -> apply(x.tpe, par orElse Some(x), includeType = true, isRoot = false)
   }
 
