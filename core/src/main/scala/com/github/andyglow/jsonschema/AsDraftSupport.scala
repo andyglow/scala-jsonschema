@@ -159,8 +159,9 @@ trait AsDraftSupport {
       case _           => true
     }.map { _.jsonType }
     val sameType = subTypesSeq.tail.foldLeft(tpe.isDefined) {
-      case (false, _) => false
-      case (true, t)  => t.jsonType == tpe.get
+      case (false, _)                     => false
+      case (true, _: `def`[_] | `ref`(_)) => true // a `$ref` has no type of its own (asking it threw before)
+      case (true, t)                      => t.jsonType == tpe.get
     }
     def rootType = tpe filter { _ => !isRoot } map { t => obj("type" -> `str`(t)) } getOrElse obj()
     if (sameType) {

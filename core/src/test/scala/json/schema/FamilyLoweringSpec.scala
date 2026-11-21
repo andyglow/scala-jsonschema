@@ -173,6 +173,7 @@ class FamilyLoweringSpec extends AnyWordSpec {
     "render a family with a Provided def member, and an allOf with a ref (it used to throw on `def.jsonType`)" in {
       val m = dog.copy(kind = Kind.Provided, schema = `def`[Any]("petshop.Dog", dogObj))
       val f = `family`[Any](List(product("A"), m, product("B")))
+      noException should be thrownBy render(f, Neutral)
       noException should be thrownBy render(f, play)
       noException should be thrownBy render(`allof`[Any](Set(`ref`[Any]("r"), dogObj)), Neutral)
     }

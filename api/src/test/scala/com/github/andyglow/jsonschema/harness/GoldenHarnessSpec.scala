@@ -91,9 +91,9 @@ class GoldenHarnessSpec extends AnyFunSuite {
   }
 
   test("a renderer crash is recorded, not thrown") {
-    // known renderer crash: oneOf calls `jsonType` on every member after the first typed one, which is `???` for a def
+    // a renderer crash: `jsonType` of a def/ref is `???`, and an enum of a def asks for it
     var out = ""
-    noException should be thrownBy { out = Golden.render(`oneof`.of[Any](`string`, `def`[Any]("b", `integer`))) }
+    noException should be thrownBy { out = Golden.render(`enum`[Any](`def`[Any]("b", `integer`), Set[com.github.andyglow.json.Value](num(1)))) }
     out should include("\"renderError\"")
   }
 }
