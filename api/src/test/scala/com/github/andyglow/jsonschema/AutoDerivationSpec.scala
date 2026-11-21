@@ -60,6 +60,7 @@ class AutoDerivationSpec extends AnyFunSuite {
   test("auto: a type it can't derive is a compile error that says why") {
     val msg = intercept[TestFailedException](assertCompiles("{ import Json.auto._; predefOf[Unsupported] }")).getMessage
     msg should include("schema for com.github.andyglow.jsonschema.AutoDerivationSpec.NoSchema is not supported")
+    msg shouldNot include("an implicit for it failed") // Json.auto declining isn't a failed implicit
   }
 
   test("auto: built-in Predefs still win (Int, String, List)") {
