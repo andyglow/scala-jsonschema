@@ -34,14 +34,14 @@ trait FamilyEmit { this: Derivation =>
     val members = s.leaves map { m =>
       val sym = if (m.singleton.isDefined) m.singleton.get.symbol else classSymbol(m.tpe)
       // a Scala 3 enum case's runtime class doesn't identify it (reviewer11 A6)
-      val cls                                       = Option.when(m.kind != MemberKind.EnumSingletonCase)(m.tpe.widen)
+      val cls                                                                                                                      = Option.when(m.kind != MemberKind.EnumSingletonCase)(m.tpe.widen)
       def facts(kind: Expr[Schema.`family`.Kind], schema: Expr[Schema[?]], value: Option[Expr[Value]], valueField: Option[String]) =
         MemberFacts(m.name, scala2FullName(sym), m.sig, kind, schema, value, cls, m.texts, m.discriminatorKey, m.definition, valueField)
       m.schema match {
-        case sg: Singleton    => facts('{ Schema.`family`.Kind.Singleton }, emit(sg.valueSchema), Some(sg.item.value), None)
-        case n: FromImplicit  => facts('{ Schema.`family`.Kind.Provided }, emit(n), None, None)
-        case vc: ValueClass   => facts('{ Schema.`family`.Kind.ValueClass }, emit(vc), None, Some(vc.fieldName))
-        case n                => facts('{ Schema.`family`.Kind.Product }, emit(n), None, None)
+        case sg: Singleton   => facts('{ Schema.`family`.Kind.Singleton }, emit(sg.valueSchema), Some(sg.item.value), None)
+        case n: FromImplicit => facts('{ Schema.`family`.Kind.Provided }, emit(n), None, None)
+        case vc: ValueClass  => facts('{ Schema.`family`.Kind.ValueClass }, emit(vc), None, Some(vc.fieldName))
+        case n               => facts('{ Schema.`family`.Kind.Product }, emit(n), None, None)
       }
     }
     emitFamily(s.tpe, members, s.discriminator.map(resolved), s.enumsAsOneOf)
@@ -104,9 +104,9 @@ trait FamilyEmit { this: Derivation =>
         '{ Some($c) }
       case None => '{ None }
     }
-    val title       = str(m.texts.title)
-    val description = str(m.texts.description)
-    val key         = str(m.discriminatorKey)
+    val title                                                = str(m.texts.title)
+    val description                                          = str(m.texts.description)
+    val key                                                  = str(m.discriminatorKey)
     val definition: Expr[Option[Schema.`family`.Definition]] = m.definition match {
       case Some(Arg.Given(n)) =>
         val ne = Expr(n)
