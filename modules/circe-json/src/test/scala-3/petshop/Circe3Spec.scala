@@ -18,6 +18,26 @@ object Circe3ConfiguredCodecs {
   given Encoder[Pet]    = ConfiguredEncoder.derived
 }
 
+// ---- user code: renamed constructors (reviewer12 S2), with a discriminator and with wrapper objects
+object Circe3SnakeCodecs {
+  given Configuration   = Configuration.default.withDiscriminator("t").withSnakeCaseConstructorNames
+  given Encoder[Dog]    = ConfiguredEncoder.derived
+  given Encoder[Animal] = ConfiguredEncoder.derived
+  given Encoder[Pet]    = ConfiguredEncoder.derived
+}
+object Circe3KebabCodecs {
+  given Configuration   = Configuration.default.withKebabCaseConstructorNames
+  given Encoder[Dog]    = ConfiguredEncoder.derived
+  given Encoder[Animal] = ConfiguredEncoder.derived
+  given Encoder[Pet]    = ConfiguredEncoder.derived
+}
+object Circe3ToyCodecs {
+  given Configuration     = Configuration.default.withDiscriminator("t")
+  given Encoder[Toy.Ball] = ConfiguredEncoder.derived
+  given Encoder[Toy]      = ConfiguredEncoder.derived
+  given Encoder[Box]      = ConfiguredEncoder.derived
+}
+
 // ---- user code: Scala 3 enums with circe-generic semiauto
 object Circe3EnumCodecs {
   import io.circe.generic.semiauto.deriveEncoder
@@ -44,6 +64,25 @@ class Circe3Spec extends AnyWordSpec {
       summon[JsonSchemaProfile].sumStyle shouldBe SumStyle.Discriminator("type")
       assertValid(rendered(Schemas.pet), docs)
       Schemas.pet.asCirce(Version.Draft12("x")).noSpaces shouldBe rendered(Schemas.pet).apply(Version.Draft12("x"))
+    }
+    "follow renamed constructors, tagged (snake_case + discriminator)" in {
+      import com.github.andyglow.jsonschema.profiles.circe.*
+      import Circe3SnakeCodecs.given
+      val docs = Samples.pets.map(_.asJson.noSpaces)
+      docs.mkString should (include("\"t\":\"dog\"") and include("\"t\":\"fish\""))
+      assertValid(rendered(Schemas.pet), docs)
+    }
+    "follow renamed constructors, wrapped (kebab-case, no discriminator)" in {
+      import com.github.andyglow.jsonschema.profiles.circe.*
+      import Circe3KebabCodecs.given
+      val docs = Samples.pets.map(_.asJson.noSpaces)
+      docs.mkString should (include("{\"dog\":") and include("{\"fish\":"))
+      assertValid(rendered(Schemas.pet), docs)
+    }
+    "describe members nested in the trait's companion" in {
+      import com.github.andyglow.jsonschema.profiles.circe.*
+      import Circe3ToyCodecs.given
+      assertValid(rendered(Schemas.box), Samples.boxes.map(_.asJson.noSpaces))
     }
     "be circe-generic's without one" in {
       import com.github.andyglow.jsonschema.profiles.circe.*

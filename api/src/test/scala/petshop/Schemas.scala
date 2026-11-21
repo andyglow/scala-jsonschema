@@ -9,6 +9,7 @@ object Schemas {
   val paint: Schema[Paint]   = Json.schema[Paint]
   val shape: Schema[Shape]   = Json.schema[Shape]
   val badge: Schema[Badge]   = Json.schema[Badge]
+  val box: Schema[Box]       = Json.schema[Box]
 
   /** `Card` derived where no implicit `Schema[Card]` is in scope. */
   val card: Schema[Card]       = Json.schema[Card]

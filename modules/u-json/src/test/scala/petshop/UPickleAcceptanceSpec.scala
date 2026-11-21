@@ -11,27 +11,31 @@ import scala.util.Try
 // ---- user code: upickle.default
 object UPickleDefaultCodecs {
   import _root_.upickle.default.{macroRW, ReadWriter => RW}
-  implicit val dogRW: RW[Dog]          = macroRW
-  implicit val fishRW: RW[Fish.type]   = macroRW
-  implicit val animalRW: RW[Animal]    = macroRW
-  implicit val petRW: RW[Pet]          = macroRW
-  implicit val sedanRW: RW[Sedan]      = macroRW
-  implicit val coupeRW: RW[Coupe.type] = macroRW
-  implicit val carRW: RW[Car]          = macroRW
-  implicit val bikeRW: RW[Bike]        = macroRW
-  implicit val vehicleRW: RW[Vehicle]  = macroRW
-  implicit val garageRW: RW[Garage]    = macroRW
-  implicit val redRW: RW[Red.type]     = macroRW
-  implicit val greenRW: RW[Green.type] = macroRW
-  implicit val colorRW: RW[Color]      = macroRW
-  implicit val paintRW: RW[Paint]      = macroRW
-  implicit val readingRW: RW[Reading]  = macroRW
-  implicit val circleRW: RW[Circle]    = macroRW
-  implicit val squareRW: RW[Square]    = macroRW
-  implicit val shapeRW: RW[Shape]      = macroRW
-  implicit val cardRW: RW[Card]        = macroRW
-  implicit val cashRW: RW[Cash]        = macroRW
-  implicit val paymentRW: RW[Payment]  = macroRW
+  implicit val dogRW: RW[Dog]            = macroRW
+  implicit val fishRW: RW[Fish.type]     = macroRW
+  implicit val animalRW: RW[Animal]      = macroRW
+  implicit val petRW: RW[Pet]            = macroRW
+  implicit val sedanRW: RW[Sedan]        = macroRW
+  implicit val coupeRW: RW[Coupe.type]   = macroRW
+  implicit val carRW: RW[Car]            = macroRW
+  implicit val bikeRW: RW[Bike]          = macroRW
+  implicit val vehicleRW: RW[Vehicle]    = macroRW
+  implicit val garageRW: RW[Garage]      = macroRW
+  implicit val redRW: RW[Red.type]       = macroRW
+  implicit val greenRW: RW[Green.type]   = macroRW
+  implicit val colorRW: RW[Color]        = macroRW
+  implicit val paintRW: RW[Paint]        = macroRW
+  implicit val readingRW: RW[Reading]    = macroRW
+  implicit val circleRW: RW[Circle]      = macroRW
+  implicit val squareRW: RW[Square]      = macroRW
+  implicit val shapeRW: RW[Shape]        = macroRW
+  implicit val cardRW: RW[Card]          = macroRW
+  implicit val cashRW: RW[Cash]          = macroRW
+  implicit val paymentRW: RW[Payment]    = macroRW
+  implicit val ballRW: RW[Toy.Ball]      = macroRW
+  implicit val kiteRW: RW[Toy.Kite.type] = macroRW
+  implicit val toyRW: RW[Toy]            = macroRW
+  implicit val boxRW: RW[Box]            = macroRW
 }
 
 // ---- user code: upickle API objects of your own
@@ -46,10 +50,14 @@ object MyPicklerCodecs {
 object FullNames extends _root_.upickle.AttributeTagged { override def objectTypeKeyWriteFullyQualified = true }
 object FullNamesCodecs {
   import FullNames.{macroRW, ReadWriter => RW}
-  implicit val dogRW: RW[Dog]        = macroRW
-  implicit val fishRW: RW[Fish.type] = macroRW
-  implicit val animalRW: RW[Animal]  = macroRW
-  implicit val petRW: RW[Pet]        = macroRW
+  implicit val dogRW: RW[Dog]            = macroRW
+  implicit val fishRW: RW[Fish.type]     = macroRW
+  implicit val animalRW: RW[Animal]      = macroRW
+  implicit val petRW: RW[Pet]            = macroRW
+  implicit val ballRW: RW[Toy.Ball]      = macroRW
+  implicit val kiteRW: RW[Toy.Kite.type] = macroRW
+  implicit val toyRW: RW[Toy]            = macroRW
+  implicit val boxRW: RW[Box]            = macroRW
 }
 object LowerTags extends _root_.upickle.AttributeTagged {
   override def objectTypeKeyWriteMap(s: CharSequence): CharSequence = s.toString.toLowerCase
@@ -97,6 +105,7 @@ class UPickleAcceptanceSpec extends AnyWordSpec {
       assertInvalid(rendered(Schemas.pet), List(absent))
     }
     "a nested family, flattened" in assertValid(rendered(Schemas.garage), written(List(Samples.garage)))
+    "members nested in the trait's companion" in assertValid(rendered(Schemas.box), written(Samples.boxes))
     "a family of case objects only" in assertValid(rendered(Schemas.paint), written(Samples.paints))
     "Option fields with defaults (= None, = Some(1)): not required, and dropped when equal to the default" in {
       written(Samples.readings).head shouldBe """{"id":"r1","note":null}"""
@@ -129,6 +138,9 @@ class UPickleAcceptanceSpec extends AnyWordSpec {
       val docs                                = Samples.pets.map(p => FullNames.write(p)(FullNamesCodecs.petRW))
       docs.mkString should include("petshop.Dog")
       assertValid(rendered(Schemas.pet), docs)
+      val boxes = Samples.boxes.map(b => FullNames.write(b)(FullNamesCodecs.boxRW)) // members nested in the companion: petshop.Toy.Ball
+      boxes.mkString should include("petshop.Toy.Ball")
+      assertValid(rendered(Schemas.box), boxes)
     }
     "apply objectTypeKeyWriteMap to tags, not to case object strings (as upickle does)" in {
       implicit val profile: JsonSchemaProfile = UPickleProfile.fromApi(LowerTags)

@@ -33,7 +33,7 @@ class PlayProfileImplicitsSpec extends AnyWordSpec {
   }
 
   "profiles.play._ and an imported profile, in the same scope" should {
-    if (Acceptance.isScala3) "pick the project's (Scala 3)" in {
+    if (Acceptance.isScala3) "compile (Scala 3: PlayProfile3Spec checks that the project's wins)" in {
       CompileErrors.outcome(assertCompiles("""
         import com.github.andyglow.jsonschema.profiles.play._
         import petshop.PlayProjectSettings._

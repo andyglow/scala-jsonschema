@@ -11,26 +11,30 @@ import org.scalatest.wordspec.AnyWordSpec
 // ---- user code: circe-generic semiauto
 object CirceSemiautoCodecs {
   import io.circe.generic.semiauto._
-  implicit val dogE: Encoder[Dog]          = deriveEncoder
-  implicit val fishE: Encoder[Fish.type]   = deriveEncoder
-  implicit val animalE: Encoder[Animal]    = deriveEncoder
-  implicit val petE: Encoder[Pet]          = deriveEncoder
-  implicit val sedanE: Encoder[Sedan]      = deriveEncoder
-  implicit val coupeE: Encoder[Coupe.type] = deriveEncoder
-  implicit val bikeE: Encoder[Bike]        = deriveEncoder
-  implicit val vehicleE: Encoder[Vehicle]  = deriveEncoder
-  implicit val garageE: Encoder[Garage]    = deriveEncoder
-  implicit val redE: Encoder[Red.type]     = deriveEncoder
-  implicit val greenE: Encoder[Green.type] = deriveEncoder
-  implicit val colorE: Encoder[Color]      = deriveEncoder
-  implicit val paintE: Encoder[Paint]      = deriveEncoder
-  implicit val readingE: Encoder[Reading]  = deriveEncoder
-  implicit val circleE: Encoder[Circle]    = deriveEncoder
-  implicit val squareE: Encoder[Square]    = deriveEncoder
-  implicit val shapeE: Encoder[Shape]      = deriveEncoder
-  implicit val cardE: Encoder[Card]        = deriveEncoder
-  implicit val cashE: Encoder[Cash]        = deriveEncoder
-  implicit val paymentE: Encoder[Payment]  = deriveEncoder
+  implicit val dogE: Encoder[Dog]            = deriveEncoder
+  implicit val fishE: Encoder[Fish.type]     = deriveEncoder
+  implicit val animalE: Encoder[Animal]      = deriveEncoder
+  implicit val petE: Encoder[Pet]            = deriveEncoder
+  implicit val sedanE: Encoder[Sedan]        = deriveEncoder
+  implicit val coupeE: Encoder[Coupe.type]   = deriveEncoder
+  implicit val bikeE: Encoder[Bike]          = deriveEncoder
+  implicit val vehicleE: Encoder[Vehicle]    = deriveEncoder
+  implicit val garageE: Encoder[Garage]      = deriveEncoder
+  implicit val redE: Encoder[Red.type]       = deriveEncoder
+  implicit val greenE: Encoder[Green.type]   = deriveEncoder
+  implicit val colorE: Encoder[Color]        = deriveEncoder
+  implicit val paintE: Encoder[Paint]        = deriveEncoder
+  implicit val readingE: Encoder[Reading]    = deriveEncoder
+  implicit val circleE: Encoder[Circle]      = deriveEncoder
+  implicit val squareE: Encoder[Square]      = deriveEncoder
+  implicit val shapeE: Encoder[Shape]        = deriveEncoder
+  implicit val cardE: Encoder[Card]          = deriveEncoder
+  implicit val cashE: Encoder[Cash]          = deriveEncoder
+  implicit val paymentE: Encoder[Payment]    = deriveEncoder
+  implicit val ballE: Encoder[Toy.Ball]      = deriveEncoder
+  implicit val kiteE: Encoder[Toy.Kite.type] = deriveEncoder
+  implicit val toyE: Encoder[Toy]            = deriveEncoder
+  implicit val boxE: Encoder[Box]            = deriveEncoder
 }
 
 object CirceSchemas {
@@ -60,6 +64,7 @@ class CirceAcceptanceSpec extends AnyWordSpec {
       Schemas.pet.asCirce(Version.Draft12("x")).noSpaces shouldBe rendered(Schemas.pet).apply(Version.Draft12("x"))
     }
     "a nested family, flattened" in assertValid(rendered(Schemas.garage), written(List(Samples.garage)))
+    "members nested in the trait's companion" in assertValid(rendered(Schemas.box), written(Samples.boxes))
     "a family of case objects only" in assertValid(rendered(Schemas.paint), written(Samples.paints))
     "Option fields with defaults" in assertValid(rendered(CirceSchemas.reading), written(Samples.readings))
     "ignore @discriminator, which circe's derivation never sees (R4B)" in assertValid(rendered(Schemas.shape), written(Samples.shapes))

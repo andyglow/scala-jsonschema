@@ -17,6 +17,25 @@ object CirceExtrasCodecs {
   implicit val animalE: Encoder[Animal]  = deriveConfiguredEncoder
   implicit val petE: Encoder[Pet]        = deriveConfiguredEncoder
 }
+// renamed constructors (reviewer12 S2), with a discriminator and with wrapper objects
+object CirceExtrasSnakeTagCodecs {
+  import io.circe.generic.extras.Configuration
+  import io.circe.generic.extras.semiauto._
+  implicit val config: Configuration     = Configuration.default.withDiscriminator("t").withSnakeCaseConstructorNames
+  implicit val dogE: Encoder[Dog]        = deriveConfiguredEncoder
+  implicit val fishE: Encoder[Fish.type] = deriveConfiguredEncoder
+  implicit val animalE: Encoder[Animal]  = deriveConfiguredEncoder
+  implicit val petE: Encoder[Pet]        = deriveConfiguredEncoder
+}
+object CirceExtrasKebabCodecs {
+  import io.circe.generic.extras.Configuration
+  import io.circe.generic.extras.semiauto._
+  implicit val config: Configuration     = Configuration.default.withKebabCaseConstructorNames
+  implicit val dogE: Encoder[Dog]        = deriveConfiguredEncoder
+  implicit val fishE: Encoder[Fish.type] = deriveConfiguredEncoder
+  implicit val animalE: Encoder[Animal]  = deriveConfiguredEncoder
+  implicit val petE: Encoder[Pet]        = deriveConfiguredEncoder
+}
 object CirceExtrasSnakeCodecs {
   import io.circe.generic.extras.Configuration
   implicit val config: Configuration = Configuration.default.withDiscriminator("type").withSnakeCaseMemberNames
@@ -53,6 +72,22 @@ class CirceExtrasSpec extends AnyWordSpec {
       implicit val profile: JsonSchemaProfile = CirceProfile.configured(config.discriminator, config.transformConstructorNames, config.transformMemberNames)
       val docs                                = Samples.pets.map(_.asJson.noSpaces)
       sameJson(docs.mkString("[", ",", "]"), LibraryOutputs.circeConfigured.mkString("[", ",", "]")) shouldBe true
+      assertValid(byDraft(v => Schemas.pet.asCirce(v).noSpaces, v => Schemas.pet.asCirce(v).noSpaces, v => Schemas.pet.asCirce(v).noSpaces), docs)
+    }
+    "follow renamed constructors, tagged (snake_case + discriminator)" in {
+      import com.github.andyglow.jsonschema.AsCirce._
+      import CirceExtrasSnakeTagCodecs._
+      implicit val profile: JsonSchemaProfile = CirceProfile.configured(config.discriminator, config.transformConstructorNames, config.transformMemberNames)
+      val docs                                = Samples.pets.map(_.asJson.noSpaces)
+      docs.mkString should (include("\"t\":\"dog\"") and include("\"t\":\"fish\""))
+      assertValid(byDraft(v => Schemas.pet.asCirce(v).noSpaces, v => Schemas.pet.asCirce(v).noSpaces, v => Schemas.pet.asCirce(v).noSpaces), docs)
+    }
+    "follow renamed constructors, wrapped (kebab-case, no discriminator)" in {
+      import com.github.andyglow.jsonschema.AsCirce._
+      import CirceExtrasKebabCodecs._
+      implicit val profile: JsonSchemaProfile = CirceProfile.configured(config.discriminator, config.transformConstructorNames, config.transformMemberNames)
+      val docs                                = Samples.pets.map(_.asJson.noSpaces)
+      docs.mkString should (include("{\"dog\":") and include("{\"fish\":"))
       assertValid(byDraft(v => Schemas.pet.asCirce(v).noSpaces, v => Schemas.pet.asCirce(v).noSpaces, v => Schemas.pet.asCirce(v).noSpaces), docs)
     }
     "fail fast on snake_case member names (R6A, reviewer11 A4)" in {

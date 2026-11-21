@@ -44,6 +44,14 @@ final case class Num(n: Int)         extends AnyVal with Ident
 final case class Label(text: String) extends AnyVal with Ident
 final case class Badge(ident: Ident)
 
+// members nested in the trait's companion (reviewer12 S1): their full names are petshop.Toy.Ball, petshop.Toy.Kite
+sealed trait Toy
+object Toy {
+  final case class Ball(size: Int) extends Toy
+  case object Kite                 extends Toy
+}
+final case class Box(toy: Toy)
+
 object Samples {
   val pets: List[Pet]         = List(Pet("Rex", Some(3), Dog("Rex")), Pet("Nemo", None, Fish))
   val garage: Garage          = Garage(List(Sedan(4), Coupe, Bike(21)))
@@ -52,4 +60,5 @@ object Samples {
   val shapes: List[Shape]     = List(Circle(1.5), Square(2))
   val payments: List[Payment] = List(Card("4111"), Cash(10))
   val badges: List[Badge]     = List(Badge(Num(1)), Badge(Label("x")))
+  val boxes: List[Box]        = List(Box(Toy.Ball(1)), Box(Toy.Kite))
 }
