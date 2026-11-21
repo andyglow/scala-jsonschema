@@ -1,0 +1,133 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "http://models.org/example.json",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "storage": {
+      "oneOf": [
+        {
+          "$ref": "#diskDevice"
+        },
+        {
+          "$ref": "#diskUUID"
+        },
+        {
+          "$ref": "#nfs"
+        },
+        {
+          "$ref": "#tmpfs"
+        }
+      ]
+    },
+    "fstype": {
+      "type": "string",
+      "enum": [
+        "ext3",
+        "ext4",
+        "btrfs"
+      ]
+    },
+    "readonly": {
+      "type": "boolean"
+    },
+    "options": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    }
+  },
+  "required": [
+    "storage"
+  ],
+  "definitions": {
+    "diskDevice": {
+      "$id": "#diskDevice",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "device": {
+          "type": "string",
+          "pattern": "^/dev/[^/]+(/[^/]+)*$"
+        },
+        "type": {
+          "enum": [
+            "disk"
+          ]
+        }
+      },
+      "required": [
+        "device",
+        "type"
+      ]
+    },
+    "diskUUID": {
+      "$id": "#diskUUID",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"
+        },
+        "type": {
+          "enum": [
+            "disk"
+          ]
+        }
+      },
+      "required": [
+        "label",
+        "type"
+      ]
+    },
+    "nfs": {
+      "$id": "#nfs",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "remotePath": {
+          "type": "string",
+          "pattern": "^(/[^/]+)+$"
+        },
+        "server": {
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "nfs"
+          ]
+        }
+      },
+      "required": [
+        "remotePath",
+        "server",
+        "type"
+      ]
+    },
+    "tmpfs": {
+      "$id": "#tmpfs",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "sizeInMB": {
+          "type": "integer",
+          "minimum": 16.0,
+          "maximum": 512.0
+        },
+        "type": {
+          "enum": [
+            "tmpfs"
+          ]
+        }
+      },
+      "required": [
+        "sizeInMB",
+        "type"
+      ]
+    }
+  }
+}
