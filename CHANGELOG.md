@@ -36,6 +36,10 @@
     a compile error on the root only). An unknown field in `Json.objectSchema(...)` decorations is still an error
   - case classes local to a method or block are derived (before: a macro crash). On Scala 2 such a class can't
     have default values (a clear error)
+  - Scala 2: default values of a case class declared inside a class (`class Holder { case class Inner(a: Int = 1) }`,
+    derived inside `Holder` or as `Json.schema[h.Inner]`) work (before: an error in the generated code, `object
+    Holder is not a member of package ...`). Through a type projection (`Json.schema[Holder#Inner]`) they're a clear
+    compile error on Scala 2 and 3 (before, Scala 3 crashed)
   - Java enums (`java.time.DayOfWeek`, `java.time.Month`, `java.util.concurrent.TimeUnit`, ...) derive a string
     enum of their constant names, also as Map keys (before: a macro crash)
   - Scala 3: sealed families, `scala.Enumeration` and Java enums derive as on Scala 2, and Scala 3 `enum`s follow the

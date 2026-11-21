@@ -229,7 +229,7 @@ class Scala3ResolutionSpec extends AnyFunSuite {
     summon[Schema[GRec[Int]]] shouldEqual grecDef(s"$grec[$grec.T]", `integer`)
   }
 
-  test("a default of a path-dependent class goes through the path to its companion (Scala 2: doesn't compile)") {
+  test("a default of a path-dependent class goes through the path to its companion (shared tests: PathDependentDefaultsSpec)") {
     val o        = new PathOuter
     val expected = `object`.fromList[Any](List(Field.fromJson[Int]("x", `integer`, required = false, default = Some(com.github.andyglow.json.Value.num(1)))))
     Json.schema[o.Inner] shouldEqual expected

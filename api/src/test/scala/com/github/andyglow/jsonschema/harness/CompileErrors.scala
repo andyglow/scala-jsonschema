@@ -56,6 +56,8 @@ object ErrorPhrases {
   // s2fix's errors (Scala 2 and 3)
   val NotAnObjectSchema = "is a definition, not an object schema"
   val UnnamedType       = "a definition can't be named after this type"
+  // s2fix2 (Scala 2 and 3)
+  val TypeProjectionDefault = "is reached through a type projection, not a stable path"
 
   /** Proposal for the TRIAGE-B "clear compile error" fixes, which don't exist yet: reuse the macro's "not supported" wording and name the offending type. Change it here if the fix words it
     * differently.
