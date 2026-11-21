@@ -40,10 +40,10 @@ def versionRangeDirs(base: File, scalaVersion: String): Seq[File] =
   }
 
 // ============================================================================================================
-// TEMPORARY SCAFFOLDING for the Scala 3 port. Delete this block, and its two uses below, once refined and
-// derived are ported to Scala 3. Nothing here affects Scala 2.12/2.13 builds.
+// TEMPORARY SCAFFOLDING for the Scala 3 port. Delete this block, and its use below, once refined is
+// ported to Scala 3. Nothing here affects Scala 2.12/2.13 builds.
 //
-// scala2OnlyForNow: modules whose Scala 3 port hasn't landed yet (refined, derived). They still list
+// scala2OnlyForNow: modules whose Scala 3 port hasn't landed yet (refined). They still list
 //    Scala 3 in crossScalaVersions, because with plain crossScalaVersions `++3.x` would otherwise leave them
 //    on 2.12 while their dependencies switch to 3, which breaks resolution. On Scala 3 they compile nothing
 //    and publish nothing.
@@ -245,7 +245,6 @@ lazy val derived = { project in file("modules/derived") }
   .dependsOn(core, api, macros)
   .settings(
     commonSettings,
-    scala2OnlyForNow, // TEMPORARY SCAFFOLDING, see above
     name := "scala-jsonschema-derived",
     libraryDependencies ++= scalaReflect(scalaVersion.value)
   )

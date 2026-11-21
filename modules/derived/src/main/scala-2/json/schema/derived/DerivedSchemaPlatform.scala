@@ -1,14 +1,12 @@
 package json.schema.derived
 
 import com.github.andyglow.jsonschema.MacroCake
-import json.Schema
 
 import scala.language.experimental.macros
 import scala.reflect.macros.whitebox
 
-final case class DerivedSchema[T](schema: Schema[T])
-
-object DerivedSchema {
+/** The Scala 2 implicit of `object DerivedSchema`: a whitebox macro, so a type it can't derive makes the implicit unavailable. See the Scala 3 copy. */
+trait DerivedSchemaPlatform {
 
   implicit def deriveDerivedSchema[T]: DerivedSchema[T] =
     macro DerivedSchemaMacros.deriveDerivedSchema[T]
