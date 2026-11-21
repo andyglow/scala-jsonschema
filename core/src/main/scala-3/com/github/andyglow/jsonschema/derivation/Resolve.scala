@@ -3,7 +3,7 @@ package com.github.andyglow.jsonschema.derivation
 /** Resolution: the core design rule. For every type met (Scala 2's `Macroses.resolve`):
   *   1. the type is already being derived (on the stack) -> a `$ref` ([[Recursion]]);
   *   2. `Nothing` -> compile error;
-  *   3. an implicit `Schema[T]` -> definition + `$ref`, else an implicit `Predef[T]` -> inlined ([[Implicits]]). Skipped for the root of `derives`;
+  *   3. an implicit `Schema[T]` -> definition + `$ref`, else an implicit `Predef[T]` -> inlined ([[Implicits]]). Skipped for the root of `derives` and of `DerivedSchema`;
   *   4. otherwise derived from the type's structure by the first family that accepts it ([[families]]).
   *
   * Every type is dealiased first (root and nested, like the Scala 2 macro since s2fix): stack entries, `$ref`s and definitions all use the dealiased type, so a root `type IntBox = Box[Int]` works and
@@ -70,7 +70,7 @@ trait Resolve { this: Derivation =>
     * searches too: Scala 3 picks `auto.derived[T]` for every `Predef[T]` (it is in lexical scope, so it shadows the `Predef`s in implicit scope, e.g. `Predef.intS`), and the root search lets those
     * take over (auto declines inside the search, see [[AutoGuard]]).
     */
-  private def skipRootSearch: Boolean = mode == Mode.Derived
+  private def skipRootSearch: Boolean = mode == Mode.Derived || mode == Mode.DerivedSchema
 
   // ---- helpers for families
 

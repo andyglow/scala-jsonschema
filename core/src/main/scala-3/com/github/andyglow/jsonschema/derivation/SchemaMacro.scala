@@ -22,6 +22,10 @@ object SchemaMacro {
   def derivedImpl[T: Type](using Quotes): Expr[Schema[T]] =
     Derivation.derive[T](Mode.Derived)
 
+  /** The schema of `json.schema.derived.DerivedSchema[T]` (module `derived`, which wraps it). */
+  def derivedSchemaImpl[T: Type](using Quotes): Expr[Schema[T]] =
+    Derivation.derive[T](Mode.DerivedSchema)
+
   def autoImpl[T: Type](using Quotes): Expr[Predef[T]] =
     Derivation.deriveAuto[T]
 
@@ -40,6 +44,11 @@ enum Mode {
 
   /** `derives json.Schema` / `Schema.derived[T]`: the root is always derived (it would find its own given). */
   case Derived
+
+  /** `json.schema.derived.DerivedSchema[T]` (module `derived`): the root is always derived (so the type class works as a context bound without finding the type's own implicit `Schema`), and, unlike
+    * [[Derived]], it stays inline, not a definition (Scala 2 parity: `noImplicitSearch = true` for the root, nothing else).
+    */
+  case DerivedSchema
 
   /** `Json.auto.derived[T]`: like [[Schema]] (owner decision 2026-11-20: nested types follow the plain derivation rules); auto's own given never counts. */
   case Auto
