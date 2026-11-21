@@ -67,7 +67,8 @@ trait Enums { this: Derivation =>
     def mapChildren(f: Node => Node): Node = copy(valueSchema = f(valueSchema))
     def asOneOf: Boolean                   = enumsAsOneOf && (source == EnumSource.SealedFamily || source == EnumSource.Scala3Enum)
     def emitRaw: Expr[Schema[?]]           =
-      if (asOneOf) emitOneOf(tpe, items.map(emitConst), None)
+      if (source == EnumSource.SealedFamily || source == EnumSource.Scala3Enum) emitEnumFamily(this) // a family: shaped by the profile
+      else if (asOneOf) emitOneOf(tpe, items.map(emitConst), None)
       else emitEnum(tpe, valueSchema, items.map(_.value))
   }
 

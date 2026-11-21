@@ -189,6 +189,9 @@ class FamilyLoweringSpec extends AnyWordSpec {
     "give a oneOf of an object and a definition of a string each member its type (reviewer11 F2)" in {
       val o = `oneof`[Any](Set(dogObj, `def`[Any]("s", `string`[String](None))))
       json(o, Neutral).replaceAll("\\s", "") should include(""""oneOf":[{"type":"object"""")
+      // the definition first (F2b)
+      val d = `oneof`[Any](Set(`def`[Any]("s", `string`[String](None)), dogObj))
+      json(d, Neutral).replaceAll("\\s", "") should include(""""type":"object","additionalProperties"""")
     }
     "render a family with a Provided def member, and an allOf with a ref (it used to throw on `def.jsonType`)" in {
       val m = dog.copy(kind = Kind.Provided, schema = `def`[Any]("petshop.Dog", dogObj))

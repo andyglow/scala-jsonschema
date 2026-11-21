@@ -290,6 +290,8 @@ object JsonSchemaProfile {
       def own(m: `family`.Member): Schema[_] = (m.kind, m.valueField, apply(m.schema)) match {
         case (`family`.Kind.ValueClass, Some(f), `value-class`(inner)) if !honors =>
           `object`.fromList[Any](List(`object`.Field(f, inner, required = true)))
+        case (`family`.Kind.ValueClass, None, _) if !honors =>
+          throw new IllegalArgumentException(s"${p.name}: the value-class member ${m.fullName} has no valueField, so it can't be written as the case class its library writes")
         case (_, _, s) => s
       }
 

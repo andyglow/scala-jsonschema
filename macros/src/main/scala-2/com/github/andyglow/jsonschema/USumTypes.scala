@@ -37,9 +37,9 @@ private[jsonschema] trait USumTypes {
 
         // one member per leaf (nested sealed families flattened), in declaration order: the facts, no shaping
         val members = subTypes map { subTpe =>
-          val subTA   = TypeAnnotations(subTpe)
-          val sym     = subTpe.typeSymbol
-          val name    = sym.name.decodedName.toString
+          val subTA                                                                                                                            = TypeAnnotations(subTpe)
+          val sym                                                                                                                              = subTpe.typeSymbol
+          val name                                                                                                                             = sym.name.decodedName.toString
           def member(kind: U.Family.Kind, schema: SchemaType, value: Option[Tree] = None, knownString: Option[String] = None): U.Family.Member =
             U.Family.Member(
               name = name,
@@ -60,7 +60,7 @@ private[jsonschema] trait USumTypes {
               case ValueClass(st) =>
                 val field = sym.asClass.primaryConstructor.asMethod.paramLists.flatten.headOption.map(_.name.decodedName.toString)
                 member(U.Family.Kind.ValueClass, st).copy(valueField = field)
-              case CaseClass(st)  => member(U.Family.Kind.Product, st)
+              case CaseClass(st)                                                                => member(U.Family.Kind.Product, st)
               case CaseObject(co) if enumExtractor.someResolved(Seq(co.sym)).exists(_.nonEmpty) =>
                 val item = enumExtractor.someResolved(Seq(co.sym)).get.head
                 // the value schema 0.7 used for this singleton (EnumFamily's single schema of one item)

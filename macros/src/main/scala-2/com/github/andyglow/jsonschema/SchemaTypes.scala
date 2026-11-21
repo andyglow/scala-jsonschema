@@ -159,6 +159,7 @@ private[jsonschema] trait SchemaTypes {
       def prefix                         = q"${N.Schema}.`option`[$innerTpe](${schema.tree})";
       def withExtra(x: SchemaType.Extra) = copy(extra = x)
     }
+
     /** A sealed family (`json.Schema.family`): the facts, shaped by a JsonSchemaProfile when the schema is rendered. */
     case class Family(tpe: Type, members: List[Family.Member], discriminator: Option[Discriminator], enumsAsOneOf: Boolean, extra: Extra = Extra()) extends SchemaType {
       type Self = Family;
@@ -199,11 +200,11 @@ private[jsonschema] trait SchemaTypes {
         valueField: Option[String] = None
       ) {
         def mapSchema(fn: SchemaType => SchemaType): Member = copy(schema = fn(schema))
-        def tree: Tree = {
-          def opt(x: Option[Tree]): Tree       = x.fold[Tree](q"_root_.scala.None")(t => q"_root_.scala.Some($t)")
-          def str(x: Option[String]): Tree     = opt(x.map(s => q"$s"))
-          val F                                = q"${N.Schema}.`family`"
-          val defn                             = definition map {
+        def tree: Tree                                      = {
+          def opt(x: Option[Tree]): Tree   = x.fold[Tree](q"_root_.scala.None")(t => q"_root_.scala.Some($t)")
+          def str(x: Option[String]): Tree = opt(x.map(s => q"$s"))
+          val F                            = q"${N.Schema}.`family`"
+          val defn                         = definition map {
             case DefinitionKey.Infer      => q"$F.Definition.Inferred"
             case DefinitionKey.Defined(n) => q"$F.Definition.Named($n)"
           }

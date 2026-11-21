@@ -65,8 +65,8 @@ private[jsonschema] trait UDictionaries {
                   val names   = f.members.flatMap(_.knownString)
                   val pattern = names.mkString("^(?:", "|", ")$")
                   dict.copy(extra = dict.extra.copy(validations = Seq(q"${N.Validation}.patternProperties := $pattern")))
-                case Enum(_)          => unsupportedKey(tpe, keyTpe, "is an enum of non-string values")
-                case _                => unsupportedKey(tpe, keyTpe, "is none of these")
+                case Enum(_) => unsupportedKey(tpe, keyTpe, "is an enum of non-string values")
+                case _       => unsupportedKey(tpe, keyTpe, "is none of these")
               }
             // +---------
             // | there is a KeyPattern type-class in the scope that brings in actual pattern

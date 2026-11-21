@@ -76,7 +76,7 @@ trait Sums { this: Derivation =>
     def withExtra(x: Extra): Node          = copy(extra = x)
     def children: List[Node]               = members.map(_.schema)
     def mapChildren(f: Node => Node): Node = copy(members = members.map(m => m.copy(schema = f(m.schema))))
-    def emitRaw: Expr[Schema[?]]           = emitSum(this)
+    def emitRaw: Expr[Schema[?]]           = if (kind == SumKind.Either) emitSum(this) else emitSumFamily(this)
 
     /** The members with nested families flattened, in declaration order (depth first). */
     def leaves: List[SumMember] = members flatMap { m =>
