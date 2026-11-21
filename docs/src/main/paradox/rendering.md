@@ -92,7 +92,89 @@ play-json writes `{"_type": "petshop.Dog", "name": "Rex"}` and `{"_type": "petsh
 matches none of them. So the macro records the facts of a sealed family (its members, their names and kinds, the
 annotations) in the schema as a `` `family` `` node, like `Option`, and a profile shapes it when you render.
 
-<!-- profiles09: per-library sections are filled in after the bridges09 merge -->
+One import gives rendering, `ToValue` and the library's profile (`AsPlay._`, `AsCirce._`, ... stay as they are
+and bring no profile):
+
+```scala
+import com.github.andyglow.jsonschema.profiles.play._    // asPlay: what Json.format writes under the implicit JsonConfiguration in scope
+import com.github.andyglow.jsonschema.profiles.circe._   // asCirce: circe-generic (semiauto); Scala 3: a given io.circe.derivation.Configuration in scope wins
+import com.github.andyglow.jsonschema.profiles.upickle._ // asU: upickle.default
+import com.github.andyglow.jsonschema.profiles.json4s._  // asJson4s: the implicit Formats in scope, else DefaultFormats
+import com.github.andyglow.jsonschema.profiles.spray._   // asSpray: spray derives no sum codecs, so Neutral's shapes (state yours, below)
+```
+
+In Scala 3 write `.*`: the bridges declare `implicit def`s, which `.*` imports.
+
+| library | as it writes `Dog` / `Fish` | profile | read from |
+|---|---|---|---|
+| play-json | `{"_type": "petshop.Dog", "name": ...}` / `{"_type": "petshop.Fish"}` | `PlayProfile.fromConfig(cfg)`, `PlayProfile.default` | `discriminator`, `typeNaming` (given the full name); `optionHandlers` needs nothing (play reads both) |
+| circe | `{"Dog": {...}}` / `{"Fish": {}}`; configured: `{"type": "Dog", ...}` | `CirceProfile.default`, `CirceProfile.configured(discriminator, transformConstructorNames, transformMemberNames)`, Scala 3: `CirceProfile.fromConfig(configuration)` | `discriminator`, `transformConstructorNames` |
+| upickle | `{"$type": "Dog", "name": ...}` / `"Fish"` | `UPickleProfile.fromApi(api)`, `UPickleProfile.default` | `tagName`, `objectTypeKeyWriteFullyQualified`, `objectTypeKeyWriteMap`; an `Option` key must be present unless the field has a default |
+| json4s | `{"name": ...}` / `{}`; with type hints `{"jsonClass": "Dog", ...}` | `Json4sProfile.fromFormats(formats)`, `Json4sProfile.default` | `typeHints`, per family: a family of hinted classes is tagged, one without hints isn't |
+| spray-json | your `RootJsonFormat` | `SprayProfile.default` (Neutral) | nothing: say what your format writes |
+
+Where the library takes its configuration implicitly, the profile follows the same implicit, so a custom
+configuration changes the schema with no extra code:
+
+```scala
+// play's Json.format can't run inside mdoc's wrapper class, so this is plain code; the acceptance suite runs it
+object petshop {
+  sealed trait Animal
+  case class Dog(name: String) extends Animal
+  case object Fish extends Animal
+  case class Pet(name: String, age: Option[Int], animal: Animal)
+
+  val petSchema: json.Schema[Pet] = json.Json.schema[Pet]       // library-neutral: no profile involved yet
+}
+import petshop._
+import play.api.libs.json._
+import com.github.andyglow.jsonschema.profiles.play._
+import json.schema.Version._
+
+implicit val cfg: JsonConfiguration = JsonConfiguration(
+  discriminator  = "_kind",
+  typeNaming     = JsonNaming(_.split('.').last),           // "petshop.Dog" -> "Dog"
+  optionHandlers = OptionHandlers.WritesNull
+)
+implicit val fishF: OFormat[Fish.type] = Json.format[Fish.type] // play's macros read `cfg`
+implicit val dogF: OFormat[Dog]        = Json.format[Dog]
+implicit val animalF: OFormat[Animal]  = Json.format[Animal]
+implicit val petF: OFormat[Pet]        = Json.format[Pet]
+
+petSchema.asPlay(Draft12("pet"))                                // the same `cfg`: "_kind", "Dog", "age": ["integer", "null"]
+```
+
+The same holds for json4s (`implicit val formats: Formats = DefaultFormats + ShortTypeHints(List(classOf[Dog],
+Fish.getClass), "kind")`) and, in Scala 3, circe's `given Configuration = Configuration.default.withDiscriminator("type")`
+next to `derives ConfiguredCodec`. Where the configuration is not an implicit, pass it:
+
+```scala
+// upickle: your API object
+object MyPickler extends upickle.AttributeTagged { override def tagName = "kind" }
+implicit val profile: JsonSchemaProfile = UPickleProfile.fromApi(MyPickler)
+
+// circe-generic-extras (Scala 2): the fields of its Configuration that shape the output
+implicit val profile: JsonSchemaProfile =
+  CirceProfile.configured(config.discriminator, config.transformConstructorNames, config.transformMemberNames)
+
+// spray: what your hand-written RootJsonFormat[Animal] writes
+implicit val profile: JsonSchemaProfile =
+  SprayProfile.default.withSum(SumStyle.Discriminator("type")).withMemberName(MemberName.SimpleName).withSingleton(SingletonStyle.AsTagged)
+```
+
+Derive the schema where no bridge import is in scope (next to the model is a good place), or give the family a
+`@typeHint`: a bridge brings a `ToValue` for every type the library can write, and with one in scope the case
+objects' enum values come from the codec, whose JSON type has to be stated. The profile doesn't need it.
+
+With a profile of your own, import `AsX._` (rendering, no profile), not `profiles.<lib>._`. With both in scope,
+Scala 2 reports the ambiguity with a message saying so; Scala 3 picks yours, the closer one. Two `profiles.<lib>._`
+imports in one scope are an error too. Per call, `schema.withProfile(PlayProfile.fromConfig(cfg))` shapes one
+schema whatever is in scope where it is rendered.
+
+What the profiles can't see: the libraries' own annotations (upickle `@key`, circe-generic-extras `@JsonKey`, play's
+`@JsonKey`) and hand-written codecs (give such a type an implicit `Schema`). Renamed fields (play `naming`, circe
+`transformMemberNames`, upickle `objectAttributeKeyWriteMap`) are an error (tried on sample names). json4s 4 fails
+to encode case classes on Scala 3 itself, so its profile is for Scala 2 users.
 
 What a profile describes (the same rules for every library):
 
