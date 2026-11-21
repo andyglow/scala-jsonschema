@@ -216,6 +216,39 @@ class FamilyLoweringSpec extends AnyWordSpec {
     }
   }
 
+  "SumStyle.PerFamily" should {
+    // json4s-shaped: families of hinted classes are tagged, the others untagged
+    val hinted  = Set("petshop.Dog", "petshop.Fish")
+    val perFam  = SumStyle.PerFamily(f => if (f.members.forall(m => hinted(m.fullName))) SumStyle.Discriminator("kind") else SumStyle.Untagged)
+    val profile = json4s.withSum(perFam).withMemberName(MemberName.SimpleName)
+    "choose the style for each family" in {
+      val tagged = profile.lower(animal).asInstanceOf[`oneof`[_]]
+      tagged.discriminationField shouldBe Some("kind")
+      tagged.subTypes.toList.map(_.discriminationKey) shouldEqual List(Some("Dog"), Some("Fish"))
+      val shape = `family`[Any](List(product("A"), product("B")))
+      profile.lower(shape) shouldEqual `oneof`[Any](Set(product("A").schema, product("B").schema), None)
+    }
+    "choose per family inside one tree" in {
+      val tree = `object`[Any](Field("animal", animal), Field("shape", `family`[Any](List(product("A"), product("B")))))
+      val out  = profile.lower(tree).asInstanceOf[`object`[_]].fields.toList.map(_.tpe.asInstanceOf[`oneof`[_]].discriminationField)
+      out shouldEqual List(Some("kind"), None)
+    }
+    "not apply to a family whose @discriminator is honored" in {
+      val p = Neutral.withSum(SumStyle.PerFamily(_ => fail("not asked"))).lower(animal.copy(discriminator = Some(Discriminator("type")))).asInstanceOf[`oneof`[_]]
+      p.discriminationField shouldBe Some("type")
+    }
+    "let the chooser reject a family, and refuse a nested PerFamily" in {
+      val reject = Neutral.withSum(SumStyle.PerFamily(_ => throw new IllegalArgumentException("partly hinted")))
+      the[IllegalArgumentException] thrownBy reject.lower(animal) should have message "partly hinted"
+      val nested = Neutral.withName("n").withSum(SumStyle.PerFamily(_ => SumStyle.PerFamily(_ => SumStyle.Untagged)))
+      (the[IllegalArgumentException] thrownBy nested.lower(animal)).getMessage should include("n: SumStyle.PerFamily chose another PerFamily")
+    }
+    "be idempotent" in {
+      val once = profile.lower(animal)
+      profile.lower(once) shouldEqual once
+    }
+  }
+
   "optionKeyRequired" should {
     "make an Option field without a default required, and keep one with a default (= None) optional" in {
       val o = `object`[Any](
