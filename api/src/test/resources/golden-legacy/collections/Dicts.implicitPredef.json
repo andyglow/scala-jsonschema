@@ -1,0 +1,1090 @@
+{
+  "schema": {
+    "kind": "object",
+    "fields": [
+      {
+        "name": "str",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "dictionary",
+          "values": {
+            "kind": "object",
+            "fields": [
+              {
+                "name": "custom",
+                "required": true,
+                "rwMode": "ReadWrite",
+                "schema": {
+                  "kind": "string"
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "name": "javaStr",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "dictionary",
+          "values": {
+            "kind": "object",
+            "fields": [
+              {
+                "name": "custom",
+                "required": true,
+                "rwMode": "ReadWrite",
+                "schema": {
+                  "kind": "string"
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "name": "int",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "dictionary",
+          "values": {
+            "kind": "object",
+            "fields": [
+              {
+                "name": "custom",
+                "required": true,
+                "rwMode": "ReadWrite",
+                "schema": {
+                  "kind": "string"
+                }
+              }
+            ]
+          },
+          "validations": [
+            {
+              "name": "patternProperties",
+              "value": "^[0-9]+$"
+            }
+          ]
+        }
+      },
+      {
+        "name": "long",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "dictionary",
+          "values": {
+            "kind": "object",
+            "fields": [
+              {
+                "name": "custom",
+                "required": true,
+                "rwMode": "ReadWrite",
+                "schema": {
+                  "kind": "string"
+                }
+              }
+            ]
+          },
+          "validations": [
+            {
+              "name": "patternProperties",
+              "value": "^[0-9]+$"
+            }
+          ]
+        }
+      },
+      {
+        "name": "short",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "dictionary",
+          "values": {
+            "kind": "object",
+            "fields": [
+              {
+                "name": "custom",
+                "required": true,
+                "rwMode": "ReadWrite",
+                "schema": {
+                  "kind": "string"
+                }
+              }
+            ]
+          },
+          "validations": [
+            {
+              "name": "patternProperties",
+              "value": "^[0-9]+$"
+            }
+          ]
+        }
+      },
+      {
+        "name": "byte",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "dictionary",
+          "values": {
+            "kind": "object",
+            "fields": [
+              {
+                "name": "custom",
+                "required": true,
+                "rwMode": "ReadWrite",
+                "schema": {
+                  "kind": "string"
+                }
+              }
+            ]
+          },
+          "validations": [
+            {
+              "name": "patternProperties",
+              "value": "^[0-9]+$"
+            }
+          ]
+        }
+      },
+      {
+        "name": "char",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "dictionary",
+          "values": {
+            "kind": "object",
+            "fields": [
+              {
+                "name": "custom",
+                "required": true,
+                "rwMode": "ReadWrite",
+                "schema": {
+                  "kind": "string"
+                }
+              }
+            ]
+          },
+          "validations": [
+            {
+              "name": "patternProperties",
+              "value": "^.{1}$"
+            }
+          ]
+        }
+      },
+      {
+        "name": "strId",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "dictionary",
+          "values": {
+            "kind": "object",
+            "fields": [
+              {
+                "name": "custom",
+                "required": true,
+                "rwMode": "ReadWrite",
+                "schema": {
+                  "kind": "string"
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "name": "jStrId",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "dictionary",
+          "values": {
+            "kind": "object",
+            "fields": [
+              {
+                "name": "custom",
+                "required": true,
+                "rwMode": "ReadWrite",
+                "schema": {
+                  "kind": "string"
+                }
+              }
+            ]
+          },
+          "validations": [
+            {
+              "name": "patternProperties",
+              "value": "^.*$"
+            }
+          ]
+        }
+      },
+      {
+        "name": "intId",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "dictionary",
+          "values": {
+            "kind": "object",
+            "fields": [
+              {
+                "name": "custom",
+                "required": true,
+                "rwMode": "ReadWrite",
+                "schema": {
+                  "kind": "string"
+                }
+              }
+            ]
+          },
+          "validations": [
+            {
+              "name": "patternProperties",
+              "value": "^[0-9]+$"
+            }
+          ]
+        }
+      },
+      {
+        "name": "listMap",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "dictionary",
+          "values": {
+            "kind": "object",
+            "fields": [
+              {
+                "name": "custom",
+                "required": true,
+                "rwMode": "ReadWrite",
+                "schema": {
+                  "kind": "string"
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "name": "sorted",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "dictionary",
+          "values": {
+            "kind": "object",
+            "fields": [
+              {
+                "name": "custom",
+                "required": true,
+                "rwMode": "ReadWrite",
+                "schema": {
+                  "kind": "string"
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "name": "nested",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "dictionary",
+          "values": {
+            "kind": "dictionary",
+            "values": {
+              "kind": "array",
+              "unique": false,
+              "items": {
+                "kind": "object",
+                "fields": [
+                  {
+                    "name": "custom",
+                    "required": true,
+                    "rwMode": "ReadWrite",
+                    "schema": {
+                      "kind": "string"
+                    }
+                  }
+                ]
+              }
+            },
+            "validations": [
+              {
+                "name": "patternProperties",
+                "value": "^[0-9]+$"
+              }
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "draft-04": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "additionalProperties": false,
+    "properties": {
+      "byte": {
+        "patternProperties": {
+          "^[0-9]+$": {
+            "additionalProperties": false,
+            "properties": {
+              "custom": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "custom"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "char": {
+        "patternProperties": {
+          "^.{1}$": {
+            "additionalProperties": false,
+            "properties": {
+              "custom": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "custom"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "int": {
+        "patternProperties": {
+          "^[0-9]+$": {
+            "additionalProperties": false,
+            "properties": {
+              "custom": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "custom"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "intId": {
+        "patternProperties": {
+          "^[0-9]+$": {
+            "additionalProperties": false,
+            "properties": {
+              "custom": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "custom"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "jStrId": {
+        "patternProperties": {
+          "^.*$": {
+            "additionalProperties": false,
+            "properties": {
+              "custom": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "custom"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "javaStr": {
+        "patternProperties": {
+          "^.*$": {
+            "additionalProperties": false,
+            "properties": {
+              "custom": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "custom"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "listMap": {
+        "patternProperties": {
+          "^.*$": {
+            "additionalProperties": false,
+            "properties": {
+              "custom": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "custom"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "long": {
+        "patternProperties": {
+          "^[0-9]+$": {
+            "additionalProperties": false,
+            "properties": {
+              "custom": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "custom"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "nested": {
+        "patternProperties": {
+          "^.*$": {
+            "patternProperties": {
+              "^[0-9]+$": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "custom": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "custom"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "short": {
+        "patternProperties": {
+          "^[0-9]+$": {
+            "additionalProperties": false,
+            "properties": {
+              "custom": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "custom"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "sorted": {
+        "patternProperties": {
+          "^.*$": {
+            "additionalProperties": false,
+            "properties": {
+              "custom": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "custom"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "str": {
+        "patternProperties": {
+          "^.*$": {
+            "additionalProperties": false,
+            "properties": {
+              "custom": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "custom"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "strId": {
+        "patternProperties": {
+          "^.*$": {
+            "additionalProperties": false,
+            "properties": {
+              "custom": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "custom"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "required": [
+      "byte",
+      "char",
+      "int",
+      "intId",
+      "jStrId",
+      "javaStr",
+      "listMap",
+      "long",
+      "nested",
+      "short",
+      "sorted",
+      "str",
+      "strId"
+    ],
+    "type": "object"
+  },
+  "draft-07": {
+    "$id": "golden",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "additionalProperties": false,
+    "properties": {
+      "byte": {
+        "patternProperties": {
+          "^[0-9]+$": {
+            "additionalProperties": false,
+            "properties": {
+              "custom": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "custom"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "char": {
+        "patternProperties": {
+          "^.{1}$": {
+            "additionalProperties": false,
+            "properties": {
+              "custom": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "custom"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "int": {
+        "patternProperties": {
+          "^[0-9]+$": {
+            "additionalProperties": false,
+            "properties": {
+              "custom": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "custom"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "intId": {
+        "patternProperties": {
+          "^[0-9]+$": {
+            "additionalProperties": false,
+            "properties": {
+              "custom": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "custom"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "jStrId": {
+        "patternProperties": {
+          "^.*$": {
+            "additionalProperties": false,
+            "properties": {
+              "custom": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "custom"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "javaStr": {
+        "patternProperties": {
+          "^.*$": {
+            "additionalProperties": false,
+            "properties": {
+              "custom": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "custom"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "listMap": {
+        "patternProperties": {
+          "^.*$": {
+            "additionalProperties": false,
+            "properties": {
+              "custom": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "custom"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "long": {
+        "patternProperties": {
+          "^[0-9]+$": {
+            "additionalProperties": false,
+            "properties": {
+              "custom": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "custom"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "nested": {
+        "patternProperties": {
+          "^.*$": {
+            "patternProperties": {
+              "^[0-9]+$": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "custom": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "custom"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "short": {
+        "patternProperties": {
+          "^[0-9]+$": {
+            "additionalProperties": false,
+            "properties": {
+              "custom": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "custom"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "sorted": {
+        "patternProperties": {
+          "^.*$": {
+            "additionalProperties": false,
+            "properties": {
+              "custom": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "custom"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "str": {
+        "patternProperties": {
+          "^.*$": {
+            "additionalProperties": false,
+            "properties": {
+              "custom": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "custom"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "strId": {
+        "patternProperties": {
+          "^.*$": {
+            "additionalProperties": false,
+            "properties": {
+              "custom": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "custom"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "required": [
+      "byte",
+      "char",
+      "int",
+      "intId",
+      "jStrId",
+      "javaStr",
+      "listMap",
+      "long",
+      "nested",
+      "short",
+      "sorted",
+      "str",
+      "strId"
+    ],
+    "type": "object"
+  },
+  "draft-2020-12": {
+    "$id": "golden",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "byte": {
+        "patternProperties": {
+          "^[0-9]+$": {
+            "additionalProperties": false,
+            "properties": {
+              "custom": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "custom"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "char": {
+        "patternProperties": {
+          "^.{1}$": {
+            "additionalProperties": false,
+            "properties": {
+              "custom": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "custom"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "int": {
+        "patternProperties": {
+          "^[0-9]+$": {
+            "additionalProperties": false,
+            "properties": {
+              "custom": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "custom"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "intId": {
+        "patternProperties": {
+          "^[0-9]+$": {
+            "additionalProperties": false,
+            "properties": {
+              "custom": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "custom"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "jStrId": {
+        "patternProperties": {
+          "^.*$": {
+            "additionalProperties": false,
+            "properties": {
+              "custom": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "custom"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "javaStr": {
+        "patternProperties": {
+          "^.*$": {
+            "additionalProperties": false,
+            "properties": {
+              "custom": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "custom"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "listMap": {
+        "patternProperties": {
+          "^.*$": {
+            "additionalProperties": false,
+            "properties": {
+              "custom": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "custom"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "long": {
+        "patternProperties": {
+          "^[0-9]+$": {
+            "additionalProperties": false,
+            "properties": {
+              "custom": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "custom"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "nested": {
+        "patternProperties": {
+          "^.*$": {
+            "patternProperties": {
+              "^[0-9]+$": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "custom": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "custom"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "short": {
+        "patternProperties": {
+          "^[0-9]+$": {
+            "additionalProperties": false,
+            "properties": {
+              "custom": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "custom"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "sorted": {
+        "patternProperties": {
+          "^.*$": {
+            "additionalProperties": false,
+            "properties": {
+              "custom": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "custom"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "str": {
+        "patternProperties": {
+          "^.*$": {
+            "additionalProperties": false,
+            "properties": {
+              "custom": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "custom"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "strId": {
+        "patternProperties": {
+          "^.*$": {
+            "additionalProperties": false,
+            "properties": {
+              "custom": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "custom"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "required": [
+      "byte",
+      "char",
+      "int",
+      "intId",
+      "jStrId",
+      "javaStr",
+      "listMap",
+      "long",
+      "nested",
+      "short",
+      "sorted",
+      "str",
+      "strId"
+    ],
+    "type": "object"
+  }
+}

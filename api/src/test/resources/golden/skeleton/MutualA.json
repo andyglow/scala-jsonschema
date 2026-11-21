@@ -10,26 +10,32 @@
           "required": false,
           "rwMode": "ReadWrite",
           "schema": {
-            "kind": "object",
-            "fields": [
-              {
-                "name": "a",
-                "required": false,
-                "rwMode": "ReadWrite",
-                "schema": {
-                  "kind": "ref",
-                  "sig": "com.github.andyglow.jsonschema.skeleton.ResolutionSpec.MutualA"
+            "kind": "option",
+            "schema": {
+              "kind": "object",
+              "fields": [
+                {
+                  "name": "a",
+                  "required": false,
+                  "rwMode": "ReadWrite",
+                  "schema": {
+                    "kind": "option",
+                    "schema": {
+                      "kind": "ref",
+                      "sig": "com.github.andyglow.jsonschema.skeleton.ResolutionSpec.MutualA"
+                    }
+                  }
+                },
+                {
+                  "name": "n",
+                  "required": true,
+                  "rwMode": "ReadWrite",
+                  "schema": {
+                    "kind": "integer"
+                  }
                 }
-              },
-              {
-                "name": "n",
-                "required": true,
-                "rwMode": "ReadWrite",
-                "schema": {
-                  "kind": "integer"
-                }
-              }
-            ]
+              ]
+            }
           }
         }
       ]
@@ -46,7 +52,14 @@
             "additionalProperties": false,
             "properties": {
               "a": {
-                "$ref": "#/definitions/com.github.andyglow.jsonschema.skeleton.ResolutionSpec.MutualA"
+                "oneOf": [
+                  {
+                    "$ref": "#/definitions/com.github.andyglow.jsonschema.skeleton.ResolutionSpec.MutualA"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "n": {
                 "type": "integer"
@@ -55,7 +68,10 @@
             "required": [
               "n"
             ],
-            "type": "object"
+            "type": [
+              "null",
+              "object"
+            ]
           }
         },
         "type": "object"
@@ -75,7 +91,14 @@
             "additionalProperties": false,
             "properties": {
               "a": {
-                "$ref": "#com.github.andyglow.jsonschema.skeleton.ResolutionSpec.MutualA"
+                "oneOf": [
+                  {
+                    "$ref": "#com.github.andyglow.jsonschema.skeleton.ResolutionSpec.MutualA"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "n": {
                 "type": "integer"
@@ -84,7 +107,10 @@
             "required": [
               "n"
             ],
-            "type": "object"
+            "type": [
+              "null",
+              "object"
+            ]
           }
         },
         "type": "object"
@@ -101,7 +127,14 @@
             "additionalProperties": false,
             "properties": {
               "a": {
-                "$ref": "#com.github.andyglow.jsonschema.skeleton.ResolutionSpec.MutualA"
+                "oneOf": [
+                  {
+                    "$ref": "#com.github.andyglow.jsonschema.skeleton.ResolutionSpec.MutualA"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "n": {
                 "type": "integer"
@@ -110,7 +143,10 @@
             "required": [
               "n"
             ],
-            "type": "object"
+            "type": [
+              "null",
+              "object"
+            ]
           }
         },
         "type": "object"

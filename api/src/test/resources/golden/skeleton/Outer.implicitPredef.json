@@ -25,17 +25,20 @@
         "required": false,
         "rwMode": "ReadWrite",
         "schema": {
-          "kind": "object",
-          "fields": [
-            {
-              "name": "custom",
-              "required": true,
-              "rwMode": "ReadWrite",
-              "schema": {
-                "kind": "string"
+          "kind": "option",
+          "schema": {
+            "kind": "object",
+            "fields": [
+              {
+                "name": "custom",
+                "required": true,
+                "rwMode": "ReadWrite",
+                "schema": {
+                  "kind": "string"
+                }
               }
-            }
-          ]
+            ]
+          }
         }
       }
     ]
@@ -66,7 +69,10 @@
         "required": [
           "custom"
         ],
-        "type": "object"
+        "type": [
+          "null",
+          "object"
+        ]
       }
     },
     "required": [
@@ -101,7 +107,10 @@
         "required": [
           "custom"
         ],
-        "type": "object"
+        "type": [
+          "null",
+          "object"
+        ]
       }
     },
     "required": [
@@ -136,7 +145,10 @@
         "required": [
           "custom"
         ],
-        "type": "object"
+        "type": [
+          "null",
+          "object"
+        ]
       }
     },
     "required": [

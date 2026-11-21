@@ -29,20 +29,23 @@
         "required": false,
         "rwMode": "ReadWrite",
         "schema": {
-          "kind": "def",
-          "sig": "com.github.andyglow.jsonschema.skeleton.ResolutionSpec.Inner",
+          "kind": "option",
           "schema": {
-            "kind": "object",
-            "fields": [
-              {
-                "name": "a",
-                "required": true,
-                "rwMode": "ReadWrite",
-                "schema": {
-                  "kind": "integer"
+            "kind": "def",
+            "sig": "com.github.andyglow.jsonschema.skeleton.ResolutionSpec.Inner",
+            "schema": {
+              "kind": "object",
+              "fields": [
+                {
+                  "name": "a",
+                  "required": true,
+                  "rwMode": "ReadWrite",
+                  "schema": {
+                    "kind": "integer"
+                  }
                 }
-              }
-            ]
+              ]
+            }
           }
         }
       }
@@ -70,7 +73,14 @@
         "$ref": "#/definitions/com.github.andyglow.jsonschema.skeleton.ResolutionSpec.Inner"
       },
       "opt": {
-        "$ref": "#/definitions/com.github.andyglow.jsonschema.skeleton.ResolutionSpec.Inner"
+        "oneOf": [
+          {
+            "$ref": "#/definitions/com.github.andyglow.jsonschema.skeleton.ResolutionSpec.Inner"
+          },
+          {
+            "type": "null"
+          }
+        ]
       }
     },
     "required": [
@@ -102,7 +112,14 @@
         "$ref": "#com.github.andyglow.jsonschema.skeleton.ResolutionSpec.Inner"
       },
       "opt": {
-        "$ref": "#com.github.andyglow.jsonschema.skeleton.ResolutionSpec.Inner"
+        "oneOf": [
+          {
+            "$ref": "#com.github.andyglow.jsonschema.skeleton.ResolutionSpec.Inner"
+          },
+          {
+            "type": "null"
+          }
+        ]
       }
     },
     "required": [
@@ -134,7 +151,14 @@
         "$ref": "#com.github.andyglow.jsonschema.skeleton.ResolutionSpec.Inner"
       },
       "opt": {
-        "$ref": "#com.github.andyglow.jsonschema.skeleton.ResolutionSpec.Inner"
+        "oneOf": [
+          {
+            "$ref": "#com.github.andyglow.jsonschema.skeleton.ResolutionSpec.Inner"
+          },
+          {
+            "type": "null"
+          }
+        ]
       }
     },
     "required": [

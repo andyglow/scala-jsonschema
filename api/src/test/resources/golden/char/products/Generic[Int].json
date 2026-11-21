@@ -16,7 +16,10 @@
         "required": false,
         "rwMode": "ReadOnly",
         "schema": {
-          "kind": "integer"
+          "kind": "option",
+          "schema": {
+            "kind": "integer"
+          }
         }
       }
     ]
@@ -31,7 +34,10 @@
       },
       "ts": {
         "readOnly": true,
-        "type": "integer"
+        "type": [
+          "integer",
+          "null"
+        ]
       }
     },
     "required": [
@@ -50,7 +56,10 @@
       },
       "ts": {
         "readOnly": true,
-        "type": "integer"
+        "type": [
+          "integer",
+          "null"
+        ]
       }
     },
     "required": [
@@ -69,7 +78,10 @@
       },
       "ts": {
         "readOnly": true,
-        "type": "integer"
+        "type": [
+          "integer",
+          "null"
+        ]
       }
     },
     "required": [

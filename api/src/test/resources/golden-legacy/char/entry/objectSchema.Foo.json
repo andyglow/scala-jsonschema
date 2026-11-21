@@ -1,0 +1,84 @@
+{
+  "schema": {
+    "kind": "object",
+    "fields": [
+      {
+        "name": "a",
+        "required": true,
+        "description": "A",
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "integer"
+        }
+      },
+      {
+        "name": "b",
+        "required": true,
+        "description": "B",
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "string"
+        }
+      }
+    ]
+  },
+  "draft-04": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "additionalProperties": false,
+    "properties": {
+      "a": {
+        "description": "A",
+        "type": "integer"
+      },
+      "b": {
+        "description": "B",
+        "type": "string"
+      }
+    },
+    "required": [
+      "a",
+      "b"
+    ],
+    "type": "object"
+  },
+  "draft-07": {
+    "$id": "golden",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "additionalProperties": false,
+    "properties": {
+      "a": {
+        "description": "A",
+        "type": "integer"
+      },
+      "b": {
+        "description": "B",
+        "type": "string"
+      }
+    },
+    "required": [
+      "a",
+      "b"
+    ],
+    "type": "object"
+  },
+  "draft-2020-12": {
+    "$id": "golden",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "a": {
+        "description": "A",
+        "type": "integer"
+      },
+      "b": {
+        "description": "B",
+        "type": "string"
+      }
+    },
+    "required": [
+      "a",
+      "b"
+    ],
+    "type": "object"
+  }
+}

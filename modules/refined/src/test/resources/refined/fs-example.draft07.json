@@ -21,18 +21,31 @@
       ]
     },
     "fstype": {
-      "type": "string",
-      "enum": [
-        "ext3",
-        "ext4",
-        "btrfs"
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "ext3",
+            "ext4",
+            "btrfs"
+          ]
+        },
+        {
+          "type": "null"
+        }
       ]
     },
     "readonly": {
-      "type": "boolean"
+      "type": [
+        "boolean",
+        "null"
+      ]
     },
     "options": {
-      "type": "array",
+      "type": [
+        "array",
+        "null"
+      ],
       "minItems": 1,
       "items": {
         "type": "string"

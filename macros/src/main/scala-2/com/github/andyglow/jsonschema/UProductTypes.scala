@@ -212,8 +212,11 @@ private[jsonschema] trait UProductTypes {
         val fields = resolvedFields map { f =>
           val name = f.name.decodedName.toString
 
-          // resolve the field type schema
-          val fieldSchema = resolve(f.effectiveTpe, ctx :+ tpe)
+          // resolve the field type schema; an `Option[X]` field keeps the Option as an `option` node around X
+          val optTpe      = appliedType(T.option.typeConstructor, List(f.effectiveTpe))
+          val valueSchema = resolve(f.effectiveTpe, ctx :+ tpe)
+          val fieldSchema = if (f.isOption) U.Opt(optTpe, f.effectiveTpe, valueSchema) else valueSchema
+          val fieldTpe    = if (f.isOption) optTpe else f.effectiveTpe
 
           // description
           val description = fd.get(f.name.decodedName.toString)
@@ -230,7 +233,7 @@ private[jsonschema] trait UProductTypes {
           f.default map { default =>
             // if default value is specified
             U.Obj.Field.FromJson(
-              f.effectiveTpe,
+              fieldTpe,
               name,
               fieldSchema,
               q"${!f.isOption && !f.hasDefault}",
@@ -241,7 +244,7 @@ private[jsonschema] trait UProductTypes {
           } getOrElse {
             // if no default is specified
             U.Obj.Field.Apply(
-              f.effectiveTpe,
+              fieldTpe,
               name,
               fieldSchema,
               Some(q"${!f.isOption && !f.hasDefault}"),

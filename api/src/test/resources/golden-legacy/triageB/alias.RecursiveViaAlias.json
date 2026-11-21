@@ -1,0 +1,91 @@
+{
+  "schema": {
+    "kind": "def",
+    "sig": "com.github.andyglow.jsonschema.characterization.TriageBPendingSpec.RecursiveViaAlias",
+    "schema": {
+      "kind": "object",
+      "fields": [
+        {
+          "name": "children",
+          "required": true,
+          "rwMode": "ReadWrite",
+          "schema": {
+            "kind": "array",
+            "unique": false,
+            "items": {
+              "kind": "ref",
+              "sig": "com.github.andyglow.jsonschema.characterization.TriageBPendingSpec.RecursiveViaAlias"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "draft-04": {
+    "$ref": "#/definitions/com.github.andyglow.jsonschema.characterization.TriageBPendingSpec.RecursiveViaAlias",
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "definitions": {
+      "com.github.andyglow.jsonschema.characterization.TriageBPendingSpec.RecursiveViaAlias": {
+        "additionalProperties": false,
+        "properties": {
+          "children": {
+            "items": {
+              "$ref": "#/definitions/com.github.andyglow.jsonschema.characterization.TriageBPendingSpec.RecursiveViaAlias"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "children"
+        ],
+        "type": "object"
+      }
+    }
+  },
+  "draft-07": {
+    "$id": "golden",
+    "$ref": "#com.github.andyglow.jsonschema.characterization.TriageBPendingSpec.RecursiveViaAlias",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+      "com.github.andyglow.jsonschema.characterization.TriageBPendingSpec.RecursiveViaAlias": {
+        "$id": "#com.github.andyglow.jsonschema.characterization.TriageBPendingSpec.RecursiveViaAlias",
+        "additionalProperties": false,
+        "properties": {
+          "children": {
+            "items": {
+              "$ref": "#com.github.andyglow.jsonschema.characterization.TriageBPendingSpec.RecursiveViaAlias"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "children"
+        ],
+        "type": "object"
+      }
+    }
+  },
+  "draft-2020-12": {
+    "$defs": {
+      "com.github.andyglow.jsonschema.characterization.TriageBPendingSpec.RecursiveViaAlias": {
+        "$anchor": "com.github.andyglow.jsonschema.characterization.TriageBPendingSpec.RecursiveViaAlias",
+        "additionalProperties": false,
+        "properties": {
+          "children": {
+            "items": {
+              "$ref": "#com.github.andyglow.jsonschema.characterization.TriageBPendingSpec.RecursiveViaAlias"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "children"
+        ],
+        "type": "object"
+      }
+    },
+    "$id": "golden",
+    "$ref": "#com.github.andyglow.jsonschema.characterization.TriageBPendingSpec.RecursiveViaAlias",
+    "$schema": "https://json-schema.org/draft/2020-12/schema"
+  }
+}

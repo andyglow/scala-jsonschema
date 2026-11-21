@@ -1,0 +1,267 @@
+{
+  "schema": {
+    "kind": "oneof",
+    "members": [
+      {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "a",
+            "required": true,
+            "rwMode": "ReadWrite",
+            "schema": {
+              "kind": "integer"
+            }
+          }
+        ]
+      },
+      {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "b",
+            "required": true,
+            "rwMode": "ReadWrite",
+            "schema": {
+              "kind": "string"
+            }
+          }
+        ]
+      },
+      {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "c",
+            "required": true,
+            "rwMode": "ReadWrite",
+            "schema": {
+              "kind": "boolean"
+            }
+          }
+        ]
+      },
+      {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "d",
+            "required": true,
+            "rwMode": "ReadWrite",
+            "schema": {
+              "kind": "number"
+            }
+          }
+        ]
+      },
+      {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "e",
+            "required": true,
+            "rwMode": "ReadWrite",
+            "schema": {
+              "kind": "array",
+              "unique": false,
+              "items": {
+                "kind": "string"
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "draft-04": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "oneOf": [
+      {
+        "additionalProperties": false,
+        "properties": {
+          "a": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "a"
+        ]
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "b": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "b"
+        ]
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "c": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "c"
+        ]
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "d": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "d"
+        ]
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "e": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "e"
+        ]
+      }
+    ]
+  },
+  "draft-07": {
+    "$id": "golden",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "oneOf": [
+      {
+        "additionalProperties": false,
+        "properties": {
+          "a": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "a"
+        ]
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "b": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "b"
+        ]
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "c": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "c"
+        ]
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "d": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "d"
+        ]
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "e": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "e"
+        ]
+      }
+    ]
+  },
+  "draft-2020-12": {
+    "$id": "golden",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "oneOf": [
+      {
+        "additionalProperties": false,
+        "properties": {
+          "a": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "a"
+        ]
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "b": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "b"
+        ]
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "c": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "c"
+        ]
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "d": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "d"
+        ]
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "e": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "e"
+        ]
+      }
+    ]
+  }
+}

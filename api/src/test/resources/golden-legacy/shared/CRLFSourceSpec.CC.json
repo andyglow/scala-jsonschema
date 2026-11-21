@@ -1,0 +1,300 @@
+{
+  "schema": {
+    "kind": "def",
+    "sig": "com.github.andyglow.jsonschema.CRLFSourceSpec.CC",
+    "schema": {
+      "kind": "object",
+      "fields": [
+        {
+          "name": "set",
+          "required": false,
+          "default": [
+            1,
+            5,
+            9
+          ],
+          "rwMode": "ReadWrite",
+          "schema": {
+            "kind": "array",
+            "unique": true,
+            "items": {
+              "kind": "integer"
+            }
+          }
+        },
+        {
+          "name": "list",
+          "required": false,
+          "default": [
+            true,
+            false
+          ],
+          "rwMode": "ReadWrite",
+          "schema": {
+            "kind": "array",
+            "unique": false,
+            "items": {
+              "kind": "boolean"
+            }
+          }
+        },
+        {
+          "name": "vector",
+          "required": false,
+          "default": [
+            9,
+            7
+          ],
+          "rwMode": "ReadWrite",
+          "schema": {
+            "kind": "array",
+            "unique": false,
+            "items": {
+              "kind": "number"
+            }
+          }
+        },
+        {
+          "name": "strMap",
+          "required": false,
+          "default": {
+            "foo": 0.12
+          },
+          "rwMode": "ReadWrite",
+          "schema": {
+            "kind": "dictionary",
+            "values": {
+              "kind": "number"
+            }
+          }
+        },
+        {
+          "name": "intMap",
+          "required": false,
+          "default": {
+            "1": "1",
+            "2": "2"
+          },
+          "rwMode": "ReadWrite",
+          "schema": {
+            "kind": "dictionary",
+            "values": {
+              "kind": "string"
+            },
+            "validations": [
+              {
+                "name": "patternProperties",
+                "value": "^[0-9]+$"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "draft-04": {
+    "$ref": "#/definitions/com.github.andyglow.jsonschema.CRLFSourceSpec.CC",
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "definitions": {
+      "com.github.andyglow.jsonschema.CRLFSourceSpec.CC": {
+        "additionalProperties": false,
+        "properties": {
+          "intMap": {
+            "default": {
+              "1": "1",
+              "2": "2"
+            },
+            "patternProperties": {
+              "^[0-9]+$": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "list": {
+            "default": [
+              false,
+              true
+            ],
+            "items": {
+              "type": "boolean"
+            },
+            "type": "array"
+          },
+          "set": {
+            "default": [
+              1,
+              5,
+              9
+            ],
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "strMap": {
+            "default": {
+              "foo": 0.12
+            },
+            "patternProperties": {
+              "^.*$": {
+                "type": "number"
+              }
+            },
+            "type": "object"
+          },
+          "vector": {
+            "default": [
+              7,
+              9
+            ],
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      }
+    }
+  },
+  "draft-07": {
+    "$id": "golden",
+    "$ref": "#com.github.andyglow.jsonschema.CRLFSourceSpec.CC",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+      "com.github.andyglow.jsonschema.CRLFSourceSpec.CC": {
+        "$id": "#com.github.andyglow.jsonschema.CRLFSourceSpec.CC",
+        "additionalProperties": false,
+        "properties": {
+          "intMap": {
+            "default": {
+              "1": "1",
+              "2": "2"
+            },
+            "patternProperties": {
+              "^[0-9]+$": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "list": {
+            "default": [
+              false,
+              true
+            ],
+            "items": {
+              "type": "boolean"
+            },
+            "type": "array"
+          },
+          "set": {
+            "default": [
+              1,
+              5,
+              9
+            ],
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "strMap": {
+            "default": {
+              "foo": 0.12
+            },
+            "patternProperties": {
+              "^.*$": {
+                "type": "number"
+              }
+            },
+            "type": "object"
+          },
+          "vector": {
+            "default": [
+              7,
+              9
+            ],
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      }
+    }
+  },
+  "draft-2020-12": {
+    "$defs": {
+      "com.github.andyglow.jsonschema.CRLFSourceSpec.CC": {
+        "$anchor": "com.github.andyglow.jsonschema.CRLFSourceSpec.CC",
+        "additionalProperties": false,
+        "properties": {
+          "intMap": {
+            "default": {
+              "1": "1",
+              "2": "2"
+            },
+            "patternProperties": {
+              "^[0-9]+$": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "list": {
+            "default": [
+              false,
+              true
+            ],
+            "items": {
+              "type": "boolean"
+            },
+            "type": "array"
+          },
+          "set": {
+            "default": [
+              1,
+              5,
+              9
+            ],
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "strMap": {
+            "default": {
+              "foo": 0.12
+            },
+            "patternProperties": {
+              "^.*$": {
+                "type": "number"
+              }
+            },
+            "type": "object"
+          },
+          "vector": {
+            "default": [
+              7,
+              9
+            ],
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "$id": "golden",
+    "$ref": "#com.github.andyglow.jsonschema.CRLFSourceSpec.CC",
+    "$schema": "https://json-schema.org/draft/2020-12/schema"
+  }
+}

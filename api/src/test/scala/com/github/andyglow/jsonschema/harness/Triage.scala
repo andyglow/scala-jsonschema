@@ -19,7 +19,7 @@ object TriageA extends Tag("TRIAGE-A")
   */
 object Untriaged extends Tag("UNTRIAGED")
 
-/** Group C: behavior the owner still has to decide on. The tests pin today's output. */
+/** Group C: behavior the owner still has to decide on. The tests pin today's output. (None left: the last ones, Option at the root and in collections, were decided with the Option standard.) */
 object TriageC extends Tag("TRIAGE-C")
 
 object Scala {

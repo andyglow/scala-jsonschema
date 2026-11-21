@@ -22,7 +22,10 @@
               "required": false,
               "rwMode": "ReadWrite",
               "schema": {
-                "kind": "string"
+                "kind": "option",
+                "schema": {
+                  "kind": "string"
+                }
               }
             }
           ]
@@ -51,7 +54,10 @@
                 "required": false,
                 "rwMode": "ReadWrite",
                 "schema": {
-                  "kind": "string"
+                  "kind": "option",
+                  "schema": {
+                    "kind": "string"
+                  }
                 }
               }
             ]
@@ -71,7 +77,10 @@
             "type": "integer"
           },
           "y": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           }
         },
         "required": [
@@ -87,7 +96,10 @@
               "type": "integer"
             },
             "y": {
-              "type": "string"
+              "type": [
+                "null",
+                "string"
+              ]
             }
           },
           "required": [
@@ -116,7 +128,10 @@
             "type": "integer"
           },
           "y": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           }
         },
         "required": [
@@ -132,7 +147,10 @@
               "type": "integer"
             },
             "y": {
-              "type": "string"
+              "type": [
+                "null",
+                "string"
+              ]
             }
           },
           "required": [
@@ -161,7 +179,10 @@
             "type": "integer"
           },
           "y": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           }
         },
         "required": [
@@ -177,7 +198,10 @@
               "type": "integer"
             },
             "y": {
-              "type": "string"
+              "type": [
+                "null",
+                "string"
+              ]
             }
           },
           "required": [

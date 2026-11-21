@@ -42,11 +42,11 @@ class Scala3ProductsSpec extends AnyFunSuite {
 
   test("D2: `None` / `Option.empty` defaults in any spelling give no default, without a ToValue") {
     Json.schema[NoneSpellings] shouldEqual `object`[NoneSpellings](
-      Field("a", `integer`, required = false),
-      Field("b", `integer`, required = false),
-      Field("c", `integer`, required = false),
-      Field("d", `integer`, required = false),
-      Field("e", `integer`, required = false)
+      Field("a", `option`(`integer`), required = false),
+      Field("b", `option`(`integer`), required = false),
+      Field("c", `option`(`integer`), required = false),
+      Field("d", `option`(`integer`), required = false),
+      Field("e", `option`(`integer`), required = false)
     )
   }
 
@@ -63,9 +63,9 @@ class Scala3ProductsSpec extends AnyFunSuite {
 
   test("D2: with a ToValue[Option[X]], None is told apart at runtime") {
     import OptIntToValue.given
-    Json.schema[SomeCall] shouldEqual `object`[SomeCall](Field.fromJson[Int]("a", `integer`, required = false, default = Some(Value.num(1))))
-    Json.schema[FromVal] shouldEqual `object`[FromVal](Field.fromJson[Int]("a", `integer`, required = false, default = Some(Value.num(1))))
-    Json.schema[NoneFromVal] shouldEqual `object`[NoneFromVal](Field("a", `integer`, required = false))
+    Json.schema[SomeCall] shouldEqual `object`[SomeCall](Field.fromJson[Option[Int]]("a", `option`(`integer`), required = false, default = Some(Value.num(1))))
+    Json.schema[FromVal] shouldEqual `object`[FromVal](Field.fromJson[Option[Int]]("a", `option`(`integer`), required = false, default = Some(Value.num(1))))
+    Json.schema[NoneFromVal] shouldEqual `object`[NoneFromVal](Field("a", `option`(`integer`), required = false))
     Json.objectSchema[NoneSpellings]().fields.flatMap(_.default) shouldBe empty
   }
 }

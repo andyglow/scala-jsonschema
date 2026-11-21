@@ -50,7 +50,7 @@ class RecursiveTypesSpec extends AnyWordSpec {
             Field("head", `string`, required = true),
             Field(
               "tail",
-              `ref`("com.github.andyglow.jsonschema.RecursiveTypesSpec.case1.SList"),
+              `option`(`ref`("com.github.andyglow.jsonschema.RecursiveTypesSpec.case1.SList")),
               required = false
             )
           )
@@ -67,7 +67,7 @@ class RecursiveTypesSpec extends AnyWordSpec {
           "given-name",
           `object`(
             Field("head", `string`, required = true),
-            Field("tail", `ref`("given-name"), required = false)
+            Field("tail", `option`(`ref`("given-name")), required = false)
           )
         )
       }
@@ -104,8 +104,10 @@ class RecursiveTypesSpec extends AnyWordSpec {
                 Field("head", `string`, required = true),
                 Field(
                   "tail",
-                  `ref`(
-                    "com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList[scala.Predef.String]"
+                  `option`(
+                    `ref`(
+                      "com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList[scala.Predef.String]"
+                    )
                   ),
                   required = false
                 )
@@ -129,8 +131,10 @@ class RecursiveTypesSpec extends AnyWordSpec {
                 Field("head", `string`, required = true),
                 Field(
                   "tail",
-                  `ref`(
-                    "com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList[scala.Predef.String]"
+                  `option`(
+                    `ref`(
+                      "com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList[scala.Predef.String]"
+                    )
                   ),
                   required = false
                 )

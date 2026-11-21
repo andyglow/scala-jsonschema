@@ -141,10 +141,12 @@ class Scala3EnumsSpec extends AnyFunSuite {
       Field("d", `def`[Dir]("com.github.andyglow.jsonschema.sums.Scala3EnumsSpec.Dir", `enum`.of("N", "S"))),
       Field(
         "s",
-        `oneof`.of[Shape](
-          `object`(Field("r", `number`[Double])),
-          `object`(Field("w", `number`[Double]), Field("h", `number`[Double])),
-          `enum`.of("Point")
+        `option`(
+          `oneof`.of[Shape](
+            `object`(Field("r", `number`[Double])),
+            `object`(Field("w", `number`[Double]), Field("h", `number`[Double])),
+            `enum`.of("Point")
+          )
         ),
         required = false
       )

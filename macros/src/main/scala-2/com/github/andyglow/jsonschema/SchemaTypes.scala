@@ -152,6 +152,13 @@ private[jsonschema] trait SchemaTypes {
       def prefix                         = q"${N.Schema}.`value-class`[$tpe, $innerTpe](${schema.tree})";
       def withExtra(x: SchemaType.Extra) = copy(extra = x)
     }
+
+    /** `Option[X]` (`tpe`) in any position; `innerTpe` is X. A JsonSchemaProfile shapes it when the schema is rendered. */
+    case class Opt(tpe: Type, innerTpe: Type, schema: SchemaType, extra: Extra = Extra()) extends SchemaType {
+      type Self = Opt;
+      def prefix                         = q"${N.Schema}.`option`[$innerTpe](${schema.tree})";
+      def withExtra(x: SchemaType.Extra) = copy(extra = x)
+    }
     case class Def(tpe: Type, sig: Tree, schema: SchemaType, extra: Extra = Extra()) extends SchemaType {
       type Self = Def; def prefix = q"${N.Schema}.`def`[$tpe]($sig, ${schema.tree})";
       def withExtra(x: SchemaType.Extra) = copy(extra = x)
@@ -255,6 +262,7 @@ private[jsonschema] trait SchemaTypes {
       case s: Not        => s.copy(schema = transformSchema(s.schema)(pf))
       case s: Def        => s.copy(schema = transformSchema(s.schema)(pf))
       case s: ValueClass => s.copy(schema = transformSchema(s.schema)(pf))
+      case s: Opt        => s.copy(schema = transformSchema(s.schema)(pf))
       case s: Obj        =>
         s.copy(fields = s.fields map { f =>
           f.mapSchema(transformSchema(_)(pf))

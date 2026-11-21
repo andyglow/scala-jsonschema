@@ -1,0 +1,97 @@
+{
+  "schema": {
+    "kind": "object",
+    "fields": [
+      {
+        "name": "s",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "def",
+          "sig": "java.lang.String",
+          "schema": {
+            "kind": "string"
+          }
+        }
+      },
+      {
+        "name": "n",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "integer"
+        }
+      }
+    ]
+  },
+  "draft-04": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "additionalProperties": false,
+    "definitions": {
+      "java.lang.String": {
+        "type": "string"
+      }
+    },
+    "properties": {
+      "n": {
+        "type": "integer"
+      },
+      "s": {
+        "$ref": "#/definitions/java.lang.String"
+      }
+    },
+    "required": [
+      "n",
+      "s"
+    ],
+    "type": "object"
+  },
+  "draft-07": {
+    "$id": "golden",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "additionalProperties": false,
+    "definitions": {
+      "java.lang.String": {
+        "$id": "#java.lang.String",
+        "type": "string"
+      }
+    },
+    "properties": {
+      "n": {
+        "type": "integer"
+      },
+      "s": {
+        "$ref": "#java.lang.String"
+      }
+    },
+    "required": [
+      "n",
+      "s"
+    ],
+    "type": "object"
+  },
+  "draft-2020-12": {
+    "$defs": {
+      "java.lang.String": {
+        "$anchor": "java.lang.String",
+        "type": "string"
+      }
+    },
+    "$id": "golden",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "n": {
+        "type": "integer"
+      },
+      "s": {
+        "$ref": "#java.lang.String"
+      }
+    },
+    "required": [
+      "n",
+      "s"
+    ],
+    "type": "object"
+  }
+}
