@@ -7,6 +7,10 @@ import json.schema.Version._
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers._
 
+import scala.concurrent.{Await, Future}
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+
 /** Definition names per draft grammar (TRIAGE bugs-1 #8, owner decision 2026-11-20). */
 class DefinitionNamesSpec extends AnyFunSuite {
   import DefinitionNames._
@@ -90,5 +94,16 @@ class DefinitionNamesSpec extends AnyFunSuite {
 
     // the raw form and the Schema value keep the signature
     box.sig shouldBe "com.acme.Box[scala.Int]"
+  }
+
+  test("one renderer can be shared: each document gets its own names, also across threads") {
+    // in `both` x.A(B) takes x.A_B_ and x.A[B] becomes x.A_B__2; alone, x.A[B] is x.A_B_
+    val both                    = `object`[Any](Field("a", `def`[Any]("x.A[B]", `string`)), Field("b", `def`[Any]("x.A(B)", `string`)))
+    val alone                   = `object`[Any](Field("a", `def`[Any]("x.A[B]", `string`)))
+    val renderer                = new AsDraft07(Draft07("x"))
+    def keys(s: json.Schema[_]) = renderer.schema(s).value("definitions").asInstanceOf[obj].value.keySet
+
+    val runs = Future.sequence((1 to 200).toList.map(i => Future(if (i % 2 == 0) keys(both) -> Set("x.A_B_", "x.A_B__2") else keys(alone) -> Set("x.A_B_"))))
+    Await.result(runs, 1.minute) foreach { case (actual, expected) => actual shouldBe expected }
   }
 }

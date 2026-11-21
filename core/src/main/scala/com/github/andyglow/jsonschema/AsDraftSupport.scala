@@ -25,17 +25,22 @@ trait AsDraftSupport {
   /** Makes a definition signature a valid name for this draft (see [[DefinitionNames]]). */
   protected def sanitizeDefinitionName(sig: String): String
 
-  private var definitionNames: Map[String, String] = Map.empty
+  // the names of the document being rendered; per thread (not inherited by threads started meanwhile), so one renderer can be shared, and nested `apply(x)` calls reuse the document's names
+  private val definitionNames = new ThreadLocal[Map[String, String]]
 
-  /** Computes the names of all definitions and refs of a document, before rendering it. */
-  protected def assignDefinitionNames(root: json.Schema[_]): Unit =
-    definitionNames = DefinitionNames.assign(root, sanitizeDefinitionName)
+  /** Renders `body` with the names of all definitions and refs of the document `root`, computed once before rendering it. */
+  protected def withDefinitionNames[A](root: json.Schema[_])(body: => A): A =
+    if (definitionNames.get != null) body
+    else {
+      definitionNames.set(DefinitionNames.assign(root, sanitizeDefinitionName))
+      try body
+      finally definitionNames.remove()
+    }
 
   /** The name a definition signature has in the rendered document. */
-  protected def definitionName(sig: String): String = definitionNames.getOrElse(sig, sanitizeDefinitionName(sig))
+  protected def definitionName(sig: String): String = Option(definitionNames.get).flatMap(_.get(sig)).getOrElse(sanitizeDefinitionName(sig))
 
-  def apply(x: json.Schema[_]): obj = {
-    assignDefinitionNames(x)
+  def apply(x: json.Schema[_]): obj = withDefinitionNames(x) {
     apply(x, None, includeType = true, isRoot = true)
   }
 
