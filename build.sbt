@@ -50,16 +50,16 @@ def versionRangeDirs(base: File, scalaVersion: String): Seq[File] =
 //    Used in commonSettings (Test / unmanagedSources).
 lazy val scala3Pending: Map[String, String] = Map(
   // streams 1 (products: annotations, descriptions, scaladoc, RW, default errors), 2 (sums/enums), 3 (collections/dicts)
-  "api/src/test/scala/com/github/andyglow/jsonschema/SchemaMacroSpec.scala"                             -> "streams 2, 3",
-  "api/src/test/scala/com/github/andyglow/jsonschema/golden/GoldenSharedModelsSpec.scala"               -> "streams 1, 2, 3",
-  "api/src/test/scala/com/github/andyglow/jsonschema/characterization/EntryPointsCharSpec.scala"        -> "streams 1, 2, 3",
-  "api/src/test/scala/com/github/andyglow/jsonschema/characterization/TriageBPendingSpec.scala"         -> "streams 1, 2, 3",
-  "api/src/test/scala/com/github/andyglow/jsonschema/characterization/TypeFamiliesCharSpec.scala"       -> "streams 2, 3",
+  "api/src/test/scala/com/github/andyglow/jsonschema/SchemaMacroSpec.scala"                             -> "stream 2",
+  "api/src/test/scala/com/github/andyglow/jsonschema/golden/GoldenSharedModelsSpec.scala"               -> "streams 1, 2",
+  "api/src/test/scala/com/github/andyglow/jsonschema/characterization/EntryPointsCharSpec.scala"        -> "streams 1, 2",
+  "api/src/test/scala/com/github/andyglow/jsonschema/characterization/TriageBPendingSpec.scala"         -> "streams 1, 2",
+  "api/src/test/scala/com/github/andyglow/jsonschema/characterization/TypeFamiliesCharSpec.scala"       -> "stream 2 (incl. enum Map keys)",
   "api/src/test/scala/com/github/andyglow/jsonschema/characterization/FieldsAnnotationsCharSpec.scala"  -> "streams 1, 2",
   "api/src/test/scala-3/com/github/andyglow/jsonschema/characterization/Scala3OnlyCharSpec.scala"       -> "stream 1 (needs FieldsAnnotationsCharSpec)",
   "api/src/test/scala-2.13+/com/github/andyglow/jsonschema/characterization/Scala213PlusCharSpec.scala" -> "stream 2",
   "api/src/test/scala/com/github/andyglow/jsonschema/characterization/ScaladocCharSpec.scala"           -> "stream 1",
-  "api/src/test/scala/com/github/andyglow/jsonschema/characterization/GroupCSumsSpec.scala"             -> "streams 2, 3",
+  "api/src/test/scala/com/github/andyglow/jsonschema/characterization/GroupCSumsSpec.scala"             -> "stream 2",
   "api/src/test/scala/com/github/andyglow/jsonschema/DocumentationSpec.scala"                           -> "stream 1",
   "api/src/test/scala/com/github/andyglow/jsonschema/RWSpec.scala"                                      -> "stream 1",
   "api/src/test/scala/com/github/andyglow/jsonschema/Example.scala"                                     -> "streams 1, 2",
@@ -69,8 +69,8 @@ lazy val scala3Pending: Map[String, String] = Map(
   "api/src/test/scala/com/github/andyglow/jsonschema/NestedSumTypeSpec.scala"                           -> "stream 2",
   "api/src/test/scala/com/github/andyglow/jsonschema/SumTypeWithConstantsSpec.scala"                    -> "stream 2",
   "api/src/test/scala/com/github/andyglow/jsonschema/SumTypeWithEnumsSpec.scala"                        -> "stream 2",
-  "api/src/test/scala/com/github/andyglow/jsonschema/RecursiveTypesSpec.scala"                          -> "stream 3",
-  "api/src/test/scala/com/github/andyglow/jsonschema/AutoDerivationSpec.scala"                          -> "streams 2, 3",
+  "api/src/test/scala/com/github/andyglow/jsonschema/RecursiveTypesSpec.scala"                          -> "stream 2 (case2 is a sealed family)",
+  "api/src/test/scala/com/github/andyglow/jsonschema/AutoDerivationSpec.scala"                          -> "stream 2",
   // bridges: the shared UserProfile model has enums (Role, Active, BetaFeature)
   "modules/play-json/src/test/scala/com/github/andyglow/jsonschema/AsPlaySpec.scala"     -> "stream 2",
   "modules/circe-json/src/test/scala/com/github/andyglow/jsonschema/AsCirceSpec.scala"   -> "stream 2",

@@ -85,6 +85,15 @@ for the full list):
 - **A scaladoc `@param` for a non-existent field is a warning**, for the root and nested types alike (it failed the
   root before).
 - `def.toDefinition(name)` renames only its own definition and the refs to it.
+- **Scala 3: type names that Scala 3 doesn't keep.** Scala 3 replaces a parameterized alias that only renames a
+  type (`type MyList[A] = List[A]`, `type Wrapped[A] = Box[A]`) before the macro sees it, so `Json.sig` and
+  definition names show the type it stands for (`scala.List[scala.Int]`, `pkg.Box[scala.Int]`). Scala 2 shows the
+  alias (`pkg.MyList[scala.Int]`). Definition names also spell the standard collections the usual way in type
+  arguments (`scala.List`, `scala.Vector`, `scala.Predef.Map`, ...), even where you wrote the full class name
+  (`scala.collection.immutable.List`, which Scala 2 keeps). That way the name is the same whether the model is
+  compiled with your code or comes from another module. Other aliases (`type StrMap[V] = Map[String, V]`,
+  `type Users = List[User]`) and the usual spellings of the standard collections give the same names on Scala 2
+  and 3.
 
 ## Generate JSON Schema from Scala classes
 

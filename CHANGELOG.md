@@ -14,7 +14,10 @@
     name a field already got. Type arguments aren't dealiased: `Box[String]` is still `Box[scala.Predef.String]`
   - clear compile errors instead of errors in the generated code or macro crashes for: a Map key without a
     `KeyPattern` (e.g. `UUID`), an enum key with `Flag.EnumsAsOneOf`, a `mutable.Map`, and collections whose
-    type parameter isn't the element type (e.g. `BitSet`)
+    type parameter isn't the element type (e.g. `BitSet`), or Maps that don't take the key and value types as
+    their type parameters (e.g. `IntMap[V]`)
+  - a Map other than `Map` itself (`SortedMap[Int, X]`, `ListMap[Long, X]`) with a key pattern derives (before: an
+    error in the generated code)
   - more clear compile errors instead of macro crashes: `Json.sig`/definition names of structural types,
     `Json.objectSchema` with decorations that aren't literal pairs, `Json.objectSchema` of a type that resolves to
     a definition, and an `Option` default that can't be evaluated at compile time. Definition names of compound

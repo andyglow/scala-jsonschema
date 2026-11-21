@@ -1,0 +1,166 @@
+{
+  "schema": {
+    "kind": "object",
+    "fields": [
+      {
+        "name": "trees",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "dictionary",
+          "values": {
+            "kind": "def",
+            "sig": "com.github.andyglow.jsonschema.collections.CollectionsSpec.Tree",
+            "schema": {
+              "kind": "object",
+              "fields": [
+                {
+                  "name": "value",
+                  "required": true,
+                  "rwMode": "ReadWrite",
+                  "schema": {
+                    "kind": "integer"
+                  }
+                },
+                {
+                  "name": "children",
+                  "required": true,
+                  "rwMode": "ReadWrite",
+                  "schema": {
+                    "kind": "array",
+                    "unique": false,
+                    "items": {
+                      "kind": "ref",
+                      "sig": "com.github.andyglow.jsonschema.collections.CollectionsSpec.Tree"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    ]
+  },
+  "draft-04": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "additionalProperties": false,
+    "definitions": {
+      "com.github.andyglow.jsonschema.collections.CollectionsSpec.Tree": {
+        "additionalProperties": false,
+        "properties": {
+          "children": {
+            "items": {
+              "$ref": "#/definitions/com.github.andyglow.jsonschema.collections.CollectionsSpec.Tree"
+            },
+            "type": "array"
+          },
+          "value": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "children",
+          "value"
+        ],
+        "type": "object"
+      }
+    },
+    "properties": {
+      "trees": {
+        "patternProperties": {
+          "^.*$": {
+            "$ref": "#/definitions/com.github.andyglow.jsonschema.collections.CollectionsSpec.Tree"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "required": [
+      "trees"
+    ],
+    "type": "object"
+  },
+  "draft-07": {
+    "$id": "golden",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "additionalProperties": false,
+    "definitions": {
+      "com.github.andyglow.jsonschema.collections.CollectionsSpec.Tree": {
+        "$id": "#com.github.andyglow.jsonschema.collections.CollectionsSpec.Tree",
+        "additionalProperties": false,
+        "properties": {
+          "children": {
+            "items": {
+              "$ref": "#com.github.andyglow.jsonschema.collections.CollectionsSpec.Tree"
+            },
+            "type": "array"
+          },
+          "value": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "children",
+          "value"
+        ],
+        "type": "object"
+      }
+    },
+    "properties": {
+      "trees": {
+        "patternProperties": {
+          "^.*$": {
+            "$ref": "#com.github.andyglow.jsonschema.collections.CollectionsSpec.Tree"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "required": [
+      "trees"
+    ],
+    "type": "object"
+  },
+  "draft-2020-12": {
+    "$defs": {
+      "com.github.andyglow.jsonschema.collections.CollectionsSpec.Tree": {
+        "$anchor": "com.github.andyglow.jsonschema.collections.CollectionsSpec.Tree",
+        "additionalProperties": false,
+        "properties": {
+          "children": {
+            "items": {
+              "$ref": "#com.github.andyglow.jsonschema.collections.CollectionsSpec.Tree"
+            },
+            "type": "array"
+          },
+          "value": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "children",
+          "value"
+        ],
+        "type": "object"
+      }
+    },
+    "$id": "golden",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "trees": {
+        "patternProperties": {
+          "^.*$": {
+            "$ref": "#com.github.andyglow.jsonschema.collections.CollectionsSpec.Tree"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "required": [
+      "trees"
+    ],
+    "type": "object"
+  }
+}

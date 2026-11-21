@@ -21,4 +21,12 @@ trait Enums { this: Derivation =>
     * TODO(stream 2): implement. Stream 3 codes against it for string-enum map keys (`^(?:A|B)$`, quirk 13), so keep the signature (reviewer3 N3).
     */
   def enumValueNames(tpe: TypeRepr): Option[List[String]] = None
+
+  /** For a `Map[K, _]` key (stream 3's [[Collections]]; contract agreed between streams 2 and 3): `None` if `tpe` isn't an enum; `Right(names)` for an enum of strings, its value names in declaration
+    * order (Scala 2's `knownString`s); `Left(why)` for an enum that can't be a key, `why` being "is an enum, but with Flag.EnumsAsOneOf its members aren't plain strings" or "is an enum of non-string
+    * values" (s2fix's texts).
+    *
+    * TODO(stream 2): implement (this stub keeps every enum key unsupported).
+    */
+  def enumKeyNames(tpe: TypeRepr, ctx: Ctx): Option[Either[String, List[String]]] = None
 }
