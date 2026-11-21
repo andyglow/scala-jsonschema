@@ -85,8 +85,8 @@ object TriageBPendingSpec {
   case class OnlyParams(a: Int)
 }
 
-/** TRIAGE group B: each test asserts the fixed behavior (they were `pendingUntilFixed` until the Scala 2 fixes landed on s3/s2fix). The 0.7 behavior is in the `was:` comments. The name is
-  * kept because the model signatures (and so the golden files) contain it. The Scala 3 macro must pass these too.
+/** TRIAGE group B: each test asserts the fixed behavior (they were `pendingUntilFixed` until the Scala 2 fixes landed on s3/s2fix). The 0.7 behavior is in the `was:` comments. The name is kept
+  * because the model signatures (and so the golden files) contain it. The Scala 3 macro must pass these too.
   */
 class TriageBPendingSpec extends AnyFunSuite {
   import TriageBPendingSpec._
@@ -156,7 +156,7 @@ class TriageBPendingSpec extends AnyFunSuite {
 
   test("toDefinition of a recursive type with a nested definition (bugs-1 #5)", TriageB) {
     // was: meta became `$ref #Tree`, the Meta definition disappeared and children kept the dangling `#Node`
-    val s = Json.schema[Node].toDefinition("Tree")
+    val s            = Json.schema[Node].toDefinition("Tree")
     val (refs, defs) = refsAndDefs(s)
     refs shouldBe Set("Tree")
     defs shouldBe Set("Tree", "com.github.andyglow.jsonschema.characterization.TriageBPendingSpec.Meta")

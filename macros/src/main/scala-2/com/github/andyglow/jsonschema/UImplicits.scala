@@ -91,10 +91,10 @@ private[jsonschema] trait UImplicits { this: UContext with UCommons with USignat
       def lookupSchema: ImplicitSchema = {
         // schema
         c.inferImplicitValue(sType) match {
-          case EmptyTree              => lookupPredef
-          case x if isSelfRef(x)      => NotFound
+          case EmptyTree             => lookupPredef
+          case x if isSelfRef(x)     => NotFound
           case x if !isForExactly(x) => lookupPredef
-          case x                      => FromSchema(x)
+          case x                     => FromSchema(x)
         }
       }
 
@@ -110,4 +110,3 @@ private[jsonschema] trait UImplicits { this: UContext with UCommons with USignat
   }
   val Implicit = new Implicit
 }
-

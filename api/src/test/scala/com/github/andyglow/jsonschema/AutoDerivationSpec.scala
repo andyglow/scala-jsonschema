@@ -14,9 +14,9 @@ object AutoDerivationSpec {
 
   sealed trait Shape
   object Shape {
-    case class Circle(r: Double)      extends Shape
-    case class Square(side: Foo)      extends Shape
-    case object Dot                   extends Shape
+    case class Circle(r: Double) extends Shape
+    case class Square(side: Foo) extends Shape
+    case object Dot              extends Shape
   }
   case class Drawing(shapes: List[Shape])
 

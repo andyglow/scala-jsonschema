@@ -157,9 +157,9 @@ private[jsonschema] trait UCommons extends SchemaTypes with ULogging {
     } else Seq.empty
   }
 
-  /** The type of the generic subclass `cs` of `parent`, its type parameters bound by matching how `cs` extends the parent's type constructor against `parent`'s type arguments.
-    * So `case class Impl[B, A](a: A, b: B) extends Base[A, B]` as a `Base[Int, String]` is `Impl[String, Int]` (by name, not by position). A type parameter that doesn't occur in the parent's
-    * type arguments stays as is.
+  /** The type of the generic subclass `cs` of `parent`, its type parameters bound by matching how `cs` extends the parent's type constructor against `parent`'s type arguments. So
+    * `case class Impl[B, A](a: A, b: B) extends Base[A, B]` as a `Base[Int, String]` is `Impl[String, Int]` (by name, not by position). A type parameter that doesn't occur in the parent's type
+    * arguments stays as is.
     */
   private def subclassType(cs: ClassSymbol, parent: Type): Type = {
     val params = cs.typeParams
@@ -171,7 +171,7 @@ private[jsonschema] trait UCommons extends SchemaTypes with ULogging {
       else Nil
     }
 
-    val bindings  = if (asBase == NoType) Nil else unify(asBase, parent.dealias)
+    val bindings   = if (asBase == NoType) Nil else unify(asBase, parent.dealias)
     val (from, to) = params.flatMap { p => bindings.collectFirst { case (`p`, t) => (p, t) } }.unzip
     if (from.isEmpty) cs.toType else resolveGenericType(cs.toType, from, to)
   }

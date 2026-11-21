@@ -5,8 +5,8 @@ import scala.reflect.NameTransformer
 private[jsonschema] trait USignatures { this: UContext =>
   import c.universe._
 
-  /** The full name with every segment decoded (`odd name`, `+`), as Scala 3's `fullName` gives it; Scala 2's is encoded (`odd$u0020name`, `$plus`). Encoding happens only when rendering
-    * (see DefinitionNames in core).
+  /** The full name with every segment decoded (`odd name`, `+`), as Scala 3's `fullName` gives it; Scala 2's is encoded (`odd$u0020name`, `$plus`). Encoding happens only when rendering (see
+    * DefinitionNames in core).
     */
   private def decodedFullName(sym: Symbol): String = sym.fullName.split('.').map(NameTransformer.decode).mkString(".")
 

@@ -278,7 +278,7 @@ object Schema {
   sealed case class `object`[T] private (fields: List[`object`.Field[_]]) extends Schema[T] {
     import `object`._
     type Self = `object`[T]
-    def mkCopy()                              = copy()
+    def mkCopy() = copy()
 
     /** Replaces the synthesized case-class `copy`: a copy of a free object stays free (withTitle, duplicate, withField, ... all go through here). */
     def copy(fields: List[Field[_]] = this.fields): `object`[T] =
@@ -547,10 +547,11 @@ object Schema {
     }
     override def withValidation[TT >: T, B](v: V.Def[B, _], vs: V.Def[B, _]*)(implicit
       bound: V.Magnet[TT, B]
-    ): `def`[T]                                                = copy(tpe = tpe.asInstanceOf[Schema[TT]].withValidation(v, vs: _*)).withExtraFrom(this)
+    ): `def`[T] = copy(tpe = tpe.asInstanceOf[Schema[TT]].withValidation(v, vs: _*)).withExtraFrom(this)
+
     /** Renames this definition: refs to the old name follow it, nested definitions of other types keep their names. */
     override def toDefinition[TT >: T](newSig: String): `def`[TT] = {
-      val oldSig = this.sig
+      val oldSig                            = this.sig
       def deepCopy(x: Schema[_]): Schema[_] = {
         val y = x match {
           case o: `object`[_]          => o.copy(fields = o.fields.map { f => f.copy(tpe = deepCopy(f.tpe)) })

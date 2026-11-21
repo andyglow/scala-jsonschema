@@ -38,8 +38,8 @@ private[jsonschema] trait UProductTypes {
     val annotationMap       = fieldAnnotationMap(tpe)
     val subjectCompanionSym = tpe.typeSymbol
     // Scala 2 reflection gives no companion for a case class local to a block (it isn't a member of any owner's scope)
-    val companionOrNone     = subjectCompanionSym.asClass.companion
-    val isLocal             = companionOrNone == NoSymbol
+    val companionOrNone       = subjectCompanionSym.asClass.companion
+    val isLocal               = companionOrNone == NoSymbol
     lazy val subjectCompanion = companionOrNone.asModule
 
     def toField(fieldSym: TermSymbol, i: Int): Field = {
@@ -60,7 +60,7 @@ private[jsonschema] trait UProductTypes {
       } else
         fieldTpe
 
-      val default    = Option.whenever(hasDefault) {
+      val default = Option.whenever(hasDefault) {
         val defaultGetterTree = parseFCQN(subjectCompanion.fullName + ".apply$default$" + (i + 1))
         val defaultGetterSym  =
           subjectCompanion.typeSignature.member(TermName(s"apply$$default$$${i + 1}")).asTerm
