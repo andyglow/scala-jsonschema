@@ -124,14 +124,12 @@
       {
         "const": "M4",
         "description": "d4",
-        "title": "t4",
-        "type": "const"
+        "title": "t4"
       },
       {
         "const": "M5",
         "description": "d5",
-        "title": "t5",
-        "type": "const"
+        "title": "t5"
       },
       {
         "type": "string"
@@ -173,14 +171,12 @@
       {
         "const": "M4",
         "description": "d4",
-        "title": "t4",
-        "type": "const"
+        "title": "t4"
       },
       {
         "const": "M5",
         "description": "d5",
-        "title": "t5",
-        "type": "const"
+        "title": "t5"
       },
       {
         "type": "string"
@@ -222,14 +218,12 @@
       {
         "const": "M4",
         "description": "d4",
-        "title": "t4",
-        "type": "const"
+        "title": "t4"
       },
       {
         "const": "M5",
         "description": "d5",
-        "title": "t5",
-        "type": "const"
+        "title": "t5"
       },
       {
         "type": "string"

@@ -55,6 +55,7 @@ trait AsDraftSupport {
     val specifics      = inferSpecifics.lift((validationList, x, parent, isRoot)) getOrElse obj.empty
     val base           = x match {
       case _: `def`[_] | _: `allof`[_] | _: `oneof`[_] | _: `ref`[_] => obj.empty
+      case _: `const`[_]                                             => obj.empty // its value implies the type ("type": "const" before, in a mixed oneOf)
       case `value-class`(x) if includeType                           => obj("type" -> x.jsonType)
       case _ if includeType                                          => obj("type" -> x.jsonType)
       case _                                                         => obj.empty
