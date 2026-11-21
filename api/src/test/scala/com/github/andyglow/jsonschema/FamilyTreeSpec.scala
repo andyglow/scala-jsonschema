@@ -11,13 +11,13 @@ import org.scalatest.matchers.should.Matchers._
 
 object FamilyTreeSpec {
   sealed trait Animal
-  @title("A dog") final case class Dog(name: String) extends Animal
-  @discriminatorKey("fish") case object Fish             extends Animal
-  @definition("cat") final case class Cat(lives: Int)   extends Animal
+  @title("A dog") final case class Dog(name: String)  extends Animal
+  @discriminatorKey("fish") case object Fish          extends Animal
+  @definition("cat") final case class Cat(lives: Int) extends Animal
 
-  sealed trait Wrapped extends Any
-  final case class Id(v: String)   extends AnyVal with Wrapped
-  final case class Other(x: Int)   extends Wrapped
+  sealed trait Wrapped           extends Any
+  final case class Id(v: String) extends AnyVal with Wrapped
+  final case class Other(x: Int) extends Wrapped
 
   @discriminator("kind") sealed trait Tagged
   final case class T1(a: Int) extends Tagged
@@ -27,8 +27,19 @@ object FamilyTreeSpec {
   case object Red   extends Color
   case object Green extends Color
 
+  // 5+ members: Scala 2's knownDirectSubclasses order used to vary from run to run
+  sealed trait Six
+  final case class S6(a: Int) extends Six
+  case object S2              extends Six
+  final case class S5(b: Int) extends Six
+  case object S1              extends Six
+  sealed trait SNested        extends Six
+  final case class S4(c: Int) extends SNested
+  case object S3              extends SNested
+  final case class S0(d: Int) extends Six
+
   sealed trait WithProvided
-  final case class Plain(a: Int)     extends WithProvided
+  final case class Plain(a: Int)    extends WithProvided
   final case class Given(b: String) extends WithProvided
   object Given { implicit val givenSchema: Schema[Given] = `object`[Given](`object`.Field("b", `string`[String](None))).toDefinition("given") }
 }
@@ -38,9 +49,9 @@ class FamilyTreeSpec extends AnyFunSuite {
   import FamilyTreeSpec._
 
   private def family(s: Schema[_]): `family`[_] = s match {
-    case f: `family`[_]   => f
+    case f: `family`[_]           => f
     case `def`(_, f: `family`[_]) => f
-    case other            => fail(s"not a family: $other")
+    case other                    => fail(s"not a family: $other")
   }
   private def byName(s: Schema[_]) = family(s).members.map(m => m.name -> m).toMap
 
@@ -60,6 +71,10 @@ class FamilyTreeSpec extends AnyFunSuite {
     ms("Fish").discriminatorKey shouldBe Some("fish")
     ms("Cat").definition shouldBe Some(Definition.Named("cat"))
     family(Json.schema[Animal]).discriminator shouldBe None
+  }
+
+  test("members are in declaration order, nested families flattened in place (Scala 2 too, lead decision 2026-11-21)") {
+    family(Json.schema[Six]).members.map(_.name) shouldBe List("S6", "S2", "S5", "S1", "S4", "S3", "S0")
   }
 
   test("a value-class member keeps its field name") {
