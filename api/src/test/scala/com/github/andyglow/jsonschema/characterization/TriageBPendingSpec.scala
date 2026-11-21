@@ -85,8 +85,8 @@ object TriageBPendingSpec {
   case class OnlyParams(a: Int)
 }
 
-/** TRIAGE group B: each test asserts the FIXED behavior and is pending until the fix lands (then it fails with "should no longer be pending": remove the `pendingUntilFixed` wrapper). Today's Scala 2
-  * behavior is in the comments.
+/** TRIAGE group B: each test asserts the fixed behavior (they were `pendingUntilFixed` until the Scala 2 fixes landed on s3/s2fix). The 0.7 behavior is in the `was:` comments. The name is
+  * kept because the model signatures (and so the golden files) contain it. The Scala 3 macro must pass these too.
   */
 class TriageBPendingSpec extends AnyFunSuite {
   import TriageBPendingSpec._
@@ -278,7 +278,7 @@ class TriageBPendingSpec extends AnyFunSuite {
 
   test("an implicit Schema[Sub1] is not used for Json.schema[Base]", TriageB) {
     import Sub1Implicit._
-    // today: def("...TriageBPendingSpec.Base", object(x)): the whole family is replaced by Sub1's schema, Sub2 is lost.
+    // was: def("...TriageBPendingSpec.Base", object(x)): the whole family is replaced by Sub1's schema, Sub2 is lost.
     // fixed: Base is derived as its sealed family (Sub1 may come out as a def of the implicit), so both x and y are there
     fieldNames(Json.schema[Base]) shouldBe Set("x", "y")
     Golden.check("triageB/covariant.Base", Json.schema[Base])
@@ -287,14 +287,14 @@ class TriageBPendingSpec extends AnyFunSuite {
 
   test("an implicit Schema[Sub1] is not used for a field of type Base", TriageB) {
     import Sub1Implicit._
-    // today: field b = def("...Base", object(x))
+    // was: field b = def("...Base", object(x))
     fieldNames(Json.schema[HasBase]) shouldBe Set("b", "x", "y")
     Golden.check("triageB/covariant.HasBase", Json.schema[HasBase])
     sub1S should not be null
   }
 
   test("an implicit Schema[OpenImpl] doesn't make a non-sealed trait derivable", TriageB) {
-    // today: compiles, field o = def("...Open", object(z)). fixed: Open has no exact implicit and isn't derivable
+    // was: compiles, field o = def("...Open", object(z)). fixed: Open has no exact implicit and isn't derivable
     failsWith(outcome(assertCompiles("{ import OpenImplImplicit._; Json.schema[HasOpen] }")), NotSupported, "TriageBPendingSpec.Open")
   }
 
