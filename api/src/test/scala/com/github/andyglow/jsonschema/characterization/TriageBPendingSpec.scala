@@ -36,6 +36,22 @@ object TriageBPendingSpec {
   object FooImplicit { implicit val fooS: Schema[Foo] = Plain.foo }
   case class Recursive(next: Option[Recursive])
 
+  // covariance: Schema is covariant, so an implicit Schema[Sub1] satisfies a search for Schema[Base]
+  sealed trait Base
+  case class Sub1(x: Int)    extends Base
+  case class Sub2(y: String) extends Base
+  case class HasBase(b: Base)
+  trait Open
+  case class OpenImpl(z: Int) extends Open
+  case class HasOpen(o: Open)
+  // derived where no implicit is in scope
+  object CovariancePlain {
+    val sub1: Schema[Sub1]     = Json.schema[Sub1]
+    val impl: Schema[OpenImpl] = Json.schema[OpenImpl]
+  }
+  object Sub1Implicit     { implicit val sub1S: Schema[Sub1] = CovariancePlain.sub1     }
+  object OpenImplImplicit { implicit val implS: Schema[OpenImpl] = CovariancePlain.impl }
+
   case class Backticked(@description("d") `my-field`: String, @readOnly `+`: Int)
 
   object Defs { val opt: Option[Int] = Some(1) }
@@ -248,6 +264,43 @@ class TriageBPendingSpec extends AnyFunSuite {
       val s = Json.schema[Swapped[Int, String]]
       s shouldEqual `oneof`.of[Swapped[Int, String]](`object`(Field("a", `integer`), Field("b", `string`)))
       ()
+    }
+  }
+
+  // --- covariant implicit pick (owner decision 2026-11-20: require an implicit whose type matches T exactly) ---
+
+  private def fieldNames(s: Schema[_]): Set[String] = s match {
+    case o: `object`[_]   => o.fields.flatMap(f => fieldNames(f.tpe) + f.name).toSet
+    case `def`(_, t)      => fieldNames(t)
+    case `oneof`(ts, _)   => ts.flatMap(fieldNames)
+    case `array`(t, _)    => fieldNames(t)
+    case `value-class`(t) => fieldNames(t)
+    case _                => Set.empty
+  }
+
+  test("an implicit Schema[Sub1] is not used for Json.schema[Base]", TriageB) {
+    pendingUntilFixed {
+      import Sub1Implicit._
+      // today: def("...TriageBPendingSpec.Base", object(x)): the whole family is replaced by Sub1's schema, Sub2 is lost.
+      // fixed: Base is derived as its sealed family (Sub1 may come out as a def of the implicit), so both x and y are there
+      fieldNames(Json.schema[Base]) shouldBe Set("x", "y")
+      sub1S should not be null
+    }
+  }
+
+  test("an implicit Schema[Sub1] is not used for a field of type Base", TriageB) {
+    pendingUntilFixed {
+      import Sub1Implicit._
+      // today: field b = def("...Base", object(x))
+      fieldNames(Json.schema[HasBase]) shouldBe Set("b", "x", "y")
+      sub1S should not be null
+    }
+  }
+
+  test("an implicit Schema[OpenImpl] doesn't make a non-sealed trait derivable", TriageB) {
+    pendingUntilFixed {
+      // today: compiles, field o = def("...Open", object(z)). fixed: Open has no exact implicit and isn't derivable
+      failsWith(outcome(assertCompiles("{ import OpenImplImplicit._; Json.schema[HasOpen] }")), NotSupported, "TriageBPendingSpec.Open")
     }
   }
 

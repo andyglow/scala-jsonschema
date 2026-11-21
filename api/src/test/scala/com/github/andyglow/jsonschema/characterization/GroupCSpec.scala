@@ -7,65 +7,36 @@ import org.scalatest.funsuite.AnyFunSuite
 object GroupCSpec {
   case class Foo(a: Int)
 
-  sealed trait Base
-  case class Sub1(x: Int)    extends Base
-  case class Sub2(y: String) extends Base
-  case class HasBase(b: Base)
-
-  trait Open
-  case class OpenImpl(z: Int) extends Open
-  case class HasOpen(o: Open)
-
   case class HasEither(e: Either[Int, String])
   case class HasTuple(t: (Int, String))
   case class HasOptOpt(o: Option[Option[Int]])
-
-  // derived in an object without implicits in scope, so the derivation can't pick up the implicit below
-  object Plain {
-    val sub1: Schema[Sub1]     = Json.schema[Sub1]
-    val impl: Schema[OpenImpl] = Json.schema[OpenImpl]
-  }
-  object Sub1Implicit     { implicit val sub1S: Schema[Sub1] = Plain.sub1     }
-  object OpenImplImplicit { implicit val implS: Schema[OpenImpl] = Plain.impl }
 }
 
-/** TRIAGE group C: pins TODAY's Scala 2 output. The owner decides whether it changes (see notes/reports/harness.md §Group C).
+/** The former TRIAGE group C. Owner decisions (2026-11-20):
+  *   - Option at root/nested: PENDING (to match how the bridged JSON libraries encode it); these goldens pin TODAY's output and are tagged TRIAGE-C until it's decided;
+  *   - Either and tuples: keep today's output (pinned);
+  *   - covariant implicit pick: moved to group B (exact type match), see TriageBPendingSpec.
   */
 class GroupCSpec extends AnyFunSuite {
   import GroupCSpec._
   import Golden.check
 
-  test("top-level Option", TriageC) {
+  test("top-level Option (pending decision: current behavior)", TriageC) {
     check("groupC/Option[Foo]", Json.schema[Option[Foo]])
     check("groupC/Option[Int]", Json.schema[Option[Int]])
   }
 
-  test("nested Option", TriageC) {
+  test("nested Option (pending decision: current behavior)", TriageC) {
     check("groupC/List[Option[Foo]]", Json.schema[List[Option[Foo]]])
     check("groupC/HasOptOpt", Json.schema[HasOptOpt])
   }
 
-  test("covariant implicit: Schema[Sub1] in scope, Json.schema[Base]", TriageC) {
-    import Sub1Implicit._
-    check("groupC/covariant.Base", Json.schema[Base])
-  }
-
-  test("covariant implicit: Schema[Sub1] in scope, field of type Base", TriageC) {
-    import Sub1Implicit._
-    check("groupC/covariant.HasBase", Json.schema[HasBase])
-  }
-
-  test("covariant implicit: Schema[OpenImpl] in scope, field of a non-sealed trait type", TriageC) {
-    import OpenImplImplicit._
-    check("groupC/covariant.HasOpen", Json.schema[HasOpen])
-  }
-
-  test("Either", TriageC) {
+  test("Either (decided: keep)") {
     check("groupC/Either[Int,String]", Json.schema[Either[Int, String]])
     check("groupC/HasEither", Json.schema[HasEither])
   }
 
-  test("tuples", TriageC) {
+  test("tuples (decided: keep)") {
     check("groupC/Tuple2[Int,String]", Json.schema[(Int, String)])
     check("groupC/HasTuple", Json.schema[HasTuple])
   }
