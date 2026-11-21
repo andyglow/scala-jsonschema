@@ -109,7 +109,7 @@ lazy val core = { project in file("core") }.settings(
   commonSettings,
   name := "scala-jsonschema-core",
   // the Scala 3 derivation lives in core (`derives json.Schema` needs `Schema.derived`); it parses `Symbol.docstring` with scaladoc-parser
-  libraryDependencies ++= { if (scalaV.value.isScala3) Seq("io.github.andyglow" %% "scaladoc-parser" % "0.1.0") else Nil }
+  libraryDependencies ++= { if (scalaV.value.isScala3) Seq("io.github.andyglow" %% "scaladoc-parser" % "0.1.1") else Nil }
 )
 
 lazy val macros = { project in file("macros") }
@@ -121,8 +121,8 @@ lazy val macros = { project in file("macros") }
       if (scalaV.value.isScala3) Nil
       else
         Seq(
-          "io.github.andyglow" %% "scaladoc-ast"    % "0.1.0",
-          "io.github.andyglow" %% "scaladoc-parser" % "0.1.0"
+          "io.github.andyglow" %% "scaladoc-ast"    % "0.1.1",
+          "io.github.andyglow" %% "scaladoc-parser" % "0.1.1"
         ) ++ scalaReflect(scalaVersion.value)
     }
   )

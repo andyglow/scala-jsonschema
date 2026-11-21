@@ -7,7 +7,6 @@ import org.scalatest.funsuite.AnyFunSuite
 
 import scala.annotation.meta.field
 
-// NOTE: undocumented models come first. On Scala 2 (scaladoc-parser 0.1.0) a class WITHOUT a doc comment picks up the nearest preceding comment in the file (BACKLOG #5).
 object ProductsCharSpec {
   // annotations aimed at the underlying field (`@(x @field)`) instead of the constructor parameter
   case class FieldTargets(@(description @field)("from the field") a: Int, @(readOnly @field) b: Int, @(writeOnly @field) @description("from the param") c: Int)

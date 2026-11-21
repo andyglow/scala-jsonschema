@@ -18,13 +18,11 @@
           "kind": "string"
         }
       }
-    ],
-    "description": "Characterization of type-family derivation on Scala 2 (inventory \u00a73). Successful derivations are pinned by golden files, macro errors by a key phrase from[[ErrorPhrases]] . Compiler-generated\ntexts (crashes, errors in generated code) are checked on Scala 2 only."
+    ]
   },
   "draft-04": {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "additionalProperties": false,
-    "description": "Characterization of type-family derivation on Scala 2 (inventory \u00a73). Successful derivations are pinned by golden files, macro errors by a key phrase from[[ErrorPhrases]] . Compiler-generated\ntexts (crashes, errors in generated code) are checked on Scala 2 only.",
     "properties": {
       "x": {
         "type": "integer"
@@ -42,7 +40,6 @@
     "$id": "golden",
     "$schema": "http://json-schema.org/draft-07/schema#",
     "additionalProperties": false,
-    "description": "Characterization of type-family derivation on Scala 2 (inventory \u00a73). Successful derivations are pinned by golden files, macro errors by a key phrase from[[ErrorPhrases]] . Compiler-generated\ntexts (crashes, errors in generated code) are checked on Scala 2 only.",
     "properties": {
       "x": {
         "type": "integer"
@@ -60,7 +57,6 @@
     "$id": "golden",
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "additionalProperties": false,
-    "description": "Characterization of type-family derivation on Scala 2 (inventory \u00a73). Successful derivations are pinned by golden files, macro errors by a key phrase from[[ErrorPhrases]] . Compiler-generated\ntexts (crashes, errors in generated code) are checked on Scala 2 only.",
     "properties": {
       "x": {
         "type": "integer"

@@ -10,14 +10,9 @@ Written and checked by `com.github.andyglow.jsonschema.harness.Golden` (api test
 
 The base file `<name>.json` is the **target** behavior, the one every Scala version (including the Scala 3 macro)
 must produce. A file `<name>@2.12.json` / `<name>@2.13.json` / `<name>@3.json` overrides it on that Scala version
-only. Overrides record known differences that are bugs of that version, to be fixed later. Current overrides:
-
-- `shared/DocumentationSpec.FromSpec.objectSchema@2.12`, `@2.13` and `char/scaladoc/Undocumented@2.12`, `@2.13`:
-  the Scala 2 macro reads scaladoc from the source text, and a class WITHOUT a doc comment picks up the nearest
-  preceding doc comment in its file. The override holds that leaked description.
-
-The two base files above were made by hand (the override with the leaked description removed): no compiler has
-produced them yet. They become real once a Scala version derives these classes without the leak.
+only. Overrides record known differences that are bugs of that version, to be fixed later. There are no overrides
+at the moment. (The last ones, for the Scala 2 scaladoc leak where an undocumented class took the nearest preceding
+doc comment in its file, went away with scaladoc-parser 0.1.1.)
 
 ## Regenerating
 
