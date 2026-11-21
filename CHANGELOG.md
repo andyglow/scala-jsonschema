@@ -84,6 +84,14 @@
     are read, together with the parameter's own (before, they were silently ignored)
   - case classes local to a method or block are derived (before: a macro crash). On Scala 2 such a class can't
     have default values (a clear error)
+  - Scala 2: default values of a case class declared inside a class (`class Holder { case class Inner(a: Int = 1) }`,
+    derived inside `Holder` or as `Json.schema[h.Inner]`) work (before: an error in the generated code, `object
+    Holder is not a member of package ...`). Through a type projection (`Json.schema[Holder#Inner]`) they're a clear
+    compile error on Scala 2 and 3 (before, Scala 3 crashed)
+  - Scala 2: an implicit `Predef` defined with `Json.schema` of its own type (`implicit val p: Predef[X] =
+    Predef(Json.schema[X])`, also a `def` or `lazy val`) no longer picks itself up (before: a NullPointerException /
+    ExceptionInInitializerError at initialization, a StackOverflowError for a `def`). An implicit `Schema` defined
+    over more than two lines no longer picks itself up either (before: `def(<name>, null)`). Scala 3 already did both
   - Scala 2.12.21/2.13.17+: `@definition` without a label infers the name again (the compiler inlines the
     annotation's default argument) (#429)
   - parser: `ParseJsonSchema` accepted no schema with the default `checkSchema = true`; an invalid property schema
