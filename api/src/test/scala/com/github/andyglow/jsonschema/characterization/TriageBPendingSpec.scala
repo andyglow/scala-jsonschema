@@ -298,12 +298,9 @@ class TriageBPendingSpec extends AnyFunSuite {
   // --- annotations and scaladoc ---
 
   test("annotations on backticked/symbolic field names are kept", TriageB) {
-    pendingUntilFixed {
-      val s = Json.objectSchema[Backticked]()
-      s.fields.find(_.name == "my-field").flatMap(_.description) shouldBe Some("d")
-      s.fields.find(_.name == "+").map(_.rwMode) shouldBe Some(`object`.Field.RWMode.ReadOnly)
-      ()
-    }
+    val s = Json.objectSchema[Backticked]()
+    s.fields.find(_.name == "my-field").flatMap(_.description) shouldBe Some("d")
+    s.fields.find(_.name == "+").map(_.rwMode) shouldBe Some(`object`.Field.RWMode.ReadOnly)
   }
 
   test("a scaladoc with only @params doesn't override @description", TriageB) {

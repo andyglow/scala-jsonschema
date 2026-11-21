@@ -8,6 +8,7 @@ private[jsonschema] trait UProductTypes {
   this: UContext with UCommons with UScaladocs with UFieldDecorations with UScalaParsers =>
   import c.universe._
 
+  // keyed by the decoded field name (`my-field`, not `my$minusfield`), as the fields are looked up
   private[UProductTypes] def fieldAnnotationMap(
     tpe: Type
   ): Map[String, List[c.universe.Annotation]] = {
@@ -19,14 +20,14 @@ private[jsonschema] trait UProductTypes {
         s.typeSignature
         s.accessed.annotations.foreach(_.tree.tpe)
 
-        s.name.toString.trim -> s.accessed.annotations
+        s.name.decodedName.toString.trim -> s.accessed.annotations
     }.toMap
 
     // new implementation of annotation extractor
     def annotations1 =
       tpe.typeSymbol.asClass.primaryConstructor.typeSignature.paramLists.headOption flatMap { paramList: List[Symbol] =>
         Some(paramList.collect { case s =>
-          s.name.toString.trim -> s.annotations
+          s.name.decodedName.toString.trim -> s.annotations
         }.toMap)
       } getOrElse Map.empty
 
