@@ -17,6 +17,10 @@ object DerivedSchemaCharSpec {
   object InnerImplicit { implicit val innerS: Schema[Inner] = Plain_.inner                                            }
   object OuterImplicit { implicit val outerS: Schema[Outer] = Plain_.outer.withTitle("from implicit")                 }
 
+  case class C(a: Int)
+  object C      { implicit val d: DerivedSchema[C] = DerivedSchema(Json.schema[C].withTitle("companion")) }
+  object LocalD { implicit val d: DerivedSchema[Outer] = DerivedSchema(Plain_.outer.withTitle("local"))   }
+
   // "not eligible" probes: a default argument, and a lower-priority implicit
   def lookup[T](implicit d: DerivedSchema[T] = null): Option[DerivedSchema[T]] = Option(d)
 
@@ -50,9 +54,31 @@ class DerivedSchemaCharSpec extends AnyFunSuite {
     )
   }
 
+  test("Json.auto in scope doesn't get in the way (nested types still use the built-in Predefs)") {
+    import json.Json.auto._
+    implicitly[DerivedSchema[Outer]].schema shouldBe `object`[Outer](
+      Field("i", `object`[Inner](Field("x", `integer`))),
+      Field("s", `string`)
+    )
+    // also uses the import (the derivation never takes auto's given, so on Scala 3 it is otherwise unused)
+    implicitly[json.schema.Predef[Inner]].schema shouldBe Plain_.inner
+  }
+
   test("an underivable type makes the implicit unavailable (the search fails, so a default argument applies)") {
     lookup[Unsupported] shouldBe None
     lookup[Inner] shouldBe Some(DerivedSchema(Plain_.inner))
+  }
+
+  test("not eligible: an abstract type, a root with no structure (its Predef is skipped like an implicit Schema)") {
+    def generic[T]: Option[DerivedSchema[T]] = lookup[T]
+    generic[Inner] shouldBe None
+    lookup[Int] shouldBe None
+  }
+
+  test("a user-provided DerivedSchema wins without ambiguity (companion, import)") {
+    implicitly[DerivedSchema[C]].schema.title shouldBe Some("companion")
+    import LocalD._
+    implicitly[DerivedSchema[Outer]].schema.title shouldBe Some("local")
   }
 
   test("an underivable type makes the implicit unavailable (a lower-priority implicit is picked instead)") {
