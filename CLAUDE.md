@@ -33,7 +33,10 @@ Tests: shared specs under `api/src/test/scala`, Scala 3-only ones under `scala-3
 `<name>@<ver>.json` overrides one Scala version. Regenerate with `GOLDEN_UPDATE=1 sbt clean api/test` (a CLEAN build,
 or Scala 2 scaladoc is silently missing) and review the diff. `golden-legacy/` is the frozen 0.7 output that
 `JsonSchemaProfile.Legacy` must reproduce; update mode never rewrites it. Tags `TRIAGE-A/B/C`, `UNTRIAGED` (`harness/Triage.scala`)
-mark tests of decided-but-not-current behavior.
+mark tests of decided-but-not-current behavior. The derived tree keeps `option` and `family` (sealed families) nodes
+that a `JsonSchemaProfile` lowers at render time; tree specs written against the plain 0.7 trees compare
+`harness.Families.as07(tree)`. The bridges' acceptance suite (`api/src/test/scala/petshop/`, `modules/*/src/test/.../petshop/`)
+validates each library's real codec output against the schema under its profile (networknt validator, test scope).
 
 ## The core design rule
 
@@ -56,10 +59,10 @@ Whether a type becomes a definition depends on which of the two implicits is in 
   `clean`: `scalafmtCheckAll` can pass on files it never re-checked. Touch the sources (or use a fresh checkout) before trusting it.
 - Docs: `sbt makeDocs` (switches to 2.13, runs mdoc, which compiles the ```` ```scala mdoc:compile-only ```` snippets
   against the modules, then paradox; output `docs/target/site`). Internal links must be `@ref:[text](page.md)`. mdoc wraps
-  snippets in a class, so value classes can't be `mdoc` snippets; keep those plain `scala` and verify them some other way. Scala 3-only snippets are plain `scala` too.
+  snippets in a class, so value classes (and play's `Json.format` of a sealed family) can't be `mdoc` snippets; keep those plain `scala` and verify them some other way. Scala 3-only snippets are plain `scala` too.
 - **Run `clean` after editing anything in `macros/` or `core/src/main/scala-3/.../derivation`.** Incremental compilation doesn't recompile macro call sites, so stale tests can pass or fail misleadingly.
 - Scala 3 test builds compile with `-Yread-docs` (scaladoc from TASTy, as users need for models in other modules) and
-  `-Xcheck-macros` (except play-json: its own macro fails the check).
+  `-Xcheck-macros` (except play-json and u-json: their own macros fail the check).
   To see the code the Scala 3 macro generates: `sbt -Djsonschema.print-code=true ...` (prints every expansion as an info).
 - `build.sbt` restricts compilation to one module at a time (`Tags.limit(Tags.Compile, 1)`). The macro evaluates `Option` default values with `c.eval`, and that races when several modules compile in parallel. Don't remove the restriction until the macro is fixed.
 - Coverage: `sbt "++2.13.18" clean coverage test coverageAggregate`. CI runs this on 2.13.

@@ -26,6 +26,9 @@
     (`play`, `circe`, `upickle`, `json4s`, `spray`). Where the library takes its configuration implicitly (play's
     `JsonConfiguration`, json4s' `Formats`, circe 3's `given Configuration`), the profile follows the same implicit.
     `AsPlay._`, `AsCirce._`, ... are unchanged and bring no profile
+  - a case object whose value comes from an implicit `ToValue` of its family (a bridge import next to the library's
+    codec) no longer needs `@typeHint`: without one, its schema comes from the value when the schema is rendered
+    (a string joins the string enum, any other value is a `const` of it). It was a compile error
   - a configuration a profile can't describe fails when the profile is built (or the schema lowered), with a
     message naming the setting, instead of rendering a schema the library's output doesn't match
 
@@ -37,6 +40,8 @@
     no longer throws `NotImplementedError` on draft-04/06/07 (`@definition` on a member next to case objects hit
     it), and an `allOf` with one no longer throws either. A definition takes part in the "all members have one
     type" check by its body's type
+  - a `const` in a `oneOf` of members of different types rendered `"type": "const"`, which no document matches
+    (`Flag.EnumsAsOneOf` on a family with case classes); a `const` has no `"type"` now
 
 - **0.8.0** (unreleased): Scala 3 support. See the README's "Migrating to 0.8.0" and "Scala 3 notes".
   PRs: [#429](https://github.com/andyglow/scala-jsonschema/pull/429) (build stack, Central Portal),

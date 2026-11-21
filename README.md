@@ -309,7 +309,8 @@ enum Event {                                           // {"oneOf": [{"additiona
 ```
 
 If an implicit `ToValue` for the enum type is in scope (e.g. from a JSON-library bridge and your codec), the enum
-values are the codec's output. When their JSON type can't be known at compile time, add `@typeHint[T]`.
+values are the codec's output. Their schema is your `@typeHint[T]` if you give one; otherwise it comes from the
+values themselves when the schema is rendered: strings make a string enum, any other value is a `const` of it.
 
 These are the default shapes. Members are in declaration order. To match how a JSON library writes sealed families
 (play's `_type`, circe's wrapper object, ...), render with that library's profile: see
@@ -625,7 +626,6 @@ Where the library takes its configuration implicitly, the profile follows the sa
 configuration changes the schema with no extra code:
 
 ```scala
-// petshop: val petSchema: json.Schema[Pet] = json.Json.schema[Pet], derived next to the model (see the note below)
 import play.api.libs.json._
 import com.github.andyglow.jsonschema.profiles.play._
 import json.schema.Version._
@@ -637,7 +637,7 @@ implicit val cfg: JsonConfiguration = JsonConfiguration(
 )
 implicit val animalF: OFormat[Animal] = Json.format[Animal]   // and Dog, Fish, Pet; play's macros read `cfg`
 
-petSchema.asPlay(Draft12("pet"))                            // the same `cfg`: "_kind", "Dog", "age": ["integer", "null"]
+json.Json.schema[Pet].asPlay(Draft12("pet"))                // the same `cfg`: "_kind", "Dog", "age": ["integer", "null"]
 ```
 
 The same holds for json4s (`implicit val formats: Formats = DefaultFormats + ShortTypeHints(List(classOf[Dog],
@@ -657,10 +657,6 @@ implicit val profile: JsonSchemaProfile =
 implicit val profile: JsonSchemaProfile =
   SprayProfile.default.withSum(SumStyle.Discriminator("type")).withMemberName(MemberName.SimpleName).withSingleton(SingletonStyle.AsTagged)
 ```
-
-Derive the schema where no bridge import is in scope (next to the model is a good place), or give the family a
-`@typeHint`: a bridge brings a `ToValue` for every type the library can write, and with one in scope the case
-objects' enum values come from the codec, whose JSON type has to be stated. The profile doesn't need it.
 
 With a profile of your own, import `AsX._` (rendering, no profile), not `profiles.<lib>._`. With both in scope,
 Scala 2 reports the ambiguity with a message saying so; Scala 3 picks yours, the closer one. Two `profiles.<lib>._`
