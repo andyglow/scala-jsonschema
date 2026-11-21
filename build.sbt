@@ -116,7 +116,13 @@ lazy val api = { project in file("api") }
   .dependsOn(core, macros)
   .settings(
     commonSettings,
-    name := "scala-jsonschema"
+    name := "scala-jsonschema",
+    // the profiles acceptance suite (api's petshop harness, run by every bridge module via test->test) validates real codec output against rendered schemas.
+    // 1.5.x is the last line built for Java 8 (classfile 52); slf4j-nop mutes its logging
+    libraryDependencies ++= Seq(
+      "com.networknt" % "json-schema-validator" % "1.5.9"  % Test,
+      "org.slf4j"     % "slf4j-nop"             % "2.0.17" % Test
+    )
   )
 
 lazy val `play-json` = { project in file("modules/play-json") }
@@ -146,7 +152,9 @@ lazy val `circe-json` = { project in file("modules/circe-json") }
       "io.circe" %% "circe-core",
       "io.circe" %% "circe-generic",
       "io.circe" %% "circe-parser"
-    ) map { _ % "0.14.17" }
+    ) map { _ % "0.14.17" },
+    // the acceptance suite's configured-codec case on Scala 2 (circe-generic-extras has no Scala 3 build; Scala 3 uses circe-core's io.circe.derivation)
+    libraryDependencies ++= { if (scalaV.value.isScala3) Nil else Seq("io.circe" %% "circe-generic-extras" % "0.14.4" % Test) }
   )
 
 lazy val `json4s-json` = { project in file("modules/json4s-json") }
@@ -175,7 +183,9 @@ lazy val `u-json` = { project in file("modules/u-json") }
   .settings(
     commonSettings,
     name := "scala-jsonschema-ujson",
-    libraryDependencies ++= Seq("com.lihaoyi" %% "ujson" % "4.4.3", "com.lihaoyi" %% "upickle" % "4.4.3")
+    libraryDependencies ++= Seq("com.lihaoyi" %% "ujson" % "4.4.3", "com.lihaoyi" %% "upickle" % "4.4.3"),
+    // upickle 4.4.3's own Scala 3 macro (`ReadWriter.derived` for an enum) fails -Xcheck-macros ("Reference to a method must be eta-expanded")
+    Test / scalacOptions -= "-Xcheck-macros"
   )
 
 lazy val `joda-time` = { project in file("modules/joda-time") }
