@@ -45,6 +45,10 @@ class SelfReferenceSpec extends AnyFunSuite {
     // before (Scala 2): the source-text check only looks at the current and the previous line, so this one wasn't detected
     ViaMultilineSchema.s shouldEqual obj(Field("f", `integer`))
   }
+
+  test("a declined self-referencing Schema falls through to a Predef of the type, as on Scala 3 (reviewer9)") {
+    ViaMultilineSchemaWithPredef.s shouldEqual `string`
+  }
 }
 
 object SelfReferenceSpec {
@@ -83,5 +87,14 @@ object SelfReferenceSpec {
     implicit val s: Schema[S1] =
       json.Json
         .schema[S1]
+  }
+
+  case class Q(a: Int)
+
+  object ViaMultilineSchemaWithPredef {
+    implicit val pp: Predef[Q] = Predef(`string`.asInstanceOf[Schema[Q]])
+    implicit val s: Schema[Q]  =
+      json.Json
+        .schema[Q]
   }
 }

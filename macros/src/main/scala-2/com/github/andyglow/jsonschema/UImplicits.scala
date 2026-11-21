@@ -106,10 +106,13 @@ private[jsonschema] trait UImplicits { this: UContext with UCommons with USignat
       def lookupSchema: ImplicitSchema = {
         // schema
         c.inferImplicitValue(sType) match {
-          case EmptyTree                              => lookupPredef
-          case x if isSelfRef(x) || isOwnerSelfRef(x) => NotFound
-          case x if !isForExactly(x)                  => lookupPredef
-          case x                                      => FromSchema(x)
+          case EmptyTree => lookupPredef
+          // 0.7's source-text check skips the Predef search (kept: TRIAGE-A)
+          case x if isSelfRef(x) => NotFound
+          // as on Scala 3: a declined self reference counts as no Schema, so a Predef of the type is still used
+          case x if isOwnerSelfRef(x) => lookupPredef
+          case x if !isForExactly(x)  => lookupPredef
+          case x                      => FromSchema(x)
         }
       }
 
