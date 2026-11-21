@@ -18,6 +18,8 @@
     `Json.objectSchema` with decorations that aren't literal pairs, `Json.objectSchema` of a type that resolves to
     a definition, and an `Option` default that can't be evaluated at compile time. Definition names of compound
     (`A with B`) and annotated types work
+  - generics: a default like `xs: List[T] = Nil` and a generic value class `Id[T](v: T)` work; the type
+    arguments of a generic subclass are matched by name (`Impl[B, A] extends Base[A, B]`), not by position
   - copies of a free object stay free: `withTitle`, `withDescription`, `duplicate`, `withField`, `dropField`,
     `withFieldsUpdated` and `toDefinition` no longer turn `additionalProperties: true` into `false`
 - **0.7.10**

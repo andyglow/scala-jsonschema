@@ -43,6 +43,13 @@ private[jsonschema] trait UProductTypes {
       val fieldTpe   = fieldSym.typeSignature.dealias // In(tpe).dealias
       val isOption   = fieldTpe <:< T.option
       val hasDefault = fieldSym.isParamWithDefault
+
+      // the field type with the type arguments of `tpe` substituted (`xs: List[T]` in `Foo[Int]` is a List[Int])
+      def effectiveType = if (tpe.typeArgs.nonEmpty && tpe.typeSymbol.isClass) {
+        resolveGenericType(fieldTpe, tpe.typeSymbol.asClass.typeParams, tpe.typeArgs)
+      } else
+        fieldTpe
+
       val default    = Option.whenever(hasDefault) {
         val defaultGetterTree = parseFCQN(subjectCompanion.fullName + ".apply$default$" + (i + 1))
         val defaultGetterSym  =
@@ -79,7 +86,7 @@ private[jsonschema] trait UProductTypes {
         } else false
 
         Some.when(!isNone) {
-          val toV = c.inferImplicitValue(appliedType(T.toValue, fieldTpe))
+          val toV = c.inferImplicitValue(appliedType(T.toValue, effectiveType))
           if (toV.nonEmpty) q"Some($toV($defaultGetterTree))"
           else {
             val errorSuffix = {
@@ -113,11 +120,6 @@ private[jsonschema] trait UProductTypes {
           }
         }
       }
-
-      def effectiveType = if (tpe.typeArgs.nonEmpty && tpe.typeSymbol.isClass) {
-        resolveGenericType(fieldTpe, tpe.typeSymbol.asClass.typeParams, tpe.typeArgs)
-      } else
-        fieldTpe
 
       val specifiedType =
         if (isOption) effectiveType.typeArgs.head

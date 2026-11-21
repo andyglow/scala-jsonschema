@@ -13,8 +13,12 @@ object TriageBPendingSpec {
   case class Empty()
   case class GenericDefault[T](xs: List[T] = Nil)
   case class GenericValueClass[T](v: T) extends AnyVal
+  case class HasGenericValueClass(id: GenericValueClass[String])
   sealed trait Swapped[A, B]
   case class SwappedImpl[B, A](a: A, b: B) extends Swapped[A, B]
+  // a parameter nested in the parent's type arguments
+  sealed trait Nested[T]
+  case class NestedImpl[T](xs: List[T]) extends Nested[List[T]]
 
   case class RecursiveViaAlias(children: List[RecAlias])
   type RecAlias = RecursiveViaAlias
@@ -239,31 +243,24 @@ class TriageBPendingSpec extends AnyFunSuite {
   }
 
   test("a generic default `xs: List[T] = Nil`", TriageB) {
-    pendingUntilFixed {
-      // today: Can't infer json value for default value of `...GenericDefault[Int](..., xs: List[T] = Nil)` (T not substituted)
-      // TODO(fixer): once fixed, replace the body with
-      //   Json.schema[GenericDefault[Int]] shouldEqual `object`[GenericDefault[Int]](
-      //     Field.fromJson("xs", `array`[Int, List](`integer`), required = false, default = Some(com.github.andyglow.json.Value.arr())))
-      assertCompiles("Json.schema[GenericDefault[Int]]")
-    }
+    // was: Can't infer json value for default value of `...GenericDefault[Int](..., xs: List[T] = Nil)` (T not substituted)
+    Json.schema[GenericDefault[Int]] shouldEqual `object`[GenericDefault[Int]](
+      Field.fromJson("xs", `array`[Int, List](`integer`), required = false, default = Some(com.github.andyglow.json.Value.arr()))
+    )
   }
 
   test("a generic value class", TriageB) {
-    pendingUntilFixed {
-      // today: schema for T is not supported
-      // TODO(fixer): once fixed, replace the body with
-      //   Json.schema[GenericValueClass[Int]] shouldEqual `value-class`[GenericValueClass[Int], Int](`integer`)
-      assertCompiles("Json.schema[GenericValueClass[Int]]")
-    }
+    // was: schema for T is not supported
+    Json.schema[GenericValueClass[Int]] shouldEqual `value-class`[GenericValueClass[Int], Int](`integer`)
+    Json.schema[HasGenericValueClass] shouldEqual `object`[HasGenericValueClass](Field("id", `value-class`[GenericValueClass[String], String](`string`)))
   }
 
   test("generic subclasses are substituted by name, not by position", TriageB) {
-    pendingUntilFixed {
-      // `SwappedImpl[B, A] extends Swapped[A, B]`, so for Swapped[Int, String]: a = Int, b = String
-      val s = Json.schema[Swapped[Int, String]]
-      s shouldEqual `oneof`.of[Swapped[Int, String]](`object`(Field("a", `integer`), Field("b", `string`)))
-      ()
-    }
+    // `SwappedImpl[B, A] extends Swapped[A, B]`, so for Swapped[Int, String]: a = Int, b = String
+    val s = Json.schema[Swapped[Int, String]]
+    s shouldEqual `oneof`.of[Swapped[Int, String]](`object`(Field("a", `integer`), Field("b", `string`)))
+    // NestedImpl[T] extends Nested[List[T]]: for Nested[List[Int]], xs is a List[Int]
+    Json.schema[Nested[List[Int]]] shouldEqual `oneof`.of[Nested[List[Int]]](`object`(Field("xs", `array`[Int, List](`integer`))))
   }
 
   // --- covariant implicit pick (owner decision 2026-11-20: require an implicit whose type matches T exactly) ---
