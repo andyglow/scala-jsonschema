@@ -4,6 +4,8 @@
     a free object no longer equals the strict one; `hashCode` is consistent with `equals` for every node
   - `def.toDefinition(name)` renames only its own definition and the refs to it (before, it renamed every nested
     definition and left refs to the old name dangling)
+  - `import json.Json.auto._` works (before, any use crashed scalac with a StackOverflowError): it provides an
+    implicit `Predef[T]` for any derivable `T`, and doesn't change what `Json.schema` derives
   - copies of a free object stay free: `withTitle`, `withDescription`, `duplicate`, `withField`, `dropField`,
     `withFieldsUpdated` and `toDefinition` no longer turn `additionalProperties: true` into `false`
 - **0.7.10**

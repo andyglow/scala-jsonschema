@@ -47,6 +47,23 @@ private[jsonschema] trait UImplicits { this: UContext with UCommons with USignat
       case _ => false
     }
 
+    // `Json.auto.derived[T]` is an implicit Predef[T] macro. A search for Predef[T] returns it unexpanded, and it expands when our output is typechecked: a derivation of T inside the
+    // derivation of T, forever (a scalac StackOverflowError in 0.7). It is also imported, so it shadows the built-in and companion Predefs (Predef[Int], ...).
+    // So when the search picks `auto.derived` itself, search again with `derived` shadowed by a local non-implicit name (an implicit is only eligible if it's accessible by its simple
+    // name), which finds the implicit the search would have found without the import. If that's `auto.derived` again (e.g. imported under another name), there's none: derive inline.
+    // Hence importing Json.auto never turns a type into a definition and never changes a schema derived without it.
+    private def isAutoDerived(x: Tree): Boolean =
+      x.symbol != null && x.symbol != NoSymbol && x.symbol.isMethod && x.symbol.fullName == "json.Json.auto.derived"
+
+    private def inferPredef(pType: Type): Tree = c.inferImplicitValue(pType) match {
+      case x if isAutoDerived(x) =>
+        c.typecheck(q"{ val derived = (); _root_.scala.Predef.implicitly[$pType] }", silent = true) match {
+          case Block(_, Apply(_, List(y))) if !isAutoDerived(y) => y
+          case _                                                => EmptyTree
+        }
+      case x => x
+    }
+
     def get(tpe: Type): Option[SchemaType] = {
 
       val sType = appliedType(T.schemaC, tpe) // .dealias.widen
@@ -66,7 +83,7 @@ private[jsonschema] trait UImplicits { this: UContext with UCommons with USignat
         c.inferImplicitValue(sType) match {
           case EmptyTree =>
             // predef
-            c.inferImplicitValue(pType) match {
+            inferPredef(pType) match {
               case EmptyTree => NotFound
               case x         => FromPredef(q"$x.schema")
             }
@@ -87,3 +104,4 @@ private[jsonschema] trait UImplicits { this: UContext with UCommons with USignat
   }
   val Implicit = new Implicit
 }
+

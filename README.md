@@ -495,6 +495,26 @@ and expect
 }
 ``` 
 
+## Implicit Predefs (`Json.auto`)
+
+Some APIs ask for an implicit `json.schema.Predef[T]` rather than a schema value. `import json.Json.auto._`
+provides one for any derivable type:
+
+```scala
+import json.Json
+import json.schema.Predef
+import Json.auto._
+
+def schemaOf[T](implicit p: Predef[T]): json.Schema[T] = p.schema
+
+case class Foo(a: Int)
+schemaOf[Foo] // object(a: integer)
+```
+
+A derived `Predef` is inlined, like any `Predef`, so the import doesn't change what `Json.schema` derives: an explicit
+implicit `json.Schema[N]` still becomes a definition with a `$ref`, built-in `Predef`s (`Int`, `String`, ...) are still
+used, and everything else is derived in place.
+
 ## Validation
 It is also possible to add specific validation rules to our schemas.
 
