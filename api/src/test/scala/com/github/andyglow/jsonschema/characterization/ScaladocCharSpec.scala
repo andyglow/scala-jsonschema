@@ -8,8 +8,6 @@ import org.scalatest.matchers.should.Matchers._
 
 import scala.annotation.nowarn
 
-// NOTE: the order of the models matters. On Scala 2 a class WITHOUT a doc comment picks up the nearest preceding comment in
-// the file (BACKLOG #5), so undocumented models that must stay undocumented come first.
 object ScaladocCharSpec {
   case class HasStale(s: Stale)
 
@@ -61,7 +59,7 @@ class ScaladocCharSpec extends AnyFunSuite {
     check("char/scaladoc/HasStale", Json.schema[HasStale])
   }
 
-  test("D1: an undocumented class gets no description (Scala 2: it inherits the preceding comment, see @2.12/@2.13)") {
+  test("D1: an undocumented class gets no description (0.7 on Scala 2: it inherited the preceding doc comment)") {
     check("char/scaladoc/Documented", Json.schema[Documented])
     check("char/scaladoc/Undocumented", Json.schema[Undocumented])
   }

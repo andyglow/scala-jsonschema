@@ -1,0 +1,279 @@
+{
+  "schema": {
+    "kind": "object",
+    "fields": [
+      {
+        "name": "sorted",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "dictionary",
+          "values": {
+            "kind": "object",
+            "fields": [
+              {
+                "name": "name",
+                "required": true,
+                "rwMode": "ReadWrite",
+                "schema": {
+                  "kind": "string"
+                }
+              }
+            ]
+          },
+          "validations": [
+            {
+              "name": "patternProperties",
+              "value": "^[0-9]+$"
+            }
+          ]
+        }
+      },
+      {
+        "name": "listMap",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "dictionary",
+          "values": {
+            "kind": "object",
+            "fields": [
+              {
+                "name": "name",
+                "required": true,
+                "rwMode": "ReadWrite",
+                "schema": {
+                  "kind": "string"
+                }
+              }
+            ]
+          },
+          "validations": [
+            {
+              "name": "patternProperties",
+              "value": "^[0-9]+$"
+            }
+          ]
+        }
+      },
+      {
+        "name": "byChar",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "dictionary",
+          "values": {
+            "kind": "object",
+            "fields": [
+              {
+                "name": "name",
+                "required": true,
+                "rwMode": "ReadWrite",
+                "schema": {
+                  "kind": "string"
+                }
+              }
+            ]
+          },
+          "validations": [
+            {
+              "name": "patternProperties",
+              "value": "^.{1}$"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "draft-04": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "additionalProperties": false,
+    "properties": {
+      "byChar": {
+        "patternProperties": {
+          "^.{1}$": {
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "listMap": {
+        "patternProperties": {
+          "^[0-9]+$": {
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "sorted": {
+        "patternProperties": {
+          "^[0-9]+$": {
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "required": [
+      "byChar",
+      "listMap",
+      "sorted"
+    ],
+    "type": "object"
+  },
+  "draft-07": {
+    "$id": "golden",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "additionalProperties": false,
+    "properties": {
+      "byChar": {
+        "patternProperties": {
+          "^.{1}$": {
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "listMap": {
+        "patternProperties": {
+          "^[0-9]+$": {
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "sorted": {
+        "patternProperties": {
+          "^[0-9]+$": {
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "required": [
+      "byChar",
+      "listMap",
+      "sorted"
+    ],
+    "type": "object"
+  },
+  "draft-2020-12": {
+    "$id": "golden",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "byChar": {
+        "patternProperties": {
+          "^.{1}$": {
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "listMap": {
+        "patternProperties": {
+          "^[0-9]+$": {
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "sorted": {
+        "patternProperties": {
+          "^[0-9]+$": {
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "required": [
+      "byChar",
+      "listMap",
+      "sorted"
+    ],
+    "type": "object"
+  }
+}

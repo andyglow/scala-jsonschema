@@ -14,7 +14,10 @@
     name a field already got. Type arguments aren't dealiased: `Box[String]` is still `Box[scala.Predef.String]`
   - clear compile errors instead of errors in the generated code or macro crashes for: a Map key without a
     `KeyPattern` (e.g. `UUID`), an enum key with `Flag.EnumsAsOneOf`, a `mutable.Map`, and collections whose
-    type parameter isn't the element type (e.g. `BitSet`)
+    type parameter isn't the element type (e.g. `BitSet`), or Maps that don't take the key and value types as
+    their type parameters (e.g. `IntMap[V]`)
+  - a Map other than `Map` itself (`SortedMap[Int, X]`, `ListMap[Long, X]`) with a key pattern derives (before: an
+    error in the generated code)
   - more clear compile errors instead of macro crashes: `Json.sig`/definition names of structural types,
     `Json.objectSchema` with decorations that aren't literal pairs, `Json.objectSchema` of a type that resolves to
     a definition, and an `Option` default that can't be evaluated at compile time. Definition names of compound
@@ -23,12 +26,21 @@
     arguments of a generic subclass are matched by name (`Impl[B, A] extends Base[A, B]`), not by position
   - a case class without fields derives an empty object; annotations on backticked/symbolic field names
     (`` `my-field` ``) are kept; a scaladoc with only `@param` tags no longer sets the description to ""
+  - Scala 2: field annotations aimed at the underlying field (`@(description @field)("...")`, `@(readOnly @field)`)
+    are read, together with the parameter's own (before, they were silently ignored)
   - a scaladoc `@param` for a field that doesn't exist is a warning, for the root and nested types alike (before:
     a compile error on the root only). An unknown field in `Json.objectSchema(...)` decorations is still an error
   - case classes local to a method or block are derived (before: a macro crash). On Scala 2 such a class can't
     have default values (a clear error)
   - Java enums (`java.time.DayOfWeek`, `java.time.Month`, `java.util.concurrent.TimeUnit`, ...) derive a string
     enum of their constant names, also as Map keys (before: a macro crash)
+  - Scala 3: sealed families, `scala.Enumeration` and Java enums derive as on Scala 2, and Scala 3 `enum`s follow the
+    sealed-family rules (only singleton cases: a string enum of the case names; with class cases: a `oneOf`). Differences
+    from Scala 2: a sealed family with a subclass that is anonymous or local to a block (`new Root {}`, a case class
+    declared inside a method) is a compile error, because Scala 3 can't list such subclasses (Scala 2 rejects the
+    anonymous ones too, but derives a local case class); a class declared inside an `Enumeration` object derives as a
+    class (Scala 2: as that object's enum); an `Enumeration`'s enum lists only its `Value`s (Scala 2 also listed vals of
+    any type with a base class named `Value`)
   - rendered definition names follow each draft's grammar: every character a draft doesn't allow in a definition
     name is replaced with `_` (`com.acme.Box[scala.Int]` → `com.acme.Box_scala.Int_`), for draft-04 in
     `#/definitions/...` refs, for 06/07 in `$id`/`$ref` plain-name fragments, for 2019-09/2020-12 in `$anchor`/`$ref`.
@@ -38,6 +50,11 @@
     `odd$u0020name`), as on Scala 3; the renderers make it a valid name (`odd_name`)
   - copies of a free object stay free: `withTitle`, `withDescription`, `duplicate`, `withField`, `dropField`,
     `withFieldsUpdated` and `toDefinition` no longer turn `additionalProperties: true` into `false`
+  - Scala 2: a class without a doc comment no longer inherits another one. Before, it took the nearest earlier doc
+    comment in its file (of another class, a method, a val, or the enclosing class), as its description and its
+    `@param` field descriptions; a stray `@param` could even fail the build with `unknown field`. Now only the doc
+    comment right before the declaration counts (annotations, modifiers and ordinary comments may sit in between),
+    the same as on Scala 3 (scaladoc-parser 0.1.1)
 - **0.7.10**
   - draft 2020-12 implemented
   - dependencies updated 

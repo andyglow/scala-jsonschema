@@ -21,7 +21,16 @@ private[jsonschema] trait UDictionaries {
         )
 
       Option.whenever(tpe <:< T.map) {
-        val containerTpe         = tpe.typeConstructor
+        val containerTpe = tpe.typeConstructor
+        val mapArgs      = tpe.baseType(T.map.typeSymbol).typeArgs
+        // the generated `dictionary[K, V, C]` needs a container C[_, _] that takes the key and value types as its only type parameters
+        // (not so for e.g. IntMap[V], or a `class UserMap extends Map[String, User]`)
+        if (tpe.typeArgs.size != 2 || !tpe.typeArgs.zip(mapArgs).forall { case (a, b) => a =:= b })
+          c.abort(
+            c.enclosingPosition,
+            s"schema for $tpe is not supported: a Map must take its key and value types as its only type parameters (like Map[K, V]), and $tpe is a Map[${mapArgs.mkString(", ")}]. " +
+              s"Provide a json.schema.Predef or json.Schema for it"
+          )
         val keyTpe               = tpe.typeArgs.head
         val valueTpe             = tpe.typeArgs.tail.head
         val valueSchema          = resolve(valueTpe, ctx :+ tpe)

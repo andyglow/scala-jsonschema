@@ -40,17 +40,10 @@ def versionRangeDirs(base: File, scalaVersion: String): Seq[File] =
   }
 
 // ============================================================================================================
-// TEMPORARY SCAFFOLDING for the Scala 3 port. Delete this block, and its two uses below, once the Scala 3
-// derivation lands. Nothing here affects Scala 2.12/2.13 builds.
+// TEMPORARY SCAFFOLDING for the Scala 3 port. Delete this block, and its two uses below, once refined and
+// derived are ported to Scala 3. Nothing here affects Scala 2.12/2.13 builds.
 //
-// 1. usesScala2Macro: on Scala 3, test sources that call the macro (Json.schema/objectSchema/sig, Json.auto,
-//    DerivedSchema) are skipped, because api/src/main/scala-3/json/Json.scala is still a compiletime.error
-//    placeholder. The filter is content-based: when the macro exists, deleting it re-enables every test.
-//    Used in commonSettings (Test / unmanagedSources).
-lazy val scala2MacroUsage             = """Json\.(schema|objectSchema|sig)\b|Json\.auto|auto\.derived|import json\.Json\._|DerivedSchema""".r
-def usesScala2Macro(f: File): Boolean = scala2MacroUsage.findFirstIn(IO.read(f)).isDefined
-
-// 2. scala2OnlyForNow: modules whose Scala 3 port hasn't landed yet (refined, derived). They still list
+// scala2OnlyForNow: modules whose Scala 3 port hasn't landed yet (refined, derived). They still list
 //    Scala 3 in crossScalaVersions, because with plain crossScalaVersions `++3.x` would otherwise leave them
 //    on 2.12 while their dependencies switch to 3, which breaks resolution. On Scala 3 they compile nothing
 //    and publish nothing.
@@ -77,11 +70,9 @@ lazy val commonSettings = ScalaVer.settings ++ Seq(
   // On top of that: scala-2.12- (2.12 collections) and scala-2.13+ (2.13 collections, also used by Scala 3).
   Compile / unmanagedSourceDirectories ++= versionRangeDirs(baseDirectory.value / "src" / "main", scalaVersion.value),
   Test / unmanagedSourceDirectories ++= versionRangeDirs(baseDirectory.value / "src" / "test", scalaVersion.value),
-  Test / unmanagedSources := { // TEMPORARY SCAFFOLDING (1), see above
-    val all = (Test / unmanagedSources).value
-    if (scalaV.value.isScala3) all filterNot usesScala2Macro else all
-  },
-  scalacOptions                 := CompilerOptions(scalaV.value),
+  scalacOptions := CompilerOptions(scalaV.value),
+  // Scala 3 consumers of the derivation: read scaladoc from TASTy (other modules, files not recompiled), and check the generated trees
+  Test / scalacOptions ++= { if (scalaV.value.isScala3) Seq("-Yread-docs", "-Xcheck-macros") else Nil },
   Compile / doc / scalacOptions := {
     val muted = Seq("-Ywarn-unused")
 
@@ -116,7 +107,9 @@ lazy val commonSettings = ScalaVer.settings ++ Seq(
 
 lazy val core = { project in file("core") }.settings(
   commonSettings,
-  name := "scala-jsonschema-core"
+  name := "scala-jsonschema-core",
+  // the Scala 3 derivation lives in core (`derives json.Schema` needs `Schema.derived`); it parses `Symbol.docstring` with scaladoc-parser
+  libraryDependencies ++= { if (scalaV.value.isScala3) Seq("io.github.andyglow" %% "scaladoc-parser" % "0.1.1") else Nil }
 )
 
 lazy val macros = { project in file("macros") }
@@ -128,8 +121,8 @@ lazy val macros = { project in file("macros") }
       if (scalaV.value.isScala3) Nil
       else
         Seq(
-          "io.github.andyglow" %% "scaladoc-ast"    % "0.1.0",
-          "io.github.andyglow" %% "scaladoc-parser" % "0.1.0"
+          "io.github.andyglow" %% "scaladoc-ast"    % "0.1.1",
+          "io.github.andyglow" %% "scaladoc-parser" % "0.1.1"
         ) ++ scalaReflect(scalaVersion.value)
     }
   )
@@ -146,7 +139,9 @@ lazy val `play-json` = { project in file("modules/play-json") }
   .settings(
     commonSettings,
     name                                       := "scala-jsonschema-play-json",
-    libraryDependencies += "org.playframework" %% "play-json" % "3.0.6"
+    libraryDependencies += "org.playframework" %% "play-json" % "3.0.6",
+    // play-json 3.0.6's own Scala 3 macro (`Json.writes`) fails -Xcheck-macros ("Expression created in a splice was used outside of that splice")
+    Test / scalacOptions -= "-Xcheck-macros"
   )
 
 lazy val `spray-json` = { project in file("modules/spray-json") }
@@ -218,7 +213,7 @@ lazy val `refined` = { project in file("modules/refined") }
   .dependsOn(core, api)
   .settings(
     commonSettings,
-    scala2OnlyForNow, // TEMPORARY SCAFFOLDING (2)
+    scala2OnlyForNow, // TEMPORARY SCAFFOLDING, see above
     name                                := "scala-jsonschema-refined",
     libraryDependencies += "eu.timepit" %% "refined" % "0.11.4",
     libraryDependencies ++= scalaReflect(scalaVersion.value),
@@ -241,14 +236,16 @@ lazy val enumeratum = { project in file("modules/enumeratum") }
   .settings(
     commonSettings,
     name                                  := "scala-jsonschema-enumeratum",
-    libraryDependencies += "com.beachape" %% "enumeratum" % "1.9.8"
+    libraryDependencies += "com.beachape" %% "enumeratum" % "1.9.8",
+    // enumeratum's own Scala 3 macro (`findValues`) needs the trees of the enum's members
+    Test / scalacOptions ++= { if (scalaV.value.isScala3) Seq("-Yretain-trees") else Nil }
   )
 
 lazy val derived = { project in file("modules/derived") }
   .dependsOn(core, api, macros)
   .settings(
     commonSettings,
-    scala2OnlyForNow, // TEMPORARY SCAFFOLDING (2)
+    scala2OnlyForNow, // TEMPORARY SCAFFOLDING, see above
     name := "scala-jsonschema-derived",
     libraryDependencies ++= scalaReflect(scalaVersion.value)
   )

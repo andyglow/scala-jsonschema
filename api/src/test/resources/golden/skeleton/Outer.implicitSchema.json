@@ -1,0 +1,145 @@
+{
+  "schema": {
+    "kind": "object",
+    "fields": [
+      {
+        "name": "inner",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "def",
+          "sig": "com.github.andyglow.jsonschema.skeleton.ResolutionSpec.Inner",
+          "schema": {
+            "kind": "object",
+            "fields": [
+              {
+                "name": "a",
+                "required": true,
+                "rwMode": "ReadWrite",
+                "schema": {
+                  "kind": "integer"
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "name": "opt",
+        "required": false,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "def",
+          "sig": "com.github.andyglow.jsonschema.skeleton.ResolutionSpec.Inner",
+          "schema": {
+            "kind": "object",
+            "fields": [
+              {
+                "name": "a",
+                "required": true,
+                "rwMode": "ReadWrite",
+                "schema": {
+                  "kind": "integer"
+                }
+              }
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "draft-04": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "additionalProperties": false,
+    "definitions": {
+      "com.github.andyglow.jsonschema.skeleton.ResolutionSpec.Inner": {
+        "additionalProperties": false,
+        "properties": {
+          "a": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "a"
+        ],
+        "type": "object"
+      }
+    },
+    "properties": {
+      "inner": {
+        "$ref": "#/definitions/com.github.andyglow.jsonschema.skeleton.ResolutionSpec.Inner"
+      },
+      "opt": {
+        "$ref": "#/definitions/com.github.andyglow.jsonschema.skeleton.ResolutionSpec.Inner"
+      }
+    },
+    "required": [
+      "inner"
+    ],
+    "type": "object"
+  },
+  "draft-07": {
+    "$id": "golden",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "additionalProperties": false,
+    "definitions": {
+      "com.github.andyglow.jsonschema.skeleton.ResolutionSpec.Inner": {
+        "$id": "#com.github.andyglow.jsonschema.skeleton.ResolutionSpec.Inner",
+        "additionalProperties": false,
+        "properties": {
+          "a": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "a"
+        ],
+        "type": "object"
+      }
+    },
+    "properties": {
+      "inner": {
+        "$ref": "#com.github.andyglow.jsonschema.skeleton.ResolutionSpec.Inner"
+      },
+      "opt": {
+        "$ref": "#com.github.andyglow.jsonschema.skeleton.ResolutionSpec.Inner"
+      }
+    },
+    "required": [
+      "inner"
+    ],
+    "type": "object"
+  },
+  "draft-2020-12": {
+    "$defs": {
+      "com.github.andyglow.jsonschema.skeleton.ResolutionSpec.Inner": {
+        "$anchor": "com.github.andyglow.jsonschema.skeleton.ResolutionSpec.Inner",
+        "additionalProperties": false,
+        "properties": {
+          "a": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "a"
+        ],
+        "type": "object"
+      }
+    },
+    "$id": "golden",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "inner": {
+        "$ref": "#com.github.andyglow.jsonschema.skeleton.ResolutionSpec.Inner"
+      },
+      "opt": {
+        "$ref": "#com.github.andyglow.jsonschema.skeleton.ResolutionSpec.Inner"
+      }
+    },
+    "required": [
+      "inner"
+    ],
+    "type": "object"
+  }
+}
