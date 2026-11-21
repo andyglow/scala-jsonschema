@@ -20,7 +20,7 @@ trait Implicits { this: Derivation =>
     case '[t] =>
       searchAccepted(TypeRepr.of[Schema[t]], TypeRepr.of[Schema[Any]].typeSymbol, tpe) match {
         case Some(tree) =>
-          Some(FromImplicit(tpe, tree.asExprOf[Schema[t]], ImplicitSource.UserSchema, definitionName(tpe)))
+          Some(FromImplicit(tpe, tree.asExprOf[Schema[t]], ImplicitSource.UserSchema, definitionName(tpe), generic = isGenericImplicit(tree)))
         case None =>
           searchAccepted(TypeRepr.of[Predef[t]], TypeRepr.of[Predef[Any]].typeSymbol, tpe) map { tree =>
             val p = tree.asExprOf[Predef[t]]
@@ -47,6 +47,16 @@ trait Implicits { this: Derivation =>
     case AndType(a, b)       => mentionsAbstractType(a) || mentionsAbstractType(b)
     case OrType(a, b)        => mentionsAbstractType(a) || mentionsAbstractType(b)
     case _                   => false
+  }
+
+  /** The found implicit is a given/def applied to type arguments (`GRec.derived$Schema[Int](using ..)`): see [[Nodes.FromImplicit]] `generic`. */
+  def isGenericImplicit(t: Term): Boolean = t match {
+    case Inlined(_, Nil, e) => isGenericImplicit(e)
+    case Typed(e, _)        => isGenericImplicit(e)
+    case Block(Nil, e)      => isGenericImplicit(e)
+    case Apply(f, _)        => isGenericImplicit(f)
+    case TypeApply(_, _)    => true
+    case _                  => false
   }
 
   /** Searches an implicit of type `target` (`TC[tpe]`), and returns it unless it's rejected (see the trait's doc). */

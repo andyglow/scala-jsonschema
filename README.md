@@ -529,6 +529,22 @@ and expect
 }
 ``` 
 
+### Scala 3: `derives json.Schema`
+On Scala 3 (port in progress), `derives json.Schema` is the same as a user-provided implicit `json.Schema` in the companion,
+so the type becomes a definition named after it, and fields of that type refer to it with `$ref`.
+```scala
+case class Person(name: String) derives json.Schema
+case class Team(lead: Person, deputy: Option[Person])  // both fields: {"$ref": "#/definitions/<pkg>.Person"}
+```
+A generic class's `derives` needs a `json.Schema` (not just a built-in) for each type argument: `summon[json.Schema[Box[Int]]]`
+doesn't compile, while `Json.schema[Box[Int]]` derives `Box[Int]` inline. A type argument that is a definition keeps its name.
+
+A *recursive* generic class with `derives` (`case class Tree[A](value: A, children: List[Tree[A]]) derives json.Schema`) gets a definition
+named after the type parameter inside its given (`<pkg>.Tree[<pkg>.Tree.A]`). Where `Tree[Int]` is used as a field (or as the root of `Json.schema`),
+the definition and its `$ref`s are renamed to `<pkg>.Tree[scala.Int]`, so `Tree[Int]` and `Tree[String]` in one schema don't collide.
+Known limitations (BACKLOG #9): `summon[json.Schema[Tree[Int]]]` itself keeps the type-parameter name, and so does a `Tree[A]` nested inside
+another generic `derives` class (`case class Forest[A](tree: Tree[A]) derives json.Schema`).
+
 ## Implicit Predefs (`Json.auto`)
 
 Some APIs ask for an implicit `json.schema.Predef[T]` rather than a schema value. `import json.Json.auto._`

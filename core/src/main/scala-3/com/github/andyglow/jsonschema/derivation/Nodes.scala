@@ -75,8 +75,12 @@ trait Nodes { this: Derivation =>
     *   receives): no name known at compile time is right for every instantiation. Then the decision is made at RUNTIME (lead decision 2026-11-20, a deliberate Scala 3 deviation; Scala 2 names the
     *   definition after the type parameter, `pkg.Owner.T`, and its analogous case overflows the stack): an instance that is already a definition or a reference keeps its own name (`$ref`), anything
     *   else is inlined.
+    * @param generic
+    *   the implicit is generic (a given/def with type parameters, applied to this type's arguments: the given of a generic `derives`). A definition it returns was named inside it, for its type
+    *   parameters (`pkg.GRec[pkg.GRec.T]` for a recursive generic `derives`), the same name for every instantiation. That name is provisional: the definition and its `$ref`s are renamed to `sig`, the
+    *   concrete type's name, at runtime with `toDefinition` (lead decision on reviewer3 round 2, BACKLOG #9).
     */
-  final case class FromImplicit(tpe: TypeRepr, expr: Expr[Schema[?]], source: ImplicitSource, sig: Option[String], extra: Extra = Extra()) extends Node {
+  final case class FromImplicit(tpe: TypeRepr, expr: Expr[Schema[?]], source: ImplicitSource, sig: Option[String], generic: Boolean = false, extra: Extra = Extra()) extends Node {
     def withExtra(x: Extra): Node          = copy(extra = x)
     def children: List[Node]               = Nil
     def mapChildren(f: Node => Node): Node = this
@@ -87,7 +91,13 @@ trait Nodes { this: Derivation =>
         tpe.asType match {
           case '[t] =>
             val se = Expr(name)
-            '{ Schema.`def`.adapt[t]($expr, $se) }
+            if (generic) '{
+              $expr match {
+                case d: Schema.`def`[?] => d.asInstanceOf[Schema.`def`[t]].toDefinition[t]($se) // renames the definition and its $refs
+                case other              => Schema.`def`.adapt[t](other, $se)
+              }
+            }
+            else '{ Schema.`def`.adapt[t]($expr, $se) }
         }
     }
   }

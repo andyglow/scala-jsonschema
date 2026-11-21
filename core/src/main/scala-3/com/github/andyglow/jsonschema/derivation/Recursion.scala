@@ -7,6 +7,11 @@ package com.github.andyglow.jsonschema.derivation
   *
   * The `$ref` takes the name of the *stack entry* it points back to, which is the type of the node that becomes the definition. So a ref and its definition always agree, also when the recursion goes
   * through a type alias (TRIAGE-B: Scala 2 named the ref after the alias and the definition after the class, leaving a dangling `$ref`).
+  *
+  * A `$ref` needs its name at compile time, so a recursive type that mentions an abstract type is named after the type parameter: the given of
+  * `case class Tree[A](v: A, kids: List[Tree[A]]) derives json.Schema` defines `pkg.Tree[pkg.Tree.A]`. That name is provisional: a consumer that finds the given for a concrete `Tree[Int]` renames the
+  * definition and its refs ([[Nodes.FromImplicit]] `generic`). Known limitations (BACKLOG #9, README "derives"): `summon[Schema[Tree[Int]]]` keeps the provisional name, and so does a `Tree[A]` nested
+  * in another generic given (only the top-level definition is renamed).
   */
 trait Recursion { this: Derivation =>
   import q.reflect.*

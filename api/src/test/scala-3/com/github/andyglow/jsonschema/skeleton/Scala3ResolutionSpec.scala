@@ -54,6 +54,9 @@ object Scala3ResolutionSpec {
   case class Person(name: String) derives json.Schema
   case class VId(v: Int) extends AnyVal derives json.Schema
   case class TwoBoxes(a: GBox[Int], b: GBox[String])
+  case class GRec[T](v: T, next: Option[GRec[T]]) derives json.Schema
+  case class TwoRecs(a: GRec[Int], b: GRec[String])
+  case object Lone
   case class Ex(s: String)
   object ExDef       { given exS: Schema[Ex] = Json.schema[Ex].toDefinition("custom.Ex") }
   object PlainGivens {
@@ -162,6 +165,10 @@ class Scala3ResolutionSpec extends AnyFunSuite {
     errorOf(assertCompiles("Json.objectSchema[Leaf]()")) should include(ErrorPhrases.NotAnObjectSchema)
   }
 
+  test("objectSchema on a case object gets past the precondition, like Scala 2, and isn't supported") {
+    errorOf(assertCompiles("Json.objectSchema[Lone.type]()")) should include(ErrorPhrases.NotSupported)
+  }
+
   test("a case class local to a block, with a default") {
     case class Local(x: Int, y: String = "d")
     Json.schema[Local] shouldEqual `object`[Local](Field("x", `integer`), Field.fromJson[String]("y", `string`, required = false, default = Some(com.github.andyglow.json.Value.str("d"))))
@@ -193,6 +200,19 @@ class Scala3ResolutionSpec extends AnyFunSuite {
       Field("a", `def`[GBox[Int]](s"$box[scala.Int]", `object`[GBox[Int]](Field("value", `integer`)))),
       Field("b", `def`[GBox[String]](s"$box[scala.Predef.String]", `object`[GBox[String]](Field("value", `string`))))
     )
+  }
+
+  private val grec                               = "com.github.andyglow.jsonschema.skeleton.Scala3ResolutionSpec.GRec"
+  private def grecDef(sig: String, v: Schema[?]) = `def`[Any](sig, `object`[Any](Field("v", v), Field("next", `ref`[Any](sig), required = false)))
+
+  test("recursive generic derives: the given's provisional definition name is replaced by the consumer's concrete one, refs included (BACKLOG #9)") {
+    import PlainGivens.given
+    Json.schema[TwoRecs] shouldEqual `object`[TwoRecs](
+      Field("a", grecDef(s"$grec[scala.Int]", `integer`)),
+      Field("b", grecDef(s"$grec[scala.Predef.String]", `string`))
+    )
+    // alone, the given's own (provisional) name stays: one definition, its refs agree
+    summon[Schema[GRec[Int]]] shouldEqual grecDef(s"$grec[$grec.T]", `integer`)
   }
 
   test("a default of a path-dependent class goes through the path to its companion (Scala 2: doesn't compile)") {
