@@ -40,6 +40,10 @@
     derived inside `Holder` or as `Json.schema[h.Inner]`) work (before: an error in the generated code, `object
     Holder is not a member of package ...`). Through a type projection (`Json.schema[Holder#Inner]`) they're a clear
     compile error on Scala 2 and 3 (before, Scala 3 crashed)
+  - Scala 2: an implicit `Predef` defined with `Json.schema` of its own type (`implicit val p: Predef[X] =
+    Predef(Json.schema[X])`, also a `def` or `lazy val`) no longer picks itself up (before: a NullPointerException /
+    ExceptionInInitializerError at initialization, a StackOverflowError for a `def`). An implicit `Schema` defined
+    over more than two lines no longer picks itself up either (before: `def(<name>, null)`). Scala 3 already did both
   - Java enums (`java.time.DayOfWeek`, `java.time.Month`, `java.util.concurrent.TimeUnit`, ...) derive a string
     enum of their constant names, also as Map keys (before: a macro crash)
   - Scala 3: sealed families, `scala.Enumeration` and Java enums derive as on Scala 2, and Scala 3 `enum`s follow the
