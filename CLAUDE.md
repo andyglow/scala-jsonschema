@@ -54,6 +54,8 @@ Whether a type becomes a definition depends on which of the two implicits is in 
 
 ## Release & dependencies
 
+- groupId is `io.github.andyglow` from 0.8.0 on (0.7.x and older: `com.github.andyglow`). Only the sbt coordinates
+  changed; Scala packages stay `com.github.andyglow.*` and `json.*`. The scaladoc libraries moved the same way.
 - Versioning is PVP (`versionScheme := pvp`). Breaking changes bump the second number (0.7.x → 0.8.0).
 - Publishing uses sbt's built-in Sonatype Central Portal support: `sbt release` runs `publishSigned` (cross-built, staged into `target/sona-staging`) and then `sonaRelease`. This needs a PGP key and a Central Portal token.
 - Scala Steward opens dependency PRs. `master` requires a code-owner review.

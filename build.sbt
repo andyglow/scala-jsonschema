@@ -56,7 +56,7 @@ lazy val buildInfo = taskKey[Unit]("Prints Build Info")
 lazy val commonSettings = ScalaVer.settings ++ Seq(
   // logBuffered := false,
 
-  organization     := "com.github.andyglow",
+  organization     := "io.github.andyglow", // groupId only; Scala packages stay com.github.andyglow.* / json.*
   homepage         := Some(new URI("http://github.com/andyglow/scala-jsonschema").toURL),
   startYear        := Some(2017),
   organizationName := "andyglow",
