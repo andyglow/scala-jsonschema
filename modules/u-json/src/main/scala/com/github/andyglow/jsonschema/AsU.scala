@@ -13,7 +13,7 @@ object AsU {
 
   implicit class UJsonSchemaOps[T](val x: Schema[T]) extends AnyVal {
 
-    def asU[V <: Version](v: V)(implicit asValue: AsValueBuilder[V]): ujson.Obj = AsU(
+    def asU[V <: Version](v: V)(implicit asValue: AsValueBuilder[V], profile: _root_.json.schema.JsonSchemaProfile): ujson.Obj = AsU(
       AsValue.schema(x, v)
     )
   }

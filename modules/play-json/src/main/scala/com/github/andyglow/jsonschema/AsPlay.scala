@@ -13,7 +13,7 @@ object AsPlay {
 
   implicit class PlayJsonSchemaOps[T](val x: Schema[T]) extends AnyVal {
 
-    def asPlay[V <: Version](v: V)(implicit asValue: AsValueBuilder[V]): JsObject = AsPlay(
+    def asPlay[V <: Version](v: V)(implicit asValue: AsValueBuilder[V], profile: _root_.json.schema.JsonSchemaProfile): JsObject = AsPlay(
       AsValue.schema(x, v)
     )
   }

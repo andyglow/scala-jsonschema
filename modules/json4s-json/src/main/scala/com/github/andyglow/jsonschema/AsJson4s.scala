@@ -14,7 +14,7 @@ object AsJson4s {
 
   implicit class Json4sSchemaOps[T](val x: Schema[T]) extends AnyVal {
 
-    def asJson4s[V <: Version](v: V)(implicit asValue: AsValueBuilder[V]): JObject =
+    def asJson4s[V <: Version](v: V)(implicit asValue: AsValueBuilder[V], profile: _root_.json.schema.JsonSchemaProfile): JObject =
       AsJson4s(AsValue.schema(x, v))
   }
 

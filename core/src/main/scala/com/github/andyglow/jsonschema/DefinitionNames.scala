@@ -56,6 +56,7 @@ private[jsonschema] object DefinitionNames {
     case `allof`(ts)      => ts.flatMap(signatures)
     case Schema.`not`(t)  => signatures(t)
     case `value-class`(t) => signatures(t)
+    case `option`(t)      => signatures(t)
     case _                => Set.empty
   }
 
