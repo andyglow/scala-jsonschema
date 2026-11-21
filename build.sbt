@@ -114,8 +114,8 @@ lazy val macros = { project in file("macros") }
       if (scalaV.value.isScala3) Nil
       else
         Seq(
-          "com.github.andyglow" %% "scaladoc-ast"    % "0.0.14",
-          "com.github.andyglow" %% "scaladoc-parser" % "0.0.14"
+          "io.github.andyglow" %% "scaladoc-ast"    % "0.1.0",
+          "io.github.andyglow" %% "scaladoc-parser" % "0.1.0"
         ) ++ scalaReflect(scalaVersion.value)
     }
   )
