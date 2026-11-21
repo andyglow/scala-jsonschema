@@ -19,6 +19,7 @@ ThisBuild / versionScheme                       := Some("pvp")
 ThisBuild / crossScalaVersions                  := ScalaVer.values.map(_.full)
 ThisBuild / githubWorkflowPublishTargetBranches := Seq()
 ThisBuild / githubWorkflowJavaVersions          := Seq(JavaSpec.temurin("21"))
+ThisBuild / githubWorkflowBuildPreamble         := Seq(checkFormatting)
 ThisBuild / githubWorkflowBuildPostamble        := Seq(generateCC, aggregateCC, uploadCC)
 
 ThisBuild / scmInfo := Some(ScmInfo(url("https://github.com/andyglow/scala-jsonschema"), "scm:git@github.com:andyglow/scala-jsonschema.git"))
@@ -38,18 +39,27 @@ def versionRangeDirs(base: File, scalaVersion: String): Seq[File] =
     case _                       => Nil
   }
 
-// TEMPORARY (until the Scala 3 derivation lands): on Scala 3 skip test sources that call the Scala 2 macro.
+// ============================================================================================================
+// TEMPORARY SCAFFOLDING for the Scala 3 port. Delete this block, and its two uses below, once the Scala 3
+// derivation lands. Nothing here affects Scala 2.12/2.13 builds.
+//
+// 1. usesScala2Macro: on Scala 3, test sources that call the macro (Json.schema/objectSchema/sig, Json.auto,
+//    DerivedSchema) are skipped, because api/src/main/scala-3/json/Json.scala is still a compiletime.error
+//    placeholder. The filter is content-based: when the macro exists, deleting it re-enables every test.
+//    Used in commonSettings (Test / unmanagedSources).
 lazy val scala2MacroUsage             = """Json\.(schema|objectSchema|sig)\b|Json\.auto|auto\.derived|import json\.Json\._|DerivedSchema""".r
 def usesScala2Macro(f: File): Boolean = scala2MacroUsage.findFirstIn(IO.read(f)).isDefined
 
-// TEMPORARY: modules whose Scala 3 port hasn't landed yet. They still list Scala 3 in crossScalaVersions,
-// because with plain crossScalaVersions `++3.x` would otherwise leave them on 2.12 while their dependencies
-// switch to 3, which breaks resolution. On Scala 3 they compile nothing and publish nothing.
+// 2. scala2OnlyForNow: modules whose Scala 3 port hasn't landed yet (refined, derived). They still list
+//    Scala 3 in crossScalaVersions, because with plain crossScalaVersions `++3.x` would otherwise leave them
+//    on 2.12 while their dependencies switch to 3, which breaks resolution. On Scala 3 they compile nothing
+//    and publish nothing.
 lazy val scala2OnlyForNow = Seq(
   Compile / unmanagedSourceDirectories := { if (scalaV.value.isScala3) Nil else (Compile / unmanagedSourceDirectories).value },
   Test / unmanagedSourceDirectories    := { if (scalaV.value.isScala3) Nil else (Test / unmanagedSourceDirectories).value },
   publish / skip                       := scalaV.value.isScala3 || (publish / skip).value
 )
+// ============================ end of TEMPORARY SCAFFOLDING ==================================================
 
 def runCommand(command: String): State => State =
   Command.process(command, _, msg => sys.error(s"can't parse command `$command`: $msg"))
@@ -67,7 +77,7 @@ lazy val commonSettings = ScalaVer.settings ++ Seq(
   // On top of that: scala-2.12- (2.12 collections) and scala-2.13+ (2.13 collections, also used by Scala 3).
   Compile / unmanagedSourceDirectories ++= versionRangeDirs(baseDirectory.value / "src" / "main", scalaVersion.value),
   Test / unmanagedSourceDirectories ++= versionRangeDirs(baseDirectory.value / "src" / "test", scalaVersion.value),
-  Test / unmanagedSources := {
+  Test / unmanagedSources := { // TEMPORARY SCAFFOLDING (1), see above
     val all = (Test / unmanagedSources).value
     if (scalaV.value.isScala3) all filterNot usesScala2Macro else all
   },
@@ -208,7 +218,7 @@ lazy val `refined` = { project in file("modules/refined") }
   .dependsOn(core, api)
   .settings(
     commonSettings,
-    scala2OnlyForNow,
+    scala2OnlyForNow, // TEMPORARY SCAFFOLDING (2)
     name                                := "scala-jsonschema-refined",
     libraryDependencies += "eu.timepit" %% "refined" % "0.11.4",
     libraryDependencies ++= scalaReflect(scalaVersion.value),
@@ -238,7 +248,7 @@ lazy val derived = { project in file("modules/derived") }
   .dependsOn(core, api, macros)
   .settings(
     commonSettings,
-    scala2OnlyForNow,
+    scala2OnlyForNow, // TEMPORARY SCAFFOLDING (2)
     name := "scala-jsonschema-derived",
     libraryDependencies ++= scalaReflect(scalaVersion.value)
   )

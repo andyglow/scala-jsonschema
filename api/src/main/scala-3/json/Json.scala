@@ -4,7 +4,7 @@ import com.github.andyglow.jsonschema._
 import json.Schema.`object`
 import json.schema.{Predef, Version}
 
-// Placeholder so that `api` (and everything depending on it) cross-builds to Scala 3.
+// TEMPORARY SCAFFOLDING (see build.sbt): placeholder so that `api` (and everything depending on it) cross-builds to Scala 3.
 // The Scala 3 derivation (inline/quotes) replaces these `compiletime.error` bodies.
 object Json {
 
