@@ -104,6 +104,13 @@ object JsonSchemaProfile {
       * tagged, in the `oneOf` (its definition stays as it is elsewhere). One whose schema isn't an object can't carry the tag: lowering fails with a message naming the member.
       */
     final case class Discriminator(field: String) extends SumStyle
+
+    /** A style chosen for each family from its facts, for libraries whose sum encoding depends on the members (json4s type hints are registered per class: a family whose classes have no hint is
+      * written untagged, one whose classes have hints is tagged). `f` may throw to reject a family the library would write in a way no style describes; the exception reaches the caller of the render
+      * (or `lower`). Applies where [[Untagged]] etc. would: not to a family whose `@discriminator` is honored. `f` returning a `PerFamily` is an `IllegalArgumentException`. Profiles built with it
+      * don't compare equal.
+      */
+    final case class PerFamily(f: `family`[_] => SumStyle) extends SumStyle
   }
 
   sealed trait SingletonStyle
@@ -220,8 +227,15 @@ object JsonSchemaProfile {
     private def familyAt(f: `family`[_]): Schema[_] = {
       val honors    = p.honorsSchemaAnnotations
       val annotated = if (honors) f.discriminator else None
-      val style     = annotated.fold(p.sumStyle)(d => SumStyle.Discriminator(d.field))
-      val tagField  = style match {
+      val style     = annotated.fold(p.sumStyle)(d => SumStyle.Discriminator(d.field)) match {
+        case SumStyle.PerFamily(choose) =>
+          choose(f) match {
+            case SumStyle.PerFamily(_) => throw new IllegalArgumentException(s"${p.name}: SumStyle.PerFamily chose another PerFamily for ${f.members.map(_.fullName).mkString("family(", ", ", ")")}")
+            case chosen                => chosen
+          }
+        case other => other
+      }
+      val tagField = style match {
         case SumStyle.Discriminator(x) => Some(x)
         case _                         => None
       }
@@ -283,6 +297,7 @@ object JsonSchemaProfile {
             if (honors) withDefinition(m, typed.duplicate(discriminationKey = Some(label(m))))
             else if (provided) taggedProvided(m, typed, x)
             else withDefinition(m, tagged(typed, label(m)))
+          case SumStyle.PerFamily(_) => throw new IllegalStateException("resolved above") // `style` is never a PerFamily here
         }
       }
 
