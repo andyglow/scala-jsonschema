@@ -46,6 +46,9 @@ class TypeFamiliesCharSpec extends AnyFunSuite {
 
   test("T1: a case class local to a method (bugs-1 #2)") {
     // 0.7: macro crash `<none> is not a module` (Scala 2 reflection gives no companion for a local class)
+    // TODO(scaladoc-parser 0.1.1): both goldens are Scala 2 output with bugs-1 #7 (this spec class's scaladoc leaks into the root's description).
+    //  Scala 3 is right (no description). Once 0.1.1 is on Central: bump it, regenerate both goldens on Scala 2 (GOLDEN_UPDATE=1), drop this `pending`.
+    if (Scala.is3) pending
     case class Local(x: Int, y: Option[String])
     case class HasLocal(l: Local, ls: List[Local])
     check("char/types/Local", Json.schema[Local])

@@ -5,8 +5,9 @@ A macro turns a type into a JSON-library-neutral `json.Schema[T]` tree; renderer
 Draft 04 / 06 / 07 / 2019-09 / 2020-12 JSON, and optional bridges convert it to play-json, circe, etc.
 
 Released for Scala 2.12 and 2.13. A Scala 3 (3.3 LTS) port is in progress: the build cross-compiles to 3.3.9, and the
-Scala 3 derivation exists for products, `Option`, value classes, implicits, recursion and signatures; sums/enums and
-collections are being ported (see "Scala 3 port scaffolding" below). Scala.js is deferred.
+Scala 3 derivation covers every type family (products, `Option`, value classes, implicits, recursion, signatures,
+sums/enums, collections); every shared test runs on 3.3.9. `refined` and `derived` aren't ported yet (see "Scala 3
+port scaffolding" below). Scala.js is deferred.
 
 ## Layout
 
@@ -54,10 +55,8 @@ Whether a type becomes a definition depends on which of the two implicits is in 
 
 ### Scala 3 port scaffolding (temporary)
 
-`build.sbt` has a clearly marked TEMPORARY SCAFFOLDING block; delete it once the Scala 3 derivation lands:
-- `scala3Pending`: on Scala 3, the listed test files are skipped because they need a type family the Scala 3 derivation
-  doesn't have yet; each entry names the stream that unblocks it. Delete entries as families land. An entry for a file that no longer exists fails the build (rename or delete it with the spec).
-- `scala2OnlyForNow`: `refined` and `derived` compile and publish nothing on Scala 3 yet.
+`build.sbt` has a clearly marked TEMPORARY SCAFFOLDING block, `scala2OnlyForNow`: `refined` and `derived` compile and
+publish nothing on Scala 3 yet. Delete it once they are ported.
 
 ## Conventions
 

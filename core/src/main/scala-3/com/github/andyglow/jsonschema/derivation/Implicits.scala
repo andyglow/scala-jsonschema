@@ -59,10 +59,14 @@ trait Implicits { this: Derivation =>
     case _                  => false
   }
 
-  /** Searches an implicit of type `target` (`TC[tpe]`), and returns it unless it's rejected (see the trait's doc). */
+  /** Searches an implicit of type `target` (`TC[tpe]`), and returns it unless it's rejected (see the trait's doc).
+    *
+    * The found tree is wrapped in `Inlined(None, Nil, _)`, which marks it as call-site code. Without that, when the implicit is the whole expansion (`Json.schema[Foo]` with an imported
+    * `Schema[Foo]`), `-Wunused:imports` doesn't see the import as used and warns (a nested use was already fine, being spliced into the outer quote).
+    */
   def searchAccepted(target: TypeRepr, tc: Symbol, tpe: TypeRepr): Option[Term] =
     AutoGuard.searching(Implicits.search(target)) match {
-      case s: ImplicitSearchSuccess if !isSelfRef(s.tree) && isExact(s.tree, tc, tpe) && !containsAuto(s.tree) => Some(s.tree)
+      case s: ImplicitSearchSuccess if !isSelfRef(s.tree) && isExact(s.tree, tc, tpe) && !containsAuto(s.tree) => Some(Inlined(None, Nil, s.tree))
       case _                                                                                                   => None
     }
 
