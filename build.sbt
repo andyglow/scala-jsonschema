@@ -39,21 +39,6 @@ def versionRangeDirs(base: File, scalaVersion: String): Seq[File] =
     case _                       => Nil
   }
 
-// ============================================================================================================
-// TEMPORARY SCAFFOLDING for the Scala 3 port. No module uses it any more (refined and derived are ported):
-// delete this block. Nothing here affects Scala 2.12/2.13 builds.
-//
-// scala2OnlyForNow: modules whose Scala 3 port hasn't landed yet (none). They still list
-//    Scala 3 in crossScalaVersions, because with plain crossScalaVersions `++3.x` would otherwise leave them
-//    on 2.12 while their dependencies switch to 3, which breaks resolution. On Scala 3 they compile nothing
-//    and publish nothing.
-lazy val scala2OnlyForNow = Seq(
-  Compile / unmanagedSourceDirectories := { if (scalaV.value.isScala3) Nil else (Compile / unmanagedSourceDirectories).value },
-  Test / unmanagedSourceDirectories    := { if (scalaV.value.isScala3) Nil else (Test / unmanagedSourceDirectories).value },
-  publish / skip                       := scalaV.value.isScala3 || (publish / skip).value
-)
-// ============================ end of TEMPORARY SCAFFOLDING ==================================================
-
 def runCommand(command: String): State => State =
   Command.process(command, _, msg => sys.error(s"can't parse command `$command`: $msg"))
 

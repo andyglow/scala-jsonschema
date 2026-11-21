@@ -53,11 +53,6 @@ Whether a type becomes a definition depends on which of the two implicits is in 
 - git worktrees: `build.sbt` sets `useReadableConsoleGit`, because sbt-git's JGit reader (pulled in by sbt-ghpages)
   can't load the build in a `git worktree` checkout. Keep it.
 
-### Scala 3 port scaffolding (temporary)
-
-`build.sbt` has a clearly marked TEMPORARY SCAFFOLDING block, `scala2OnlyForNow`. No module uses it any more;
-delete it.
-
 ## Conventions
 
 - Format with scalafmt (`.scalafmt.conf`: maxColumn 200, aggressive alignment). Put reformat-only commits in `.git-blame-ignore-revs`.
