@@ -86,7 +86,8 @@ trait Implicits { this: Derivation =>
       case _: NoMatchingImplicits => true
       case _                      => false
     }
-    val plain = noMatch || e.contains("does not match type") || e.contains("AutoGuard") || e.contains("auto.derived")
+    // "macro expansion was stopped" alone carries no reason (e.g. auto declining through an implicit parameter it can't get)
+    val plain = noMatch || e.contains("does not match type") || e.contains("AutoGuard") || e.contains("auto.derived") || e.trim == "macro expansion was stopped"
     if (!plain && !failures.exists { case (t, m) => m == e && t =:= tpe }) failures = failures :+ (tpe -> e)
   }
 

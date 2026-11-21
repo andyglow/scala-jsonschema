@@ -178,6 +178,9 @@ class Scala3ResolutionSpec extends AnyFunSuite {
     e should include("There are no values inside of specified range [2.0 .. 7.0]")
     // a plain miss adds nothing
     errorOf(assertCompiles("Json.schema[HasOpen]")) shouldNot include("an implicit for it failed")
+    // nor does auto declining (its own given never counts)
+    errorOf(assertCompiles("{ import Json.auto.given; Json.schema[HasOpen] }")) shouldNot include("an implicit for it failed")
+    errorOf(assertCompiles("{ import Json.auto.given; summon[json.schema.Predef[HasOpen]] }")) shouldNot include("an implicit for it failed")
   }
 
   test("a case class local to a block, with a default") {
