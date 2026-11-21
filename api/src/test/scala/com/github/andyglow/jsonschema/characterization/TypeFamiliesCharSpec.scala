@@ -1,7 +1,7 @@
 package com.github.andyglow.jsonschema.characterization
 
 import com.github.andyglow.jsonschema.harness.{ErrorPhrases, Golden, Scala, Untriaged}
-import com.github.andyglow.jsonschema.harness.CompileErrors.errorOf
+import com.github.andyglow.jsonschema.harness.CompileErrors.{errorOf, outcome}
 import json._
 import json.Schema._
 import json.schema.Flag
@@ -53,10 +53,18 @@ class TypeFamiliesCharSpec extends AnyFunSuite {
     check("char/types/Curried", Json.schema[Curried])
   }
 
-  test("T1: a case class local to a method doesn't compile on Scala 2 (crash)", Untriaged) {
-    // Scala 3: undecided
-    val err = errorOf(assertCompiles("{ case class Local(x: Int, y: Option[String]); Json.schema[Local] }"))
-    if (Scala.is2) err should include("is not a module")
+  test("T1: a case class local to a method (bugs-1 #2)") {
+    // 0.7: macro crash `<none> is not a module` (Scala 2 reflection gives no companion for a local class)
+    case class Local(x: Int, y: Option[String])
+    case class HasLocal(l: Local, ls: List[Local])
+    check("char/types/Local", Json.schema[Local])
+    check("char/types/HasLocal", Json.schema[HasLocal])
+  }
+
+  test("T1: a local case class with a default value: a clear error on Scala 2, supported on Scala 3") {
+    val r = outcome(assertCompiles("{ case class WithDefault(x: Int = 1); Json.schema[WithDefault] }"))
+    if (Scala.is2) r.getOrElse("") should include("default values of a case class local to a block are not supported on Scala 2: WithDefault.x")
+    else r shouldBe None
   }
 
   test("T1: an abstract case class doesn't compile (no apply)") {

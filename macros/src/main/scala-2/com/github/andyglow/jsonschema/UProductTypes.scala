@@ -37,13 +37,22 @@ private[jsonschema] trait UProductTypes {
   private[UProductTypes] def resolveFields(tpe: Type): List[Field] = {
     val annotationMap       = fieldAnnotationMap(tpe)
     val subjectCompanionSym = tpe.typeSymbol
-    val subjectCompanion    = subjectCompanionSym.asClass.companion.asModule
+    // Scala 2 reflection gives no companion for a case class local to a block (it isn't a member of any owner's scope)
+    val companionOrNone     = subjectCompanionSym.asClass.companion
+    val isLocal             = companionOrNone == NoSymbol
+    lazy val subjectCompanion = companionOrNone.asModule
 
     def toField(fieldSym: TermSymbol, i: Int): Field = {
       val name       = NameTransformer.decode(fieldSym.name.toString)
       val fieldTpe   = fieldSym.typeSignature.dealias // In(tpe).dealias
       val isOption   = fieldTpe <:< T.option
       val hasDefault = fieldSym.isParamWithDefault
+      if (hasDefault && isLocal)
+        c.abort(
+          c.enclosingPosition,
+          s"default values of a case class local to a block are not supported on Scala 2: ${subjectCompanionSym.name.decodedName}.$name. " +
+            s"Declare ${subjectCompanionSym.name.decodedName} in an object or at the top level"
+        )
 
       // the field type with the type arguments of `tpe` substituted (`xs: List[T]` in `Foo[Int]` is a List[Int])
       def effectiveType = if (tpe.typeArgs.nonEmpty && tpe.typeSymbol.isClass) {
@@ -138,7 +147,9 @@ private[jsonschema] trait UProductTypes {
     }
 
     // this initializes defaults
-    bestApply(subjectCompanion)
+    if (isLocal) {
+      if (subjectCompanionSym.isAbstract) c.abort(c.enclosingPosition, s"No apply function found for ${subjectCompanionSym.fullName}")
+    } else bestApply(subjectCompanion)
 
     val fields = tpe.typeSymbol.asClass.primaryConstructor.asMethod.paramLists.headOption map { params =>
       params.map { _.asTerm }.zipWithIndex map { case (f, i) => toField(f, i) }
