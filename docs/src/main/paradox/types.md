@@ -71,6 +71,10 @@ enum Event {                                           // {"oneOf": [{"additiona
 If an implicit `ToValue` for the enum type is in scope (e.g. from a JSON-library bridge and your codec), the enum
 values are the codec's output. When their JSON type can't be known at compile time, add `@typeHint[T]`.
 
+These are the default shapes. Members are in declaration order. To match how a JSON library writes sealed families
+(play's `_type`, circe's wrapper object, ...), render with that library's profile: see
+@ref:[Library profiles](rendering.md#library-profiles).
+
 ## Discriminators
 
 `@discriminator` adds a field with the member's key to each member of a `oneOf`. The key is the member's full

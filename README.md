@@ -311,6 +311,10 @@ enum Event {                                           // {"oneOf": [{"additiona
 If an implicit `ToValue` for the enum type is in scope (e.g. from a JSON-library bridge and your codec), the enum
 values are the codec's output. When their JSON type can't be known at compile time, add `@typeHint[T]`.
 
+These are the default shapes. Members are in declaration order. To match how a JSON library writes sealed families
+(play's `_type`, circe's wrapper object, ...), render with that library's profile: see
+[Library profiles](#library-profiles).
+
 ### Discriminators
 
 `@discriminator` adds a field with the member's key to each member of a `oneOf`. The key is the member's full
@@ -580,6 +584,62 @@ Json.stringify(Json.schema[Pet], Draft07("id"))                      // also AsV
 share one profile across a project, define it in an object and import it where you render. In Scala 3, `import
 Settings.*` doesn't import a `given`: write `import Settings.given`, or declare the profile as an `implicit val`.
 
+### Library profiles
+
+JSON libraries write sealed families differently. For
+
+```scala
+sealed trait Animal
+final case class Dog(name: String) extends Animal
+case object Fish                   extends Animal
+```
+
+play-json writes `{"_type": "petshop.Dog", "name": "Rex"}` and `{"_type": "petshop.Fish"}`, circe-generic
+`{"Dog": {"name": "Rex"}}` and `{"Fish": {}}`, upickle `{"$type": "Dog", "name": "Rex"}` and `"Fish"`, json4s
+`{"name": "Rex"}` and `{}`. The default schema (an untagged `oneOf`, case objects as a string enum, as in 0.7)
+matches none of them. So the macro records the facts of a sealed family (its members, their names and kinds, the
+annotations) in the schema as a `` `family` `` node, like `Option`, and a profile shapes it when you render.
+
+<!-- profiles09: per-library sections are filled in after the bridges09 merge -->
+
+What a profile describes (the same rules for every library):
+- what the library writes, widened only by what its reader also accepts (play reads a missing `Option` field and
+  `null`, so both validate); value classes are unwrapped, as everywhere;
+- a member's tag (`_type`, `$type`, ...) and name come from the library's configuration, not from
+  `@discriminator`/`@discriminatorKey`: the library's derivation never sees those. They apply under Neutral and
+  Legacy, and under the spray profile, where you write the sum codec yourself. `@title`, `@description` and
+  `@definition` apply under every profile;
+- a setting the profile can't describe is an error when the profile is built (or the schema is lowered), naming
+  the setting, not a schema that rejects the library's own output;
+- a type with an implicit `Schema` or `Predef` is used as it is. A family member with an implicit `Schema` of an
+  object gets the tag in a copy of it; one whose schema isn't an object can't carry a tag, and that is an error;
+- nested sealed traits are flattened, as the libraries do; `Either` is not a family (still the 0.7 `oneOf`).
+
+A profile of your own starts from one of the library profiles, or from `JsonSchemaProfile.Neutral`, and changes
+knobs; each `with...` keeps the others:
+
+| knob | values | |
+|---|---|---|
+| `withSum` | `SumStyle.Untagged`, `WrapperObject`, `Discriminator(field)`, `PerFamily(family => style)` | how members are told apart |
+| `withSingleton` | `SingletonStyle.AsString`, `AsTagged` | a case object as a string, or as an object tagged like the other members |
+| `withMemberName` | `MemberName.SimpleName`, `FullName`, `Custom(member => name)` | the tag of a member |
+| `withOptionKeyRequired` | `true`, `false` | an `Option` field without a default is required (upickle) |
+| `withHonorsSchemaAnnotations` | `true`, `false` | whether `@discriminator`/`@discriminatorKey` apply |
+| `withOption` | `OptionStyle.Nullable`, `Legacy` | `Option` as "X or null", or the 0.7 shapes |
+
+```scala
+import json.schema.JsonSchemaProfile
+import json.schema.JsonSchemaProfile.{MemberName, SingletonStyle, SumStyle}
+
+// a hand-written codec that writes {"type": "Dog", "name": ...} and {"type": "Fish"}
+implicit val profile: JsonSchemaProfile = JsonSchemaProfile.Neutral
+  .withSum(SumStyle.Discriminator("type"))
+  .withMemberName(MemberName.SimpleName)
+  .withSingleton(SingletonStyle.AsTagged)
+
+Json.stringify(Json.schema[Animal], Draft12("animal"))
+```
+
 ## Modules
 
 ### Refined
@@ -661,6 +721,29 @@ applies instead.
 `scala-jsonschema-parser` goes the other way: `com.github.andyglow.json.ParseJson(string)` parses JSON into the
 library's AST, and `com.github.andyglow.jsonschema.ParseJsonSchema(string)` parses a JSON Schema (a draft-04
 subset, including `"type": [X, "null"]`) into a `Try[json.Schema[_]]`.
+
+## Migrating to 0.9.0
+
+The full list is in the [CHANGELOG](CHANGELOG.md).
+
+**Output**
+
+- Nothing changes unless you ask for it: the default profile (Neutral) and `JsonSchemaProfile.Legacy` render
+  sealed families exactly as 0.8 and 0.7 did. To get a schema that matches your codec, import your library's
+  profile (see [Library profiles](#library-profiles)).
+- Sealed family members (and so the members of the rendered `oneOf` and the values of an enum) are in declaration
+  order on Scala 2 too. Before, families of 5 and more members came out in an order that could change between
+  builds. Members of a family compiled in another project (no source positions) are in name order.
+
+**API**
+
+- **The derived tree has a `` `family` `` node** for each sealed family (and Scala 3 `enum`), where it had a
+  `oneof` (or an `enum` for case objects only). Code that walks or compares derived trees sees it.
+  `schema.withProfile(JsonSchemaProfile.Neutral)` (or `Legacy`) gives the plain tree, the same as 0.8's.
+- **`object.Field` has a 7th parameter, `hasDefault`**: the Scala field has a default, also when it has no JSON form
+  (`= None`, or no `ToValue` in scope). `new Field(...)` and `Field(...)` with 6 arguments still compile; a pattern
+  `case Field(name, tpe, required, default, description, rwMode)` needs a 7th binder (or match `f: Field[_]` and
+  use its accessors).
 
 ## Migrating to 0.8.0
 

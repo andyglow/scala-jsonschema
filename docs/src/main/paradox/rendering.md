@@ -75,3 +75,66 @@ Json.stringify(Json.schema[Pet], Draft07("id"))                           // als
 `withProfile` shapes the schema right away, so a later render keeps that shape whatever profile is in scope. To
 share one profile across a project, define it in an object and import it where you render. In Scala 3, `import
 Settings.*` doesn't import a `given`: write `import Settings.given`, or declare the profile as an `implicit val`.
+
+## Library profiles
+
+JSON libraries write sealed families differently. For
+
+```scala
+sealed trait Animal
+final case class Dog(name: String) extends Animal
+case object Fish                   extends Animal
+```
+
+play-json writes `{"_type": "petshop.Dog", "name": "Rex"}` and `{"_type": "petshop.Fish"}`, circe-generic
+`{"Dog": {"name": "Rex"}}` and `{"Fish": {}}`, upickle `{"$type": "Dog", "name": "Rex"}` and `"Fish"`, json4s
+`{"name": "Rex"}` and `{}`. The default schema (an untagged `oneOf`, case objects as a string enum, as in 0.7)
+matches none of them. So the macro records the facts of a sealed family (its members, their names and kinds, the
+annotations) in the schema as a `` `family` `` node, like `Option`, and a profile shapes it when you render.
+
+<!-- profiles09: per-library sections are filled in after the bridges09 merge -->
+
+What a profile describes (the same rules for every library):
+
+- what the library writes, widened only by what its reader also accepts (play reads a missing `Option` field and
+  `null`, so both validate); value classes are unwrapped, as everywhere;
+- a member's tag (`_type`, `$type`, ...) and name come from the library's configuration, not from
+  `@discriminator`/`@discriminatorKey`: the library's derivation never sees those. They apply under Neutral and
+  Legacy, and under the spray profile, where you write the sum codec yourself. `@title`, `@description` and
+  `@definition` apply under every profile;
+- a setting the profile can't describe is an error when the profile is built (or the schema is lowered), naming
+  the setting, not a schema that rejects the library's own output;
+- a type with an implicit `Schema` or `Predef` is used as it is. A family member with an implicit `Schema` of an
+  object gets the tag in a copy of it; one whose schema isn't an object can't carry a tag, and that is an error;
+- nested sealed traits are flattened, as the libraries do; `Either` is not a family (still the 0.7 `oneOf`).
+
+A profile of your own starts from one of the library profiles, or from `JsonSchemaProfile.Neutral`, and changes
+knobs; each `with...` keeps the others:
+
+| knob | values | |
+|---|---|---|
+| `withSum` | `SumStyle.Untagged`, `WrapperObject`, `Discriminator(field)`, `PerFamily(family => style)` | how members are told apart |
+| `withSingleton` | `SingletonStyle.AsString`, `AsTagged` | a case object as a string, or as an object tagged like the other members |
+| `withMemberName` | `MemberName.SimpleName`, `FullName`, `Custom(member => name)` | the tag of a member |
+| `withOptionKeyRequired` | `true`, `false` | an `Option` field without a default is required (upickle) |
+| `withHonorsSchemaAnnotations` | `true`, `false` | whether `@discriminator`/`@discriminatorKey` apply |
+| `withOption` | `OptionStyle.Nullable`, `Legacy` | `Option` as "X or null", or the 0.7 shapes |
+
+```scala mdoc:compile-only
+import json._
+import json.schema.JsonSchemaProfile
+import json.schema.JsonSchemaProfile.{MemberName, SingletonStyle, SumStyle}
+import json.schema.Version._
+
+sealed trait Animal
+case class Dog(name: String) extends Animal
+case object Fish extends Animal
+
+// a hand-written codec that writes {"type": "Dog", "name": ...} and {"type": "Fish"}
+implicit val profile: JsonSchemaProfile = JsonSchemaProfile.Neutral
+  .withSum(SumStyle.Discriminator("type"))
+  .withMemberName(MemberName.SimpleName)
+  .withSingleton(SingletonStyle.AsTagged)
+
+Json.stringify(Json.schema[Animal], Draft12("animal"))
+```

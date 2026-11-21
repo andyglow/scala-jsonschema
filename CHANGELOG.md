@@ -1,3 +1,43 @@
+- **0.9.0** (unreleased): schemas that match what your JSON library writes. See the README's "Library profiles" and
+  "Migrating to 0.9.0".
+
+  **Breaking**
+  - the derived `json.Schema` tree has a `` `family` `` node for every sealed family (sealed traits and abstract
+    classes of case classes and objects, Scala 3 `enum`s), where it had a `oneof` (or an `enum` for a family of
+    case objects). It records the members' facts (name, full name, signature, kind, schema, the 0.7 value of a case
+    object, runtime class, `@title`/`@description`/`@discriminatorKey`/`@definition`) and `@discriminator`. The
+    rendered output doesn't change: the default profile (Neutral) and Legacy shape a family exactly as 0.7 did.
+    Code that walks or compares derived trees sees it; `schema.withProfile(JsonSchemaProfile.Neutral)` gives the
+    plain tree. `Either`, `scala.Enumeration` and Java enums are unchanged
+  - `json.Schema.object.Field` has a 7th parameter, `hasDefault` (the Scala field has a default, also one without
+    a JSON form such as `= None`). The 6-argument constructor and `Field.apply` stay; a pattern
+    `case Field(a, b, c, d, e, f)` needs a 7th binder
+
+  **New**
+  - `JsonSchemaProfile` knobs, with `with...` builders that keep every other knob: `sumStyle` (`Untagged`,
+    `WrapperObject`, `Discriminator(field)`, `PerFamily(family => style)`), `singletonStyle` (`AsString`, `AsTagged`), `memberName`
+    (`SimpleName`, `FullName`, `Custom(member => name)`), `optionKeyRequired`, and `honorsSchemaAnnotations`,
+    which now applies: under a library profile the library's tag wins over `@discriminator`/`@discriminatorKey`
+    (the library's derivation never sees them); `@title`, `@description` and `@definition` apply everywhere
+  - profiles for the bridges, reading the library's own configuration: `PlayProfile.fromConfig(JsonConfiguration)`,
+    `CirceProfile.configured(...)` (and `fromConfig(io.circe.derivation.Configuration)` on Scala 3),
+    `UPickleProfile.fromApi(api)`, `Json4sProfile.fromFormats(formats)`, `SprayProfile.default`. One import gives
+    rendering, `ToValue` and the library's profile: `com.github.andyglow.jsonschema.profiles.<lib>._`
+    (`play`, `circe`, `upickle`, `json4s`, `spray`). Where the library takes its configuration implicitly (play's
+    `JsonConfiguration`, json4s' `Formats`, circe 3's `given Configuration`), the profile follows the same implicit.
+    `AsPlay._`, `AsCirce._`, ... are unchanged and bring no profile
+  - a configuration a profile can't describe fails when the profile is built (or the schema lowered), with a
+    message naming the setting, instead of rendering a schema the library's output doesn't match
+
+  **Fixed**
+  - sealed family members are in declaration order on Scala 2, as on Scala 3. Before, Scala 2 listed them in
+    `knownDirectSubclasses` order, which for 5 and more members varied from run to run (members of a family
+    compiled in another project, which have no source position, are in name order)
+  - rendering a `oneOf` with a definition (`@definition`, an implicit `Schema`) or a `$ref` after its first member
+    no longer throws `NotImplementedError` on draft-04/06/07 (`@definition` on a member next to case objects hit
+    it), and an `allOf` with one no longer throws either. A definition takes part in the "all members have one
+    type" check by its body's type
+
 - **0.8.0** (unreleased): Scala 3 support. See the README's "Migrating to 0.8.0" and "Scala 3 notes".
   PRs: [#429](https://github.com/andyglow/scala-jsonschema/pull/429) (build stack, Central Portal),
   [#431](https://github.com/andyglow/scala-jsonschema/pull/431) (parser),
