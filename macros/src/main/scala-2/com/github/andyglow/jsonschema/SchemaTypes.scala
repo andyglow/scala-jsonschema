@@ -240,10 +240,13 @@ private[jsonschema] trait SchemaTypes {
             effectiveTree = q"$effectiveTree.withDescription(Some($description))"
           }
           rwMode foreach { rwMode => effectiveTree = q"$effectiveTree.withRWMode($rwMode)" }
+          // the Scala default may have no JSON form (`= None`, no ToValue in scope): the fact is kept for the profiles
+          if (hasDefault) effectiveTree = q"$effectiveTree.withHasDefault(true)"
           effectiveTree
         }
         def mapSchema(fn: SchemaType => SchemaType): Field
         def name: String
+        def hasDefault: Boolean
       }
       object Field {
         case class Apply(
@@ -253,7 +256,8 @@ private[jsonschema] trait SchemaTypes {
           required: Option[Tree],
           default: Option[Tree],
           description: Option[String],
-          rwMode: Option[Tree]
+          rwMode: Option[Tree],
+          hasDefault: Boolean = false
         ) extends Field {
           def prefix = (required, default) match {
             case (Some(required), Some(default)) =>
@@ -273,7 +277,8 @@ private[jsonschema] trait SchemaTypes {
           required: Tree,
           default: Tree,
           description: Option[String],
-          rwMode: Option[Tree]
+          rwMode: Option[Tree],
+          hasDefault: Boolean = false
         ) extends Field {
           def prefix =
             q"${N.Schema}.`object`.Field.fromJson[$tpe]($name, ${schema.tree}, $required, $default)"

@@ -38,6 +38,8 @@ object FamilyTreeSpec {
   case object S3              extends SNested
   final case class S0(d: Int) extends Six
 
+  final case class Opts(a: Option[Int], b: Option[Int] = None, c: Int = 1)
+
   sealed trait WithProvided
   final case class Plain(a: Int)    extends WithProvided
   final case class Given(b: String) extends WithProvided
@@ -106,6 +108,13 @@ class FamilyTreeSpec extends AnyFunSuite {
     out.subTypes.collect { case `def`(sig, t) => sig -> t.discriminationKey }.toMap shouldBe Map("cat" -> Some("com.github.andyglow.jsonschema.FamilyTreeSpec.Cat"))
     out.subTypes.flatMap(_.discriminationKey) shouldBe Set("com.github.andyglow.jsonschema.FamilyTreeSpec.Dog", "com.github.andyglow.jsonschema.FamilyTreeSpec.Fish")
     out.subTypes.flatMap(_.title) shouldBe Set("A dog")
+  }
+
+  test("Field.hasDefault on a derived case class: optionKeyRequired requires an Option key only without a default (= None counts)") {
+    val o = Json.schema[Opts].asInstanceOf[`object`[_]]
+    o.fields.map(f => f.name -> f.hasDefault) shouldBe List("a" -> false, "b" -> true, "c" -> true)
+    val upickleLike = Neutral.withOptionKeyRequired(true)
+    upickleLike.lower(o).asInstanceOf[`object`[_]].fields.map(f => f.name -> f.required) shouldBe List("a" -> true, "b" -> false, "c" -> false)
   }
 
   test("Neutral and Legacy shape a derived family the same way") {

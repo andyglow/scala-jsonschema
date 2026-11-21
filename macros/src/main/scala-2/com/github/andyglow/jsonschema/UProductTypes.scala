@@ -165,7 +165,8 @@ private[jsonschema] trait UProductTypes {
         effectiveTpe = specifiedType,
         annotations = annotationMap.getOrElse(name, List.empty),
         default = default,
-        isOption = isOption
+        isOption = isOption,
+        declaresDefault = hasDefault
       )
     }
 
@@ -239,7 +240,8 @@ private[jsonschema] trait UProductTypes {
               q"${!f.isOption && !f.hasDefault}",
               default,
               description,
-              rwMode
+              rwMode,
+              hasDefault = f.declaresDefault
             )
           } getOrElse {
             // if no default is specified
@@ -250,7 +252,8 @@ private[jsonschema] trait UProductTypes {
               Some(q"${!f.isOption && !f.hasDefault}"),
               None,
               description,
-              rwMode
+              rwMode,
+              hasDefault = f.declaresDefault
             )
           }
         }

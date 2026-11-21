@@ -210,9 +210,11 @@ private[jsonschema] trait UCommons extends SchemaTypes with ULogging {
     effectiveTpe: Type,
     annotations: List[Annotation],
     default: Option[Tree],
-    isOption: Boolean
+    isOption: Boolean,
+    declaresDefault: Boolean = false
   ) {
 
+    /** A default with a JSON form (`= None` has none) */
     def hasDefault: Boolean = default.isDefined
 
     object hasAnnotation {
