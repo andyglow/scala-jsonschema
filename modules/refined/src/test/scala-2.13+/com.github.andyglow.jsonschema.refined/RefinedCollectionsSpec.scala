@@ -11,34 +11,33 @@ import org.scalatest.funsuite._
 
 import com.github.andyglow.jsonschema.RefinedSupport._
 
-// The expected values name the magnet's types (`withValidation[List[Int], Iterable[_]]`): on Scala 3 `listMagnet` and `iterableMagnet` are ambiguous otherwise
 class RefinedCollectionsSpec extends AnyFunSuite {
 
   test("size") {
     schema[List[Int] Refined Size[12]] shouldBe `array`[Int, List](`integer`)
-      .withValidation[List[Int], Iterable[_]](`minItems` := 12, `maxItems` := 12)
+      .withValidation(`minItems` := 12, `maxItems` := 12)
   }
 
   test("minSize") {
     schema[List[Int] Refined MinSize[12]] shouldBe `array`[Int, List](`integer`)
-      .withValidation[List[Int], Iterable[_]](`minItems` := 12)
+      .withValidation(`minItems` := 12)
   }
 
   test("maxSize") {
     schema[List[Int] Refined MaxSize[12]] shouldBe `array`[Int, List](`integer`)
-      .withValidation[List[Int], Iterable[_]](`maxItems` := 12)
+      .withValidation(`maxItems` := 12)
   }
 
   test("empty") {
     schema[List[Int] Refined Empty] shouldBe `array`[Int, List](`integer`)
-      .withValidation[List[Int], Iterable[_]](`minItems` := 0, `maxItems` := 0)
+      .withValidation(`minItems` := 0, `maxItems` := 0)
   }
 
   test("non-empty") {
-    schema[List[Int] Refined Not[Empty]] shouldBe `array`[Int, List](`integer`).withValidation[List[Int], Iterable[_]](
+    schema[List[Int] Refined Not[Empty]] shouldBe `array`[Int, List](`integer`).withValidation(
       `minItems` := 1
     )
-    schema[List[Int] Refined NonEmpty] shouldBe `array`[Int, List](`integer`).withValidation[List[Int], Iterable[_]](
+    schema[List[Int] Refined NonEmpty] shouldBe `array`[Int, List](`integer`).withValidation(
       `minItems` := 1
     )
   }

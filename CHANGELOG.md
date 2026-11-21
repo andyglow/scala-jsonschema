@@ -18,6 +18,10 @@
     their type parameters (e.g. `IntMap[V]`)
   - a Map other than `Map` itself (`SortedMap[Int, X]`, `ListMap[Long, X]`) with a key pattern derives (before: an
     error in the generated code)
+  - `withValidation` on a `Seq` schema (`` Json.schema[Seq[String]].withValidation(`minItems` := 1) ``) compiles
+    without explicit type arguments (new `Magnet.seqMagnet`); the collection magnets are ordered by priority
+    (exact collection > `Seq` > `Iterable`), which Scala 3 needs for `List`/`Vector`/`Set`. No existing call
+    picks a different magnet
   - more clear compile errors instead of macro crashes: `Json.sig`/definition names of structural types,
     `Json.objectSchema` with decorations that aren't literal pairs, `Json.objectSchema` of a type that resolves to
     a definition, and an `Option` default that can't be evaluated at compile time. Definition names of compound

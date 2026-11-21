@@ -90,8 +90,8 @@ class RefinedQuirksSpec extends AnyFunSuite {
   }
 
   test("collections other than List") {
-    schema[Vector[Int] Refined NonEmpty] shouldBe `array`[Int, Vector](`integer`).withValidation[Vector[Int], Iterable[_]](`minItems` := 1)
-    schema[Set[String] Refined MaxSize[3]] shouldBe `array`[String, Set](`string`, unique = true).withValidation[Set[String], Iterable[_]](`maxItems` := 3)
+    schema[Vector[Int] Refined NonEmpty] shouldBe `array`[Int, Vector](`integer`).withValidation(`minItems` := 1)
+    schema[Set[String] Refined MaxSize[3]] shouldBe `array`[String, Set](`string`, unique = true).withValidation(`maxItems` := 3)
   }
 
   test("refined[T], the explicit entry point") {
