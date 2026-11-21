@@ -14,6 +14,10 @@
   - clear compile errors instead of errors in the generated code or macro crashes for: a Map key without a
     `KeyPattern` (e.g. `UUID`), an enum key with `Flag.EnumsAsOneOf`, a `mutable.Map`, and collections whose
     type parameter isn't the element type (e.g. `BitSet`)
+  - more clear compile errors instead of macro crashes: `Json.sig`/definition names of structural types,
+    `Json.objectSchema` with decorations that aren't literal pairs, `Json.objectSchema` of a type that resolves to
+    a definition, and an `Option` default that can't be evaluated at compile time. Definition names of compound
+    (`A with B`) and annotated types work
   - copies of a free object stay free: `withTitle`, `withDescription`, `duplicate`, `withField`, `dropField`,
     `withFieldsUpdated` and `toDefinition` no longer turn `additionalProperties: true` into `false`
 - **0.7.10**

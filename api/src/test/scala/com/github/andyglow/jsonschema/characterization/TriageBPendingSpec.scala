@@ -203,36 +203,28 @@ class TriageBPendingSpec extends AnyFunSuite {
   }
 
   test("signature of refined/compound/annotated types doesn't crash", TriageB) {
-    pendingUntilFixed {
-      // today: MatchError in USignatures
-      compilesOrFailsWith(outcome(assertCompiles("Json.sig[AnyRef { def x: Int }]")), ClearUnsupported)
-      compilesOrFailsWith(outcome(assertCompiles("Json.sig[Foo with Serializable]")), ClearUnsupported)
-      compilesOrFailsWith(outcome(assertCompiles("Json.sig[Int @unchecked]")), ClearUnsupported)
-      compilesOrFailsWith(outcome(assertCompiles("{ implicit val s: Schema[Foo with Serializable] = null; Json.schema[Foo with Serializable] }")), ClearUnsupported)
-    }
+    // was: MatchError in USignatures
+    compilesOrFailsWith(outcome(assertCompiles("Json.sig[AnyRef { def x: Int }]")), ClearUnsupported)
+    compilesOrFailsWith(outcome(assertCompiles("Json.sig[Foo with Serializable]")), ClearUnsupported)
+    compilesOrFailsWith(outcome(assertCompiles("Json.sig[Int @unchecked]")), ClearUnsupported)
+    compilesOrFailsWith(outcome(assertCompiles("{ implicit val s: Schema[Foo with Serializable] = null; Json.schema[Foo with Serializable] }")), ClearUnsupported)
   }
 
   test("objectSchema with an unrecognized decoration shape doesn't crash", TriageB) {
-    pendingUntilFixed {
-      // today: MatchError in UFieldDecorations.fromSpec
-      failsWith(outcome(assertCompiles("Json.objectSchema[Foo](Seq(\"a\" -> \"d\"): _*)")), ConstantStrings)
-    }
+    // was: MatchError in UFieldDecorations.fromSpec
+    failsWith(outcome(assertCompiles("Json.objectSchema[Foo](Seq(\"a\" -> \"d\"): _*)")), ConstantStrings)
   }
 
   test("objectSchema on a root that resolves to a def: clear compile error", TriageB) {
-    pendingUntilFixed {
-      // today: type mismatch; found: json.Schema.def[Foo], required: json.Schema.object[Foo]
-      failsWith(outcome(assertCompiles("{ import FooImplicit._; Json.objectSchema[Foo]() }")), ObjectSchema)
-      failsWith(outcome(assertCompiles("Json.objectSchema[Recursive]()")), ObjectSchema)
-    }
+    // was: type mismatch; found: json.Schema.def[Foo], required: json.Schema.object[Foo]
+    failsWith(outcome(assertCompiles("{ import FooImplicit._; Json.objectSchema[Foo]() }")), ObjectSchema)
+    failsWith(outcome(assertCompiles("Json.objectSchema[Recursive]()")), ObjectSchema)
   }
 
   test("an Option default that can't be evaluated at compile time: no macro crash", TriageB) {
-    pendingUntilFixed {
-      // today: java.lang.Exception: Unable to check isNone for ... May be try non-full rebuild
-      // Scala 3 (runtime default getters) compiles it; a Scala 2 fix may instead fail with a clear message about the default
-      compilesOrFailsWith(outcome(assertCompiles("Json.schema[DefaultFromVal]")), "default")
-    }
+    // was: java.lang.Exception: Unable to check isNone for ... May be try non-full rebuild
+    // Scala 3 (runtime default getters) compiles it; a Scala 2 fix may instead fail with a clear message about the default
+    compilesOrFailsWith(outcome(assertCompiles("Json.schema[DefaultFromVal]")), "default")
   }
 
   // --- case classes and generics ---

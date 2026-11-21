@@ -28,13 +28,16 @@ trait UFieldDecorations { this: UContext with UCommons =>
       */
     def fromSpec(exprs: Seq[c.Expr[(String, String)]]): FieldDecorations = {
 
+      def unsupported(): Nothing =
+        c.abort(
+          c.enclosingPosition,
+          """only constant Strings are allowed in Description specification. Example: "id" -> "Record ID", ... """ +
+            """(each pair written out as "key" -> "value" or ("key", "value"), not a Seq passed as varargs)"""
+        )
+
       def fromTree(x: Tree): String = x match {
         case Literal(Constant(v: String)) => v
-        case _                            =>
-          c.abort(
-            c.enclosingPosition,
-            """only constant Strings are allowed in Description specification. Example: "id" -> "Record ID", ... """
-          )
+        case _                            => unsupported()
       }
 
       val pairs = exprs.map { d =>
@@ -90,6 +93,7 @@ trait UFieldDecorations { this: UContext with UCommons =>
                 List(k, v)
               ) =>
             (fromTree(k), fromTree(v))
+          case _ => unsupported()
         }
       }
 

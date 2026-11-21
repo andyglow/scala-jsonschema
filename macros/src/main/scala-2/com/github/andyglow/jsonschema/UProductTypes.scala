@@ -2,6 +2,7 @@ package com.github.andyglow.jsonschema
 
 import scala.reflect.NameTransformer
 import scala.reflect.internal.util.NoSourceFile
+import scala.util.control.NonFatal
 
 private[jsonschema] trait UProductTypes {
   this: UContext with UCommons with UScaladocs with UFieldDecorations with UScalaParsers =>
@@ -68,12 +69,11 @@ private[jsonschema] trait UProductTypes {
 
           try c.eval(c.Expr[Boolean](q"$effectiveDefaultGetterTree.isEmpty"))
           catch {
-            case ex: Throwable =>
-              throw new Exception(
-                s"Unable to check isNone for ${show(tpe)}.${show(fieldSym)}: ${show(
-                    fieldTpe
-                  )}. May be try non-full rebuild. Throws on evaluation of:\n```\n${showCode(q"$effectiveDefaultGetterTree.isEmpty")}\n```",
-                ex
+            case NonFatal(_) =>
+              c.abort(
+                c.enclosingPosition,
+                s"Can't evaluate the default value of ${show(tpe)}.$name: ${show(fieldTpe)} at compile time, to tell None from Some. " +
+                  s"On Scala 2 an Option default must be None, Some(<literal>) or a value of an already compiled module. It was:\n```\n${showCode(effectiveDefaultGetterTree)}\n```"
               )
           }
         } else false
