@@ -80,11 +80,10 @@ class TypeFamiliesCharSpec extends AnyFunSuite {
     if (Scala.is2) err should include("ScalaReflectionException")
   }
 
-  test("T4: a parameterized type alias as root doesn't compile", Untriaged) {
-    // `type IntBox = Box[Int]`: Scala 2 says `schema for T is not supported`, i.e. the type argument isn't substituted
-    // when the root is an alias. `Json.schema[Box[Int]]` works.
-    errorOf(assertCompiles("Json.schema[IntBox]")) should include(NotSupported)
+  test("T4: a parameterized type alias as root is dealiased (bugs-1 #4)") {
+    // `type IntBox = Box[Int]`: 0.7 said `schema for T is not supported` (the alias has no type arguments of its own)
     check("char/types/Box[Int]", Json.schema[Box[Int]])
+    check("char/types/Box[Int]", Json.schema[IntBox])
   }
 
   test("T6: a sealed trait without subclasses doesn't compile") {

@@ -104,11 +104,13 @@ trait MacroCake
   }
 
   def resolve(
-    tpe: Type,
+    tpe0: Type,
     ctx: ResolutionContext,
     specFD: FieldDecorations = FieldDecorations.Empty,
     noImplicitSearch: Boolean = false
   ): SchemaType = {
+    // see through a type alias (`type IntBox = Box[Int]`, `type Users = List[User]`): the alias has no type arguments of its own, and refs and defs must be named after the same type
+    val tpe = tpe0.dealias
     if (ctx contains tpe) {
       val sig = signature(tpe)
       ctx.onCycle(tpe)

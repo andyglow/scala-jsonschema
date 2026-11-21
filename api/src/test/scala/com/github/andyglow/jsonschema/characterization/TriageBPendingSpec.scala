@@ -18,6 +18,8 @@ object TriageBPendingSpec {
 
   case class RecursiveViaAlias(children: List[RecAlias])
   type RecAlias = RecursiveViaAlias
+  case class Box[T](value: T)
+  type IntBox = Box[Int]
 
   case class UuidKeys(m: Map[java.util.UUID, Int])
   case class MutableMap(m: scala.collection.mutable.Map[String, Int])
@@ -154,11 +156,19 @@ class TriageBPendingSpec extends AnyFunSuite {
   }
 
   test("refs and defs agree on names through a type alias", TriageB) {
-    pendingUntilFixed {
-      val (refs, defs) = refsAndDefs(Json.schema[RecursiveViaAlias])
-      refs should not be empty
-      refs.foreach(r => defs should contain(r))
-    }
+    val (refs, defs) = refsAndDefs(Json.schema[RecursiveViaAlias])
+    refs should not be empty
+    refs.foreach(r => defs should contain(r))
+    Golden.check("triageB/alias.RecursiveViaAlias", Json.schema[RecursiveViaAlias])
+    // the alias as the root
+    Json.schema[RecAlias] shouldEqual Json.schema[RecursiveViaAlias]
+  }
+
+  test("an alias of an applied generic as the root (bugs-1 #4)", TriageB) {
+    // was: `schema for T is not supported` (the alias has no type arguments, so T wasn't substituted)
+    Json.schema[IntBox] shouldEqual Json.schema[Box[Int]]
+    Json.schema[IntBox] shouldEqual `object`[Box[Int]](Field("value", `integer`))
+    Json.schema[Users] shouldEqual `array`[User, List](`object`[User](Field("name", `string`)))
   }
 
   // --- unsupported map keys ---
@@ -188,10 +198,8 @@ class TriageBPendingSpec extends AnyFunSuite {
   // --- crashes -> clear compile errors ---
 
   test("a parameterless collection alias as root doesn't crash", TriageB) {
-    pendingUntilFixed {
-      // today: NoSuchElementException: head of empty list (typeArgs.head)
-      compilesOrFailsWith(outcome(assertCompiles("Json.schema[Users]")), ClearUnsupported)
-    }
+    // was: NoSuchElementException: head of empty list (typeArgs.head); fixed by dealiasing (see "an alias of an applied generic as the root")
+    outcome(assertCompiles("Json.schema[Users]")) shouldBe None
   }
 
   test("a non-generic Iterable (BitSet) doesn't crash", TriageB) {

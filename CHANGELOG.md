@@ -8,6 +8,9 @@
     implicit `Predef[T]` for any derivable `T`, and doesn't change what `Json.schema` derives
   - an implicit `Schema` is used only for exactly its type: an implicit `Schema[Sub]` no longer stands in for
     a sealed `Base` (which lost its other subtypes) or makes a non-sealed trait derivable
+  - type aliases are seen through: `Json.schema[IntBox]` for `type IntBox = Box[Int]` works, refs and definitions
+    reached through an alias get the same name, and a root implicit `Schema[String]` is the definition
+    `java.lang.String` (was `scala.Predef.String`), the same name a field already got
   - copies of a free object stay free: `withTitle`, `withDescription`, `duplicate`, `withField`, `dropField`,
     `withFieldsUpdated` and `toDefinition` no longer turn `additionalProperties: true` into `false`
 - **0.7.10**
