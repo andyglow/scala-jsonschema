@@ -278,11 +278,11 @@ object Schema {
   sealed case class `object`[T] private (fields: List[`object`.Field[_]]) extends Schema[T] {
     import `object`._
     type Self = `object`[T]
-    def mkCopy() = copy()
+    def mkCopy() = rebuild(fields)
 
-    /** Replaces the synthesized case-class `copy`: a copy of a free object stays free (withTitle, duplicate, withField, ... all go through here). */
-    def copy(fields: List[Field[_]] = this.fields): `object`[T] =
-      if (isFree) `object`.Free.of[T](fields) else new `object`[T](fields)
+    /** Every copy goes through here (duplicate, withTitle, withField, toDefinition, ...): a copy of a free object stays free. */
+    private[json] def rebuild(fs: List[Field[_]]): `object`[T] =
+      if (isFree) `object`.Free.of[T](fs) else new `object`[T](fs)
     override def canEqual(that: Any): Boolean = that.isInstanceOf[`object`[_]]
     override def equals(obj: Any): Boolean    = obj match {
       case `object`(f) => fields.toSet == f.toSet && isFree == obj.isInstanceOf[Free] && super.equals(obj)
@@ -293,11 +293,11 @@ object Schema {
     private def isFree: Boolean = this.isInstanceOf[Free]
 
     def dropField(pred: Field[_] => Boolean): `object`[T] =
-      copy(fields = this.fields.filterNot(pred)).withExtraFrom(this)
-    def withField(f: Field[_]): `object`[T]                                            = copy(fields = fields :+ f).withExtraFrom(this)
+      rebuild(this.fields.filterNot(pred)).withExtraFrom(this)
+    def withField(f: Field[_]): `object`[T]                                            = rebuild(fields :+ f).withExtraFrom(this)
     def withField(name: String, tpe: Schema[_], required: Boolean = true): `object`[T] = withField(Field(name, tpe, required))
-    def withFieldsUpdated(pf: PartialFunction[Field[_], Field[_]]): `object`[T]        = copy(
-      fields = fields collect {
+    def withFieldsUpdated(pf: PartialFunction[Field[_], Field[_]]): `object`[T]        = rebuild(
+      fields collect {
         case f if pf isDefinedAt f => pf(f)
         case x                     => x
       }
@@ -331,10 +331,10 @@ object Schema {
     object Free {
       def apply[T](): `object`[T] with Free = of[T](List.empty)
 
-      private[Schema] def of[T](fields: List[Field[_]]): `object`[T] with Free = {
-        new `object`[T](fields) with Free {
+      private[Schema] def of[T](fs: List[Field[_]]): `object`[T] with Free = {
+        new `object`[T](fs) with Free {
           type Type = T
-          override def strict: `object`[T] = new `object`[T](fields).withExtraFrom(this)
+          override def strict: `object`[T] = new `object`[T](this.fields).withExtraFrom(this)
         }
       }
     }
@@ -554,7 +554,7 @@ object Schema {
       val oldSig                            = this.sig
       def deepCopy(x: Schema[_]): Schema[_] = {
         val y = x match {
-          case o: `object`[_]          => o.copy(fields = o.fields.map { f => f.copy(tpe = deepCopy(f.tpe)) })
+          case o: `object`[_]          => o.rebuild(o.fields.map { f => f.copy(tpe = deepCopy(f.tpe)) })
           case `array`(y, u)           => `array`(deepCopy(y), u)
           case `dictionary`(y)         => `dictionary`(deepCopy(y))
           case `oneof`(ys, df)         => `oneof`(ys map deepCopy, df)
