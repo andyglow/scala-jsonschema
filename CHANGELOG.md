@@ -50,6 +50,11 @@
     `odd$u0020name`), as on Scala 3; the renderers make it a valid name (`odd_name`)
   - copies of a free object stay free: `withTitle`, `withDescription`, `duplicate`, `withField`, `dropField`,
     `withFieldsUpdated` and `toDefinition` no longer turn `additionalProperties: true` into `false`
+  - Scala 2: a class without a doc comment no longer inherits another one. Before, it took the nearest earlier doc
+    comment in its file (of another class, a method, a val, or the enclosing class), as its description and its
+    `@param` field descriptions; a stray `@param` could even fail the build with `unknown field`. Now only the doc
+    comment right before the declaration counts (annotations, modifiers and ordinary comments may sit in between),
+    the same as on Scala 3 (scaladoc-parser 0.1.1)
 - **0.7.10**
   - draft 2020-12 implemented
   - dependencies updated 

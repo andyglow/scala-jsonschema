@@ -84,6 +84,9 @@ for the full list):
   sealed parent `Base` (that dropped the other subtypes) or for a non-sealed trait (which now fails to derive).
 - **A scaladoc `@param` for a non-existent field is a warning**, for the root and nested types alike (it failed the
   root before).
+- **Scala 2: an undocumented class gets no description.** It used to inherit the nearest earlier doc comment in its
+  file (of another class, a method, ...), including its `@param` field descriptions. Now only the doc comment right
+  before the declaration counts, as on Scala 3.
 - `def.toDefinition(name)` renames only its own definition and the refs to it.
 - **Scala 3: type names that Scala 3 doesn't keep.** Scala 3 replaces a parameterized alias that only renames a
   type (`type MyList[A] = List[A]`, `type Wrapped[A] = Box[A]`) before the macro sees it, so `Json.sig` and
@@ -943,6 +946,9 @@ This allows to reuse scaladoc that you might want to have anyways.
 This approach has it's own drawbacks, though.
 - model classes must reside in the same module with schemas
 - it requires non-incremental build or full-rebuild to take effect 
+
+Only the doc comment right before a class counts (annotations, modifiers and ordinary comments may sit in between).
+A class without one gets no description.
 
 Example:
 ```scala
