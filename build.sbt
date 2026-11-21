@@ -49,30 +49,24 @@ def versionRangeDirs(base: File, scalaVersion: String): Seq[File] =
 //    entries; when the list is empty, delete the list. Paths are relative to the build root.
 //    Used in commonSettings (Test / unmanagedSources).
 lazy val scala3Pending: Map[String, String] = Map(
-  // stream 2 (sums/enums); streams 1 (products) and 3 (collections/dicts) have landed
-  "api/src/test/scala/com/github/andyglow/jsonschema/SchemaMacroSpec.scala"                             -> "stream 2",
-  "api/src/test/scala/com/github/andyglow/jsonschema/golden/GoldenSharedModelsSpec.scala"               -> "stream 2",
-  "api/src/test/scala/com/github/andyglow/jsonschema/characterization/EntryPointsCharSpec.scala"        -> "stream 2 (+ skeleton: root implicit leaves its import 'unused')",
-  "api/src/test/scala/com/github/andyglow/jsonschema/characterization/TriageBPendingSpec.scala"         -> "stream 2",
-  "api/src/test/scala/com/github/andyglow/jsonschema/characterization/TypeFamiliesCharSpec.scala"       -> "stream 2 (incl. enum Map keys)",
-  "api/src/test/scala/com/github/andyglow/jsonschema/characterization/FieldsAnnotationsCharSpec.scala"  -> "stream 2",
-  "api/src/test/scala-2.13+/com/github/andyglow/jsonschema/characterization/Scala213PlusCharSpec.scala" -> "stream 2",
-  "api/src/test/scala/com/github/andyglow/jsonschema/characterization/GroupCSumsSpec.scala"             -> "stream 2",
-  "api/src/test/scala/com/github/andyglow/jsonschema/Example.scala"                                     -> "stream 2",
-  "api/src/test/scala/com/github/andyglow/jsonschema/DefinitionsSpec.scala"                             -> "stream 2",
-  "api/src/test/scala/com/github/andyglow/jsonschema/DiscriminatorSpec.scala"                           -> "stream 2",
-  "api/src/test/scala/com/github/andyglow/jsonschema/EnumSpec.scala"                                    -> "stream 2",
-  "api/src/test/scala/com/github/andyglow/jsonschema/NestedSumTypeSpec.scala"                           -> "stream 2",
-  "api/src/test/scala/com/github/andyglow/jsonschema/SumTypeWithConstantsSpec.scala"                    -> "stream 2",
-  "api/src/test/scala/com/github/andyglow/jsonschema/SumTypeWithEnumsSpec.scala"                        -> "stream 2",
-  "api/src/test/scala/com/github/andyglow/jsonschema/RecursiveTypesSpec.scala"                          -> "stream 2 (case2 is a sealed family)",
-  "api/src/test/scala/com/github/andyglow/jsonschema/AutoDerivationSpec.scala"                          -> "stream 2",
+  // every stream has landed; these need several of them combined (integrator un-pends them)
+  "api/src/test/scala/com/github/andyglow/jsonschema/SchemaMacroSpec.scala"                             -> "integration",
+  "api/src/test/scala/com/github/andyglow/jsonschema/golden/GoldenSharedModelsSpec.scala"               -> "integration",
+  "api/src/test/scala/com/github/andyglow/jsonschema/characterization/EntryPointsCharSpec.scala"        -> "integration",
+  "api/src/test/scala/com/github/andyglow/jsonschema/characterization/TriageBPendingSpec.scala"         -> "integration",
+  "api/src/test/scala/com/github/andyglow/jsonschema/characterization/TypeFamiliesCharSpec.scala"       -> "integration",
+  "api/src/test/scala/com/github/andyglow/jsonschema/characterization/FieldsAnnotationsCharSpec.scala"  -> "integration",
+  "api/src/test/scala-2.13+/com/github/andyglow/jsonschema/characterization/Scala213PlusCharSpec.scala" -> "integration",
+  "api/src/test/scala/com/github/andyglow/jsonschema/characterization/GroupCSumsSpec.scala"             -> "integration",
+  "api/src/test/scala/com/github/andyglow/jsonschema/Example.scala"                                     -> "integration",
+  "api/src/test/scala/com/github/andyglow/jsonschema/RecursiveTypesSpec.scala"                          -> "integration",
+  "api/src/test/scala/com/github/andyglow/jsonschema/AutoDerivationSpec.scala"                          -> "integration",
   // bridges: the shared UserProfile model has enums (Role, Active, BetaFeature)
-  "modules/play-json/src/test/scala/com/github/andyglow/jsonschema/AsPlaySpec.scala"     -> "stream 2",
-  "modules/circe-json/src/test/scala/com/github/andyglow/jsonschema/AsCirceSpec.scala"   -> "stream 2",
-  "modules/spray-json/src/test/scala/com/github/andyglow/jsonschema/AsSpraySpec.scala"   -> "stream 2",
-  "modules/json4s-json/src/test/scala/com/github/andyglow/jsonschema/AsJson4sSpec.scala" -> "stream 2",
-  "modules/u-json/src/test/scala/com/github/andyglow/jsonschema/AsUSpec.scala"           -> "stream 2"
+  "modules/play-json/src/test/scala/com/github/andyglow/jsonschema/AsPlaySpec.scala"     -> "integration",
+  "modules/circe-json/src/test/scala/com/github/andyglow/jsonschema/AsCirceSpec.scala"   -> "integration",
+  "modules/spray-json/src/test/scala/com/github/andyglow/jsonschema/AsSpraySpec.scala"   -> "integration",
+  "modules/json4s-json/src/test/scala/com/github/andyglow/jsonschema/AsJson4sSpec.scala" -> "integration",
+  "modules/u-json/src/test/scala/com/github/andyglow/jsonschema/AsUSpec.scala"           -> "integration"
 )
 def pendingOnScala3(root: File)(f: File): Boolean =
   IO.relativize(root, f).exists(scala3Pending.contains)

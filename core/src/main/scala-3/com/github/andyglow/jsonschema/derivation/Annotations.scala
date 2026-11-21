@@ -51,11 +51,16 @@ trait Annotations { this: Derivation =>
   /** @param docsFromClasspath
     *   read the scaladoc of a type that isn't compiled in this run too (from TASTy, with `-Yread-docs`)
     */
-  def typeAnnotations(tpe: TypeRepr, docsFromClasspath: Boolean = true): TypeAnnotations = {
-    val sym            = classSymbol(tpe)
-    val annots         = annotationsOf(sym)
+  def typeAnnotations(tpe: TypeRepr, docsFromClasspath: Boolean = true): TypeAnnotations = symbolAnnotations(List(classSymbol(tpe)), docsFromClasspath)
+
+  /** Like [[typeAnnotations]], read from the given symbols: their annotations together, the scaladoc of the first one that has any. For a singleton (a case object's module val and module class, a
+    * Scala 3 enum case, whose type widens to the enum's).
+    */
+  def symbolAnnotations(syms: List[Symbol], docsFromClasspath: Boolean = true): TypeAnnotations = {
+    val annots         = syms.flatMap(annotationsOf)
     val fromAnnotation = findAnnotation[json.schema.description](annots).flatMap(a => stringArg(a, "text", 0).toOption)
-    val fromScaladoc   = if (docsFromClasspath || sym.isDefinedInCurrentRun) scaladocOf(sym).flatMap(docDescription) else None
+    val docOwners      = syms.filter(s => !s.isNoSymbol && (docsFromClasspath || s.isDefinedInCurrentRun))
+    val fromScaladoc   = docOwners.iterator.flatMap(scaladocOf).nextOption().flatMap(docDescription)
     TypeAnnotations(
       title = findAnnotation[json.schema.title](annots).flatMap(a => stringArg(a, "text", 0).toOption),
       description = fromScaladoc orElse fromAnnotation,

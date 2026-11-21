@@ -34,6 +34,13 @@
     have default values (a clear error)
   - Java enums (`java.time.DayOfWeek`, `java.time.Month`, `java.util.concurrent.TimeUnit`, ...) derive a string
     enum of their constant names, also as Map keys (before: a macro crash)
+  - Scala 3: sealed families, `scala.Enumeration` and Java enums derive as on Scala 2, and Scala 3 `enum`s follow the
+    sealed-family rules (only singleton cases: a string enum of the case names; with class cases: a `oneOf`). Differences
+    from Scala 2: a sealed family with a subclass that is anonymous or local to a block (`new Root {}`, a case class
+    declared inside a method) is a compile error, because Scala 3 can't list such subclasses (Scala 2 rejects the
+    anonymous ones too, but derives a local case class); a class declared inside an `Enumeration` object derives as a
+    class (Scala 2: as that object's enum); an `Enumeration`'s enum lists only its `Value`s (Scala 2 also listed vals of
+    any type with a base class named `Value`)
   - rendered definition names follow each draft's grammar: every character a draft doesn't allow in a definition
     name is replaced with `_` (`com.acme.Box[scala.Int]` → `com.acme.Box_scala.Int_`), for draft-04 in
     `#/definitions/...` refs, for 06/07 in `$id`/`$ref` plain-name fragments, for 2019-09/2020-12 in `$anchor`/`$ref`.
