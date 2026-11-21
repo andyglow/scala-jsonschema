@@ -186,6 +186,16 @@ class FamilyLoweringSpec extends AnyWordSpec {
       members(circe.lower(`family`[Any](List(id, fish)))).head shouldEqual `object`[Any](Field("Id", `object`[Any](Field("v", `string`[String](None))), required = true))
       members(Neutral.lower(`family`[Any](List(id, fish)))).head shouldEqual `value-class`[Any, String](`string`[String](None))
     }
+    "state a oneOf of consts in a field by the values' type, never \"const\" (reviewer11 F7)" in {
+      val consts = `family`[Any](List(single("X"), single("Y")), enumsAsOneOf = true)
+      val field  = json(`object`[Any](Field("c", consts)), Neutral).replaceAll("\\s", "")
+      field should include(""""c":{"type":"string","oneOf":[{"const":"X"},{"const":"Y"}]}""")
+      field.contains("\"type\":\"const\"") shouldBe false
+      // with an object member the types differ: the oneOf states none, the object has its own
+      val mixed = json(`object`[Any](Field("c", `family`[Any](List(product("A"), single("Y")), enumsAsOneOf = true))), Neutral).replaceAll("\\s", "")
+      mixed should include(""""c":{"oneOf":[{"type":"object"""")
+      mixed.contains("\"type\":\"const\"") shouldBe false
+    }
     "give a oneOf of an object and a definition of a string each member its type (reviewer11 F2)" in {
       val o = `oneof`[Any](Set(dogObj, `def`[Any]("s", `string`[String](None))))
       json(o, Neutral).replaceAll("\\s", "") should include(""""oneOf":[{"type":"object"""")

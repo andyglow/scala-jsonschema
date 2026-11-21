@@ -155,7 +155,13 @@ trait AsDraftSupport {
   private def bodyType(d: `def`[_]): String = d.tpe match {
     case inner: `def`[_] => bodyType(inner)
     case `ref`(_)        => "" // unknown: not the same as any type
-    case t               => t.jsonType
+    case t               => memberType(t)
+  }
+
+  // a const's JSON type is its value's ("type": "const" was stated on a oneOf of consts before, which nothing matches)
+  private def memberType(s: Schema[_]): String = s match {
+    case `const`(v) => v.tpe
+    case t          => t.jsonType
   }
 
   private def mkPlainOneOf(x: `oneof`[_], isRoot: Boolean): obj = {
@@ -163,13 +169,13 @@ trait AsDraftSupport {
     // each member's JSON type: a definition has its body's; a `$ref` to a definition elsewhere has none known here, so it doesn't count (asking either for `jsonType` threw before)
     val known = subTypesSeq collect {
       case d: `def`[_]                    => bodyType(d)
-      case t if !t.isInstanceOf[`ref`[_]] => t.jsonType
+      case t if !t.isInstanceOf[`ref`[_]] => memberType(t)
     }
     // the type a same-typed oneOf states: the first member's that isn't a definition or a $ref, as in 0.7 (only definitions: none)
     val tpe = subTypesSeq.find {
       case `def`(_, _) | `ref`(_) => false
       case _                      => true
-    }.map(_.jsonType)
+    }.map(memberType)
     val sameType = tpe.isDefined && known.forall(_ == tpe.get)
     def rootType = tpe filter { _ => !isRoot } map { t => obj("type" -> `str`(t)) } getOrElse obj()
     if (sameType) {
