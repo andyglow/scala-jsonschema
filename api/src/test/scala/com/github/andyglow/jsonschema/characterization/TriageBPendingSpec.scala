@@ -9,6 +9,8 @@ import json.schema._
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers._
 
+import scala.annotation.nowarn
+
 object TriageBPendingSpec {
   case class Empty()
   case class HasEmpty(e: Empty)
@@ -73,6 +75,7 @@ object TriageBPendingSpec {
   /** @param zz
     *   no such field
     */
+  @nowarn("msg=has @param for unknown field") // the warning under test
   case class Stale(a: Int)
 
   /** @param a
@@ -309,11 +312,9 @@ class TriageBPendingSpec extends AnyFunSuite {
   }
 
   test("a stale @param is treated the same on the root and on nested types", TriageB) {
-    pendingUntilFixed {
-      // today: the root fails (`unknown field: zz`), a nested type is silently accepted. Proposal: a warning everywhere.
-      val root   = outcome(assertCompiles("Json.schema[Stale]")).isEmpty
-      val nested = outcome(assertCompiles("Json.schema[HasStale]")).isEmpty
-      root shouldBe nested
-    }
+    // was: the root fails (`unknown field: zz`), a nested type is silently accepted. Proposal: a warning everywhere.
+    val root   = outcome(assertCompiles("Json.schema[Stale]")).isEmpty
+    val nested = outcome(assertCompiles("Json.schema[HasStale]")).isEmpty
+    root shouldBe nested
   }
 }

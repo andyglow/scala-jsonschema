@@ -163,13 +163,16 @@ private[jsonschema] trait UProductTypes {
         val resolvedFields = resolveFields(tpe)
 
         // fields descriptions
-        val fd =
+        val scaladocFD = FieldDecorations.fromScaladoc(tpe, scaladoc)
+        val fd         =
           FieldDecorations.fromFieldAnnotations(resolvedFields) ++
-            FieldDecorations.fromScaladoc(tpe, scaladoc) ++
+            scaladocFD ++
             specFD
 
-        // check if all descriptions specified immediately in method call matches field names
-        if (ctx.isEmpty) fd.validate(tpe, resolvedFields)
+        // descriptions given in the Json.objectSchema call must name fields
+        if (ctx.isEmpty) specFD.validate(tpe, resolvedFields)
+        // a stale scaladoc @param is only a warning, the same for the root and for nested types
+        scaladocFD.warnUnknown(tpe, resolvedFields)
 
         // compute field trees
         val fields = resolvedFields map { f =>

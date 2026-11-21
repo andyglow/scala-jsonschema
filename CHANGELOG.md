@@ -20,6 +20,10 @@
     (`A with B`) and annotated types work
   - generics: a default like `xs: List[T] = Nil` and a generic value class `Id[T](v: T)` work; the type
     arguments of a generic subclass are matched by name (`Impl[B, A] extends Base[A, B]`), not by position
+  - a case class without fields derives an empty object; annotations on backticked/symbolic field names
+    (`` `my-field` ``) are kept; a scaladoc with only `@param` tags no longer sets the description to ""
+  - a scaladoc `@param` for a field that doesn't exist is a warning, for the root and nested types alike (before:
+    a compile error on the root only). An unknown field in `Json.objectSchema(...)` decorations is still an error
   - copies of a free object stay free: `withTitle`, `withDescription`, `duplicate`, `withField`, `dropField`,
     `withFieldsUpdated` and `toDefinition` no longer turn `additionalProperties: true` into `false`
 - **0.7.10**
