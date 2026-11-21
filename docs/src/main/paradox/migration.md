@@ -45,3 +45,5 @@ The full list is in the [CHANGELOG](https://github.com/andyglow/scala-jsonschema
 - refined: the implicit is `refinedJsonSchema[R <: Refined[A, B], A, B]` (was `[A, B]`). This matters only if you
   pass its type arguments explicitly. On Scala 3, predicates take literal types (`Greater[5]`) instead of
   ``W.`5`.T``.
+- parser: `ParseJson` is a strict RFC 8259 parser (it used to accept invalid JSON and didn't decode escapes).
+  Failures are `JsonParseException`s with the offset; `MutableValue` and the Java classes are gone.

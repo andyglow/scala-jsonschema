@@ -4,7 +4,7 @@
 
 | Scala type                                                                  | JSON Schema                                     |
 |-----------------------------------------------------------------------------|-------------------------------------------------|
-| `String`, `Char`                                                            | `string` (`Char`: exactly one character)        |
+| `String`, `Char`, `java.lang.Character`                                     | `string` (`Char`: exactly one character)        |
 | `Boolean`                                                                   | `boolean`                                       |
 | `Int`                                                                       | `integer`                                       |
 | `Byte`, `Short`, `Long`, `BigInt`, `Float`, `Double`, `BigDecimal`          | `number`                                        |
@@ -21,7 +21,15 @@
 | value class                                                                 | its underlying type                             |
 
 A `Map` key needs a known pattern: `String`, `Char`, `Byte`, `Short`, `Int`, `Long` and enums have one. For another
-key type (e.g. `UUID`), provide an implicit `json.Schema.dictionary.KeyPattern[K]`.
+key type, provide one:
+
+```scala mdoc:compile-only
+import json.Schema.dictionary.KeyPattern
+
+implicit val uuidKey: KeyPattern[java.util.UUID] = KeyPattern.mk[java.util.UUID]("^[0-9a-f-]{36}$")
+
+json.Json.schema[Map[java.util.UUID, String]]
+```
 
 ## Sum types and enums
 
@@ -54,7 +62,7 @@ Json.schema[Shape] // {"oneOf": [{"properties": {"radius": ...}, ...}, {"propert
 // Scala 3
 enum Status { case Active, Suspended }                 // {"type": "string", "enum": ["Active", "Suspended"]}
 
-enum Event {                                           // {"oneOf": [{"type": "object", ...}, {"type": "object", ...}]}
+enum Event {                                           // {"oneOf": [{"additionalProperties": false, "properties": {"id": ...}, ...}, ...]}
   case Created(id: String)
   case Deleted(id: String, reason: Option[String])
 }

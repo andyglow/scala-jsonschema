@@ -1,12 +1,13 @@
 # scala-jsonschema
 
-Generates JSON Schema from Scala types at compile time (Scala 2 macros), in the spirit of Coursera's AutoSchema.
+Generates JSON Schema from Scala types at compile time (Scala 2 macros, Scala 3 quotes), in the spirit of Coursera's AutoSchema.
 A macro turns a type into a JSON-library-neutral `json.Schema[T]` tree; renderers turn that tree into
 Draft 04 / 06 / 07 / 2019-09 / 2020-12 JSON, and optional bridges convert it to play-json, circe, etc.
 
 Cross-built for Scala 2.12, 2.13 and 3.3 LTS (3.3 from 0.8.0, together with `derives json.Schema` and Scala 3
 `enum`s). Every module and every shared test runs on all three; `refined` and `derived` have their own Scala 3
-macros. Scala.js is deferred. User docs: README.md (the main reference) and the paradox site in `docs/`.
+macros. Scala.js is deferred. User docs: README.md (the main reference) and the paradox site in `docs/`. They say
+the same things, mostly in the same words: a user-visible change updates both (and CHANGELOG.md).
 
 ## Layout
 

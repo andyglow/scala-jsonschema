@@ -255,7 +255,9 @@ lazy val docs = { project in file("docs") }
     publish / skip := true,
     mdocIn         := baseDirectory.value / "src" / "main" / "paradox",
     mdocVariables  := Map("VERSION" -> version.value, "SCALA_VERSION" -> scalaVersion.value),
-    paradoxProperties ++= Map("project.name" -> "Scala JsonSchema", "github.base_url" -> "https://github.com/andyglow/scala-jsonschema"),
+    // drop "github.base_url" (paradox derives it from scmInfo): its "Edit this page" links would point at the mdoc output
+    // (docs/target/mdoc), which isn't in git
+    Compile / paradoxProperties ~= { _ - "github.base_url" + ("project.name" -> "Scala JsonSchema") },
     Compile / paradox / sourceDirectory := mdocOut.value,
     git.remoteRepo                      := scmInfo.value.get.connection,
 

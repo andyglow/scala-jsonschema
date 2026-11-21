@@ -20,10 +20,14 @@ implicit val companySchema: json.Schema[Company] = Json.schema[Company]
 val personSchema: json.Schema[Person] = Json.schema[Person] // company: {"$ref": ...}, plus a definition
 ```
 
-On Scala 3, `derives json.Schema` counts as such an implicit `Schema`. The schema `derives` makes for a generic
-class (`case class Box[A](value: A) derives json.Schema`) is inlined instead: each `Box[Int]`, `Box[String]` is
-derived where it is used. `summon[json.Schema[Box[Int]]]` needs an implicit `Schema` for `Int`, which built-in
-types don't have; `Json.schema[Box[Int]]` always works.
+On Scala 3, `derives json.Schema` counts as such an implicit `Schema`. For a generic class
+(`case class Box[A](value: A) derives json.Schema`), the derived `Schema[Box[X]]` exists only when `X` has an
+implicit `Schema` itself (e.g. `X` derives too):
+
+- `Box[Company]` (with `Company derives json.Schema`) is then an implicit `Schema` like any other: as a field it is a
+  definition named `Box[Company]` (at the root, a summoned `Schema[Box[Company]]` isn't wrapped in a definition);
+- `Box[Int]` has none (built-in types are `Predef`s), so it is derived inline where it is used.
+  `summon[json.Schema[Box[Int]]]` doesn't compile; `Json.schema[Box[Int]]` always works.
 
 Recursive types (`case class Node(children: List[Node])`) become a definition automatically.
 

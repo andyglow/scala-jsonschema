@@ -44,7 +44,8 @@
   - Scala 3.3 LTS: every module is published for Scala 3, and the same user code compiles on Scala 2 and 3
     (`Json.schema`, `Json.objectSchema`, `Json.sig`, `Json.auto`) (#433, #436, #437)
   - Scala 3: `derives json.Schema`, the same as a user-provided implicit `Schema` in the companion: the type
-    becomes a definition, referred to with `$ref`. A generic class's `derives` schema is inlined where used (#436)
+    becomes a definition, referred to with `$ref`. For a generic class, `Schema[Box[X]]` exists when `X` has an
+    implicit `Schema` (then `Box[X]` is a definition); otherwise `Box[X]` is derived inline (#436)
   - Scala 3: `enum`s follow the sealed-family rules (only singleton cases: a string enum of the case names; with
     class cases: a `oneOf`) (#436)
   - Scala 3: scaladoc descriptions, also from other modules and jars with `-Yread-docs`; `import Json.auto.given`;

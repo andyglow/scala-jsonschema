@@ -164,10 +164,14 @@ val personSchema: json.Schema[Person] = Json.schema[Person]
 }
 ```
 
-On Scala 3, `derives json.Schema` counts as such an implicit `Schema`. The schema `derives` makes for a generic
-class (`case class Box[A](value: A) derives json.Schema`) is inlined instead: each `Box[Int]`, `Box[String]` is
-derived where it is used. `summon[json.Schema[Box[Int]]]` needs an implicit `Schema` for `Int`, which built-in
-types don't have; `Json.schema[Box[Int]]` always works.
+On Scala 3, `derives json.Schema` counts as such an implicit `Schema`. For a generic class
+(`case class Box[A](value: A) derives json.Schema`), the derived `Schema[Box[X]]` exists only when `X` has an
+implicit `Schema` itself (e.g. `X` derives too):
+
+- `Box[Company]` (with `Company derives json.Schema`) is then an implicit `Schema` like any other: as a field it is a
+  definition named `Box[Company]` (at the root, a summoned `Schema[Box[Company]]` isn't wrapped in a definition);
+- `Box[Int]` has none (built-in types are `Predef`s), so it is derived inline where it is used.
+  `summon[json.Schema[Box[Int]]]` doesn't compile; `Json.schema[Box[Int]]` always works.
 
 A `Predef` provides a schema for a type without making it a definition, e.g. for a type the macro can't derive:
 
@@ -244,7 +248,7 @@ Recursive types (`case class Node(children: List[Node])`) become a definition au
 
 | Scala type                                                                  | JSON Schema                                     |
 |-----------------------------------------------------------------------------|-------------------------------------------------|
-| `String`, `Char`                                                            | `string` (`Char`: exactly one character)        |
+| `String`, `Char`, `java.lang.Character`                                     | `string` (`Char`: exactly one character)        |
 | `Boolean`                                                                   | `boolean`                                       |
 | `Int`                                                                       | `integer`                                       |
 | `Byte`, `Short`, `Long`, `BigInt`, `Float`, `Double`, `BigDecimal`          | `number`                                        |
@@ -262,7 +266,13 @@ Recursive types (`case class Node(children: List[Node])`) become a definition au
 | sealed family, `enum`, `Enumeration`, Java enum                             | see [below](#sum-types-and-enums)               |
 
 A `Map` key needs a known pattern: `String`, `Char`, `Byte`, `Short`, `Int`, `Long` and enums have one. For another
-key type (e.g. `UUID`), provide an implicit `json.Schema.dictionary.KeyPattern[K]`.
+key type, provide one:
+
+```scala
+import json.Schema.dictionary.KeyPattern
+
+implicit val uuidKey: KeyPattern[java.util.UUID] = KeyPattern.mk[java.util.UUID]("^[0-9a-f-]{36}$")
+```
 
 ## Sum types and enums
 
@@ -291,7 +301,7 @@ object Shape {
 // Scala 3
 enum Status { case Active, Suspended }                 // {"type": "string", "enum": ["Active", "Suspended"]}
 
-enum Event {                                           // {"oneOf": [{"type": "object", ...}, {"type": "object", ...}]}
+enum Event {                                           // {"oneOf": [{"additionalProperties": false, "properties": {"id": ...}, ...}, ...]}
   case Created(id: String)
   case Deleted(id: String, reason: Option[String])
 }
@@ -578,8 +588,9 @@ string/char value enums) give an enum of their values. They work as `Map` keys t
 import com.github.andyglow.jsonschema.JodaTimeSupport._
 ```
 
-Adds `org.joda.time.Instant`, `DateTime`, `LocalDateTime` (format `date-time`), `LocalDate` (`date`) and
-`LocalTime` (`time`). They are implicit `Schema`s, so they appear as definitions.
+Adds `org.joda.time.Instant`, `DateTime`, `LocalDateTime` (format `date-time`), `LocalDate` (`date`), `LocalTime`
+(`time`) and `Duration` (`duration`). They are implicit `Schema`s, so they appear as definitions. To inline them
+instead, import the `Predef`s: `import com.github.andyglow.jsonschema.JodaTimeSupport.predef._`.
 
 ### DerivedSchema
 
@@ -649,6 +660,8 @@ The full list is in the [CHANGELOG](CHANGELOG.md).
 - refined: the implicit is `refinedJsonSchema[R <: Refined[A, B], A, B]` (was `[A, B]`). This matters only if you
   pass its type arguments explicitly. On Scala 3, predicates take literal types (`Greater[5]`) instead of
   ``W.`5`.T``.
+- parser: `ParseJson` is a strict RFC 8259 parser (it used to accept invalid JSON and didn't decode escapes).
+  Failures are `JsonParseException`s with the offset; `MutableValue` and the Java classes are gone.
 
 ## Scala 3 notes
 
@@ -670,9 +683,10 @@ with Scala 2 and gives the same schemas. The deliberate differences:
   `ToValue[Option[X]]` (the bridges provide one). Scala 2 evaluates the default at compile time to see whether it
   is `None`; Scala 3 recognizes only `None` and `Option.empty` written out, so `= Defaults.none`, `= (None)` or
   `= { None }` need the `ToValue` too.
-- **A generic `derives` class** is inlined where used, and `summon[json.Schema[Box[Int]]]` needs a `Schema` for
-  `Int` (see [Definitions](#definitions-and-refs)). An implicit `Schema` for an abstract type parameter is used as
-  it is at runtime: an existing definition keeps its name, anything else is inlined.
+- **A generic `derives` class** has a `Schema[Box[X]]` only when `X` has an implicit `Schema`: then `Box[X]` is a
+  definition, otherwise it is derived inline (see [Definitions](#definitions-and-refs)). Inside the derived
+  schema, an implicit `Schema` for an abstract type parameter is used as it is at runtime: an existing definition
+  keeps its name, anything else is inlined.
 - **refined:** `refined[T]` has no `T <: Refined[_, _]` bound (Refined is an opaque type on Scala 3; a non-refined
   `T` is a compile error), and an unsupported predicate found while deriving fails with the derivation's
   `is not supported` error followed by refined's own message.
@@ -686,9 +700,10 @@ Not supported (yet): union types, literal types, opaque types (beyond refined) a
 ## Known issues
 
 - **Scala 3: recursive generic `derives`.** For `case class Tree[A](value: A, children: List[Tree[A]]) derives json.Schema`,
-  `Tree[Int]` used as a field or as the root of `Json.schema` is a definition named `pkg.Tree[scala.Int]`, but
-  `summon[json.Schema[Tree[Int]]]` on its own, and a `Tree[A]` inside another generic `derives` class, keep the
-  type parameter's name (`pkg.Tree[pkg.Tree.A]`), so two instantiations in one schema share it.
+  `Tree[Int]` used as a field or as the root of `Json.schema` is a definition named `pkg.Tree[scala.Int]`, but a
+  summoned `Schema[Tree[X]]` (e.g. `summon[json.Schema[Tree[Company]]]`, `Company derives json.Schema`) and a
+  `Tree[A]` inside another generic `derives` class keep the type parameter's name (`pkg.Tree[pkg.Tree.A]`), so two
+  instantiations in one schema share it.
 - **Scala 2: an implicit declared on the line just before a `Json.schema` call may be ignored.** The Scala 2 macro
   recognizes `implicit val x: Schema[X] = Json.schema[X]` (so that it doesn't refer to itself) by reading the
   source text around the call, and a name on the previous line can match. Keep a blank line between such
