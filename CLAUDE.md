@@ -1,13 +1,13 @@
 # scala-jsonschema
 
-Generates JSON Schema from Scala types at compile time (Scala 2 macros), in the spirit of Coursera's AutoSchema.
+Generates JSON Schema from Scala types at compile time (Scala 2 macros, Scala 3 quotes), in the spirit of Coursera's AutoSchema.
 A macro turns a type into a JSON-library-neutral `json.Schema[T]` tree; renderers turn that tree into
 Draft 04 / 06 / 07 / 2019-09 / 2020-12 JSON, and optional bridges convert it to play-json, circe, etc.
 
-Released for Scala 2.12 and 2.13. A Scala 3 (3.3 LTS) port is in progress: the build cross-compiles to 3.3.9, and the
-Scala 3 derivation covers every type family (products, `Option`, value classes, implicits, recursion, signatures,
-sums/enums, collections); every shared test runs on 3.3.9. `derived` and `refined` (its own `scala.quoted` macro)
-are ported too. Scala.js is deferred.
+Cross-built for Scala 2.12, 2.13 and 3.3 LTS (3.3 from 0.8.0, together with `derives json.Schema` and Scala 3
+`enum`s). Every module and every shared test runs on all three; `refined` and `derived` have their own Scala 3
+macros. Scala.js is deferred. User docs: README.md (the main reference) and the paradox site in `docs/`. They say
+the same things, mostly in the same words: a user-visible change updates both (and CHANGELOG.md).
 
 ## Layout
 
@@ -25,7 +25,14 @@ modules/
   joda-time, cats, refined, enumeratum                     Predefs/support for those types (refined has its own macro)
   derived                                                  DerivedSchema[T] type class
   parser                                                   the reverse direction: strict JSON parser + JSON Schema (draft-04 subset) → json.Schema
+docs/      the documentation site (paradox + mdoc): docs/src/main/paradox. Not aggregated by root, not published
 ```
+
+Tests: shared specs under `api/src/test/scala`, Scala 3-only ones under `scala-3/`. Golden files
+(`api/src/test/resources/golden`, harness in `api/src/test/.../harness/Golden.scala`) hold the target output per model;
+`<name>@<ver>.json` overrides one Scala version. Regenerate with `GOLDEN_UPDATE=1 sbt clean api/test` (a CLEAN build,
+or Scala 2 scaladoc is silently missing) and review the diff. Tags `TRIAGE-A/B/C`, `UNTRIAGED` (`harness/Triage.scala`)
+mark tests of decided-but-not-current behavior.
 
 ## The core design rule
 
@@ -44,9 +51,14 @@ Whether a type becomes a definition depends on which of the two implicits is in 
 - Scala versions: 2.12.21, 2.13.18 and 3.3.9 (`project/ScalaVer.scala`). `sbt test` runs on 2.12 by default.
   For another version: `sbt "++2.13.18" test` / `sbt "++3.3.9" test`, or set `SCALA_VER=2.13` / `SCALA_VER=3`.
 - Before calling something done, run `clean test` on 2.12, 2.13 **and** 3.3.9, plus `scalafmtCheckAll` under each
-  (it only checks the current version's source dirs) and `scalafmtSbtCheck`.
+  (it only checks the current version's source dirs) and `scalafmtSbtCheck`. sbt-scalafmt caches results across
+  `clean`: `scalafmtCheckAll` can pass on files it never re-checked. Touch the sources (or use a fresh checkout) before trusting it.
+- Docs: `sbt makeDocs` (switches to 2.13, runs mdoc, which compiles the ```` ```scala mdoc:compile-only ```` snippets
+  against the modules, then paradox; output `docs/target/site`). Internal links must be `@ref:[text](page.md)`. mdoc wraps
+  snippets in a class, so value classes can't be `mdoc` snippets; keep those plain `scala` and verify them some other way. Scala 3-only snippets are plain `scala` too.
 - **Run `clean` after editing anything in `macros/` or `core/src/main/scala-3/.../derivation`.** Incremental compilation doesn't recompile macro call sites, so stale tests can pass or fail misleadingly.
-- Scala 3 test builds compile with `-Yread-docs` (scaladoc from TASTy) and `-Xcheck-macros` (except play-json: its own macro fails the check).
+- Scala 3 test builds compile with `-Yread-docs` (scaladoc from TASTy, as users need for models in other modules) and
+  `-Xcheck-macros` (except play-json: its own macro fails the check).
   To see the code the Scala 3 macro generates: `sbt -Djsonschema.print-code=true ...` (prints every expansion as an info).
 - `build.sbt` restricts compilation to one module at a time (`Tags.limit(Tags.Compile, 1)`). The macro evaluates `Option` default values with `c.eval`, and that races when several modules compile in parallel. Don't remove the restriction until the macro is fixed.
 - Coverage: `sbt "++2.13.18" clean coverage test coverageAggregate`. CI runs this on 2.13.
