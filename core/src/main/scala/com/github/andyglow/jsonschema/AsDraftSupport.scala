@@ -180,9 +180,11 @@ trait AsDraftSupport {
   }
 
   def mkAllOf(vl: ValidationList, x: `allof`[_], isRoot: Boolean, par: ParentSchema): obj = {
-    val subTypesSeq = x.subTypes.toSeq
-    val tpe         = subTypesSeq.head.jsonType
-    val sameType    = subTypesSeq.tail.foldLeft(true) { case (agg, t) => agg && (t.jsonType == tpe) }
+    val subTypesSeq                  = x.subTypes.toSeq
+    def isRef(s: Schema[_]): Boolean = s.isInstanceOf[`def`[_]] || s.isInstanceOf[`ref`[_]]
+    val typed                        = subTypesSeq.filterNot(isRef) // a `$ref` has no type of its own (asking it threw before)
+    val tpe                          = typed.headOption.fold("")(_.jsonType)
+    val sameType                     = typed.nonEmpty && typed.forall(_.jsonType == tpe)
     if (sameType) {
       obj(
         "type"  -> (if (!isRoot) Some(`str`(tpe)) else None),

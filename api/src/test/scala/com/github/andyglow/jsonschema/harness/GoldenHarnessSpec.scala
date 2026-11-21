@@ -91,9 +91,9 @@ class GoldenHarnessSpec extends AnyFunSuite {
   }
 
   test("a renderer crash is recorded, not thrown") {
-    // known renderer crash: allOf calls `head.jsonType`, which is `???` for a def
+    // known renderer crash: oneOf calls `jsonType` on every member after the first typed one, which is `???` for a def
     var out = ""
-    noException should be thrownBy { out = Golden.render(`allof`.of[Any](`def`[Any]("a", `string`), `def`[Any]("b", `integer`))) }
+    noException should be thrownBy { out = Golden.render(`oneof`.of[Any](`string`, `def`[Any]("b", `integer`))) }
     out should include("\"renderError\"")
   }
 }

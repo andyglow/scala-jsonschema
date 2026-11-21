@@ -111,6 +111,7 @@ class SchemaEqualsHashCodeSpec extends AnyWordSpec {
       assertEqualAndSameHash(`const`[Any](str("x")), `const`[Any](str("x")))
       assertEqualAndSameHash(Schema.`null`, new Schema.`null`)
       assertEqualAndSameHash(`option`[Int](`integer`), `option`[Int](new `integer`))
+      assertEqualAndSameHash(fam(`integer`), fam(new `integer`))
     }
     "not be vacuously equal" in {
       assertNotEqual(`def`[Any]("x", `integer`), `def`[Any]("y", `integer`))
@@ -120,6 +121,14 @@ class SchemaEqualsHashCodeSpec extends AnyWordSpec {
       assertNotEqual(`option`[Int](`integer`), `option`[String](`string`))
       assertNotEqual(`option`[Int](`integer`), `integer`)
       assertNotEqual(Schema.`null`, `string`)
+      assertNotEqual(fam(`integer`), fam(`string`))
+      assertNotEqual(fam(`integer`), `family`[Any](List(member(`integer`).copy(name = "B"))))
+      assertNotEqual(fam(`integer`), fam(`integer`).copy(enumsAsOneOf = true))
+      assertNotEqual(fam(`integer`), fam(`integer`).copy(discriminator = Some(`family`.Discriminator())))
+      assertNotEqual(`object`[Any](Field("a", `integer`, required = false)), `object`[Any](Field("a", `integer`, required = false).withHasDefault(true)))
     }
   }
+
+  private def member(s: Schema[_]): `family`.Member = `family`.Member("A", "p.A", "p.A", `family`.Kind.Product, s)
+  private def fam(s: Schema[_]): `family`[Any]      = `family`[Any](List(member(s)))
 }

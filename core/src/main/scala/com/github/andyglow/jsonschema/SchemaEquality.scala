@@ -101,6 +101,17 @@ object SchemaEquality {
     case (l: Schema.`option`[_], r: Schema.`option`[_]) =>
       internalCompute(path :+ Segment.Schema("option"), l.inner, r.inner, ctx)
 
+    case (l: Schema.`family`[_], r: Schema.`family`[_]) =>
+      if (l.members.map(_.name) != r.members.map(_.name) || l.discriminator != r.discriminator || l.enumsAsOneOf != r.enumsAsOneOf) {
+        if (l == r) Equal else UnEqual(ClashingSchemas(path, l, r))
+      } else
+        l.members.zip(r.members).foldLeft[SchemaEquality](Equal) {
+          case (Equal, (lm, rm)) =>
+            val inner = internalCompute(path :+ Segment.Schema(s"family.${lm.name}"), lm.schema, rm.schema, ctx)
+            if (inner == Equal && lm.copy(schema = rm.schema) != rm) UnEqual(ClashingSchemas(path :+ Segment.Schema(s"family.${lm.name}"), l, r)) else inner
+          case (diff, _) => diff
+        }
+
     case (l: `oneof`[_], r: `oneof`[_]) =>
       val leftMisses  = r.subTypes -- l.subTypes
       val rightMisses = l.subTypes -- r.subTypes
