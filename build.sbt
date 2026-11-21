@@ -51,6 +51,9 @@ lazy val scala2OnlyForNow = Seq(
   publish / skip                       := scalaV.value.isScala3 || (publish / skip).value
 )
 
+def runCommand(command: String): State => State =
+  Command.process(command, _, msg => sys.error(s"can't parse command `$command`: $msg"))
+
 lazy val buildInfo = taskKey[Unit]("Prints Build Info")
 
 lazy val commonSettings = ScalaVer.settings ++ Seq(
@@ -91,10 +94,11 @@ lazy val commonSettings = ScalaVer.settings ++ Seq(
     setReleaseVersion,
     commitReleaseVersion,
     tagRelease,
-    ReleaseStep(action = Command.process("publishSigned", _), enableCrossBuild = true),
+    ReleaseStep(action = runCommand("publishSigned"), enableCrossBuild = true),
+    // upload while the version is still the release one: after setNextVersion it's a SNAPSHOT and Central refuses it
+    ReleaseStep(action = runCommand("sonaRelease")),
     setNextVersion,
     commitNextVersion,
-    ReleaseStep(action = Command.process("sonaRelease", _)),
     pushChanges
   ),
   libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.20" % Test
