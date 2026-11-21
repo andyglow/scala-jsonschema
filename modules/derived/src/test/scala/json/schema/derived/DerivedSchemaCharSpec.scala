@@ -16,6 +16,17 @@ object DerivedSchemaCharSpec {
   object Plain_        { val inner: Schema[Inner] = Json.schema[Inner]; val outer: Schema[Outer] = Json.schema[Outer] }
   object InnerImplicit { implicit val innerS: Schema[Inner] = Plain_.inner                                            }
   object OuterImplicit { implicit val outerS: Schema[Outer] = Plain_.outer.withTitle("from implicit")                 }
+
+  // "not eligible" probes: a default argument, and a lower-priority implicit
+  def lookup[T](implicit d: DerivedSchema[T] = null): Option[DerivedSchema[T]] = Option(d)
+
+  trait Via[T] { def via: String }
+  trait LowVia {
+    implicit def fallback[T]: Via[T] = new Via[T] { def via = "fallback" }
+  }
+  object Via extends LowVia {
+    implicit def derived[T](implicit d: DerivedSchema[T]): Via[T] = new Via[T] { def via = "derived" }
+  }
 }
 
 /** Characterization of DerivedSchema (inventory E5): the root skips implicit search, nested types don't. */
@@ -37,6 +48,16 @@ class DerivedSchemaCharSpec extends AnyFunSuite {
       Field("i", `def`[Inner]("json.schema.derived.DerivedSchemaCharSpec.Inner", `object`[Inner](Field("x", `integer`)))),
       Field("s", `string`)
     )
+  }
+
+  test("an underivable type makes the implicit unavailable (the search fails, so a default argument applies)") {
+    lookup[Unsupported] shouldBe None
+    lookup[Inner] shouldBe Some(DerivedSchema(Plain_.inner))
+  }
+
+  test("an underivable type makes the implicit unavailable (a lower-priority implicit is picked instead)") {
+    implicitly[Via[Unsupported]].via shouldBe "fallback"
+    implicitly[Via[Inner]].via shouldBe "derived"
   }
 
   test("an underivable type makes the implicit unavailable") {
