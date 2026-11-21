@@ -127,6 +127,7 @@ object Schema {
     type Self = `boolean`
     def mkCopy()                              = new `boolean`
     override def canEqual(that: Any): Boolean = that.isInstanceOf[`boolean`]
+    override def hashCode: Int                = "boolean".hashCode
     override def jsonType: String             = "boolean"
     override def toString: String             = ToString(_ append "boolean")
   }
@@ -140,6 +141,7 @@ object Schema {
     type Self = `integer`
     def mkCopy()                              = new `integer`()
     override def canEqual(that: Any): Boolean = that.isInstanceOf[`integer`]
+    override def hashCode: Int                = "integer".hashCode
     override def jsonType: String             = "integer"
     override def toString: String             = ToString(_ append "integer")
   }
@@ -153,6 +155,7 @@ object Schema {
     type Self = `number`[T]
     def mkCopy()                              = new `number`[T]
     override def canEqual(that: Any): Boolean = that.isInstanceOf[`number`[_]]
+    override def hashCode: Int                = "number".hashCode
     override def jsonType: String             = "number"
     override def toString: String             = ToString(_ append "number")
   }
@@ -278,9 +281,12 @@ object Schema {
     def mkCopy()                              = copy()
     override def canEqual(that: Any): Boolean = that.isInstanceOf[`object`[_]]
     override def equals(obj: Any): Boolean    = obj match {
-      case `object`(f) => fields.toSet == f.toSet && super.equals(obj)
+      case `object`(f) => fields.toSet == f.toSet && isFree == obj.isInstanceOf[Free] && super.equals(obj)
       case _           => false
     }
+    // consistent with `equals`: field order doesn't matter
+    override def hashCode: Int  = fields.toSet[Field[_]].hashCode
+    private def isFree: Boolean = this.isInstanceOf[Free]
 
     def dropField(pred: Field[_] => Boolean): `object`[T] =
       copy(fields = this.fields.filterNot(pred)).withExtraFrom(this)
@@ -341,6 +347,7 @@ object Schema {
         this.required == other.required &&
         this.tpe == other.tpe &&
         this.default == other.default &&
+        this.description == other.description &&
         this.rwMode == other.rwMode
       }
       override def hashCode: Int    = name.hashCode
@@ -596,7 +603,12 @@ object Schema {
   final case class `ref`[T](sig: String) extends Schema[T] {
     override type Self = `ref`[T]
     override protected def mkCopy(): `ref`[T] = `ref`(sig)
-    override def jsonType: String             =
+    override def canEqual(that: Any): Boolean = that.isInstanceOf[`ref`[_]]
+    override def equals(obj: Any): Boolean    = obj match {
+      case `ref`(s) => sig == s && super.equals(obj)
+      case _        => false
+    }
+    override def jsonType: String =
       ??? // should never call this. instead calling code should interpret it as `ref`
     override def toString: String = ToString { sb =>
       sb append "ref("

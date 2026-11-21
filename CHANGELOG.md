@@ -1,3 +1,7 @@
+- **0.8.0** (unreleased)
+  - `json.Schema` equality: `` `ref` `` compares its signature (before, any two refs were equal, so e.g.
+    `oneof(Set(ref(A), ref(B)))` collapsed to one member); `object.Field` equality includes the description;
+    a free object no longer equals the strict one; `hashCode` is consistent with `equals` for every node
 - **0.7.10**
   - draft 2020-12 implemented
   - dependencies updated 
