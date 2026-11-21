@@ -151,6 +151,12 @@ trait AsDraftSupport {
     }
   }
 
+  private def bodyType(d: `def`[_]): String = d.tpe match {
+    case inner: `def`[_] => bodyType(inner)
+    case `ref`(_)        => "" // unknown: not the same as any type
+    case t               => t.jsonType
+  }
+
   private def mkPlainOneOf(x: `oneof`[_], isRoot: Boolean): obj = {
     val subTypesSeq = x.subTypes.toSeq
     val tpe         = subTypesSeq.find {
@@ -159,9 +165,10 @@ trait AsDraftSupport {
       case _           => true
     }.map { _.jsonType }
     val sameType = subTypesSeq.tail.foldLeft(tpe.isDefined) {
-      case (false, _)                     => false
-      case (true, _: `def`[_] | `ref`(_)) => true // a `$ref` has no type of its own (asking it threw before)
-      case (true, t)                      => t.jsonType == tpe.get
+      case (false, _)          => false
+      case (true, `ref`(_))    => true                   // a `$ref` to a definition elsewhere: no type known here (asking it threw before)
+      case (true, d: `def`[_]) => bodyType(d) == tpe.get // a definition has its body's type (asking the def threw before)
+      case (true, t)           => t.jsonType == tpe.get
     }
     def rootType = tpe filter { _ => !isRoot } map { t => obj("type" -> `str`(t)) } getOrElse obj()
     if (sameType) {

@@ -769,6 +769,8 @@ object Schema extends SchemaCompanionPlatform {
       *   `@discriminatorKey`
       * @param definition
       *   `@definition` / `@definition("name")`
+      * @param valueField
+      *   for a [[Kind.ValueClass]], the name of its one field: the libraries' derived sum codecs write such a member as `{"<field>": value}`
       */
     final case class Member(
       name: String,
@@ -781,8 +783,11 @@ object Schema extends SchemaCompanionPlatform {
       title: Option[String] = None,
       description: Option[String] = None,
       discriminatorKey: Option[String] = None,
-      definition: Option[Definition] = None
+      definition: Option[Definition] = None,
+      valueField: Option[String] = None
     ) {
+      // `cls` left out: a Class hashes by identity, which differs per run, and a Set of 5+ members would iterate (render) in a different order
+      override def hashCode: Int    = (name, fullName, sig, kind, schema, value, title, description, discriminatorKey, definition, valueField).hashCode
       override def toString: String = {
         val sb = new StringBuilder
         sb append name append ':' append kind append '(' append schema
@@ -802,7 +807,9 @@ object Schema extends SchemaCompanionPlatform {
       /** A case class, or a Scala 3 `enum` case with parameters. */
       case object Product extends Kind
 
-      /** A value class (`extends AnyVal`). Rendered unwrapped, as everywhere. */
+      /** A value class (`extends AnyVal`). Unwrapped under profiles that honor the schema annotations (Neutral, Legacy, spray: as 0.7); written as the case class `{"<field>": value}` under the
+        * library profiles, as their derived sum codecs do.
+        */
       case object ValueClass extends Kind
 
       /** A member whose schema came from an implicit `Schema` or `Predef` in scope: used as it is (0.7 adds none of the member's annotations to it). */

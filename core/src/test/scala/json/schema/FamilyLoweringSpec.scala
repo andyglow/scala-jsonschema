@@ -15,11 +15,11 @@ import org.scalatest.wordspec.AnyWordSpec
 class FamilyLoweringSpec extends AnyWordSpec {
 
   // petshop: sealed trait Animal; case class Dog(name: String); case object Fish
-  private val dogObj               = `object`[Any](Field("name", `string`[String](None)))
-  private def dog: Member          = Member("Dog", "petshop.Dog", "petshop.Dog", Kind.Product, dogObj)
-  private def fish: Member         = Member("Fish", "petshop.Fish", "petshop.Fish", Kind.Singleton, `string`[String](None), value = Some(str("Fish")))
-  private def single(n: String)    = Member(n, s"p.$n", s"p.$n", Kind.Singleton, `string`[String](None), value = Some(str(n)))
-  private def product(n: String)   = Member(n, s"p.$n", s"p.$n", Kind.Product, `object`[Any](Field(n.toLowerCase, `integer`)))
+  private val dogObj                = `object`[Any](Field("name", `string`[String](None)))
+  private def dog: Member           = Member("Dog", "petshop.Dog", "petshop.Dog", Kind.Product, dogObj)
+  private def fish: Member          = Member("Fish", "petshop.Fish", "petshop.Fish", Kind.Singleton, `string`[String](None), value = Some(str("Fish")))
+  private def single(n: String)     = Member(n, s"p.$n", s"p.$n", Kind.Singleton, `string`[String](None), value = Some(str(n)))
+  private def product(n: String)    = Member(n, s"p.$n", s"p.$n", Kind.Product, `object`[Any](Field(n.toLowerCase, `integer`)))
   private val animal: `family`[Any] = `family`[Any](List(dog, fish))
 
   private val play    = Neutral.withName("play").withSum(SumStyle.Discriminator("_type")).withSingleton(SingletonStyle.AsTagged).withHonorsSchemaAnnotations(false)
@@ -163,12 +163,32 @@ class FamilyLoweringSpec extends AnyWordSpec {
       d.tpe.discriminationKey shouldBe Some("petshop.Dog")
       d.tpe.title shouldBe Some("T")
     }
-    "tag a Provided member that isn't an object next to it, with allOf" in {
-      val m = dog.copy(kind = Kind.Provided, schema = `ref`[Any]("petshop.Dog"))
-      members(play.lower(`family`[Any](List(m, fish)))).head shouldEqual `allof`[Any](
-        Set(`ref`[Any]("petshop.Dog"), `object`[Any](Field("_type", `enum`[Any](`string`[String](None), Set[Value](str("petshop.Dog"))), required = true)))
-      )
-      members(circe.lower(`family`[Any](List(m, fish)))).head shouldEqual `object`[Any](Field("Dog", `ref`[Any]("petshop.Dog"), required = true))
+    "tag a Provided member's definition body in an inline copy (reviewer11 F1), and fail on one that can't carry the tag" in {
+      val m = dog.copy(kind = Kind.Provided, schema = `def`[Any]("petshop.Dog", dogObj))
+      members(play.lower(`family`[Any](List(m, fish)))).head shouldEqual dogObj.withDiscriminationKey("petshop.Dog")
+      // the tag is in the member the document is checked against: properties name and _type, both required
+      val rendered = json(`family`[Any](List(m, fish)), play).replaceAll("\\s", "")
+      rendered should include(""""properties":{"name":{"type":"string"},"_type":{"enum":["petshop.Dog"]}},"required":["name","_type"]""")
+      // circe wraps it: no tag needed, the definition stays
+      members(circe.lower(`family`[Any](List(m, fish)))).head shouldEqual `object`[Any](Field("Dog", `def`[Any]("petshop.Dog", dogObj), required = true))
+      val refM = dog.copy(kind = Kind.Provided, schema = `ref`[Any]("petshop.Dog"))
+      the[IllegalArgumentException] thrownBy play.lower(`family`[Any](List(refM, fish))) should have message
+        "play: the member petshop.Dog of a family tagged by '_type' has an implicit schema that isn't an object (ref(petshop.Dog)), so the tag can't be added to it. " +
+        "Give Dog an implicit Schema of an object, or the whole family a hand-written Schema."
+    }
+    "tag a derived member's definition body (recursive / @definition)" in {
+      val m = dog.copy(schema = `def`[Any]("petshop.Dog", dogObj))
+      members(play.lower(`family`[Any](List(m, fish)))).head shouldEqual `def`[Any]("petshop.Dog", dogObj.withDiscriminationKey("petshop.Dog"))
+    }
+    "write a value-class member as the case class under a library profile, unwrapped otherwise (reviewer11 F4)" in {
+      val id = Member("Id", "petshop.Id", "petshop.Id", Kind.ValueClass, `value-class`[Any, String](`string`[String](None)), valueField = Some("v"))
+      members(upickle.lower(`family`[Any](List(id, fish)))).head shouldEqual `object`[Any](Field("v", `string`[String](None))).withDiscriminationKey("Id")
+      members(circe.lower(`family`[Any](List(id, fish)))).head shouldEqual `object`[Any](Field("Id", `object`[Any](Field("v", `string`[String](None))), required = true))
+      members(Neutral.lower(`family`[Any](List(id, fish)))).head shouldEqual `value-class`[Any, String](`string`[String](None))
+    }
+    "give a oneOf of an object and a definition of a string each member its type (reviewer11 F2)" in {
+      val o = `oneof`[Any](Set(dogObj, `def`[Any]("s", `string`[String](None))))
+      json(o, Neutral).replaceAll("\\s", "") should include(""""oneOf":[{"type":"object"""")
     }
     "render a family with a Provided def member, and an allOf with a ref (it used to throw on `def.jsonType`)" in {
       val m = dog.copy(kind = Kind.Provided, schema = `def`[Any]("petshop.Dog", dogObj))

@@ -100,8 +100,8 @@ object JsonSchemaProfile {
     /** `{"<name>": member}` (circe-generic). */
     case object WrapperObject extends SumStyle
 
-    /** The member's own fields plus `"<field>": "<name>"` (play `_type`, upickle `$type`, circe configured, json4s type hints). A member that isn't an object (an implicit `Schema` defined elsewhere,
-      * a `$ref`) is `allOf[member, {"<field>": "<name>"}]`.
+    /** The member's own fields plus `"<field>": "<name>"` (play `_type`, upickle `$type`, circe configured, json4s type hints). A member from an implicit `Schema` that is a definition is inlined,
+      * tagged, in the `oneOf` (its definition stays as it is elsewhere). One whose schema isn't an object can't carry the tag: lowering fails with a message naming the member.
       */
     final case class Discriminator(field: String) extends SumStyle
   }
@@ -253,8 +253,23 @@ object JsonSchemaProfile {
         case None => s
       }
 
-      def tagObject(field: String, tag: String): Schema[_] =
-        `object`.fromList[Any](List(`object`.Field(field, `enum`[Any](`string`[String](None), Set[Value](Value.str(tag))), required = true)))
+      // the renderer puts the tag into an object among a discriminated oneOf, also into a definition's body
+      def tagged(s: Schema[_], tag: String): Schema[_] = s match {
+        case d @ `def`(sig, body) => `def`[Any](sig, tagged(body, tag)).withExtraFrom(d)
+        case other                => other.duplicate(discriminationKey = Some(tag))
+      }
+
+      // an implicit Schema's body as an object: tagged in a copy, inline, so its definition stays as it is for other uses. Anything else can't carry the tag (R6A).
+      def taggedProvided(m: `family`.Member, s: Schema[_], field: String): Schema[_] = s match {
+        case o: `object`[_]   => o.duplicate(discriminationKey = Some(label(m)))
+        case `def`(_, body)   => taggedProvided(m, body, field)
+        case `value-class`(t) => taggedProvided(m, t, field)
+        case other            =>
+          throw new IllegalArgumentException(
+            s"${p.name}: the member ${m.fullName} of a family tagged by '$field' has an implicit schema that isn't an object ($other), so the tag can't be added to it. " +
+              s"Give ${m.name} an implicit Schema of an object, or the whole family a hand-written Schema."
+          )
+      }
 
       // a member that is written as an object of its own: a case class, a value class, an implicit-provided one, or (AsTagged) a singleton
       def shaped(m: `family`.Member, own: Schema[_]): Schema[_] = {
@@ -264,13 +279,18 @@ object JsonSchemaProfile {
           case SumStyle.Untagged         => withDefinition(m, typed)
           case SumStyle.WrapperObject    => `object`.fromList[Any](List(`object`.Field(label(m), withDefinition(m, typed), required = true)))
           case SumStyle.Discriminator(x) =>
-            typed match {
-              // 0.7 keys every member, and the renderer puts the tag into the objects among a discriminated oneOf
-              case _ if !provided || honors || typed.isInstanceOf[`object`[_]] => withDefinition(m, typed.duplicate(discriminationKey = Some(label(m))))
-              // an implicit Schema's own body can't be tagged: the tag goes next to it
-              case _ => `allof`[Any](Set(withDefinition(m, typed), tagObject(x, label(m))))
-            }
+            // 0.7 keys the member node itself (honored annotations); a library profile makes sure the tag reaches the object
+            if (honors) withDefinition(m, typed.duplicate(discriminationKey = Some(label(m))))
+            else if (provided) taggedProvided(m, typed, x)
+            else withDefinition(m, tagged(typed, label(m)))
         }
+      }
+
+      // a value-class member: 0.7 and the honoring profiles inline its value; a library's derived sum codec writes the case class, `{"<field>": value}`
+      def own(m: `family`.Member): Schema[_] = (m.kind, m.valueField, apply(m.schema)) match {
+        case (`family`.Kind.ValueClass, Some(f), `value-class`(inner)) if !honors =>
+          `object`.fromList[Any](List(`object`.Field(f, inner, required = true)))
+        case (_, _, s) => s
       }
 
       def singletonValue(m: `family`.Member): Value      = if (honors) m.value getOrElse Value.str(m.name) else Value.str(label(m))
@@ -296,7 +316,7 @@ object JsonSchemaProfile {
             }
           }
         } else if (m.kind == `family`.Kind.Singleton) acc :+ Single(shaped(m, `object`.fromList[Any](Nil)))
-        else acc :+ Single(shaped(m, apply(m.schema)))
+        else acc :+ Single(shaped(m, own(m)))
       }
       val schemas = entries.toList map {
         case Single(s)          => s
