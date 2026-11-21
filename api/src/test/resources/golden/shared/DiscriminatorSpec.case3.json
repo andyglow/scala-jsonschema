@@ -1,0 +1,171 @@
+{
+  "schema": {
+    "kind": "oneof",
+    "members": [
+      {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "tpe",
+            "required": true,
+            "rwMode": "ReadWrite",
+            "schema": {
+              "kind": "string"
+            }
+          },
+          {
+            "name": "value",
+            "required": true,
+            "rwMode": "ReadWrite",
+            "schema": {
+              "kind": "integer"
+            }
+          }
+        ],
+        "discriminationKey": "com.github.andyglow.jsonschema.DiscriminatorSpec.case3.Root.Member1"
+      },
+      {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "tpe",
+            "required": true,
+            "rwMode": "ReadWrite",
+            "schema": {
+              "kind": "string"
+            }
+          },
+          {
+            "name": "value",
+            "required": true,
+            "rwMode": "ReadWrite",
+            "schema": {
+              "kind": "string"
+            }
+          }
+        ],
+        "discriminationKey": "com.github.andyglow.jsonschema.DiscriminatorSpec.case3.Root.Member2"
+      }
+    ],
+    "discriminationField": "tpe"
+  },
+  "draft-04": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "oneOf": [
+      {
+        "additionalProperties": false,
+        "properties": {
+          "tpe": {
+            "enum": [
+              "com.github.andyglow.jsonschema.DiscriminatorSpec.case3.Root.Member1"
+            ]
+          },
+          "value": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "tpe",
+          "value"
+        ]
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "tpe": {
+            "enum": [
+              "com.github.andyglow.jsonschema.DiscriminatorSpec.case3.Root.Member2"
+            ]
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "tpe",
+          "value"
+        ]
+      }
+    ]
+  },
+  "draft-07": {
+    "$id": "golden",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "oneOf": [
+      {
+        "additionalProperties": false,
+        "properties": {
+          "tpe": {
+            "enum": [
+              "com.github.andyglow.jsonschema.DiscriminatorSpec.case3.Root.Member1"
+            ]
+          },
+          "value": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "tpe",
+          "value"
+        ]
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "tpe": {
+            "enum": [
+              "com.github.andyglow.jsonschema.DiscriminatorSpec.case3.Root.Member2"
+            ]
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "tpe",
+          "value"
+        ]
+      }
+    ]
+  },
+  "draft-2020-12": {
+    "$id": "golden",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "oneOf": [
+      {
+        "additionalProperties": false,
+        "properties": {
+          "tpe": {
+            "enum": [
+              "com.github.andyglow.jsonschema.DiscriminatorSpec.case3.Root.Member1"
+            ]
+          },
+          "value": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "tpe",
+          "value"
+        ]
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "tpe": {
+            "enum": [
+              "com.github.andyglow.jsonschema.DiscriminatorSpec.case3.Root.Member2"
+            ]
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "tpe",
+          "value"
+        ]
+      }
+    ]
+  }
+}

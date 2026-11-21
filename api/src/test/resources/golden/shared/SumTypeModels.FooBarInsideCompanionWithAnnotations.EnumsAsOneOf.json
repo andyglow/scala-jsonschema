@@ -1,0 +1,203 @@
+{
+  "schema": {
+    "kind": "oneof",
+    "members": [
+      {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "val1",
+            "required": true,
+            "rwMode": "ReadWrite",
+            "schema": {
+              "kind": "number"
+            }
+          }
+        ],
+        "title": "t1",
+        "description": "d1"
+      },
+      {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "val2",
+            "required": true,
+            "rwMode": "ReadWrite",
+            "schema": {
+              "kind": "number"
+            }
+          }
+        ],
+        "title": "t2",
+        "description": "d2"
+      },
+      {
+        "kind": "value-class",
+        "schema": {
+          "kind": "string"
+        },
+        "title": "t3",
+        "description": "d3"
+      },
+      {
+        "kind": "const",
+        "value": "M4",
+        "title": "t4",
+        "description": "d4"
+      },
+      {
+        "kind": "const",
+        "value": "M5",
+        "title": "t5",
+        "description": "d5"
+      }
+    ]
+  },
+  "draft-04": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "oneOf": [
+      {
+        "additionalProperties": false,
+        "description": "d1",
+        "properties": {
+          "val1": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "val1"
+        ],
+        "title": "t1",
+        "type": "object"
+      },
+      {
+        "additionalProperties": false,
+        "description": "d2",
+        "properties": {
+          "val2": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "val2"
+        ],
+        "title": "t2",
+        "type": "object"
+      },
+      {
+        "const": "M4",
+        "description": "d4",
+        "title": "t4",
+        "type": "const"
+      },
+      {
+        "const": "M5",
+        "description": "d5",
+        "title": "t5",
+        "type": "const"
+      },
+      {
+        "type": "string"
+      }
+    ]
+  },
+  "draft-07": {
+    "$id": "golden",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "oneOf": [
+      {
+        "additionalProperties": false,
+        "description": "d1",
+        "properties": {
+          "val1": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "val1"
+        ],
+        "title": "t1",
+        "type": "object"
+      },
+      {
+        "additionalProperties": false,
+        "description": "d2",
+        "properties": {
+          "val2": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "val2"
+        ],
+        "title": "t2",
+        "type": "object"
+      },
+      {
+        "const": "M4",
+        "description": "d4",
+        "title": "t4",
+        "type": "const"
+      },
+      {
+        "const": "M5",
+        "description": "d5",
+        "title": "t5",
+        "type": "const"
+      },
+      {
+        "type": "string"
+      }
+    ]
+  },
+  "draft-2020-12": {
+    "$id": "golden",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "oneOf": [
+      {
+        "additionalProperties": false,
+        "description": "d1",
+        "properties": {
+          "val1": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "val1"
+        ],
+        "title": "t1",
+        "type": "object"
+      },
+      {
+        "additionalProperties": false,
+        "description": "d2",
+        "properties": {
+          "val2": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "val2"
+        ],
+        "title": "t2",
+        "type": "object"
+      },
+      {
+        "const": "M4",
+        "description": "d4",
+        "title": "t4",
+        "type": "const"
+      },
+      {
+        "const": "M5",
+        "description": "d5",
+        "title": "t5",
+        "type": "const"
+      },
+      {
+        "type": "string"
+      }
+    ]
+  }
+}
