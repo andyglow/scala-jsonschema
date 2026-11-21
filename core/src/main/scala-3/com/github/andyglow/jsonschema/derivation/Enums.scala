@@ -89,6 +89,7 @@ trait Enums { this: Derivation =>
   def enumKeyNames(tpe: TypeRepr, ctx: Ctx): Option[Either[String, List[String]]] =
     deriveEnum(tpe.dealias, ctx) collect { case e: EnumFamily =>
       if (e.asOneOf) Left("is an enum, but with Flag.EnumsAsOneOf its members aren't plain strings")
+      else if (e.items.exists(i => i.fromToValue && i.typeHint.orElse(e.typeHint).isEmpty)) Left("is an enum of non-string values")
       else
         e.valueSchema match {
           case _: Str => Right(e.items.flatMap(_.knownString))
@@ -247,31 +248,31 @@ trait Enums { this: Derivation =>
     item.typeHint.orElse(rootHint) match {
       case Some(h) => resolve(h, ctx)
       case None    =>
-        if (item.fromToValue)
-          report.errorAndAbort(
-            s"""${showType(item.tpe)}: In order to convert this into enum item
-               |the combination of ToValue and Writer/Encoder (from your json-library) is going to be used
-               |```
-               |${item.value.show}
-               |```
-               |This is the case when resulting json value is hard to reason about in compile time.
-               |Use @typeHint annotation to specify correct type.
-               |""".stripMargin
-          )
+        // a ToValue-driven value without a hint: its schema is known only at runtime, from the value (lead decision 2026-11-21; it was a compile error)
+        if (item.fromToValue) RuntimeValueSchema(item.tpe, item.value)
         else Str(TypeRepr.of[String])
     }
+
+  /** A ToValue-driven value without a `@typeHint` and no compile-time type: `json.Schema.family.valueSchema(value)` (`string` for a string, else a `const` of it). */
+  final case class RuntimeValueSchema(tpe: TypeRepr, value: Expr[Value], extra: Extra = Extra()) extends Node {
+    def withExtra(x: Extra): Node          = copy(extra = x)
+    def children: List[Node]               = Nil
+    def mapChildren(f: Node => Node): Node = this
+    def emitRaw: Expr[Schema[?]]           = '{ Schema.`family`.valueSchema($value) }
+  }
 
   /** Scala 2's structural equality of schemas, used to group enum values: the generated code. */
   def schemaKey(n: Node): String = emit(n).show
 
   /** The one value schema of the items (Scala 2's `EnumFamily.singleSchema`); no items or several schemas are errors. */
   private def singleValueSchema(tpe: TypeRepr, items: List[EnumItem], rootHint: Option[TypeRepr], ctx: Ctx): Node = {
-    val withSchemas = items.map(i => (valueSchemaOf(i, rootHint, ctx.descend(tpe)), i))
+    val withSchemas = items.map(i => (valueSchemaOf(i, rootHint, ctx.descend(tpe)), i)).filterNot(_._1.isInstanceOf[RuntimeValueSchema])
     val groups      = withSchemas.groupBy((s, _) => schemaKey(s)).toList.sortBy(_._1)
     groups match {
-      case Nil           => report.errorAndAbort(s"Error inferring schema for enum: ${tpe.show}. No items defined")
-      case (_, g) :: Nil => g.head._1
-      case several       =>
+      case Nil if items.nonEmpty => Str(tpe) // every value is runtime-valued: not used
+      case Nil                   => report.errorAndAbort(s"Error inferring schema for enum: ${tpe.show}. No items defined")
+      case (_, g) :: Nil         => g.head._1
+      case several               =>
         val details = several map { (key, g) =>
           val members = g.map(_._2).sortBy(i => showType(i.tpe)) map { m =>
             s"  - ${showType(m.tpe)}.${m.typeHint.fold("")(h => s" Type Hint: ${short(h)}")}"

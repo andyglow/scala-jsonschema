@@ -66,7 +66,8 @@ trait FamilyEmit { this: Derivation =>
       val sym        = i.ref.symbol
       val cls        = Option.when(i.kind != ValueKind.EnumSingletonCase)(i.tpe.widen)
       val definition = symbolAnnotations(List(sym, sym.moduleClass).filterNot(_.isNoSymbol).distinct).definition
-      MemberFacts(i.name, scala2FullName(sym), i.sig, '{ Schema.`family`.Kind.Singleton }, vs, Some(i.value), cls, i.texts, i.discriminatorKey, definition, None)
+      val schema     = if (i.fromToValue && i.typeHint.orElse(e.typeHint).isEmpty) emit(RuntimeValueSchema(i.tpe, i.value)) else vs
+      MemberFacts(i.name, scala2FullName(sym), i.sig, '{ Schema.`family`.Kind.Singleton }, schema, Some(i.value), cls, i.texts, i.discriminatorKey, definition, None)
     }
     // recorded as Scala 2 does; the lowering ignores @discriminator on a family of singletons, as 0.7 did
     emitFamily(e.tpe, members, typeAnnotations(e.tpe).discriminator.map(resolved), e.enumsAsOneOf)

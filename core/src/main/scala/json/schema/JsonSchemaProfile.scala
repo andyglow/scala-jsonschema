@@ -325,6 +325,8 @@ object JsonSchemaProfile {
       val entries  = f.members.foldLeft(Vector.empty[Entry]) { (acc, m) =>
         if (m.kind == `family`.Kind.Singleton && asString) {
           if (f.enumsAsOneOf) acc :+ Single(constOf(m))
+          // a ToValue-driven value without a @typeHint that isn't a string (`family.valueSchema`): that value, as a const
+          else if (honors && m.schema.isInstanceOf[`const`[_]]) acc :+ Single(constOf(m))
           else {
             val vs = singletonSchema(m)
             acc.collectFirst { case e @ Merged(`vs`, _) => e } match {

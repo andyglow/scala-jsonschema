@@ -826,6 +826,14 @@ object Schema extends SchemaCompanionPlatform {
       final case class Named(name: String) extends Definition
     }
 
+    /** The value schema of a singleton whose value comes from an implicit `ToValue` of the family without a `@typeHint` (what the codec writes, known only at runtime): `string` for a string,
+      * otherwise the value itself as a `const` (Neutral and Legacy keep such a member a `const`).
+      */
+    def valueSchema(v: Value): Schema[_] = v match {
+      case _: Value.str => `string`[String](None)
+      case other        => `const`[Any](other)
+    }
+
     /** `@discriminator` on the family, its defaults resolved. */
     final case class Discriminator(field: String = "type", phantom: Boolean = true)
   }

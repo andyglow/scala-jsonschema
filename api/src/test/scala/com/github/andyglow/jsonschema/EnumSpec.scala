@@ -5,7 +5,6 @@ import com.github.andyglow.json.ToValue
 import json._
 import json.Schema._
 import json.schema._
-import com.github.andyglow.jsonschema.harness.Scala
 import org.scalatest.exceptions.TestFailedException
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.wordspec._
@@ -66,6 +65,27 @@ object EnumSpec {
     implicit val asValue: ToValue[case5] = ToValue mk {
       case V1 => 1
       case V2 => 2
+    }
+  }
+
+  sealed trait case9
+  object case9 {
+    case object V1 extends case9
+    case object V2 extends case9
+
+    implicit val asValue: ToValue[case9] = ToValue mk {
+      case V1 => "v1"
+      case V2 => "v2"
+    }
+  }
+
+  sealed trait case10
+  object case10 {
+    case class C(x: Int) extends case10
+    case object V        extends case10
+
+    implicit val asValue: ToValue[case10] = new ToValue[case10] {
+      def apply(x: case10): com.github.andyglow.json.Value = com.github.andyglow.json.Value.obj("_type" -> com.github.andyglow.json.Value.str("V"))
     }
   }
 
@@ -151,19 +171,18 @@ class EnumSpec extends AnyWordSpec {
         as07(Json.schema[case4]) shouldBe `enum`.of(1, 2)
       }
 
-      "all case objects, ToValue is in implicit scope, no type hints" in {
-        val err = intercept[TestFailedException] { "Json.schema[case5]" should compile }
-        // the message quotes the generated code: Scala 2's `showCode`, which Scala 3 prints differently
-        val code = if (Scala.is2) "EnumSpec.this.case5.asValue(V1)" else "com.github.andyglow.jsonschema.EnumSpec.case5.asValue.apply(jsonschema.EnumSpec.case5.V1)"
-        err.getMessage shouldBe
-          s"""Expected no compiler error, but got the following type error: "com.github.andyglow.jsonschema.EnumSpec.case5.V1.type: In order to convert this into enum item
-             |the combination of ToValue and Writer/Encoder (from your json-library) is going to be used
-             |```
-             |$code
-             |```
-             |This is the case when resulting json value is hard to reason about in compile time.
-             |Use @typeHint annotation to specify correct type.
-             |", for code: Json.schema[case5]""".stripMargin
+      "all case objects, ToValue is in implicit scope, no type hints: the codec's values, as consts (was a compile error)" in {
+        as07(Json.schema[case5]) shouldBe `oneof`.of[case5](const(1), const(2))
+        Json.stringify(Json.schema[case5], json.schema.Version.Draft07("x")).replaceAll("\\s", "") should include(""""oneOf":[{"const":1},{"const":2}]""")
+      }
+
+      "all case objects, a string-valued ToValue, no type hints: a string enum of the codec's values" in {
+        as07(Json.schema[case9]) shouldBe `enum`.of("v1", "v2")
+      }
+
+      "a sum with a case class, ToValue (an object, as play writes it) for the case object, no type hints: a const" in {
+        val out = as07(Json.schema[case10]).asInstanceOf[`oneof`[_]]
+        out.subTypes should contain(const(com.github.andyglow.json.Value.obj("_type" -> com.github.andyglow.json.Value.str("V"))))
       }
 
       "all case objects, ToValue is in implicit scope, Int for members type hint" in {

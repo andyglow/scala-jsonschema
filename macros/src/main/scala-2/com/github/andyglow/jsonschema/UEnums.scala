@@ -10,9 +10,25 @@ private[jsonschema] trait UEnums {
 
     lazy val rootTypeHint: Type = TypeAnnotations(tpe).typeHint
 
+    /** A ToValue-driven value without a `@typeHint` (and no JSON type readable from the tree): its schema is known only at runtime, from the value (lead decision 2026-11-21; it was a compile error).
+      * Such items take no part in the "one schema" check.
+      */
+    def isRuntimeValued(item: EnumItem): Boolean = runtimeValued contains item
+
+    private lazy val runtimeValued: Set[EnumItem] = items.collect {
+      case i: EnumItem.FromToValue if i.typeHint.orElse(rootTypeHint).opt.isEmpty && JsonValueType.unapply(i.schemaTree).isEmpty => i
+    }.toSet
+
+    /** The value schema of `item`: the family's single schema, or (runtime-valued) `json.Schema.family.valueSchema(value)`. */
+    def schemaOf(item: EnumItem): SchemaType =
+      if (isRuntimeValued(item)) SchemaType.`-from-tree-`(item.tpe, q"${N.Schema}.`family`.valueSchema(${item.schemaTree})")
+      else singleSchema
+
     lazy val singleSchema: SchemaType = {
       val ss = schemas.keySet
-      if (ss.isEmpty) {
+      if (ss.isEmpty && runtimeValued.nonEmpty) {
+        SchemaType.Str(tpe, q"None") // every item is runtime-valued: not used
+      } else if (ss.isEmpty) {
         abort(s"Error inferring schema for enum: ${show(tpe)}. No items defined")
       } else if (ss.size > 1) {
         val details = ss.toSeq.sortBy { schema => showCode(schema.tree) }.map { schema =>
@@ -33,7 +49,7 @@ private[jsonschema] trait UEnums {
 
     lazy val schemas: Map[SchemaType, Seq[EnumItem]] = {
       val schemas = for {
-        enumItem <- items
+        enumItem <- items if !isRuntimeValued(enumItem)
         schema = enumItem.typeHint
                    .orElse(rootTypeHint)
                    .opt
@@ -41,21 +57,6 @@ private[jsonschema] trait UEnums {
       } yield {
         val effectiveSchema = schema match {
           case None =>
-            enumItem match {
-              case _: EnumItem.FromToValue =>
-                abort {
-                  s"""${show(enumItem.tpe)}: In order to convert this into enum item
-                     |the combination of ToValue and Writer/Encoder (from your json-library) is going to be used
-                     |```
-                     |${showCode(enumItem.schemaTree)}
-                     |```
-                     |This is the case when resulting json value is hard to reason about in compile time.
-                     |Use @typeHint annotation to specify correct type.
-                     |""".stripMargin
-                }
-              case _ =>
-            }
-
             SchemaType.Str(enumItem.tpe, q"None")
           case Some(x) => x
         }
@@ -174,7 +175,7 @@ private[jsonschema] trait UEnums {
                 fullName = sym.fullName,
                 sig = signature(item.tpe),
                 kind = U.Family.Kind.Singleton,
-                schema = schema,
+                schema = if (family.isRuntimeValued(item)) family.schemaOf(item) else schema,
                 value = Some(item.schemaTree),
                 cls = Some(q"_root_.scala.Predef.classOf[${item.tpe}]"),
                 texts = item.typeAnnotations.texts,

@@ -80,6 +80,12 @@ class PlayAcceptanceSpec extends AnyWordSpec {
       Json.stringify(Schemas.pet.asPlay(Version.Draft12("x"))) shouldBe rendered(Schemas.pet).apply(Version.Draft12("x"))
     }
     "a nested family, flattened" in assertValid(rendered(Schemas.garage), written(List(Samples.garage)))
+    "a schema derived right here, where the import's ToValue sees play's Writes[Animal] (was a compile error: no @typeHint)" in {
+      val here = json.Json.schema[Pet]
+      assertValid(rendered(here), written(Samples.pets))
+      // under Neutral the case object is the const play writes for it
+      JsonSchemaProfile.Neutral.lower(here).toDebugString.replaceAll("\\s", "") should include("""const({"_type":"petshop.Fish"})""")
+    }
     "a family of case objects only" in assertValid(rendered(Schemas.paint), written(Samples.paints))
     "Option fields with and without defaults" in assertValid(rendered(PlaySchemas.reading), written(Samples.readings))
     "ignore @discriminator, which play's derivation never sees (R4B)" in {

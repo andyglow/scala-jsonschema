@@ -64,7 +64,7 @@ private[jsonschema] trait USumTypes {
               case CaseObject(co) if enumExtractor.someResolved(Seq(co.sym)).exists(_.nonEmpty) =>
                 val item = enumExtractor.someResolved(Seq(co.sym)).get.head
                 // the value schema 0.7 used for this singleton (EnumFamily's single schema of one item)
-                member(U.Family.Kind.Singleton, EnumFamily(tpe, Seq(item)).singleSchema, Some(item.schemaTree), item.knownString)
+                member(U.Family.Kind.Singleton, EnumFamily(tpe, Seq(item)).schemaOf(item), Some(item.schemaTree), item.knownString)
               case _ =>
                 c.abort(
                   c.enclosingPosition,

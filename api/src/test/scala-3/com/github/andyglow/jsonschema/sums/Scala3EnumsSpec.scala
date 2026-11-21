@@ -1,7 +1,6 @@
 package com.github.andyglow.jsonschema.sums
 
 import com.github.andyglow.json.{ToValue, Value}
-import com.github.andyglow.jsonschema.harness.CompileErrors.errorOf
 import com.github.andyglow.jsonschema.harness.Families.as07
 import json.*
 import json.Schema.*
@@ -137,8 +136,8 @@ class Scala3EnumsSpec extends AnyFunSuite {
     as07(Json.schema[Level]) shouldBe `enum`.of(1, 2)
   }
 
-  test("a user ToValue[Enum] without @typeHint doesn't compile") {
-    errorOf(assertCompiles("Json.schema[NoHint]")) should include("Use @typeHint annotation to specify correct type")
+  test("a user ToValue[Enum] without @typeHint: the values from the codec at runtime, as consts (lead decision 2026-11-21; was a compile error)") {
+    as07(Json.schema[NoHint]) shouldBe `oneof`.of[NoHint](const(Value.num(0)), const(Value.num(1)))
   }
 
   test("enums as fields; a `derives` enum is a definition") {
