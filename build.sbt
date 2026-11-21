@@ -40,10 +40,10 @@ def versionRangeDirs(base: File, scalaVersion: String): Seq[File] =
   }
 
 // ============================================================================================================
-// TEMPORARY SCAFFOLDING for the Scala 3 port. Delete this block, and its use below, once refined is
-// ported to Scala 3. Nothing here affects Scala 2.12/2.13 builds.
+// TEMPORARY SCAFFOLDING for the Scala 3 port. No module uses it any more (refined and derived are ported):
+// delete this block. Nothing here affects Scala 2.12/2.13 builds.
 //
-// scala2OnlyForNow: modules whose Scala 3 port hasn't landed yet (refined). They still list
+// scala2OnlyForNow: modules whose Scala 3 port hasn't landed yet (none). They still list
 //    Scala 3 in crossScalaVersions, because with plain crossScalaVersions `++3.x` would otherwise leave them
 //    on 2.12 while their dependencies switch to 3, which breaks resolution. On Scala 3 they compile nothing
 //    and publish nothing.
@@ -213,15 +213,14 @@ lazy val `refined` = { project in file("modules/refined") }
   .dependsOn(core, api)
   .settings(
     commonSettings,
-    scala2OnlyForNow, // TEMPORARY SCAFFOLDING, see above
     name                                := "scala-jsonschema-refined",
     libraryDependencies += "eu.timepit" %% "refined" % "0.11.4",
     libraryDependencies ++= scalaReflect(scalaVersion.value),
 
     // mute unused imports because otherwise IN TESTS it complains on
     // unused `import com.github.andyglow.jsonschema.RefinedSupport._`
-    // which is not true
-    Test / scalacOptions -= "-Ywarn-unused:imports,-patvars,-privates,-locals,-implicits"
+    // which is not true (the derivation macro's own implicit search uses it; Scala 3 doesn't count that either)
+    Test / scalacOptions --= Seq("-Ywarn-unused:imports,-patvars,-privates,-locals,-implicits", "-Wunused:imports")
   )
 
 lazy val parser = { project in file("modules/parser") }

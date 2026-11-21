@@ -41,6 +41,13 @@
     anonymous ones too, but derives a local case class); a class declared inside an `Enumeration` object derives as a
     class (Scala 2: as that object's enum); an `Enumeration`'s enum lists only its `Value`s (Scala 2 also listed vals of
     any type with a base class named `Value`)
+  - Scala 3: `scala-jsonschema-refined` is published for Scala 3 (refined 0.11.4), used the same way
+    (`import com.github.andyglow.jsonschema.RefinedSupport._`) with literal types (`Greater[5]`, `MatchesRegex["[a-z]+"]`)
+    in place of shapeless's ``W.`5`.T``, and gives Scala 2's schemas. Differences from Scala 2: the implicit is
+    `refinedJsonSchema[R <: Refined[A, B], A, B]` (was `[A, B]`), and `refined[T]` has no `T <: Refined[_, _]` bound
+    (`Refined` is an opaque type on Scala 3; a non-refined `T` is a compile error). An unsupported predicate or an
+    empty range found while deriving (`Json.schema[X]` with such a field) fails with the derivation's `is not supported`
+    error; `refined[T]` and `summon[Predef[T]]` show the refined macro's own message
   - rendered definition names follow each draft's grammar: every character a draft doesn't allow in a definition
     name is replaced with `_` (`com.acme.Box[scala.Int]` → `com.acme.Box_scala.Int_`), for draft-04 in
     `#/definitions/...` refs, for 06/07 in `$id`/`$ref` plain-name fragments, for 2019-09/2020-12 in `$anchor`/`$ref`.
