@@ -1,6 +1,6 @@
 package com.github.andyglow.jsonschema.characterization
 
-import com.github.andyglow.jsonschema.harness.{ErrorPhrases, Golden, Scala, Untriaged}
+import com.github.andyglow.jsonschema.harness.{ErrorPhrases, Golden, Scala}
 import com.github.andyglow.jsonschema.harness.CompileErrors.{errorOf, outcome}
 import json._
 import json.Schema._
@@ -10,6 +10,7 @@ import org.scalatest.matchers.should.Matchers._
 
 // models first (SI-7046)
 object TypeFamiliesCharSpec {
+  case class Shift(day: java.time.DayOfWeek, off: Set[java.time.DayOfWeek], hours: Map[java.time.DayOfWeek, Int], month: Option[java.time.Month])
   case class Curried(a: Int)(val b: String)
   abstract case class Abstract(x: Int)
   case object Lonely
@@ -82,10 +83,16 @@ class TypeFamiliesCharSpec extends AnyFunSuite {
     errorOf(assertCompiles("Json.schema[NonCaseValueClass]")) should include(NotSupported)
   }
 
-  test("T3: a Java enum doesn't compile on Scala 2 (crash)", Untriaged) {
-    // Scala 3: undecided
-    val err = errorOf(assertCompiles("Json.schema[java.util.concurrent.TimeUnit]"))
-    if (Scala.is2) err should include("ScalaReflectionException")
+  test("T3: a Java enum is a string enum of its constant names (bugs-1 #3)") {
+    // 0.7: macro crash `ScalaReflectionException: Java enum MINUTES is not a class`
+    import java.time.{DayOfWeek, Month}
+    val days = DayOfWeek.values.toList.map(d => com.github.andyglow.json.Value.str(d.name))
+    Json.schema[DayOfWeek] shouldEqual `enum`.of[DayOfWeek](`string`, days.head, days.tail: _*)
+    check("char/types/java.util.concurrent.TimeUnit", Json.schema[java.util.concurrent.TimeUnit])
+    check("char/types/java.time.DayOfWeek", Json.schema[DayOfWeek])
+    check("char/types/java.time.Month", Json.schema[Month])
+    // as a field, in a collection, as a Map key
+    check("char/types/Shift", Json.schema[Shift])
   }
 
   test("T4: a parameterized type alias as root is dealiased (bugs-1 #4)") {

@@ -26,6 +26,8 @@
     a compile error on the root only). An unknown field in `Json.objectSchema(...)` decorations is still an error
   - case classes local to a method or block are derived (before: a macro crash). On Scala 2 such a class can't
     have default values (a clear error)
+  - Java enums (`java.time.DayOfWeek`, `java.time.Month`, `java.util.concurrent.TimeUnit`, ...) derive a string
+    enum of their constant names, also as Map keys (before: a macro crash)
   - copies of a free object stay free: `withTitle`, `withDescription`, `duplicate`, `withField`, `dropField`,
     `withFieldsUpdated` and `toDefinition` no longer turn `additionalProperties: true` into `false`
 - **0.7.10**
