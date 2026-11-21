@@ -61,7 +61,9 @@ trait Resolve { this: Derivation =>
   /** Step 4 only (no implicit search). */
   def structural(tpe: TypeRepr, ctx: Ctx): Node =
     families.iterator.map(_(tpe, ctx)).collectFirst { case Some(n) => n } getOrElse {
-      report.errorAndAbort(s"schema for ${tpe.show} is not supported, ${ctx.show}")
+      // why an implicit for it failed, if it says more than "none found" (e.g. a refined macro's error: Scala 2 reports it instead)
+      val why = implicitFailures(tpe).map(e => s"\n  an implicit for it failed: $e").mkString
+      report.errorAndAbort(s"schema for ${tpe.show} is not supported, ${ctx.show}$why")
     }
 
   /** `derives` would only find its own given (rejected anyway). `objectSchema` does search, like Scala 2: a root with an implicit `Schema` is then a definition, which is an error there. `auto`

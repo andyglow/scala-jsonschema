@@ -57,6 +57,9 @@ object Scala3ResolutionSpec {
   case class GRec[T](v: T, next: Option[GRec[T]]) derives json.Schema
   case class TwoRecs(a: GRec[Int], b: GRec[String])
   case object Lone
+  // a candidate that fails to expand, like refined's macro for an empty range
+  trait Bounded
+  object BoundedPredef { inline given boundedP: json.schema.Predef[Bounded] = scala.compiletime.error("There are no values inside of specified range [2.0 .. 7.0]") }
   case class Ex(s: String)
   object ExDef       { given exS: Schema[Ex] = Json.schema[Ex].toDefinition("custom.Ex") }
   object PlainGivens {
@@ -167,6 +170,14 @@ class Scala3ResolutionSpec extends AnyFunSuite {
 
   test("objectSchema on a case object gets past the precondition, like Scala 2, and isn't supported") {
     errorOf(assertCompiles("Json.objectSchema[Lone.type]()")) should include(ErrorPhrases.NotSupported)
+  }
+
+  test("an implicit that fails to expand: its reason is part of the 'not supported' error (Scala 2 reports the reason; refined)") {
+    val e = errorOf(assertCompiles("{ import BoundedPredef.given; Json.schema[Bounded] }"))
+    e should include("Scala3ResolutionSpec.Bounded " + ErrorPhrases.NotSupported)
+    e should include("There are no values inside of specified range [2.0 .. 7.0]")
+    // a plain miss adds nothing
+    errorOf(assertCompiles("Json.schema[HasOpen]")) shouldNot include("an implicit for it failed")
   }
 
   test("a case class local to a block, with a default") {
