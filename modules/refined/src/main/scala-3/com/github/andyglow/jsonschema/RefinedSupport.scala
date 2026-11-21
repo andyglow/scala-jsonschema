@@ -15,4 +15,5 @@ object RefinedSupport {
   implicit inline def refinedJsonSchema[R <: Refined[A, B], A, B]: json.schema.Predef[R] = ${ RefinedMacro.predef[R] }
 
   // On Scala 3 `Refined` is an opaque type, and `T <: Refined[?, ?]` can't be written: the macro rejects a `T` that isn't a `Refined[A, B]`
-  inline def refined[T]: json.Schema[T] = ${ RefinedMacro.schema[T] }}
+  inline def refined[T]: json.Schema[T] = ${ RefinedMacro.schema[T] }
+}

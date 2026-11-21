@@ -14,8 +14,8 @@ import com.github.andyglow.jsonschema.RefinedSupport._
 
 /** Compile errors of the Scala 3 refined macro (Scala 2's texts).
   *
-  * `refined[T]` and `summon[Predef[T]]` report the macro's own message. Through the derivation (`Json.schema[T]`, a field) the derivation's implicit search drops it, so the error is the
-  * derivation's `is not supported` (Scala 2 shows the refined macro's message there too).
+  * `refined[T]` and `summon[Predef[T]]` report the macro's own message. Through the derivation (`Json.schema[T]`, a field) the derivation's implicit search drops it, so the error is the derivation's
+  * `is not supported` (Scala 2 shows the refined macro's message there too).
   */
 class Scala3RefinedErrorsSpec extends AnyFunSuite {
 

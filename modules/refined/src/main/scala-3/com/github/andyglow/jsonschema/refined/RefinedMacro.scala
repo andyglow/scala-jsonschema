@@ -133,31 +133,31 @@ private final class RefinedMacro(using val q: Quotes) {
             }
         }
       // string
-      case (`sUUID`, _)                    => Some(UUID(t))
-      case (`sURL`, _)                     => Some(URI(t))
-      case (`sURI`, _)                     => Some(URI(t))
-      case (`sStartsWith`, List(C(v)))     => Some(MatchesRegex(t, s"^${v.toString}.*$$"))
-      case (`sEndsWith`, List(C(v)))       => Some(MatchesRegex(t, s"^.*${v.toString}$$"))
-      case (`sMatchesRegex`, List(C(v)))   => Some(MatchesRegex(t, v.toString))
-      case (`sIPv4`, _)                    => Some(IPv4(t))
-      case (`sIPv6`, _)                    => Some(IPv6(t))
-      case (`sTrimmed`, _)                 => Some(Trimmed(t))
+      case (`sUUID`, _)                  => Some(UUID(t))
+      case (`sURL`, _)                   => Some(URI(t))
+      case (`sURI`, _)                   => Some(URI(t))
+      case (`sStartsWith`, List(C(v)))   => Some(MatchesRegex(t, s"^${v.toString}.*$$"))
+      case (`sEndsWith`, List(C(v)))     => Some(MatchesRegex(t, s"^.*${v.toString}$$"))
+      case (`sMatchesRegex`, List(C(v))) => Some(MatchesRegex(t, v.toString))
+      case (`sIPv4`, _)                  => Some(IPv4(t))
+      case (`sIPv6`, _)                  => Some(IPv6(t))
+      case (`sTrimmed`, _)               => Some(Trimmed(t))
       // numeric
-      case (`sPositive`, _)                => Some(Pos(t))
-      case (`sNonPositive`, _)             => Some(Not(Pos(t)))
-      case (`sNegative`, _)                => Some(Neg(t))
-      case (`sNonNegative`, _)             => Some(Not(Neg(t)))
-      case (`sGreater`, List(C(v)))        => Some(Ge(t, v))
-      case (`sGreaterEqual`, List(C(v)))   => Some(Ge(t, v, inclusive = true))
-      case (`sLess`, List(C(v)))           => Some(Le(t, v))
-      case (`sLessEqual`, List(C(v)))      => Some(Le(t, v, inclusive = true))
-      case (`sDivisable`, List(C(v)))      => Some(Divisable(t, v))
-      case (`sNonDivisable`, List(C(v)))   => Some(Not(Divisable(t, v)))
+      case (`sPositive`, _)              => Some(Pos(t))
+      case (`sNonPositive`, _)           => Some(Not(Pos(t)))
+      case (`sNegative`, _)              => Some(Neg(t))
+      case (`sNonNegative`, _)           => Some(Not(Neg(t)))
+      case (`sGreater`, List(C(v)))      => Some(Ge(t, v))
+      case (`sGreaterEqual`, List(C(v))) => Some(Ge(t, v, inclusive = true))
+      case (`sLess`, List(C(v)))         => Some(Le(t, v))
+      case (`sLessEqual`, List(C(v)))    => Some(Le(t, v, inclusive = true))
+      case (`sDivisable`, List(C(v)))    => Some(Divisable(t, v))
+      case (`sNonDivisable`, List(C(v))) => Some(Not(Divisable(t, v)))
       // boolean
-      case (`sNot`, List(p))               => ex(t, p) map { Not(_) }
-      case (`sAnd`, List(l, r))            => for { ll <- ex(t, l); rr <- ex(t, r) } yield And(ll, rr)
-      case (`sOr`, List(l, r))             => for { ll <- ex(t, l); rr <- ex(t, r) } yield Or(ll, rr)
-      case _                               => None
+      case (`sNot`, List(p))    => ex(t, p) map { Not(_) }
+      case (`sAnd`, List(l, r)) => for { ll <- ex(t, l); rr <- ex(t, r) } yield And(ll, rr)
+      case (`sOr`, List(l, r))  => for { ll <- ex(t, l); rr <- ex(t, r) } yield Or(ll, rr)
+      case _                    => None
     }
   }
 
@@ -187,14 +187,14 @@ private final class RefinedMacro(using val q: Quotes) {
 
   private def num(v: Double): Expr[Number] = { val e = Expr(v); '{ java.lang.Double.valueOf($e) } }
 
-  private def pattern(v: String): Expr[Def[String, ?]]                         = { val e = Expr(v); '{ Instance.`pattern` := $e } }
-  private def minLength(v: Int): Expr[Def[String, ?]]                          = { val e = Expr(v); '{ Instance.`minLength` := $e } }
-  private def maxLength(v: Int): Expr[Def[String, ?]]                          = { val e = Expr(v); '{ Instance.`maxLength` := $e } }
-  private def minItems(v: Int): Expr[Def[Iterable[?], ?]]                      = { val e = Expr(v); '{ Instance.`minItems` := $e } }
-  private def maxItems(v: Int): Expr[Def[Iterable[?], ?]]                      = { val e = Expr(v); '{ Instance.`maxItems` := $e } }
-  private def minimum(v: Double, inclusive: Boolean): Expr[Def[Number, ?]]     = { val e = num(v); if (inclusive) '{ Instance.`minimum` := $e } else '{ Instance.`exclusiveMinimum` := $e } }
-  private def maximum(v: Double, inclusive: Boolean): Expr[Def[Number, ?]]     = { val e = num(v); if (inclusive) '{ Instance.`maximum` := $e } else '{ Instance.`exclusiveMaximum` := $e } }
-  private def multipleOf(v: Double): Expr[Def[Number, ?]]                      = { val e = num(v); '{ Instance.`multipleOf` := $e } }
+  private def pattern(v: String): Expr[Def[String, ?]]                     = { val e = Expr(v); '{ Instance.`pattern` := $e } }
+  private def minLength(v: Int): Expr[Def[String, ?]]                      = { val e = Expr(v); '{ Instance.`minLength` := $e } }
+  private def maxLength(v: Int): Expr[Def[String, ?]]                      = { val e = Expr(v); '{ Instance.`maxLength` := $e } }
+  private def minItems(v: Int): Expr[Def[Iterable[?], ?]]                  = { val e = Expr(v); '{ Instance.`minItems` := $e } }
+  private def maxItems(v: Int): Expr[Def[Iterable[?], ?]]                  = { val e = Expr(v); '{ Instance.`maxItems` := $e } }
+  private def minimum(v: Double, inclusive: Boolean): Expr[Def[Number, ?]] = { val e = num(v); if (inclusive) '{ Instance.`minimum` := $e } else '{ Instance.`exclusiveMinimum` := $e } }
+  private def maximum(v: Double, inclusive: Boolean): Expr[Def[Number, ?]] = { val e = num(v); if (inclusive) '{ Instance.`maximum` := $e } else '{ Instance.`exclusiveMaximum` := $e } }
+  private def multipleOf(v: Double): Expr[Def[Number, ?]]                  = { val e = num(v); '{ Instance.`multipleOf` := $e } }
 
   private def setOf(trees: List[Expr[Schema[?]]]): Expr[Set[Schema[?]]] = { val xs = Varargs(trees); '{ Set[Schema[?]]($xs*) } }
 

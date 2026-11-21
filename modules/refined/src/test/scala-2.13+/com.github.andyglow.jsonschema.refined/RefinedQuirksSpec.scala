@@ -13,8 +13,9 @@ import org.scalatest.funsuite._
 
 import com.github.andyglow.jsonschema.RefinedSupport._
 
-/** Pins the Scala 2 macro's behavior where the original specs don't (inventory appendix C §1.1 "Gaps" and "Normalization quirks"). The expectations are Scala 2's output; the Scala 3 port
-  * reproduces them. Literal types, so 2.13 and 3 only.
+/** Pins the Scala 2 macro's behavior where the original specs don't (inventory appendix C, part 1.1: "Gaps" and "Normalization quirks").
+  *
+  * The expectations are Scala 2's output; the Scala 3 port reproduces them. Literal types, so 2.13 and 3 only.
   */
 class RefinedQuirksSpec extends AnyFunSuite {
 
