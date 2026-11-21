@@ -1,0 +1,89 @@
+{
+  "schema": {
+    "kind": "object",
+    "fields": [
+      {
+        "name": "a",
+        "required": false,
+        "default": "x",
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "string"
+        }
+      },
+      {
+        "name": "b",
+        "required": false,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "integer"
+        }
+      },
+      {
+        "name": "d",
+        "required": false,
+        "default": 1.5,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "number"
+        }
+      }
+    ]
+  },
+  "draft-04": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "additionalProperties": false,
+    "properties": {
+      "a": {
+        "default": "x",
+        "type": "string"
+      },
+      "b": {
+        "type": "integer"
+      },
+      "d": {
+        "default": 1.5,
+        "type": "number"
+      }
+    },
+    "type": "object"
+  },
+  "draft-07": {
+    "$id": "golden",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "additionalProperties": false,
+    "properties": {
+      "a": {
+        "default": "x",
+        "type": "string"
+      },
+      "b": {
+        "type": "integer"
+      },
+      "d": {
+        "default": 1.5,
+        "type": "number"
+      }
+    },
+    "type": "object"
+  },
+  "draft-2020-12": {
+    "$id": "golden",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "a": {
+        "default": "x",
+        "type": "string"
+      },
+      "b": {
+        "type": "integer"
+      },
+      "d": {
+        "default": 1.5,
+        "type": "number"
+      }
+    },
+    "type": "object"
+  }
+}

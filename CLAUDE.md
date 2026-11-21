@@ -4,15 +4,20 @@ Generates JSON Schema from Scala types at compile time (Scala 2 macros), in the 
 A macro turns a type into a JSON-library-neutral `json.Schema[T]` tree; renderers turn that tree into
 Draft 04 / 06 / 07 / 2019-09 / 2020-12 JSON, and optional bridges convert it to play-json, circe, etc.
 
-Released for Scala 2.12 and 2.13. A Scala 3 (3.3 LTS) port is in progress: the build cross-compiles to 3.3.9, but the
-Scala 3 derivation doesn't exist yet (see "Scala 3 port scaffolding" below). Scala.js is deferred.
+Released for Scala 2.12 and 2.13. A Scala 3 (3.3 LTS) port is in progress: the build cross-compiles to 3.3.9, and the
+Scala 3 derivation exists for products, `Option`, value classes, implicits, recursion and signatures; sums/enums and
+collections are being ported (see "Scala 3 port scaffolding" below). Scala.js is deferred.
 
 ## Layout
 
 ```
 core/      json.Schema ADT, json.schema.* annotations/Predef/validations, own JSON AST (com.github.andyglow.json.Value),
-           draft renderers (com.github.andyglow.jsonschema.AsDraftXX). No dependencies.
+           draft renderers (com.github.andyglow.jsonschema.AsDraftXX). No dependencies on Scala 2; on Scala 3 only
+           scaladoc-parser (the Scala 3 derivation lives here and parses `Symbol.docstring`).
 macros/    the Scala 2 derivation macro (src/main/scala-2; empty on Scala 3): a cake of U* traits (UProductTypes, USumTypes, UImplicits, ...) building an IR, then trees
+core/src/main/scala-3/com/github/andyglow/jsonschema/derivation/
+           the Scala 3 derivation (quotes), in core because `derives json.Schema` needs `Schema.derived`. A cake of traits,
+           one file per concern/type family: IR (Nodes) -> recursion pass -> emit. Guide: notes/reports/skeleton-ir.md
 api/       artifact `scala-jsonschema`: json.Json.{schema, objectSchema, sig, auto.derived}; most macro tests live here
 modules/
   play-json, spray-json, circe-json, json4s-json, u-json   bridges: render a schema into that library's AST
@@ -39,7 +44,9 @@ Whether a type becomes a definition depends on which of the two implicits is in 
   For another version: `sbt "++2.13.18" test` / `sbt "++3.3.9" test`, or set `SCALA_VER=2.13` / `SCALA_VER=3`.
 - Before calling something done, run `clean test` on 2.12, 2.13 **and** 3.3.9, plus `scalafmtCheckAll` under each
   (it only checks the current version's source dirs) and `scalafmtSbtCheck`.
-- **Run `clean` after editing anything in `macros/`.** Incremental compilation doesn't recompile macro call sites, so stale tests can pass or fail misleadingly.
+- **Run `clean` after editing anything in `macros/` or `core/src/main/scala-3/.../derivation`.** Incremental compilation doesn't recompile macro call sites, so stale tests can pass or fail misleadingly.
+- Scala 3 test builds compile with `-Yread-docs` (scaladoc from TASTy) and `-Xcheck-macros` (except play-json: its own macro fails the check).
+  To see the code the Scala 3 macro generates: `sbt -Djsonschema.print-code=true ...` (prints every expansion as an info).
 - `build.sbt` restricts compilation to one module at a time (`Tags.limit(Tags.Compile, 1)`). The macro evaluates `Option` default values with `c.eval`, and that races when several modules compile in parallel. Don't remove the restriction until the macro is fixed.
 - Coverage: `sbt "++2.13.18" clean coverage test coverageAggregate`. CI runs this on 2.13.
 - git worktrees: `build.sbt` sets `useReadableConsoleGit`, because sbt-git's JGit reader (pulled in by sbt-ghpages)
@@ -48,8 +55,8 @@ Whether a type becomes a definition depends on which of the two implicits is in 
 ### Scala 3 port scaffolding (temporary)
 
 `build.sbt` has a clearly marked TEMPORARY SCAFFOLDING block; delete it once the Scala 3 derivation lands:
-- `usesScala2Macro`: on Scala 3, test files that call `Json.schema`/`objectSchema`/`sig`, `Json.auto` or `DerivedSchema`
-  are skipped, because `api/src/main/scala-3/json/Json.scala` is a `compiletime.error` placeholder.
+- `scala3Pending`: on Scala 3, the listed test files are skipped because they need a type family the Scala 3 derivation
+  doesn't have yet; each entry names the stream that unblocks it. Delete entries as families land. An entry for a file that no longer exists fails the build (rename or delete it with the spec).
 - `scala2OnlyForNow`: `refined` and `derived` compile and publish nothing on Scala 3 yet.
 
 ## Conventions

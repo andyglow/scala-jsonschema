@@ -7,14 +7,13 @@ import org.scalatest.funsuite.AnyFunSuite
 object GroupCSpec {
   case class Foo(a: Int)
 
-  case class HasEither(e: Either[Int, String])
   case class HasTuple(t: (Int, String))
   case class HasOptOpt(o: Option[Option[Int]])
 }
 
 /** The former TRIAGE group C. Owner decisions (2026-11-20):
   *   - Option at root/nested: PENDING (to match how the bridged JSON libraries encode it); these goldens pin TODAY's output and are tagged TRIAGE-C until it's decided;
-  *   - Either and tuples: keep today's output (pinned);
+  *   - Either and tuples: keep today's output (pinned). Either and Option in a collection are in [[GroupCSumsSpec]] (they need the sum/collection families);
   *   - covariant implicit pick: moved to group B (exact type match), see TriageBPendingSpec.
   */
 class GroupCSpec extends AnyFunSuite {
@@ -26,14 +25,8 @@ class GroupCSpec extends AnyFunSuite {
     check("groupC/Option[Int]", Json.schema[Option[Int]])
   }
 
-  test("nested Option (pending decision: current behavior)", TriageC) {
-    check("groupC/List[Option[Foo]]", Json.schema[List[Option[Foo]]])
+  test("nested Option in a field (pending decision: current behavior)", TriageC) {
     check("groupC/HasOptOpt", Json.schema[HasOptOpt])
-  }
-
-  test("Either (decided: keep)") {
-    check("groupC/Either[Int,String]", Json.schema[Either[Int, String]])
-    check("groupC/HasEither", Json.schema[HasEither])
   }
 
   test("tuples (decided: keep)") {

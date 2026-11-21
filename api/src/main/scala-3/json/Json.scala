@@ -1,22 +1,25 @@
 package json
 
 import com.github.andyglow.jsonschema._
+import com.github.andyglow.jsonschema.derivation.SchemaMacro
 import json.Schema.`object`
 import json.schema.{Predef, Version}
 
-// TEMPORARY SCAFFOLDING (see build.sbt): placeholder so that `api` (and everything depending on it) cross-builds to Scala 3.
-// The Scala 3 derivation (inline/quotes) replaces these `compiletime.error` bodies.
+/** The Scala 3 facade, source-compatible with the Scala 2 one (`api/src/main/scala-2/json/Json.scala`). The macro implementation lives in `core` (`com.github.andyglow.jsonschema.derivation`). */
 object Json {
 
-  inline def schema[T]: Schema[T] = compiletime.error("Json.schema is not implemented on Scala 3 yet")
+  inline def schema[T]: Schema[T] = ${ SchemaMacro.schemaImpl[T] }
 
-  inline def objectSchema[T](inline decorations: (String, String)*): `object`[T] = compiletime.error("Json.objectSchema is not implemented on Scala 3 yet")
+  inline def objectSchema[T](inline decorations: (String, String)*): `object`[T] = ${ SchemaMacro.objectSchemaImpl[T]('decorations) }
 
-  inline def sig[T]: TypeSignature[T] = compiletime.error("Json.sig is not implemented on Scala 3 yet")
+  inline def sig[T]: TypeSignature[T] = ${ SchemaMacro.sigImpl[T] }
 
+  /** Automatic derivation: `import json.Json.auto.given` (or Scala 2's `import json.Json.auto._`) makes every type without its own schema derivable as a `Predef`. Nested types follow the plain
+    * derivation rules: a user-provided implicit `Schema` becomes a definition, a `Predef` is inlined, anything else is derived inline.
+    */
   object auto {
 
-    implicit inline def derived[T]: Predef[T] = compiletime.error("Json.auto.derived is not implemented on Scala 3 yet")
+    implicit inline def derived[T]: Predef[T] = ${ SchemaMacro.autoImpl[T] }
   }
 
   def stringify[T, V <: Version: AsValueBuilder](schema: Schema[T], version: V): String =
