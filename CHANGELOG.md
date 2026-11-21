@@ -47,7 +47,7 @@
     `refinedJsonSchema[R <: Refined[A, B], A, B]` (was `[A, B]`), and `refined[T]` has no `T <: Refined[_, _]` bound
     (`Refined` is an opaque type on Scala 3; a non-refined `T` is a compile error). An unsupported predicate or an
     empty range found while deriving (`Json.schema[X]` with such a field) fails with the derivation's `is not supported`
-    error; `refined[T]` and `summon[Predef[T]]` show the refined macro's own message
+    error, followed by the refined macro's message (Scala 2: the refined macro's message alone)
   - rendered definition names follow each draft's grammar: every character a draft doesn't allow in a definition
     name is replaced with `_` (`com.acme.Box[scala.Int]` → `com.acme.Box_scala.Int_`), for draft-04 in
     `#/definitions/...` refs, for 06/07 in `$id`/`$ref` plain-name fragments, for 2019-09/2020-12 in `$anchor`/`$ref`.
