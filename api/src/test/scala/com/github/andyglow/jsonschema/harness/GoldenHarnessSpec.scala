@@ -77,8 +77,8 @@ class GoldenHarnessSpec extends AnyFunSuite {
 
   test("the dump records free objects, metadata and validations") {
     Golden.render(`object`[Any](Field("a", `string`)).free) should include("\"free\": true")
-    // NOTE: `.free.withTitle(..)` drops `free` (mkCopy = copy()), a core bug noted in the harness report
-    val out = Golden.render(`object`[Any](Field("a", `string`)).withTitle("T").withDescription("D"))
+    val out = Golden.render(`object`[Any](Field("a", `string`)).free.withTitle("T").withDescription("D"))
+    out should include("\"free\": true")
     out should include("\"title\": \"T\"")
     out should include("\"description\": \"D\"")
     import json.schema.validation.Instance._

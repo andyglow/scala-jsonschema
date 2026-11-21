@@ -279,6 +279,10 @@ object Schema {
     import `object`._
     type Self = `object`[T]
     def mkCopy()                              = copy()
+
+    /** Replaces the synthesized case-class `copy`: a copy of a free object stays free (withTitle, duplicate, withField, ... all go through here). */
+    def copy(fields: List[Field[_]] = this.fields): `object`[T] =
+      if (isFree) `object`.Free.of[T](fields) else new `object`[T](fields)
     override def canEqual(that: Any): Boolean = that.isInstanceOf[`object`[_]]
     override def equals(obj: Any): Boolean    = obj match {
       case `object`(f) => fields.toSet == f.toSet && isFree == obj.isInstanceOf[Free] && super.equals(obj)
@@ -325,10 +329,12 @@ object Schema {
       def strict: `object`[Type]
     }
     object Free {
-      def apply[T](): `object`[T] with Free = {
-        new `object`[T](List.empty) with Free {
+      def apply[T](): `object`[T] with Free = of[T](List.empty)
+
+      private[Schema] def of[T](fields: List[Field[_]]): `object`[T] with Free = {
+        new `object`[T](fields) with Free {
           type Type = T
-          override def strict: `object`[T] = new `object`[T](List.empty)
+          override def strict: `object`[T] = new `object`[T](fields).withExtraFrom(this)
         }
       }
     }
@@ -542,23 +548,26 @@ object Schema {
     override def withValidation[TT >: T, B](v: V.Def[B, _], vs: V.Def[B, _]*)(implicit
       bound: V.Magnet[TT, B]
     ): `def`[T]                                                = copy(tpe = tpe.asInstanceOf[Schema[TT]].withValidation(v, vs: _*)).withExtraFrom(this)
-    override def toDefinition[TT >: T](sig: String): `def`[TT] = {
+    /** Renames this definition: refs to the old name follow it, nested definitions of other types keep their names. */
+    override def toDefinition[TT >: T](newSig: String): `def`[TT] = {
+      val oldSig = this.sig
       def deepCopy(x: Schema[_]): Schema[_] = {
         val y = x match {
-          case `object`(fields)     => `object`.fromList(fields.map { f => f.copy(tpe = deepCopy(f.tpe)) })
-          case `array`(y, u)        => `array`(deepCopy(y), u)
-          case `dictionary`(y)      => `dictionary`(deepCopy(y))
-          case `oneof`(ys, df)      => `oneof`(ys map deepCopy, df)
-          case `allof`(ys)          => `allof`(ys map deepCopy)
-          case `not`(y)             => `not`(deepCopy(y))
-          case `def`(s, y)          => `def`(sig, deepCopy(y))
-          case `ref`(s) if s == sig => `ref`(sig)
-          case y                    => y
+          case o: `object`[_]          => o.copy(fields = o.fields.map { f => f.copy(tpe = deepCopy(f.tpe)) })
+          case `array`(y, u)           => `array`(deepCopy(y), u)
+          case `dictionary`(y)         => `dictionary`(deepCopy(y))
+          case `oneof`(ys, df)         => `oneof`(ys map deepCopy, df)
+          case `allof`(ys)             => `allof`(ys map deepCopy)
+          case `not`(y)                => `not`(deepCopy(y))
+          case `value-class`(y)        => `value-class`[Any, Any](deepCopy(y).asInstanceOf[Schema[Any]])
+          case `def`(s, y)             => `def`(if (s == oldSig) newSig else s, deepCopy(y))
+          case `ref`(s) if s == oldSig => `ref`(newSig)
+          case y                       => y
         }
         y withExtraFrom x
       }
 
-      copy(sig = sig, tpe = deepCopy(tpe)).withExtraFrom(this)
+      copy(sig = newSig, tpe = deepCopy(tpe)).withExtraFrom(this)
     }
   }
 

@@ -36,6 +36,10 @@ object TriageBPendingSpec {
   object FooImplicit { implicit val fooS: Schema[Foo] = Plain.foo }
   case class Recursive(next: Option[Recursive])
 
+  case class Meta(createdBy: String)
+  object Meta { implicit val schema: Schema[Meta] = Json.schema[Meta] }
+  case class Node(name: String, meta: Meta, children: List[Node])
+
   // covariance: Schema is covariant, so an implicit Schema[Sub1] satisfies a search for Schema[Base]
   sealed trait Base
   case class Sub1(x: Int)    extends Base
@@ -129,21 +133,25 @@ class TriageBPendingSpec extends AnyFunSuite {
   // --- ref names ---
 
   test("toDefinition renames refs that point at the old signature", TriageB) {
-    pendingUntilFixed {
-      // today: the inner ref keeps "A" (dangling $ref)
-      `def`[Any]("A", `object`[Any](Field("x", `ref`[Any]("A")))).toDefinition("B") shouldEqual
-        `def`[Any]("B", `object`[Any](Field("x", `ref`[Any]("B"))))
-      ()
-    }
+    // was: the inner ref kept "A" (dangling $ref)
+    `def`[Any]("A", `object`[Any](Field("x", `ref`[Any]("A")))).toDefinition("B") shouldEqual
+      `def`[Any]("B", `object`[Any](Field("x", `ref`[Any]("B"))))
   }
 
   test("toDefinition doesn't rename nested defs of other types", TriageB) {
-    pendingUntilFixed {
-      // today: every nested def is renamed to the new name ("C" becomes "B"); found while writing the test above
-      `def`[Any]("A", `object`[Any](Field("x", `def`[Any]("C", `string`)))).toDefinition("B") shouldEqual
-        `def`[Any]("B", `object`[Any](Field("x", `def`[Any]("C", `string`))))
-      ()
-    }
+    // was: every nested def was renamed to the new name ("C" became "B")
+    `def`[Any]("A", `object`[Any](Field("x", `def`[Any]("C", `string`)))).toDefinition("B") shouldEqual
+      `def`[Any]("B", `object`[Any](Field("x", `def`[Any]("C", `string`))))
+  }
+
+  test("toDefinition of a recursive type with a nested definition (bugs-1 #5)", TriageB) {
+    import com.github.andyglow.jsonschema.harness.Golden
+    // was: meta became `$ref #Tree`, the Meta definition disappeared and children kept the dangling `#Node`
+    val s = Json.schema[Node].toDefinition("Tree")
+    val (refs, defs) = refsAndDefs(s)
+    refs shouldBe Set("Tree")
+    defs shouldBe Set("Tree", "com.github.andyglow.jsonschema.characterization.TriageBPendingSpec.Meta")
+    Golden.check("triageB/toDefinition.Tree", s)
   }
 
   test("refs and defs agree on names through a type alias", TriageB) {

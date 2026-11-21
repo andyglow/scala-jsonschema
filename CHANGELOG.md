@@ -2,6 +2,10 @@
   - `json.Schema` equality: `` `ref` `` compares its signature (before, any two refs were equal, so e.g.
     `oneof(Set(ref(A), ref(B)))` collapsed to one member); `object.Field` equality includes the description;
     a free object no longer equals the strict one; `hashCode` is consistent with `equals` for every node
+  - `def.toDefinition(name)` renames only its own definition and the refs to it (before, it renamed every nested
+    definition and left refs to the old name dangling)
+  - copies of a free object stay free: `withTitle`, `withDescription`, `duplicate`, `withField`, `dropField`,
+    `withFieldsUpdated` and `toDefinition` no longer turn `additionalProperties: true` into `false`
 - **0.7.10**
   - draft 2020-12 implemented
   - dependencies updated 
