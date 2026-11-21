@@ -7,8 +7,8 @@ import json.Schema._
 /** How the JSON a schema describes is shaped, for the facts the derivation records but doesn't decide.
   *
   * `Json.schema[T]` (and `derives json.Schema`) records facts that a JSON library decides how to encode. In 0.8 that is one fact: "this is an `Option`", kept as the `option` node in every position
-  * (root, collection element, map value, field). A profile lowers those nodes to plain JSON Schema when the schema is rendered, or earlier with `schema.withProfile(profile)`. Everything else (Predefs,
-  * hand-written schemas, all other derived nodes) passes through unchanged.
+  * (root, collection element, map value, field). A profile lowers those nodes to plain JSON Schema when the schema is rendered, or earlier with `schema.withProfile(profile)`. Everything else
+  * (Predefs, hand-written schemas, all other derived nodes) passes through unchanged.
   *
   * Which profile applies to a render:
   *   1. `schema.withProfile(p)`: shaped already, so the render's profile finds nothing left to lower;
@@ -28,8 +28,8 @@ trait JsonSchemaProfile extends JsonSchemaProfileDefault {
   /** How `Option` is shaped. */
   def optionStyle: JsonSchemaProfile.OptionStyle
 
-  /** Whether the wire-shape annotations of sum types (`@discriminator`, `@discriminatorKey`) apply under this profile. True for [[JsonSchemaProfile.Neutral]] and [[JsonSchemaProfile.Legacy]]. It has no
-    * effect yet: sum types are not shaped by profiles in 0.8.
+  /** Whether the wire-shape annotations of sum types (`@discriminator`, `@discriminatorKey`) apply under this profile. True for [[JsonSchemaProfile.Neutral]] and [[JsonSchemaProfile.Legacy]]. It has
+    * no effect yet: sum types are not shaped by profiles in 0.8.
     */
   def honorsSchemaAnnotations: Boolean = true
 
@@ -80,9 +80,9 @@ object JsonSchemaProfile {
     }
 
     private def field(f: `object`.Field[_]): `object`.Field[_] = f.tpe match {
-      // 0.7 dropped one layer for an `Option` field (those are the fields that aren't required without a default)
+      // 0.7 dropped one layer for an `Option` field; the macros make every `Option` field not required
       case `option`(inner) if style == OptionStyle.Legacy && !f.required => f.copy(tpe = apply(inner))
-      case t                                                              => f.copy(tpe = apply(t))
+      case t                                                             => f.copy(tpe = apply(t))
     }
 
     /** An `option` node anywhere but in a Legacy `Option` field. */
