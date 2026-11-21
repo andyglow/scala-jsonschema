@@ -42,6 +42,9 @@ jobs:
       - name: Setup sbt
         uses: sbt/setup-sbt@v1
 
+      - name: Check formatting
+        run: sbt '++ ${{ matrix.scala }}; scalafmtCheckAll; scalafmtSbtCheck'
+
       - name: Check that workflows are up to date
         run: sbt '++ ${{ matrix.scala }}; githubWorkflowCheck'
 
