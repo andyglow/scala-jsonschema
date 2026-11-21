@@ -26,7 +26,8 @@ object SchemaMacro {
   def derivedSchemaImpl[T: Type](using Quotes): Expr[Schema[T]] =
     Derivation.derive[T](Mode.DerivedSchema)
 
-  def autoImpl[T: Type](using Quotes): Expr[Predef[T]] =
+  /** @param allowed `auto.derived`'s evidence, unused here: its resolution is the point (see [[AutoGuard.Allowed]]) */
+  def autoImpl[T: Type](@annotation.unused allowed: Expr[AutoGuard.Allowed])(using Quotes): Expr[Predef[T]] =
     Derivation.deriveAuto[T]
 
   def sigImpl[T: Type](using Quotes): Expr[TypeSignature[T]] =

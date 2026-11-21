@@ -66,9 +66,10 @@ trait Resolve { this: Derivation =>
       report.errorAndAbort(s"schema for ${tpe.show} is not supported, ${ctx.show}$why")
     }
 
-  /** `derives` would only find its own given (rejected anyway). `objectSchema` does search, like Scala 2: a root with an implicit `Schema` is then a definition, which is an error there. `auto`
-    * searches too: Scala 3 picks `auto.derived[T]` for every `Predef[T]` (it is in lexical scope, so it shadows the `Predef`s in implicit scope, e.g. `Predef.intS`), and the root search lets those
-    * take over (auto declines inside the search, see [[AutoGuard]]).
+  /** `derives` would only find its own given (rejected anyway). `DerivedSchema` must not find the type's own implicit `Schema`: standing in for it is what the type class is for (e.g.
+    * `implicit val s: Schema[X] = implicitly[DerivedSchema[X]].schema`). `objectSchema` does search, like Scala 2: a root with an implicit `Schema` is then a definition, which is an error there.
+    * `auto` searches too: Scala 3 picks `auto.derived[T]` for every `Predef[T]` (it is in lexical scope, so it shadows the `Predef`s in implicit scope, e.g. `Predef.intS`), and the root search lets
+    * those take over (auto declines inside the search through its `AutoGuard.Allowed` parameter, see [[AutoGuard]]).
     */
   private def skipRootSearch: Boolean = mode == Mode.Derived || mode == Mode.DerivedSchema
 

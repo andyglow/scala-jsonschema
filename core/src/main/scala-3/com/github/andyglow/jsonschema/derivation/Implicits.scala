@@ -119,7 +119,7 @@ trait Implicits { this: Derivation =>
       case _                         => false
     }
 
-  /** The tree refers to `json.Json.auto.derived` (a safety net: while a derivation searches, auto declines to expand, see [[AutoGuard]]). */
+  /** The tree refers to `json.Json.auto.derived` (a safety net: while a derivation searches, auto's `AutoGuard.Allowed` parameter declines, so the search never returns it, see [[AutoGuard]]). */
   def containsAuto(t: Term): Boolean = {
     def isAuto(s: Symbol): Boolean =
       !s.isNoSymbol && s.name == "derived" && s.owner.name.stripSuffix("$") == "auto" && s.owner.owner.name.stripSuffix("$") == "Json"
