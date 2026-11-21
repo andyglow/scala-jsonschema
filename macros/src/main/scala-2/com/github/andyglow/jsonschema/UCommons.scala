@@ -10,9 +10,10 @@ private[jsonschema] trait UCommons extends SchemaTypes with ULogging {
   this: UContext with UFieldDecorations with UTypeAnnotations with UFlags =>
   import c.universe._
 
+  // `find(x)`: the entry `x` closes a cycle with, in that entry's spelling (`R[scala.Predef.String]` vs `R[java.lang.String]`)
   class ResolutionContext(val stack: List[Type], val onCycle: Type => Unit) {
     def isEmpty: Boolean               = stack.isEmpty
-    def contains(x: Type): Boolean     = stack exists { y => x =:= y }
+    def find(x: Type): Option[Type]    = stack find { y => x =:= y }
     def :+(x: Type): ResolutionContext = new ResolutionContext(stack :+ x, onCycle)
   }
 
@@ -65,6 +66,7 @@ private[jsonschema] trait UCommons extends SchemaTypes with ULogging {
     val toValue    = weakTypeOf[ToValue[_]]
     val set        = weakTypeOf[Set[_]]
     val map        = weakTypeOf[Map[_, _]]
+    val anyMap     = weakTypeOf[scala.collection.Map[_, _]]
     val lazyRef    = typeOf[json.Schema.`ref`[_]]
     val keyPattern = typeOf[KeyPattern[_]]
     val schemaC    = typeOf[json.Schema[_]].typeConstructor
@@ -147,13 +149,32 @@ private[jsonschema] trait UCommons extends SchemaTypes with ULogging {
         val cs     = s.asClass
         val subTpe =
           if (cs.typeParams.isEmpty) cs.toType
-          else resolveGenericType(cs.toType, cs.typeParams, tpe.typeArgs)
+          else subclassType(cs, tpe)
         if (isSealed(subTpe)) resolveSumTypeRecursively(subTpe, include, otherwise)
         else if (include(subTpe)) Seq(subTpe)
         else Seq(otherwise(s))
       }
       if (include(tpe)) leaves :+ tpe else leaves
     } else Seq.empty
+  }
+
+  /** The type of the generic subclass `cs` of `parent`, its type parameters bound by matching how `cs` extends the parent's type constructor against `parent`'s type arguments. So
+    * `case class Impl[B, A](a: A, b: B) extends Base[A, B]` as a `Base[Int, String]` is `Impl[String, Int]` (by name, not by position). A type parameter that doesn't occur in the parent's type
+    * arguments stays as is.
+    */
+  private def subclassType(cs: ClassSymbol, parent: Type): Type = {
+    val params = cs.typeParams
+    val asBase = cs.toType.baseType(parent.typeSymbol)
+
+    def unify(pattern: Type, actual: Type): List[(Symbol, Type)] = {
+      if (params contains pattern.typeSymbol) List(pattern.typeSymbol -> actual)
+      else if (pattern.typeArgs.size == actual.typeArgs.size) (pattern.typeArgs zip actual.typeArgs) flatMap { case (p, a) => unify(p, a) }
+      else Nil
+    }
+
+    val bindings   = if (asBase == NoType) Nil else unify(asBase, parent.dealias)
+    val (from, to) = params.flatMap { p => bindings.collectFirst { case (`p`, t) => (p, t) } }.unzip
+    if (from.isEmpty) cs.toType else resolveGenericType(cs.toType, from, to)
   }
 
   class TypeOps(x: Type) {

@@ -18,11 +18,9 @@ private[jsonschema] trait UTypeAnnotations {
   object Texts {
 
     def fromScaladoc(scaladoc: Scaladoc): Texts = {
-      Texts(
-        None,
-        scaladoc.tags.collect { case Tag.Description(descr) => descr.trimmed.plainString }
-          .mkString("\n")
-      )
+      // a scaladoc with only @param tags has no description (not ""), so an @description annotation still applies
+      val description = scaladoc.tags.collect { case Tag.Description(descr) => descr.trimmed.plainString }.mkString("\n")
+      Texts(None, Some(description).filter(_.trim.nonEmpty))
     }
 
     def fromAnnotations(tpe: Type): Texts = {

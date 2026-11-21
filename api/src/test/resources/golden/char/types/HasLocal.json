@@ -1,0 +1,201 @@
+{
+  "schema": {
+    "kind": "object",
+    "fields": [
+      {
+        "name": "l",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "object",
+          "fields": [
+            {
+              "name": "x",
+              "required": true,
+              "rwMode": "ReadWrite",
+              "schema": {
+                "kind": "integer"
+              }
+            },
+            {
+              "name": "y",
+              "required": false,
+              "rwMode": "ReadWrite",
+              "schema": {
+                "kind": "string"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "ls",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "array",
+          "unique": false,
+          "items": {
+            "kind": "object",
+            "fields": [
+              {
+                "name": "x",
+                "required": true,
+                "rwMode": "ReadWrite",
+                "schema": {
+                  "kind": "integer"
+                }
+              },
+              {
+                "name": "y",
+                "required": false,
+                "rwMode": "ReadWrite",
+                "schema": {
+                  "kind": "string"
+                }
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "description": "Characterization of type-family derivation on Scala 2 (inventory \u00a73). Successful derivations are pinned by golden files, macro errors by a key phrase from[[ErrorPhrases]] . Compiler-generated\ntexts (crashes, errors in generated code) are checked on Scala 2 only."
+  },
+  "draft-04": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "additionalProperties": false,
+    "description": "Characterization of type-family derivation on Scala 2 (inventory \u00a73). Successful derivations are pinned by golden files, macro errors by a key phrase from[[ErrorPhrases]] . Compiler-generated\ntexts (crashes, errors in generated code) are checked on Scala 2 only.",
+    "properties": {
+      "l": {
+        "additionalProperties": false,
+        "properties": {
+          "x": {
+            "type": "integer"
+          },
+          "y": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "x"
+        ],
+        "type": "object"
+      },
+      "ls": {
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "x": {
+              "type": "integer"
+            },
+            "y": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "x"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "l",
+      "ls"
+    ],
+    "type": "object"
+  },
+  "draft-07": {
+    "$id": "golden",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "additionalProperties": false,
+    "description": "Characterization of type-family derivation on Scala 2 (inventory \u00a73). Successful derivations are pinned by golden files, macro errors by a key phrase from[[ErrorPhrases]] . Compiler-generated\ntexts (crashes, errors in generated code) are checked on Scala 2 only.",
+    "properties": {
+      "l": {
+        "additionalProperties": false,
+        "properties": {
+          "x": {
+            "type": "integer"
+          },
+          "y": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "x"
+        ],
+        "type": "object"
+      },
+      "ls": {
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "x": {
+              "type": "integer"
+            },
+            "y": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "x"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "l",
+      "ls"
+    ],
+    "type": "object"
+  },
+  "draft-2020-12": {
+    "$id": "golden",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "description": "Characterization of type-family derivation on Scala 2 (inventory \u00a73). Successful derivations are pinned by golden files, macro errors by a key phrase from[[ErrorPhrases]] . Compiler-generated\ntexts (crashes, errors in generated code) are checked on Scala 2 only.",
+    "properties": {
+      "l": {
+        "additionalProperties": false,
+        "properties": {
+          "x": {
+            "type": "integer"
+          },
+          "y": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "x"
+        ],
+        "type": "object"
+      },
+      "ls": {
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "x": {
+              "type": "integer"
+            },
+            "y": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "x"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "l",
+      "ls"
+    ],
+    "type": "object"
+  }
+}

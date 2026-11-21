@@ -63,6 +63,29 @@ libraryDependencies ++= Seq(
   `com.typesafe.play:play-json` 2.x should stay on `scala-jsonschema` `0.7.x`.
 
 
+## Migrating to 0.8.0
+
+Besides the groupId, 0.8.0 changes some output. Most of it fixes output that was invalid or wrong (see the CHANGELOG
+for the full list):
+
+- **Definition names in the rendered JSON follow each draft's grammar.** Every character a draft doesn't allow is
+  replaced with `_`: `com.acme.Box[scala.Int]` renders as `com.acme.Box_scala.Int_` in `definitions`/`$defs` keys,
+  `$id`, `$anchor` and `$ref`. The rule per draft: draft-04 keeps the characters valid in a URI fragment / JSON pointer
+  (letters, digits, `-._!$&'()*+,;=:@`); drafts 06, 07 and 2019-09 use `[A-Za-z][-A-Za-z0-9.:_]*`; 2020-12 uses
+  `[A-Za-z_][-A-Za-z0-9._]*` (a name that must start with a letter gets a `T` or `_` prefix). If two names end up the
+  same, a name that already conformed keeps it and the others get `_2`, `_3`, ... in signature order. Names that
+  already conform (e.g. `com.acme.Foo`) don't change. `Json.sig` and the `json.Schema` value keep the readable name.
+- **A definition of an aliased type is named after the dealiased type**: a root implicit `Schema[String]` is the
+  definition `java.lang.String` (was `scala.Predef.String`), the same name a `String` field already got. Only the
+  type itself is dealiased, not its type arguments: `Box[String]` is still `Box[scala.Predef.String]`.
+- **Scala 2: `Json.sig` of a backticked type is decoded** (`` `odd name` `` gives `pkg.odd name`, was
+  `pkg.odd$u0020name`), as on Scala 3.
+- **An implicit `Schema` is used only for exactly its type.** An implicit `Schema[Sub]` no longer stands in for its
+  sealed parent `Base` (that dropped the other subtypes) or for a non-sealed trait (which now fails to derive).
+- **A scaladoc `@param` for a non-existent field is a warning**, for the root and nested types alike (it failed the
+  root before).
+- `def.toDefinition(name)` renames only its own definition and the refs to it.
+
 ## Generate JSON Schema from Scala classes
 
 The goal of this library is to make JSON Schema generation done the way all popular JSON reading/writing libraries do.
@@ -494,6 +517,26 @@ and expect
   }
 }
 ``` 
+
+## Implicit Predefs (`Json.auto`)
+
+Some APIs ask for an implicit `json.schema.Predef[T]` rather than a schema value. `import json.Json.auto._`
+provides one for any derivable type:
+
+```scala
+import json.Json
+import json.schema.Predef
+import Json.auto._
+
+def schemaOf[T](implicit p: Predef[T]): json.Schema[T] = p.schema
+
+case class Foo(a: Int)
+schemaOf[Foo] // object(a: integer)
+```
+
+A derived `Predef` is inlined, like any `Predef`, so the import doesn't change what `Json.schema` derives: an explicit
+implicit `json.Schema[N]` still becomes a definition with a `$ref`, built-in `Predef`s (`Int`, `String`, ...) are still
+used, and everything else is derived in place.
 
 ## Validation
 It is also possible to add specific validation rules to our schemas.

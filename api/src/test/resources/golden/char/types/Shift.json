@@ -1,0 +1,290 @@
+{
+  "schema": {
+    "kind": "object",
+    "fields": [
+      {
+        "name": "day",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "enum",
+          "type": {
+            "kind": "string"
+          },
+          "values": [
+            "FRIDAY",
+            "MONDAY",
+            "SATURDAY",
+            "SUNDAY",
+            "THURSDAY",
+            "TUESDAY",
+            "WEDNESDAY"
+          ]
+        }
+      },
+      {
+        "name": "off",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "array",
+          "unique": true,
+          "items": {
+            "kind": "enum",
+            "type": {
+              "kind": "string"
+            },
+            "values": [
+              "FRIDAY",
+              "MONDAY",
+              "SATURDAY",
+              "SUNDAY",
+              "THURSDAY",
+              "TUESDAY",
+              "WEDNESDAY"
+            ]
+          }
+        }
+      },
+      {
+        "name": "hours",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "dictionary",
+          "values": {
+            "kind": "integer"
+          },
+          "validations": [
+            {
+              "name": "patternProperties",
+              "value": "^(?:MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY|SATURDAY|SUNDAY)$"
+            }
+          ]
+        }
+      },
+      {
+        "name": "month",
+        "required": false,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "enum",
+          "type": {
+            "kind": "string"
+          },
+          "values": [
+            "APRIL",
+            "AUGUST",
+            "DECEMBER",
+            "FEBRUARY",
+            "JANUARY",
+            "JULY",
+            "JUNE",
+            "MARCH",
+            "MAY",
+            "NOVEMBER",
+            "OCTOBER",
+            "SEPTEMBER"
+          ]
+        }
+      }
+    ]
+  },
+  "draft-04": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "additionalProperties": false,
+    "properties": {
+      "day": {
+        "enum": [
+          "FRIDAY",
+          "MONDAY",
+          "SATURDAY",
+          "SUNDAY",
+          "THURSDAY",
+          "TUESDAY",
+          "WEDNESDAY"
+        ],
+        "type": "string"
+      },
+      "hours": {
+        "patternProperties": {
+          "^(?:MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY|SATURDAY|SUNDAY)$": {
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "month": {
+        "enum": [
+          "APRIL",
+          "AUGUST",
+          "DECEMBER",
+          "FEBRUARY",
+          "JANUARY",
+          "JULY",
+          "JUNE",
+          "MARCH",
+          "MAY",
+          "NOVEMBER",
+          "OCTOBER",
+          "SEPTEMBER"
+        ],
+        "type": "string"
+      },
+      "off": {
+        "items": {
+          "enum": [
+            "FRIDAY",
+            "MONDAY",
+            "SATURDAY",
+            "SUNDAY",
+            "THURSDAY",
+            "TUESDAY",
+            "WEDNESDAY"
+          ],
+          "type": "string"
+        },
+        "type": "array",
+        "uniqueItems": true
+      }
+    },
+    "required": [
+      "day",
+      "hours",
+      "off"
+    ],
+    "type": "object"
+  },
+  "draft-07": {
+    "$id": "golden",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "additionalProperties": false,
+    "properties": {
+      "day": {
+        "enum": [
+          "FRIDAY",
+          "MONDAY",
+          "SATURDAY",
+          "SUNDAY",
+          "THURSDAY",
+          "TUESDAY",
+          "WEDNESDAY"
+        ],
+        "type": "string"
+      },
+      "hours": {
+        "patternProperties": {
+          "^(?:MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY|SATURDAY|SUNDAY)$": {
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "month": {
+        "enum": [
+          "APRIL",
+          "AUGUST",
+          "DECEMBER",
+          "FEBRUARY",
+          "JANUARY",
+          "JULY",
+          "JUNE",
+          "MARCH",
+          "MAY",
+          "NOVEMBER",
+          "OCTOBER",
+          "SEPTEMBER"
+        ],
+        "type": "string"
+      },
+      "off": {
+        "items": {
+          "enum": [
+            "FRIDAY",
+            "MONDAY",
+            "SATURDAY",
+            "SUNDAY",
+            "THURSDAY",
+            "TUESDAY",
+            "WEDNESDAY"
+          ],
+          "type": "string"
+        },
+        "type": "array",
+        "uniqueItems": true
+      }
+    },
+    "required": [
+      "day",
+      "hours",
+      "off"
+    ],
+    "type": "object"
+  },
+  "draft-2020-12": {
+    "$id": "golden",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "day": {
+        "enum": [
+          "FRIDAY",
+          "MONDAY",
+          "SATURDAY",
+          "SUNDAY",
+          "THURSDAY",
+          "TUESDAY",
+          "WEDNESDAY"
+        ],
+        "type": "string"
+      },
+      "hours": {
+        "patternProperties": {
+          "^(?:MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY|SATURDAY|SUNDAY)$": {
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "month": {
+        "enum": [
+          "APRIL",
+          "AUGUST",
+          "DECEMBER",
+          "FEBRUARY",
+          "JANUARY",
+          "JULY",
+          "JUNE",
+          "MARCH",
+          "MAY",
+          "NOVEMBER",
+          "OCTOBER",
+          "SEPTEMBER"
+        ],
+        "type": "string"
+      },
+      "off": {
+        "items": {
+          "enum": [
+            "FRIDAY",
+            "MONDAY",
+            "SATURDAY",
+            "SUNDAY",
+            "THURSDAY",
+            "TUESDAY",
+            "WEDNESDAY"
+          ],
+          "type": "string"
+        },
+        "type": "array",
+        "uniqueItems": true
+      }
+    },
+    "required": [
+      "day",
+      "hours",
+      "off"
+    ],
+    "type": "object"
+  }
+}

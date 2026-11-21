@@ -2,11 +2,13 @@ package com.github.andyglow.jsonschema
 
 import scala.reflect.NameTransformer
 import scala.reflect.internal.util.NoSourceFile
+import scala.util.control.NonFatal
 
 private[jsonschema] trait UProductTypes {
   this: UContext with UCommons with UScaladocs with UFieldDecorations with UScalaParsers =>
   import c.universe._
 
+  // keyed by the decoded field name (`my-field`, not `my$minusfield`), as the fields are looked up
   private[UProductTypes] def fieldAnnotationMap(
     tpe: Type
   ): Map[String, List[c.universe.Annotation]] = {
@@ -18,14 +20,14 @@ private[jsonschema] trait UProductTypes {
         s.typeSignature
         s.accessed.annotations.foreach(_.tree.tpe)
 
-        s.name.toString.trim -> s.accessed.annotations
+        s.name.decodedName.toString.trim -> s.accessed.annotations
     }.toMap
 
     // new implementation of annotation extractor
     def annotations1 =
       tpe.typeSymbol.asClass.primaryConstructor.typeSignature.paramLists.headOption flatMap { paramList: List[Symbol] =>
         Some(paramList.collect { case s =>
-          s.name.toString.trim -> s.annotations
+          s.name.decodedName.toString.trim -> s.annotations
         }.toMap)
       } getOrElse Map.empty
 
@@ -35,14 +37,30 @@ private[jsonschema] trait UProductTypes {
   private[UProductTypes] def resolveFields(tpe: Type): List[Field] = {
     val annotationMap       = fieldAnnotationMap(tpe)
     val subjectCompanionSym = tpe.typeSymbol
-    val subjectCompanion    = subjectCompanionSym.asClass.companion.asModule
+    // Scala 2 reflection gives no companion for a case class local to a block (it isn't a member of any owner's scope)
+    val companionOrNone       = subjectCompanionSym.asClass.companion
+    val isLocal               = companionOrNone == NoSymbol
+    lazy val subjectCompanion = companionOrNone.asModule
 
     def toField(fieldSym: TermSymbol, i: Int): Field = {
       val name       = NameTransformer.decode(fieldSym.name.toString)
       val fieldTpe   = fieldSym.typeSignature.dealias // In(tpe).dealias
       val isOption   = fieldTpe <:< T.option
       val hasDefault = fieldSym.isParamWithDefault
-      val default    = Option.whenever(hasDefault) {
+      if (hasDefault && isLocal)
+        c.abort(
+          c.enclosingPosition,
+          s"default values of a case class local to a block are not supported on Scala 2: ${subjectCompanionSym.name.decodedName}.$name. " +
+            s"Declare ${subjectCompanionSym.name.decodedName} in an object or at the top level"
+        )
+
+      // the field type with the type arguments of `tpe` substituted (`xs: List[T]` in `Foo[Int]` is a List[Int])
+      def effectiveType = if (tpe.typeArgs.nonEmpty && tpe.typeSymbol.isClass) {
+        resolveGenericType(fieldTpe, tpe.typeSymbol.asClass.typeParams, tpe.typeArgs)
+      } else
+        fieldTpe
+
+      val default = Option.whenever(hasDefault) {
         val defaultGetterTree = parseFCQN(subjectCompanion.fullName + ".apply$default$" + (i + 1))
         val defaultGetterSym  =
           subjectCompanion.typeSignature.member(TermName(s"apply$$default$$${i + 1}")).asTerm
@@ -68,18 +86,17 @@ private[jsonschema] trait UProductTypes {
 
           try c.eval(c.Expr[Boolean](q"$effectiveDefaultGetterTree.isEmpty"))
           catch {
-            case ex: Throwable =>
-              throw new Exception(
-                s"Unable to check isNone for ${show(tpe)}.${show(fieldSym)}: ${show(
-                    fieldTpe
-                  )}. May be try non-full rebuild. Throws on evaluation of:\n```\n${showCode(q"$effectiveDefaultGetterTree.isEmpty")}\n```",
-                ex
+            case NonFatal(_) =>
+              c.abort(
+                c.enclosingPosition,
+                s"Can't evaluate the default value of ${show(tpe)}.$name: ${show(fieldTpe)} at compile time, to tell None from Some. " +
+                  s"On Scala 2 an Option default must be None, Some(<literal>) or a value of an already compiled module. It was:\n```\n${showCode(effectiveDefaultGetterTree)}\n```"
               )
           }
         } else false
 
         Some.when(!isNone) {
-          val toV = c.inferImplicitValue(appliedType(T.toValue, fieldTpe))
+          val toV = c.inferImplicitValue(appliedType(T.toValue, effectiveType))
           if (toV.nonEmpty) q"Some($toV($defaultGetterTree))"
           else {
             val errorSuffix = {
@@ -114,11 +131,6 @@ private[jsonschema] trait UProductTypes {
         }
       }
 
-      def effectiveType = if (tpe.typeArgs.nonEmpty && tpe.typeSymbol.isClass) {
-        resolveGenericType(fieldTpe, tpe.typeSymbol.asClass.typeParams, tpe.typeArgs)
-      } else
-        fieldTpe
-
       val specifiedType =
         if (isOption) effectiveType.typeArgs.head
         else
@@ -135,7 +147,9 @@ private[jsonschema] trait UProductTypes {
     }
 
     // this initializes defaults
-    bestApply(subjectCompanion)
+    if (isLocal) {
+      if (subjectCompanionSym.isAbstract) c.abort(c.enclosingPosition, s"No apply function found for ${subjectCompanionSym.fullName}")
+    } else bestApply(subjectCompanion)
 
     val fields = tpe.typeSymbol.asClass.primaryConstructor.asMethod.paramLists.headOption map { params =>
       params.map { _.asTerm }.zipWithIndex map { case (f, i) => toField(f, i) }
@@ -160,13 +174,16 @@ private[jsonschema] trait UProductTypes {
         val resolvedFields = resolveFields(tpe)
 
         // fields descriptions
-        val fd =
+        val scaladocFD = FieldDecorations.fromScaladoc(tpe, scaladoc)
+        val fd         =
           FieldDecorations.fromFieldAnnotations(resolvedFields) ++
-            FieldDecorations.fromScaladoc(tpe, scaladoc) ++
+            scaladocFD ++
             specFD
 
-        // check if all descriptions specified immediately in method call matches field names
-        if (ctx.isEmpty) fd.validate(tpe, resolvedFields)
+        // descriptions given in the Json.objectSchema call must name fields
+        if (ctx.isEmpty) specFD.validate(tpe, resolvedFields)
+        // a stale scaladoc @param is only a warning, the same for the root and for nested types
+        scaladocFD.warnUnknown(tpe, resolvedFields)
 
         // compute field trees
         val fields = resolvedFields map { f =>

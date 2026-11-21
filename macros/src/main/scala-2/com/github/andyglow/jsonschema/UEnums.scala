@@ -221,8 +221,27 @@ private[jsonschema] trait UEnums {
       }
     }
 
+    // A Java enum (java.time.DayOfWeek, java.util.concurrent.TimeUnit, ...) is a string enum of its constant names (`Enum.name()`), as Jackson, play-json's
+    // enumNameReads and jsoniter-scala encode it. Scala 2 reflection models it as a sealed class whose known subclasses are the constants (terms), so it must be
+    // caught before the sum-type branch (`asClass` on a constant crashed). Constants are listed in declaration order.
+    private def fromJavaEnum(tpe: Type): Option[U.Enum] = {
+      val sym = tpe.typeSymbol
+      Option.whenever(sym.isClass && sym.asClass.isJavaEnum) {
+        val constants = sym.asClass.knownDirectSubclasses
+        val declared  = sym.companion match {
+          case NoSymbol  => Nil
+          case companion => companion.typeSignature.decls.toList.filter(constants.contains)
+        }
+        val ordered = if (declared.size == constants.size) declared else constants.toList.sortBy(_.name.decodedName.toString)
+        val names   = ordered.map(_.name.decodedName.toString)
+        Some.when(names.nonEmpty) {
+          U.Enum(tpe, SchemaType.Str(tpe, q"None"), names map { name => (q"${N.internal.json}.Value.str($name)", Some(name)) })
+        }
+      }
+    }
+
     def unapply(tpe: Type)(implicit ctx: ResolutionContext): Option[SchemaType] = {
-      fromScalaEnumeration(tpe) orElse fromSumType(tpe)
+      fromJavaEnum(tpe) orElse fromScalaEnumeration(tpe) orElse fromSumType(tpe)
     }
   }
 

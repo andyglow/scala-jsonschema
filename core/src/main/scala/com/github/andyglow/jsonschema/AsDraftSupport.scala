@@ -22,7 +22,27 @@ trait AsDraftSupport {
 
   type ParentSchema = Option[json.Schema[_]]
 
-  def apply(x: json.Schema[_]): obj = apply(x, None, includeType = true, isRoot = true)
+  /** Makes a definition signature a valid name for this draft (see [[DefinitionNames]]). */
+  protected def sanitizeDefinitionName(sig: String): String
+
+  // the names of the document being rendered; per thread (not inherited by threads started meanwhile), so one renderer can be shared, and nested `apply(x)` calls reuse the document's names
+  private val definitionNames = new ThreadLocal[Map[String, String]]
+
+  /** Renders `body` with the names of all definitions and refs of the document `root`, computed once before rendering it. */
+  protected def withDefinitionNames[A](root: json.Schema[_])(body: => A): A =
+    if (definitionNames.get != null) body
+    else {
+      definitionNames.set(DefinitionNames.assign(root, sanitizeDefinitionName))
+      try body
+      finally definitionNames.remove()
+    }
+
+  /** The name a definition signature has in the rendered document. */
+  protected def definitionName(sig: String): String = Option(definitionNames.get).flatMap(_.get(sig)).getOrElse(sanitizeDefinitionName(sig))
+
+  def apply(x: json.Schema[_]): obj = withDefinitionNames(x) {
+    apply(x, None, includeType = true, isRoot = true)
+  }
 
   def apply(x: json.Schema[_], parent: ParentSchema, includeType: Boolean, isRoot: Boolean): obj = {
     val validationList = inferValidations(x)
@@ -158,12 +178,12 @@ trait AsDraftSupport {
   }
 
   def mkDef(vl: ValidationList, x: `def`[_], par: ParentSchema): obj = {
-    val ref = x.sig
+    val ref = definitionName(x.sig)
     obj(f"$$ref" -> buildRef(ref))
   }
 
   def mkRef(vl: ValidationList, x: `ref`[_], par: ParentSchema): obj = {
-    val ref = x.sig
+    val ref = definitionName(x.sig)
     obj(f"$$ref" -> buildRef(ref))
   }
 
@@ -237,7 +257,7 @@ trait AsDraftSupport {
   }
 
   def inferDefinition(x: `def`[_], par: ParentSchema): (String, obj) = {
-    val ref = x.sig
+    val ref = definitionName(x.sig)
     ref -> apply(x.tpe, par orElse Some(x), includeType = true, isRoot = false)
   }
 

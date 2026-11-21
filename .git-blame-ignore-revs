@@ -3,3 +3,5 @@ be846dbd36ec41d3257ad0c09d5b604d17424fa8
 
 # Reformat with scalafmt 3.11.5
 655f5ed743ff51356ccc8ec0c2d300dc981e32c8
+# scalafmt of the s3/s2fix changes
+f1fa224055bebf55d453c0a8fc64686a3b31193e

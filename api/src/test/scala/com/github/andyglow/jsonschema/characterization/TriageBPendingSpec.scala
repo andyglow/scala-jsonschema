@@ -1,6 +1,6 @@
 package com.github.andyglow.jsonschema.characterization
 
-import com.github.andyglow.jsonschema.harness.{ErrorPhrases, TriageB}
+import com.github.andyglow.jsonschema.harness.{ErrorPhrases, Golden, Scala, TriageB}
 import com.github.andyglow.jsonschema.harness.CompileErrors.outcome
 import json._
 import json.Schema.{`not` => _, _}
@@ -9,15 +9,26 @@ import json.schema._
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers._
 
+import scala.annotation.nowarn
+
 object TriageBPendingSpec {
   case class Empty()
+  case class HasEmpty(e: Empty)
   case class GenericDefault[T](xs: List[T] = Nil)
   case class GenericValueClass[T](v: T) extends AnyVal
+  case class HasGenericValueClass(id: GenericValueClass[String])
   sealed trait Swapped[A, B]
   case class SwappedImpl[B, A](a: A, b: B) extends Swapped[A, B]
+  // a parameter nested in the parent's type arguments
+  sealed trait Nested[T]
+  case class NestedImpl[T](xs: List[T]) extends Nested[List[T]]
 
   case class RecursiveViaAlias(children: List[RecAlias])
   type RecAlias = RecursiveViaAlias
+  case class Box[T](value: T)
+  // the recursive occurrence spells the type argument differently from the root (`String` is `scala.Predef.String`)
+  case class R[A](a: A, next: Option[R[java.lang.String]])
+  type IntBox = Box[Int]
 
   case class UuidKeys(m: Map[java.util.UUID, Int])
   case class MutableMap(m: scala.collection.mutable.Map[String, Int])
@@ -35,6 +46,10 @@ object TriageBPendingSpec {
   object Plain       { val foo: Schema[Foo] = Json.schema[Foo]    }
   object FooImplicit { implicit val fooS: Schema[Foo] = Plain.foo }
   case class Recursive(next: Option[Recursive])
+
+  case class Meta(createdBy: String)
+  object Meta { implicit val schema: Schema[Meta] = Json.schema[Meta] }
+  case class Node(name: String, meta: Meta, children: List[Node])
 
   // covariance: Schema is covariant, so an implicit Schema[Sub1] satisfies a search for Schema[Base]
   sealed trait Base
@@ -62,6 +77,7 @@ object TriageBPendingSpec {
   /** @param zz
     *   no such field
     */
+  @nowarn("msg=has @param for unknown field") // the warning under test
   case class Stale(a: Int)
 
   /** @param a
@@ -71,8 +87,8 @@ object TriageBPendingSpec {
   case class OnlyParams(a: Int)
 }
 
-/** TRIAGE group B: each test asserts the FIXED behavior and is pending until the fix lands (then it fails with "should no longer be pending": remove the `pendingUntilFixed` wrapper). Today's Scala 2
-  * behavior is in the comments.
+/** TRIAGE group B: each test asserts the fixed behavior (they were `pendingUntilFixed` until the Scala 2 fixes landed on s3/s2fix). The 0.7 behavior is in the `was:` comments. The name is kept
+  * because the model signatures (and so the golden files) contain it. The Scala 3 macro must pass these too.
   */
 class TriageBPendingSpec extends AnyFunSuite {
   import TriageBPendingSpec._
@@ -129,142 +145,149 @@ class TriageBPendingSpec extends AnyFunSuite {
   // --- ref names ---
 
   test("toDefinition renames refs that point at the old signature", TriageB) {
-    pendingUntilFixed {
-      // today: the inner ref keeps "A" (dangling $ref)
-      `def`[Any]("A", `object`[Any](Field("x", `ref`[Any]("A")))).toDefinition("B") shouldEqual
-        `def`[Any]("B", `object`[Any](Field("x", `ref`[Any]("B"))))
-      ()
-    }
+    // was: the inner ref kept "A" (dangling $ref)
+    `def`[Any]("A", `object`[Any](Field("x", `ref`[Any]("A")))).toDefinition("B") shouldEqual
+      `def`[Any]("B", `object`[Any](Field("x", `ref`[Any]("B"))))
   }
 
   test("toDefinition doesn't rename nested defs of other types", TriageB) {
-    pendingUntilFixed {
-      // today: every nested def is renamed to the new name ("C" becomes "B"); found while writing the test above
-      `def`[Any]("A", `object`[Any](Field("x", `def`[Any]("C", `string`)))).toDefinition("B") shouldEqual
-        `def`[Any]("B", `object`[Any](Field("x", `def`[Any]("C", `string`))))
-      ()
-    }
+    // was: every nested def was renamed to the new name ("C" became "B")
+    `def`[Any]("A", `object`[Any](Field("x", `def`[Any]("C", `string`)))).toDefinition("B") shouldEqual
+      `def`[Any]("B", `object`[Any](Field("x", `def`[Any]("C", `string`))))
+  }
+
+  test("toDefinition of a recursive type with a nested definition (bugs-1 #5)", TriageB) {
+    // was: meta became `$ref #Tree`, the Meta definition disappeared and children kept the dangling `#Node`
+    val s            = Json.schema[Node].toDefinition("Tree")
+    val (refs, defs) = refsAndDefs(s)
+    refs shouldBe Set("Tree")
+    defs shouldBe Set("Tree", "com.github.andyglow.jsonschema.characterization.TriageBPendingSpec.Meta")
+    Golden.check("triageB/toDefinition.Tree", s)
   }
 
   test("refs and defs agree on names through a type alias", TriageB) {
-    pendingUntilFixed {
-      val (refs, defs) = refsAndDefs(Json.schema[RecursiveViaAlias])
-      refs should not be empty
-      refs.foreach(r => defs should contain(r))
-    }
+    val (refs, defs) = refsAndDefs(Json.schema[RecursiveViaAlias])
+    refs should not be empty
+    refs.foreach(r => defs should contain(r))
+    Golden.check("triageB/alias.RecursiveViaAlias", Json.schema[RecursiveViaAlias])
+    // the alias as the root
+    Json.schema[RecAlias] shouldEqual Json.schema[RecursiveViaAlias]
+  }
+
+  test("a recursive ref through an aliased type argument names the def it closes", TriageB) {
+    // was: def R[scala.Predef.String], ref R[java.lang.String] (dangling $ref): `dealias` only normalizes the outermost type
+    val s            = Json.schema[R[String]]
+    val (refs, defs) = refsAndDefs(s)
+    refs shouldBe Set("com.github.andyglow.jsonschema.characterization.TriageBPendingSpec.R[scala.Predef.String]")
+    defs shouldBe refs
+    Json.schema[R[java.lang.String]] shouldEqual `def`[R[java.lang.String]](
+      "com.github.andyglow.jsonschema.characterization.TriageBPendingSpec.R[java.lang.String]",
+      `object`[R[java.lang.String]](
+        Field("a", `string`),
+        Field("next", `ref`[R[java.lang.String]]("com.github.andyglow.jsonschema.characterization.TriageBPendingSpec.R[java.lang.String]"), required = false)
+      )
+    )
+  }
+
+  test("an alias of an applied generic as the root (bugs-1 #4)", TriageB) {
+    // was: `schema for T is not supported` (the alias has no type arguments, so T wasn't substituted)
+    Json.schema[IntBox] shouldEqual Json.schema[Box[Int]]
+    Json.schema[IntBox] shouldEqual `object`[Box[Int]](Field("value", `integer`))
+    Json.schema[Users] shouldEqual `array`[User, List](`object`[User](Field("name", `string`)))
   }
 
   // --- unsupported map keys ---
 
   test("Map with a UUID key: clear compile error naming the key type", TriageB) {
-    pendingUntilFixed {
-      // today: an error in the generated code: `scala.collection.immutable.Map takes two type parameters, expected: one`
-      failsWith(outcome(assertCompiles("Json.schema[UuidKeys]")), ClearUnsupported, "java.util.UUID")
-    }
+    // was: an error in the generated code: `scala.collection.immutable.Map takes two type parameters, expected: one`
+    failsWith(outcome(assertCompiles("Json.schema[UuidKeys]")), ClearUnsupported, "java.util.UUID")
   }
 
   test("mutable.Map: clear compile error", TriageB) {
-    pendingUntilFixed {
-      // today: `scala.collection.mutable.Map takes two type parameters, expected: one`
-      failsWith(outcome(assertCompiles("Json.schema[MutableMap]")), ClearUnsupported, "mutable.Map")
-    }
+    // was: `scala.collection.mutable.Map takes two type parameters, expected: one`
+    failsWith(outcome(assertCompiles("Json.schema[MutableMap]")), ClearUnsupported, "mutable.Map")
   }
 
   test("enum Map key with EnumsAsOneOf: clear compile error naming the key type", TriageB) {
-    pendingUntilFixed {
-      // today: `scala.collection.immutable.Map takes two type parameters, expected: one`
-      // "TriageBPendingSpec.Key" is not a substring of "...TriageBPendingSpec.EnumKeys"
-      failsWith(outcome(assertCompiles("{ implicit val f: Flag with Flag.EnumsAsOneOf = null; Json.schema[EnumKeys] }")), ClearUnsupported, "TriageBPendingSpec.Key")
-    }
+    // was: `scala.collection.immutable.Map takes two type parameters, expected: one`
+    // "TriageBPendingSpec.Key" is not a substring of "...TriageBPendingSpec.EnumKeys"
+    failsWith(outcome(assertCompiles("{ implicit val f: Flag with Flag.EnumsAsOneOf = null; Json.schema[EnumKeys] }")), ClearUnsupported, "TriageBPendingSpec.Key")
   }
 
   // --- crashes -> clear compile errors ---
 
   test("a parameterless collection alias as root doesn't crash", TriageB) {
-    pendingUntilFixed {
-      // today: NoSuchElementException: head of empty list (typeArgs.head)
-      compilesOrFailsWith(outcome(assertCompiles("Json.schema[Users]")), ClearUnsupported)
-    }
+    // was: NoSuchElementException: head of empty list (typeArgs.head); fixed by dealiasing (see "an alias of an applied generic as the root")
+    outcome(assertCompiles("Json.schema[Users]")) shouldBe None
   }
 
   test("a non-generic Iterable (BitSet) doesn't crash", TriageB) {
-    pendingUntilFixed {
-      // today: NoSuchElementException: head of empty list
-      compilesOrFailsWith(outcome(assertCompiles("Json.schema[HasBitSet]")), ClearUnsupported, "BitSet")
-      compilesOrFailsWith(outcome(assertCompiles("Json.schema[scala.collection.immutable.BitSet]")), ClearUnsupported, "BitSet")
-    }
+    // was: NoSuchElementException: head of empty list
+    // Scala 2: a clear error; Scala 3 may support it
+    val check: (Option[String], Seq[String]) => Unit = if (Scala.is2) (r, ps) => failsWith(r, ps: _*) else (r, ps) => compilesOrFailsWith(r, ps: _*)
+    check(outcome(assertCompiles("Json.schema[HasBitSet]")), Seq(ClearUnsupported, "BitSet"))
+    check(outcome(assertCompiles("Json.schema[scala.collection.immutable.BitSet]")), Seq(ClearUnsupported, "BitSet"))
   }
 
   test("signature of refined/compound/annotated types doesn't crash", TriageB) {
-    pendingUntilFixed {
-      // today: MatchError in USignatures
-      compilesOrFailsWith(outcome(assertCompiles("Json.sig[AnyRef { def x: Int }]")), ClearUnsupported)
-      compilesOrFailsWith(outcome(assertCompiles("Json.sig[Foo with Serializable]")), ClearUnsupported)
-      compilesOrFailsWith(outcome(assertCompiles("Json.sig[Int @unchecked]")), ClearUnsupported)
-      compilesOrFailsWith(outcome(assertCompiles("{ implicit val s: Schema[Foo with Serializable] = null; Json.schema[Foo with Serializable] }")), ClearUnsupported)
+    // was: MatchError in USignatures
+    compilesOrFailsWith(outcome(assertCompiles("Json.sig[AnyRef { def x: Int }]")), ClearUnsupported)
+    compilesOrFailsWith(outcome(assertCompiles("Json.sig[Foo with Serializable]")), ClearUnsupported)
+    compilesOrFailsWith(outcome(assertCompiles("Json.sig[Int @unchecked]")), ClearUnsupported)
+    compilesOrFailsWith(outcome(assertCompiles("{ implicit val s: Schema[Foo with Serializable] = null; Json.schema[Foo with Serializable] }")), ClearUnsupported)
+    // Scala 2 (the Scala 3 macro must reproduce it): a structural type is a clear error, a compound type is named after its parents, an annotation is ignored
+    if (Scala.is2) {
+      failsWith(outcome(assertCompiles("Json.sig[AnyRef { def x: Int }]")), ClearUnsupported)
+      Json.sig[Foo with java.io.Serializable].signature shouldBe "com.github.andyglow.jsonschema.characterization.TriageBPendingSpec.Foo with java.io.Serializable"
+      Json.sig[Int @unchecked].signature shouldBe "scala.Int"
     }
   }
 
   test("objectSchema with an unrecognized decoration shape doesn't crash", TriageB) {
-    pendingUntilFixed {
-      // today: MatchError in UFieldDecorations.fromSpec
-      failsWith(outcome(assertCompiles("Json.objectSchema[Foo](Seq(\"a\" -> \"d\"): _*)")), ConstantStrings)
-    }
+    // was: MatchError in UFieldDecorations.fromSpec
+    failsWith(outcome(assertCompiles("Json.objectSchema[Foo](Seq(\"a\" -> \"d\"): _*)")), ConstantStrings)
   }
 
   test("objectSchema on a root that resolves to a def: clear compile error", TriageB) {
-    pendingUntilFixed {
-      // today: type mismatch; found: json.Schema.def[Foo], required: json.Schema.object[Foo]
-      failsWith(outcome(assertCompiles("{ import FooImplicit._; Json.objectSchema[Foo]() }")), ObjectSchema)
-      failsWith(outcome(assertCompiles("Json.objectSchema[Recursive]()")), ObjectSchema)
-    }
+    // was: type mismatch; found: json.Schema.def[Foo], required: json.Schema.object[Foo]
+    failsWith(outcome(assertCompiles("{ import FooImplicit._; Json.objectSchema[Foo]() }")), ObjectSchema)
+    failsWith(outcome(assertCompiles("Json.objectSchema[Recursive]()")), ObjectSchema)
   }
 
   test("an Option default that can't be evaluated at compile time: no macro crash", TriageB) {
-    pendingUntilFixed {
-      // today: java.lang.Exception: Unable to check isNone for ... May be try non-full rebuild
-      // Scala 3 (runtime default getters) compiles it; a Scala 2 fix may instead fail with a clear message about the default
-      compilesOrFailsWith(outcome(assertCompiles("Json.schema[DefaultFromVal]")), "default")
-    }
+    // was: java.lang.Exception: Unable to check isNone for ... May be try non-full rebuild
+    // Scala 3 (runtime default getters) compiles it; a Scala 2 fix may instead fail with a clear message about the default
+    compilesOrFailsWith(outcome(assertCompiles("Json.schema[DefaultFromVal]")), "default")
   }
 
   // --- case classes and generics ---
 
   test("a zero-field case class gives an empty object schema", TriageB) {
-    pendingUntilFixed {
-      // today: overloaded method value apply ... cannot be applied to () (the generated `object`[T]())
-      // TODO(fixer): this can only assert "compiles" while it fails to compile on Scala 2. Once fixed, replace the body with
-      //   Json.schema[Empty] shouldEqual `object`.fromList[Empty](Nil)
-      assertCompiles("Json.schema[Empty]")
-    }
+    // was: overloaded method value apply ... cannot be applied to () (the generated `object`[T]())
+    Json.schema[Empty] shouldEqual `object`.fromList[Empty](Nil)
+    Json.schema[HasEmpty] shouldEqual `object`[HasEmpty](Field("e", `object`.fromList[Empty](Nil)))
+    Golden.check("triageB/HasEmpty", Json.schema[HasEmpty])
   }
 
   test("a generic default `xs: List[T] = Nil`", TriageB) {
-    pendingUntilFixed {
-      // today: Can't infer json value for default value of `...GenericDefault[Int](..., xs: List[T] = Nil)` (T not substituted)
-      // TODO(fixer): once fixed, replace the body with
-      //   Json.schema[GenericDefault[Int]] shouldEqual `object`[GenericDefault[Int]](
-      //     Field.fromJson("xs", `array`[Int, List](`integer`), required = false, default = Some(com.github.andyglow.json.Value.arr())))
-      assertCompiles("Json.schema[GenericDefault[Int]]")
-    }
+    // was: Can't infer json value for default value of `...GenericDefault[Int](..., xs: List[T] = Nil)` (T not substituted)
+    Json.schema[GenericDefault[Int]] shouldEqual `object`[GenericDefault[Int]](
+      Field.fromJson("xs", `array`[Int, List](`integer`), required = false, default = Some(com.github.andyglow.json.Value.arr()))
+    )
   }
 
   test("a generic value class", TriageB) {
-    pendingUntilFixed {
-      // today: schema for T is not supported
-      // TODO(fixer): once fixed, replace the body with
-      //   Json.schema[GenericValueClass[Int]] shouldEqual `value-class`[GenericValueClass[Int], Int](`integer`)
-      assertCompiles("Json.schema[GenericValueClass[Int]]")
-    }
+    // was: schema for T is not supported
+    Json.schema[GenericValueClass[Int]] shouldEqual `value-class`[GenericValueClass[Int], Int](`integer`)
+    Json.schema[HasGenericValueClass] shouldEqual `object`[HasGenericValueClass](Field("id", `value-class`[GenericValueClass[String], String](`string`)))
   }
 
   test("generic subclasses are substituted by name, not by position", TriageB) {
-    pendingUntilFixed {
-      // `SwappedImpl[B, A] extends Swapped[A, B]`, so for Swapped[Int, String]: a = Int, b = String
-      val s = Json.schema[Swapped[Int, String]]
-      s shouldEqual `oneof`.of[Swapped[Int, String]](`object`(Field("a", `integer`), Field("b", `string`)))
-      ()
-    }
+    // `SwappedImpl[B, A] extends Swapped[A, B]`, so for Swapped[Int, String]: a = Int, b = String
+    val s = Json.schema[Swapped[Int, String]]
+    s shouldEqual `oneof`.of[Swapped[Int, String]](`object`(Field("a", `integer`), Field("b", `string`)))
+    // NestedImpl[T] extends Nested[List[T]]: for Nested[List[Int]], xs is a List[Int]
+    Json.schema[Nested[List[Int]]] shouldEqual `oneof`.of[Nested[List[Int]]](`object`(Field("xs", `array`[Int, List](`integer`))))
   }
 
   // --- covariant implicit pick (owner decision 2026-11-20: require an implicit whose type matches T exactly) ---
@@ -279,56 +302,44 @@ class TriageBPendingSpec extends AnyFunSuite {
   }
 
   test("an implicit Schema[Sub1] is not used for Json.schema[Base]", TriageB) {
-    pendingUntilFixed {
-      import Sub1Implicit._
-      // today: def("...TriageBPendingSpec.Base", object(x)): the whole family is replaced by Sub1's schema, Sub2 is lost.
-      // fixed: Base is derived as its sealed family (Sub1 may come out as a def of the implicit), so both x and y are there
-      fieldNames(Json.schema[Base]) shouldBe Set("x", "y")
-      sub1S should not be null
-    }
+    import Sub1Implicit._
+    // was: def("...TriageBPendingSpec.Base", object(x)): the whole family is replaced by Sub1's schema, Sub2 is lost.
+    // fixed: Base is derived as its sealed family (Sub1 may come out as a def of the implicit), so both x and y are there
+    fieldNames(Json.schema[Base]) shouldBe Set("x", "y")
+    Golden.check("triageB/covariant.Base", Json.schema[Base])
+    sub1S should not be null
   }
 
   test("an implicit Schema[Sub1] is not used for a field of type Base", TriageB) {
-    pendingUntilFixed {
-      import Sub1Implicit._
-      // today: field b = def("...Base", object(x))
-      fieldNames(Json.schema[HasBase]) shouldBe Set("b", "x", "y")
-      sub1S should not be null
-    }
+    import Sub1Implicit._
+    // was: field b = def("...Base", object(x))
+    fieldNames(Json.schema[HasBase]) shouldBe Set("b", "x", "y")
+    Golden.check("triageB/covariant.HasBase", Json.schema[HasBase])
+    sub1S should not be null
   }
 
   test("an implicit Schema[OpenImpl] doesn't make a non-sealed trait derivable", TriageB) {
-    pendingUntilFixed {
-      // today: compiles, field o = def("...Open", object(z)). fixed: Open has no exact implicit and isn't derivable
-      failsWith(outcome(assertCompiles("{ import OpenImplImplicit._; Json.schema[HasOpen] }")), NotSupported, "TriageBPendingSpec.Open")
-    }
+    // was: compiles, field o = def("...Open", object(z)). fixed: Open has no exact implicit and isn't derivable
+    failsWith(outcome(assertCompiles("{ import OpenImplImplicit._; Json.schema[HasOpen] }")), NotSupported, "TriageBPendingSpec.Open")
   }
 
   // --- annotations and scaladoc ---
 
   test("annotations on backticked/symbolic field names are kept", TriageB) {
-    pendingUntilFixed {
-      val s = Json.objectSchema[Backticked]()
-      s.fields.find(_.name == "my-field").flatMap(_.description) shouldBe Some("d")
-      s.fields.find(_.name == "+").map(_.rwMode) shouldBe Some(`object`.Field.RWMode.ReadOnly)
-      ()
-    }
+    val s = Json.objectSchema[Backticked]()
+    s.fields.find(_.name == "my-field").flatMap(_.description) shouldBe Some("d")
+    s.fields.find(_.name == "+").map(_.rwMode) shouldBe Some(`object`.Field.RWMode.ReadOnly)
   }
 
   test("a scaladoc with only @params doesn't override @description", TriageB) {
-    pendingUntilFixed {
-      // today: description = Some("")
-      Json.schema[OnlyParams].description shouldBe Some("type annotation")
-      ()
-    }
+    // was: description = Some("")
+    Json.schema[OnlyParams].description shouldBe Some("type annotation")
   }
 
   test("a stale @param is treated the same on the root and on nested types", TriageB) {
-    pendingUntilFixed {
-      // today: the root fails (`unknown field: zz`), a nested type is silently accepted. Proposal: a warning everywhere.
-      val root   = outcome(assertCompiles("Json.schema[Stale]")).isEmpty
-      val nested = outcome(assertCompiles("Json.schema[HasStale]")).isEmpty
-      root shouldBe nested
-    }
+    // was: the root fails (`unknown field: zz`), a nested type is silently accepted. Proposal: a warning everywhere.
+    val root   = outcome(assertCompiles("Json.schema[Stale]")).isEmpty
+    val nested = outcome(assertCompiles("Json.schema[HasStale]")).isEmpty
+    root shouldBe nested
   }
 }
