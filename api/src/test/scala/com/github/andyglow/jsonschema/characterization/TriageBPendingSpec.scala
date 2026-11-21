@@ -304,11 +304,8 @@ class TriageBPendingSpec extends AnyFunSuite {
   }
 
   test("a scaladoc with only @params doesn't override @description", TriageB) {
-    pendingUntilFixed {
-      // today: description = Some("")
-      Json.schema[OnlyParams].description shouldBe Some("type annotation")
-      ()
-    }
+    // was: description = Some("")
+    Json.schema[OnlyParams].description shouldBe Some("type annotation")
   }
 
   test("a stale @param is treated the same on the root and on nested types", TriageB) {
