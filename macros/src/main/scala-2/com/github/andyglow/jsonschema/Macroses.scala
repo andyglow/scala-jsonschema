@@ -117,11 +117,14 @@ trait MacroCake
     noImplicitSearch: Boolean = false
   ): SchemaType = {
     // see through a type alias (`type IntBox = Box[Int]`, `type Users = List[User]`): the alias has no type arguments of its own, and refs and defs must be named after the same type
-    val tpe = tpe0.dealias
-    if (ctx contains tpe) {
-      val sig = signature(tpe)
-      ctx.onCycle(tpe)
-      U.Ref(tpe, q"$sig")
+    val tpe  = tpe0.dealias
+    val seen = ctx find tpe
+    if (seen.isDefined) {
+      // a recursive ref takes the name of the def it closes: `dealias` doesn't normalize type arguments, so the current spelling may differ
+      val defTpe = seen.get
+      val sig    = signature(defTpe)
+      ctx.onCycle(defTpe)
+      U.Ref(defTpe, q"$sig")
     } else if (T.isNothing(tpe)) {
       c.abort(c.enclosingPosition, "No json.Schema[_] for Nothing")
     } else {

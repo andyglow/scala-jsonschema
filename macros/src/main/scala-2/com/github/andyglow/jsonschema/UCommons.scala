@@ -10,9 +10,10 @@ private[jsonschema] trait UCommons extends SchemaTypes with ULogging {
   this: UContext with UFieldDecorations with UTypeAnnotations with UFlags =>
   import c.universe._
 
+  // `find(x)`: the entry `x` closes a cycle with, in that entry's spelling (`R[scala.Predef.String]` vs `R[java.lang.String]`)
   class ResolutionContext(val stack: List[Type], val onCycle: Type => Unit) {
     def isEmpty: Boolean               = stack.isEmpty
-    def contains(x: Type): Boolean     = stack exists { y => x =:= y }
+    def find(x: Type): Option[Type]    = stack find { y => x =:= y }
     def :+(x: Type): ResolutionContext = new ResolutionContext(stack :+ x, onCycle)
   }
 

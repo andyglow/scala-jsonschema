@@ -9,8 +9,9 @@
   - an implicit `Schema` is used only for exactly its type: an implicit `Schema[Sub]` no longer stands in for
     a sealed `Base` (which lost its other subtypes) or makes a non-sealed trait derivable
   - type aliases are seen through: `Json.schema[IntBox]` for `type IntBox = Box[Int]` works, refs and definitions
-    reached through an alias get the same name, and a root implicit `Schema[String]` is the definition
-    `java.lang.String` (was `scala.Predef.String`), the same name a field already got
+    reached through an alias get the same name (also when only a type argument is spelled through an alias), and
+    a root implicit `Schema[String]` is the definition `java.lang.String` (was `scala.Predef.String`), the same
+    name a field already got. Type arguments aren't dealiased: `Box[String]` is still `Box[scala.Predef.String]`
   - clear compile errors instead of errors in the generated code or macro crashes for: a Map key without a
     `KeyPattern` (e.g. `UUID`), an enum key with `Flag.EnumsAsOneOf`, a `mutable.Map`, and collections whose
     type parameter isn't the element type (e.g. `BitSet`)

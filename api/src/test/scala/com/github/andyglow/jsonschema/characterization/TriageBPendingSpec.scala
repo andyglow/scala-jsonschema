@@ -26,6 +26,8 @@ object TriageBPendingSpec {
   case class RecursiveViaAlias(children: List[RecAlias])
   type RecAlias = RecursiveViaAlias
   case class Box[T](value: T)
+  // the recursive occurrence spells the type argument differently from the root (`String` is `scala.Predef.String`)
+  case class R[A](a: A, next: Option[R[java.lang.String]])
   type IntBox = Box[Int]
 
   case class UuidKeys(m: Map[java.util.UUID, Int])
@@ -170,6 +172,21 @@ class TriageBPendingSpec extends AnyFunSuite {
     Golden.check("triageB/alias.RecursiveViaAlias", Json.schema[RecursiveViaAlias])
     // the alias as the root
     Json.schema[RecAlias] shouldEqual Json.schema[RecursiveViaAlias]
+  }
+
+  test("a recursive ref through an aliased type argument names the def it closes", TriageB) {
+    // was: def R[scala.Predef.String], ref R[java.lang.String] (dangling $ref): `dealias` only normalizes the outermost type
+    val s            = Json.schema[R[String]]
+    val (refs, defs) = refsAndDefs(s)
+    refs shouldBe Set("com.github.andyglow.jsonschema.characterization.TriageBPendingSpec.R[scala.Predef.String]")
+    defs shouldBe refs
+    Json.schema[R[java.lang.String]] shouldEqual `def`[R[java.lang.String]](
+      "com.github.andyglow.jsonschema.characterization.TriageBPendingSpec.R[java.lang.String]",
+      `object`[R[java.lang.String]](
+        Field("a", `string`),
+        Field("next", `ref`[R[java.lang.String]]("com.github.andyglow.jsonschema.characterization.TriageBPendingSpec.R[java.lang.String]"), required = false)
+      )
+    )
   }
 
   test("an alias of an applied generic as the root (bugs-1 #4)", TriageB) {
