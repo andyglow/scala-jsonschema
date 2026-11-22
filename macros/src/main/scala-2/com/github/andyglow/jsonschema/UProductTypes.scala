@@ -45,6 +45,25 @@ private[jsonschema] trait UProductTypes {
     val companionOrNone       = subjectCompanionSym.asClass.companion
     val isLocal               = companionOrNone == NoSymbol
     lazy val subjectCompanion = companionOrNone.asModule
+    // a tree for `Companion.<name>`: the companion of a class nested in a class (a path-dependent type) has no static path, so it goes through the type's prefix (`h.Inner`,
+    // `Holder.this.Inner`), as on Scala 3. Before, `<pkg>.Holder.Inner` didn't compile (`object Holder is not a member of package ...`).
+    def companionMember(name: String): Tree =
+      if (subjectCompanion.isStatic) parseFCQN(subjectCompanion.fullName + "." + name)
+      else
+        tpe match {
+          case TypeRef(pre @ (_: ThisType | _: SingleType), _, _) => Select(internal.gen.mkAttributedRef(pre, subjectCompanion), TermName(name))
+          case other                                              =>
+            val name  = subjectCompanionSym.name.decodedName
+            val outer = other match {
+              case TypeRef(pre, _, _) => pre.typeSymbol.name.decodedName.toString
+              case _                  => "Outer"
+            }
+            c.abort(
+              c.enclosingPosition,
+              s"default values of ${show(tpe)} are not supported: its companion $name is reached through a type projection, not a stable path. " +
+                s"Use a path (`val o = new $outer; Json.schema[o.$name]`) or declare it in an object"
+            )
+        }
 
     def toField(fieldSym: TermSymbol, i: Int): Field = {
       val name       = NameTransformer.decode(fieldSym.name.toString)
@@ -65,7 +84,7 @@ private[jsonschema] trait UProductTypes {
         fieldTpe
 
       val default = Option.whenever(hasDefault) {
-        val defaultGetterTree = parseFCQN(subjectCompanion.fullName + ".apply$default$" + (i + 1))
+        val defaultGetterTree = companionMember("apply$default$" + (i + 1))
         val defaultGetterSym  =
           subjectCompanion.typeSignature.member(TermName(s"apply$$default$$${i + 1}")).asTerm
         val hasSource = defaultGetterSym.pos.source != NoSourceFile
@@ -76,7 +95,7 @@ private[jsonschema] trait UProductTypes {
               c.typecheck {
                 if (!hasSource) {
                   // for continuous compilation
-                  parseFCQN(tpe.typeSymbol.fullName + ".apply$default$" + (i + 1))
+                  companionMember("apply$default$" + (i + 1))
                 } else {
                   // for full-rebuild
                   val defaultGetterSym = subjectCompanion.typeSignature

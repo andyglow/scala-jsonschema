@@ -6,8 +6,8 @@ Draft 04 / 06 / 07 / 2019-09 / 2020-12 JSON, and optional bridges convert it to 
 
 Released for Scala 2.12 and 2.13. A Scala 3 (3.3 LTS) port is in progress: the build cross-compiles to 3.3.9, and the
 Scala 3 derivation covers every type family (products, `Option`, value classes, implicits, recursion, signatures,
-sums/enums, collections); every shared test runs on 3.3.9. `refined` and `derived` aren't ported yet (see "Scala 3
-port scaffolding" below). Scala.js is deferred.
+sums/enums, collections); every shared test runs on 3.3.9. `derived` and `refined` (its own `scala.quoted` macro)
+are ported too. Scala.js is deferred.
 
 ## Layout
 
@@ -52,11 +52,6 @@ Whether a type becomes a definition depends on which of the two implicits is in 
 - Coverage: `sbt "++2.13.18" clean coverage test coverageAggregate`. CI runs this on 2.13.
 - git worktrees: `build.sbt` sets `useReadableConsoleGit`, because sbt-git's JGit reader (pulled in by sbt-ghpages)
   can't load the build in a `git worktree` checkout. Keep it.
-
-### Scala 3 port scaffolding (temporary)
-
-`build.sbt` has a clearly marked TEMPORARY SCAFFOLDING block, `scala2OnlyForNow`: `refined` and `derived` compile and
-publish nothing on Scala 3 yet. Delete it once they are ported.
 
 ## Conventions
 

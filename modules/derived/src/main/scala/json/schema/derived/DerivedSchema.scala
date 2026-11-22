@@ -1,27 +1,12 @@
 package json.schema.derived
 
-import com.github.andyglow.jsonschema.MacroCake
 import json.Schema
 
-import scala.language.experimental.macros
-import scala.reflect.macros.whitebox
-
+/** A schema derived from `T`'s structure, as a type class (e.g. a context bound `T: DerivedSchema`).
+  *
+  * The root is always derived: an implicit `Schema[T]` in scope is ignored (it is what the type class is usually asked to stand in for). Nested types follow the usual rules (an implicit `Schema`
+  * becomes a definition, a `Predef` is inlined, anything else is derived inline). A type that can't be derived has no `DerivedSchema`: the implicit is not found, it is not a compile error of its own.
+  */
 final case class DerivedSchema[T](schema: Schema[T])
 
-object DerivedSchema {
-
-  implicit def deriveDerivedSchema[T]: DerivedSchema[T] =
-    macro DerivedSchemaMacros.deriveDerivedSchema[T]
-}
-
-class DerivedSchemaMacros(val c: whitebox.Context) extends MacroCake {
-  import c.universe._
-
-  def deriveDerivedSchema[T](implicit
-    T: c.WeakTypeTag[T]
-  ): c.Expr[DerivedSchema[T]] = {
-    val schemaTree        = deriveInternal[T, json.Schema](noImplicitSearch = true).tree
-    val derivedSchemaTree = q"_root_.json.schema.derived.DerivedSchema($schemaTree)"
-    c.Expr[DerivedSchema[T]](derivedSchemaTree)
-  }
-}
+object DerivedSchema extends DerivedSchemaPlatform

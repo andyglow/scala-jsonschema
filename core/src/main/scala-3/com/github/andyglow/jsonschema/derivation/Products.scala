@@ -283,7 +283,7 @@ trait Products { this: Derivation =>
   }
 
   /** A reference to `owner`'s companion through `owner`'s prefix: `o.Inner` for `val o: Outer; Json.schema[o.Inner]`, `this.Inner` inside `Outer` (reviewer3 S1: a bare `Ref(companion)` is a malformed
-    * tree there; Scala 2 fails to compile it). A local class has no prefix.
+    * tree there). A local class has no prefix. A type projection (`Outer#Inner`) has no path to the companion: the same error as Scala 2 (s2fix2; before, the macro crashed).
     */
   private def companionRef(owner: TypeRepr, companion: Symbol): Term = {
     def prefix(t: TypeRepr): Option[TypeRepr] = t match {
@@ -292,8 +292,13 @@ trait Products { this: Derivation =>
       case _                  => None
     }
     prefix(owner.dealias) match {
-      case Some(_: NoPrefix) | None => Ref(companion)
-      case Some(pre)                => Ref.term(TermRef(pre, companion.name))
+      case Some(_: NoPrefix) | None     => Ref(companion)
+      case Some(pre) if pre.isSingleton => Ref.term(TermRef(pre, companion.name))
+      case Some(pre)                    =>
+        report.errorAndAbort(
+          s"default values of ${owner.dealias.show} are not supported: its companion ${companion.name} is reached through a type projection, not a stable path. " +
+            s"Use a path (`val o = new ${pre.typeSymbol.name}; Json.schema[o.${companion.name}]`) or declare it in an object"
+        )
     }
   }
 

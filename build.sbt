@@ -39,21 +39,6 @@ def versionRangeDirs(base: File, scalaVersion: String): Seq[File] =
     case _                       => Nil
   }
 
-// ============================================================================================================
-// TEMPORARY SCAFFOLDING for the Scala 3 port. Delete this block, and its two uses below, once refined and
-// derived are ported to Scala 3. Nothing here affects Scala 2.12/2.13 builds.
-//
-// scala2OnlyForNow: modules whose Scala 3 port hasn't landed yet (refined, derived). They still list
-//    Scala 3 in crossScalaVersions, because with plain crossScalaVersions `++3.x` would otherwise leave them
-//    on 2.12 while their dependencies switch to 3, which breaks resolution. On Scala 3 they compile nothing
-//    and publish nothing.
-lazy val scala2OnlyForNow = Seq(
-  Compile / unmanagedSourceDirectories := { if (scalaV.value.isScala3) Nil else (Compile / unmanagedSourceDirectories).value },
-  Test / unmanagedSourceDirectories    := { if (scalaV.value.isScala3) Nil else (Test / unmanagedSourceDirectories).value },
-  publish / skip                       := scalaV.value.isScala3 || (publish / skip).value
-)
-// ============================ end of TEMPORARY SCAFFOLDING ==================================================
-
 def runCommand(command: String): State => State =
   Command.process(command, _, msg => sys.error(s"can't parse command `$command`: $msg"))
 
@@ -213,15 +198,14 @@ lazy val `refined` = { project in file("modules/refined") }
   .dependsOn(core, api)
   .settings(
     commonSettings,
-    scala2OnlyForNow, // TEMPORARY SCAFFOLDING, see above
     name                                := "scala-jsonschema-refined",
     libraryDependencies += "eu.timepit" %% "refined" % "0.11.4",
     libraryDependencies ++= scalaReflect(scalaVersion.value),
 
     // mute unused imports because otherwise IN TESTS it complains on
     // unused `import com.github.andyglow.jsonschema.RefinedSupport._`
-    // which is not true
-    Test / scalacOptions -= "-Ywarn-unused:imports,-patvars,-privates,-locals,-implicits"
+    // which is not true (the derivation macro's own implicit search uses it; Scala 3 doesn't count that either)
+    Test / scalacOptions --= Seq("-Ywarn-unused:imports,-patvars,-privates,-locals,-implicits", "-Wunused:imports")
   )
 
 lazy val parser = { project in file("modules/parser") }
@@ -245,7 +229,6 @@ lazy val derived = { project in file("modules/derived") }
   .dependsOn(core, api, macros)
   .settings(
     commonSettings,
-    scala2OnlyForNow, // TEMPORARY SCAFFOLDING, see above
     name := "scala-jsonschema-derived",
     libraryDependencies ++= scalaReflect(scalaVersion.value)
   )

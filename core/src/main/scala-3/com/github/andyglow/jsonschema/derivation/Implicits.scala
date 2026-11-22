@@ -67,8 +67,32 @@ trait Implicits { this: Derivation =>
   def searchAccepted(target: TypeRepr, tc: Symbol, tpe: TypeRepr): Option[Term] =
     AutoGuard.searching(Implicits.search(target)) match {
       case s: ImplicitSearchSuccess if !isSelfRef(s.tree) && isExact(s.tree, tc, tpe) && !containsAuto(s.tree) => Some(Inlined(None, Nil, s.tree))
+      case f: ImplicitSearchFailure                                                                            => recordFailure(tpe, f); None
       case _                                                                                                   => None
     }
+
+  // ---- why an implicit wasn't found, for the "not supported" error
+
+  private var failures: List[(TypeRepr, String)] = Nil
+
+  /** Keeps the explanation of a failed search when it says more than "there is none": a candidate that failed to expand (a macro that aborted, e.g. refined's
+    * `There are no values inside of specified range`), an ambiguity, a divergence. Scala 2 reports those directly; here the derivation goes on (a candidate's failure must not break a type the
+    * derivation can derive itself), and [[implicitFailures]] adds them to the error when it can't. Not kept: plain misses (`NoMatchingImplicits`, a candidate whose type doesn't match) and
+    * `Json.auto`'s own decline ([[AutoGuard]]).
+    */
+  private def recordFailure(tpe: TypeRepr, f: ImplicitSearchFailure): Unit = {
+    val e       = f.explanation
+    val noMatch = f match { // a match, not isInstanceOf: reflect types are abstract, their TypeTest is what tells them apart
+      case _: NoMatchingImplicits => true
+      case _                      => false
+    }
+    // "macro expansion was stopped" alone carries no reason (e.g. auto declining through an implicit parameter it can't get)
+    val plain = noMatch || e.contains("does not match type") || e.contains("AutoGuard") || e.contains("auto.derived") || e.trim == "macro expansion was stopped"
+    if (!plain && !failures.exists { case (t, m) => m == e && t =:= tpe }) failures = failures :+ (tpe -> e)
+  }
+
+  /** The kept explanations of failed searches for `tpe` (see `recordFailure`). */
+  def implicitFailures(tpe: TypeRepr): List[String] = failures collect { case (t, m) if t =:= tpe => m }
 
   /** The symbols we're "inside" of: the val/def/given whose right-hand side contains the expansion. */
   private lazy val enclosingSymbols: List[Symbol] = {
@@ -95,7 +119,7 @@ trait Implicits { this: Derivation =>
       case _                         => false
     }
 
-  /** The tree refers to `json.Json.auto.derived` (a safety net: while a derivation searches, auto declines to expand, see [[AutoGuard]]). */
+  /** The tree refers to `json.Json.auto.derived` (a safety net: while a derivation searches, auto's `AutoGuard.Allowed` parameter declines, so the search never returns it, see [[AutoGuard]]). */
   def containsAuto(t: Term): Boolean = {
     def isAuto(s: Symbol): Boolean =
       !s.isNoSymbol && s.name == "derived" && s.owner.name.stripSuffix("$") == "auto" && s.owner.owner.name.stripSuffix("$") == "Json"
