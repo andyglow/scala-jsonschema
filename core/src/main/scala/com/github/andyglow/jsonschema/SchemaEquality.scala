@@ -98,6 +98,9 @@ object SchemaEquality {
     case (l: `not`[_], r: `not`[_]) =>
       internalCompute(path :+ Segment.Schema("not"), l.tpe, r.tpe, ctx)
 
+    case (l: Schema.`option`[_], r: Schema.`option`[_]) =>
+      internalCompute(path :+ Segment.Schema("option"), l.inner, r.inner, ctx)
+
     case (l: `oneof`[_], r: `oneof`[_]) =>
       val leftMisses  = r.subTypes -- l.subTypes
       val rightMisses = l.subTypes -- r.subTypes

@@ -7,7 +7,10 @@
         "required": false,
         "rwMode": "ReadWrite",
         "schema": {
-          "kind": "string"
+          "kind": "option",
+          "schema": {
+            "kind": "string"
+          }
         }
       }
     ]
@@ -17,7 +20,10 @@
     "additionalProperties": false,
     "properties": {
       "value": {
-        "type": "string"
+        "type": [
+          "null",
+          "string"
+        ]
       }
     },
     "type": "object"
@@ -28,7 +34,10 @@
     "additionalProperties": false,
     "properties": {
       "value": {
-        "type": "string"
+        "type": [
+          "null",
+          "string"
+        ]
       }
     },
     "type": "object"
@@ -39,7 +48,10 @@
     "additionalProperties": false,
     "properties": {
       "value": {
-        "type": "string"
+        "type": [
+          "null",
+          "string"
+        ]
       }
     },
     "type": "object"

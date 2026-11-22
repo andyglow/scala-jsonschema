@@ -84,7 +84,7 @@ class Scala3ResolutionSpec extends AnyFunSuite {
   test("derives json.Schema is a user implicit Schema: a definition named after the type, at the source (lead decision: B1 (b))") {
     val d1 = `def`[Derived1]("com.github.andyglow.jsonschema.skeleton.Scala3ResolutionSpec.Derived1", `object`[Derived1](Field("x", `integer`), Field("leaf", leaf)))
     summon[Schema[Derived1]] shouldEqual d1
-    Json.schema[UsesDerived] shouldEqual `object`[UsesDerived](Field("d", d1), Field("ds", d1, required = false))
+    Json.schema[UsesDerived] shouldEqual `object`[UsesDerived](Field("d", d1), Field("ds", `option`(d1), required = false))
     // a root with a derives given is a root implicit Schema (Scala 2 quirk 3: already a definition, kept)
     Json.schema[Derived1] shouldEqual d1
     // a value class is defined by its underlying schema, like an implicit Schema of a value class in Scala 2
@@ -93,7 +93,7 @@ class Scala3ResolutionSpec extends AnyFunSuite {
 
   test("derives json.Schema on a recursive type") {
     val sig = "com.github.andyglow.jsonschema.skeleton.Scala3ResolutionSpec.RecDerived"
-    summon[Schema[RecDerived]] shouldEqual `def`[RecDerived](sig, `object`(Field("value", `integer`), Field("next", `ref`[RecDerived](sig), required = false)))
+    summon[Schema[RecDerived]] shouldEqual `def`[RecDerived](sig, `object`(Field("value", `integer`), Field("next", `option`(`ref`[RecDerived](sig)), required = false)))
   }
 
   test("a given defined with Json.schema doesn't pick itself up (and doesn't deadlock at runtime)") {
@@ -108,7 +108,7 @@ class Scala3ResolutionSpec extends AnyFunSuite {
   test("auto: `import Json.auto.given` derives nested types inline, like plain derivation") {
     import Json.auto.given
     summon[json.schema.Predef[HasLeaf]].schema shouldEqual Json.schema[HasLeaf]
-    summon[json.schema.Predef[HasLeaf]].schema shouldEqual `object`[HasLeaf](Field("leaf", leaf), Field("opt", leaf, required = false))
+    summon[json.schema.Predef[HasLeaf]].schema shouldEqual `object`[HasLeaf](Field("leaf", leaf), Field("opt", `option`(leaf), required = false))
     summon[json.schema.Predef[Linked]].schema shouldEqual Json.schema[Linked]
     // built-ins keep their own Predef: auto declines for types it can't derive
     summon[json.schema.Predef[Int]].schema shouldEqual `integer`
@@ -118,7 +118,7 @@ class Scala3ResolutionSpec extends AnyFunSuite {
   test("auto: the Scala 2 form `import Json.auto._` works too, and a user Schema still becomes a definition") {
     import Json.auto._
     import GivenSelf.given
-    summon[json.schema.Predef[HasLeaf]].schema shouldEqual `object`[HasLeaf](Field("leaf", `def`[Leaf](leafSig, leaf)), Field("opt", `def`[Leaf](leafSig, leaf), required = false))
+    summon[json.schema.Predef[HasLeaf]].schema shouldEqual `object`[HasLeaf](Field("leaf", `def`[Leaf](leafSig, leaf)), Field("opt", `option`(`def`[Leaf](leafSig, leaf)), required = false))
   }
 
   test("an implicit Schema[Sub] is not used for its supertype", TriageB) {
@@ -129,7 +129,7 @@ class Scala3ResolutionSpec extends AnyFunSuite {
 
   test("refs and defs agree on names through a type alias", TriageB) {
     val sig = "com.github.andyglow.jsonschema.skeleton.Scala3ResolutionSpec.ViaAlias"
-    Json.schema[ViaAlias] shouldEqual `def`[ViaAlias](sig, `object`(Field("next", `ref`[ViaAlias](sig), required = false)))
+    Json.schema[ViaAlias] shouldEqual `def`[ViaAlias](sig, `object`(Field("next", `option`(`ref`[ViaAlias](sig)), required = false)))
   }
 
   test("a zero-field case class is an empty object", TriageB) {
@@ -149,7 +149,7 @@ class Scala3ResolutionSpec extends AnyFunSuite {
   test("every type is dealiased: an implicit Schema[String] is the definition java.lang.String, at the root too") {
     import StringSchema.*
     val s = `def`[String]("java.lang.String", `string`)
-    Json.schema[HasStrings] shouldEqual `object`[HasStrings](Field("s", s), Field("o", s, required = false))
+    Json.schema[HasStrings] shouldEqual `object`[HasStrings](Field("s", s), Field("o", `option`(s), required = false))
     Json.schema[String] shouldEqual s
     Json.schema[IntBox] shouldEqual `object`[Box[Int]](Field("v", `integer`))
   }
@@ -217,7 +217,7 @@ class Scala3ResolutionSpec extends AnyFunSuite {
   }
 
   private val grec                               = "com.github.andyglow.jsonschema.skeleton.Scala3ResolutionSpec.GRec"
-  private def grecDef(sig: String, v: Schema[?]) = `def`[Any](sig, `object`[Any](Field("v", v), Field("next", `ref`[Any](sig), required = false)))
+  private def grecDef(sig: String, v: Schema[?]) = `def`[Any](sig, `object`[Any](Field("v", v), Field("next", `option`(`ref`[Any](sig)), required = false)))
 
   test("recursive generic derives: the given's provisional definition name is replaced by the consumer's concrete one, refs included (BACKLOG #9)") {
     import PlainGivens.given

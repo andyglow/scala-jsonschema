@@ -6,6 +6,16 @@ Written and checked by `com.github.andyglow.jsonschema.harness.Golden` (api test
   (oneOf/allOf members, enum values, validations) are sorted, since the Schema value has no order for them.
 - `draft-04`, `draft-07`, `draft-2020-12`: the rendered JSON with object keys and arrays sorted (canonical form).
 
+The `schema` is the tree as derived (with its `option` nodes); the renders use the default profile,
+`JsonSchemaProfile.Neutral`.
+
+## The Legacy set: `../golden-legacy`
+
+`Golden.check` also checks every case against `api/src/test/resources/golden-legacy/<name>.json`: the schema lowered
+by `JsonSchemaProfile.Legacy` and rendered with Legacy as the implicit profile. These files are a verbatim copy of
+the 0.7 goldens (commit 0659816), so passing them proves Legacy reproduces 0.7 byte for byte. Update mode only adds
+missing Legacy files; it never rewrites existing ones (set `GOLDEN_UPDATE_LEGACY=1` to do that on purpose).
+
 ## Base files and per-version overrides
 
 The base file `<name>.json` is the **target** behavior, the one every Scala version (including the Scala 3 macro)

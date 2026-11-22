@@ -107,10 +107,13 @@ sealed trait Schema[+T] {
 
     case _ => false
   }
-  def withDescription(x: String): Self                                                            = duplicate(description = Some(x))
-  def withTitle(x: String): Self                                                                  = duplicate(title = Some(x))
-  def withDiscriminationKey(x: String): Self                                                      = duplicate(discriminationKey = Some(x))
-  def toDefinition[TT >: T](sig: String): Schema.`def`[TT]                                        = Schema.`def`(sig, this)
+  def withDescription(x: String): Self                     = duplicate(description = Some(x))
+  def withTitle(x: String): Self                           = duplicate(title = Some(x))
+  def withDiscriminationKey(x: String): Self               = duplicate(discriminationKey = Some(x))
+  def toDefinition[TT >: T](sig: String): Schema.`def`[TT] = Schema.`def`(sig, this)
+
+  /** This schema shaped by `profile` now (see [[json.schema.JsonSchemaProfile]]): its `option` nodes become plain JSON Schema. Idempotent, so a later render, under any profile, keeps this shape. */
+  def withProfile(profile: json.schema.JsonSchemaProfile): Schema[T]                              = profile.lower(this)
   @deprecated("please use `toDefinition` instead", "1.0.0") def apply(refName: String): Schema[T] =
     toDefinition(refName)
 }
@@ -561,6 +564,7 @@ object Schema extends SchemaCompanionPlatform {
           case `allof`(ys)             => `allof`(ys map deepCopy)
           case `not`(y)                => `not`(deepCopy(y))
           case `value-class`(y)        => `value-class`[Any, Any](deepCopy(y).asInstanceOf[Schema[Any]])
+          case `option`(y)             => `option`[Any](deepCopy(y).asInstanceOf[Schema[Any]])
           case `def`(s, y)             => `def`(if (s == oldSig) newSig else s, deepCopy(y))
           case `ref`(s) if s == oldSig => `ref`(newSig)
           case y                       => y
@@ -647,6 +651,44 @@ object Schema extends SchemaCompanionPlatform {
     override def equals(obj: Any): Boolean    = obj match {
       case `const`(v) => value == v && super.equals(obj)
       case _          => false
+    }
+  }
+
+  // +------------
+  // | Null
+  // +---------------
+  // `{"type":"null"}`, valid in every draft from 04 on. The derivation never emits it; a profile's `Option` lowering does (`oneof{X, null}`).
+  //
+  sealed class `null` extends Schema[Null] {
+    type Self = `null`
+    def mkCopy()                              = new `null`
+    override def canEqual(that: Any): Boolean = that.isInstanceOf[`null`]
+    override def hashCode: Int                = "null".hashCode
+    override def jsonType: String             = "null"
+    override def toString: String             = ToString(_ append "null")
+  }
+  object `null` extends `null`
+
+  // +------------
+  // | Option
+  // +---------------
+  // "The Scala type here is `Option[T]`", in any position (root, collection element, map value, field). The macros emit it for every `Option`;
+  // nesting is kept (`Option[Option[T]]` is option(option(T))). It has no JSON Schema form of its own: a [[json.schema.JsonSchemaProfile]] lowers it
+  // before rendering (the default, Neutral, to "T or null"; Legacy to the 0.7 shapes). See `Schema#withProfile`.
+  //
+  final case class `option`[T](inner: Schema[T]) extends Schema[Option[T]] {
+    type Self = `option`[T]
+    def mkCopy()                              = new `option`[T](inner)
+    override def canEqual(that: Any): Boolean = that.isInstanceOf[`option`[_]]
+    override def equals(obj: Any): Boolean    = obj match {
+      case `option`(i) => inner == i && super.equals(obj)
+      case _           => false
+    }
+    override def jsonType: String = inner.jsonType
+    override def toString: String = ToString { sb =>
+      sb append "option("
+      sb append inner
+      sb append ")"
     }
   }
 }

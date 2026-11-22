@@ -8,6 +8,19 @@
   [#437](https://github.com/andyglow/scala-jsonschema/pull/437) (refined and derived on Scala 3).
 
   **Breaking**
+  - every `Option[X]` renders as "X or null", at the root, in collections, as map values and as fields: `"type":
+    [X, "null"]` where X has one JSON type, otherwise `oneOf: [X, {"type": "null"}]`. An `Option` field is still not
+    required; `Option[Option[X]]` is the same as `Option[X]`. Before, a field was X (so the `"o": null` that circe
+    and upickle write didn't validate) and any other `Option` was `oneOf(object{value: X}, enum["None"])`, which no
+    JSON library writes. `JsonSchemaProfile.Legacy` gives the 0.7 output back, byte for byte: one implicit
+    `JsonSchemaProfile` where you render, or `schema.withProfile(JsonSchemaProfile.Legacy)`
+  - the derived `json.Schema` tree keeps `Option` as the new `` `option` `` node: an `Option` field is
+    `Field("o", option(X), required = false)` (was X), any other `Option` is `option(X)` (was the `Some`/`None`
+    `oneof`). Code that walks or compares derived trees sees it; `withProfile(JsonSchemaProfile.Legacy)` gives the
+    0.7 tree. New leaf `` `null` `` (`{"type": "null"}`)
+  - `AsValue.schema`, `Json.stringify`, the `stringify`/`draft04`/`draft06`/`draft07` syntax and `asPlay`, `asCirce`,
+    `asSpray`, `asJson4s`, `asU` take an implicit `JsonSchemaProfile` (source compatible: without one in scope,
+    `JsonSchemaProfile.Neutral` is used)
   - the groupId is `io.github.andyglow` (was `com.github.andyglow`); the Scala packages are unchanged (#433)
   - Scala 2.11 is no longer published (#429). Built against current libraries: play-json 3.0.6 (now
     `org.playframework`; stay on 0.7.x for `com.typesafe.play` 2.x), circe 0.14.17, json4s 4.0.7, ujson/upickle
@@ -41,6 +54,10 @@
     order); failures are `JsonParseException`s with the offset; `MutableValue` and the Java classes are gone (#431)
 
   **New**
+  - `json.schema.JsonSchemaProfile`: how the renderer shapes what the derivation records but doesn't decide (in
+    0.8, `Option`). `JsonSchemaProfile.Neutral` is the default, `JsonSchemaProfile.Legacy` is the 0.7 output.
+    `schema.withProfile(p)` shapes a schema right away; a later render keeps that shape
+  - parser: `ParseJsonSchema` reads `"type": "null"` and `"type": [X, "null"]` (as `oneof{X, null}`)
   - Scala 3.3 LTS: every module is published for Scala 3, and the same user code compiles on Scala 2 and 3
     (`Json.schema`, `Json.objectSchema`, `Json.sig`, `Json.auto`) (#433, #436, #437)
   - Scala 3: `derives json.Schema`, the same as a user-provided implicit `Schema` in the companion: the type

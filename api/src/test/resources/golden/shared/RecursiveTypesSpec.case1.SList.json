@@ -18,8 +18,11 @@
           "required": false,
           "rwMode": "ReadWrite",
           "schema": {
-            "kind": "ref",
-            "sig": "com.github.andyglow.jsonschema.RecursiveTypesSpec.case1.SList"
+            "kind": "option",
+            "schema": {
+              "kind": "ref",
+              "sig": "com.github.andyglow.jsonschema.RecursiveTypesSpec.case1.SList"
+            }
           }
         }
       ]
@@ -36,7 +39,14 @@
             "type": "string"
           },
           "tail": {
-            "$ref": "#/definitions/com.github.andyglow.jsonschema.RecursiveTypesSpec.case1.SList"
+            "oneOf": [
+              {
+                "$ref": "#/definitions/com.github.andyglow.jsonschema.RecursiveTypesSpec.case1.SList"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -59,7 +69,14 @@
             "type": "string"
           },
           "tail": {
-            "$ref": "#com.github.andyglow.jsonschema.RecursiveTypesSpec.case1.SList"
+            "oneOf": [
+              {
+                "$ref": "#com.github.andyglow.jsonschema.RecursiveTypesSpec.case1.SList"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -79,7 +96,14 @@
             "type": "string"
           },
           "tail": {
-            "$ref": "#com.github.andyglow.jsonschema.RecursiveTypesSpec.case1.SList"
+            "oneOf": [
+              {
+                "$ref": "#com.github.andyglow.jsonschema.RecursiveTypesSpec.case1.SList"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [

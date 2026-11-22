@@ -135,6 +135,7 @@ class TriageBPendingSpec extends AnyFunSuite {
       case `allof`(ts)      => ts.toList.flatMap(go)
       case Schema.`not`(t)  => go(t)
       case `value-class`(t) => go(t)
+      case `option`(t)      => go(t)
       case `enum`(t, _)     => go(t)
       case _                => Nil
     }
@@ -184,7 +185,11 @@ class TriageBPendingSpec extends AnyFunSuite {
       "com.github.andyglow.jsonschema.characterization.TriageBPendingSpec.R[java.lang.String]",
       `object`[R[java.lang.String]](
         Field("a", `string`),
-        Field("next", `ref`[R[java.lang.String]]("com.github.andyglow.jsonschema.characterization.TriageBPendingSpec.R[java.lang.String]"), required = false)
+        Field(
+          "next",
+          `option`(`ref`[R[java.lang.String]]("com.github.andyglow.jsonschema.characterization.TriageBPendingSpec.R[java.lang.String]")),
+          required = false
+        )
       )
     )
   }

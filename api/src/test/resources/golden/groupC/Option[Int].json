@@ -1,100 +1,31 @@
 {
   "schema": {
-    "kind": "oneof",
-    "members": [
-      {
-        "kind": "object",
-        "fields": [
-          {
-            "name": "value",
-            "required": true,
-            "rwMode": "ReadWrite",
-            "schema": {
-              "kind": "integer"
-            }
-          }
-        ]
-      },
-      {
-        "kind": "enum",
-        "type": {
-          "kind": "string"
-        },
-        "values": [
-          "None"
-        ]
-      }
-    ]
+    "kind": "option",
+    "schema": {
+      "kind": "integer"
+    }
   },
   "draft-04": {
     "$schema": "http://json-schema.org/draft-04/schema#",
-    "oneOf": [
-      {
-        "additionalProperties": false,
-        "properties": {
-          "value": {
-            "type": "integer"
-          }
-        },
-        "required": [
-          "value"
-        ],
-        "type": "object"
-      },
-      {
-        "enum": [
-          "None"
-        ],
-        "type": "string"
-      }
+    "type": [
+      "integer",
+      "null"
     ]
   },
   "draft-07": {
     "$id": "golden",
     "$schema": "http://json-schema.org/draft-07/schema#",
-    "oneOf": [
-      {
-        "additionalProperties": false,
-        "properties": {
-          "value": {
-            "type": "integer"
-          }
-        },
-        "required": [
-          "value"
-        ],
-        "type": "object"
-      },
-      {
-        "enum": [
-          "None"
-        ],
-        "type": "string"
-      }
+    "type": [
+      "integer",
+      "null"
     ]
   },
   "draft-2020-12": {
     "$id": "golden",
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "oneOf": [
-      {
-        "additionalProperties": false,
-        "properties": {
-          "value": {
-            "type": "integer"
-          }
-        },
-        "required": [
-          "value"
-        ],
-        "type": "object"
-      },
-      {
-        "enum": [
-          "None"
-        ],
-        "type": "string"
-      }
+    "type": [
+      "integer",
+      "null"
     ]
   }
 }

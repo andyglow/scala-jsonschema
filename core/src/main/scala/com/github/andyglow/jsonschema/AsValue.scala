@@ -1,7 +1,7 @@
 package com.github.andyglow.jsonschema
 
 import com.github.andyglow.json.Value._
-import json.schema.Version
+import json.schema.{JsonSchemaProfile, Version}
 
 trait AsValue {
 
@@ -12,6 +12,7 @@ trait AsValue {
 
 object AsValue {
 
-  def schema[V <: Version](x: json.Schema[_], v: V)(implicit asValue: AsValueBuilder[V]): obj =
-    asValue(v).schema(x)
+  /** `x` rendered for version `v`, its `option` nodes shaped by the implicit profile in scope, or by [[JsonSchemaProfile.Neutral]] when there is none. */
+  def schema[V <: Version](x: json.Schema[_], v: V)(implicit asValue: AsValueBuilder[V], profile: JsonSchemaProfile): obj =
+    asValue(v).schema(profile.lower(x))
 }

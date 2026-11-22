@@ -1,0 +1,228 @@
+{
+  "schema": {
+    "kind": "object",
+    "fields": [
+      {
+        "name": "f",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "def",
+          "sig": "com.github.andyglow.jsonschema.characterization.EntryPointsCharSpec.Foo",
+          "schema": {
+            "kind": "object",
+            "fields": [
+              {
+                "name": "a",
+                "required": true,
+                "rwMode": "ReadWrite",
+                "schema": {
+                  "kind": "integer"
+                }
+              },
+              {
+                "name": "b",
+                "required": true,
+                "rwMode": "ReadWrite",
+                "schema": {
+                  "kind": "string"
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "name": "l",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "array",
+          "unique": false,
+          "items": {
+            "kind": "def",
+            "sig": "com.github.andyglow.jsonschema.characterization.EntryPointsCharSpec.Foo",
+            "schema": {
+              "kind": "object",
+              "fields": [
+                {
+                  "name": "a",
+                  "required": true,
+                  "rwMode": "ReadWrite",
+                  "schema": {
+                    "kind": "integer"
+                  }
+                },
+                {
+                  "name": "b",
+                  "required": true,
+                  "rwMode": "ReadWrite",
+                  "schema": {
+                    "kind": "string"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "name": "o",
+        "required": false,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "def",
+          "sig": "com.github.andyglow.jsonschema.characterization.EntryPointsCharSpec.Foo",
+          "schema": {
+            "kind": "object",
+            "fields": [
+              {
+                "name": "a",
+                "required": true,
+                "rwMode": "ReadWrite",
+                "schema": {
+                  "kind": "integer"
+                }
+              },
+              {
+                "name": "b",
+                "required": true,
+                "rwMode": "ReadWrite",
+                "schema": {
+                  "kind": "string"
+                }
+              }
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "draft-04": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "additionalProperties": false,
+    "definitions": {
+      "com.github.andyglow.jsonschema.characterization.EntryPointsCharSpec.Foo": {
+        "additionalProperties": false,
+        "properties": {
+          "a": {
+            "type": "integer"
+          },
+          "b": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "a",
+          "b"
+        ],
+        "type": "object"
+      }
+    },
+    "properties": {
+      "f": {
+        "$ref": "#/definitions/com.github.andyglow.jsonschema.characterization.EntryPointsCharSpec.Foo"
+      },
+      "l": {
+        "items": {
+          "$ref": "#/definitions/com.github.andyglow.jsonschema.characterization.EntryPointsCharSpec.Foo"
+        },
+        "type": "array"
+      },
+      "o": {
+        "$ref": "#/definitions/com.github.andyglow.jsonschema.characterization.EntryPointsCharSpec.Foo"
+      }
+    },
+    "required": [
+      "f",
+      "l"
+    ],
+    "type": "object"
+  },
+  "draft-07": {
+    "$id": "golden",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "additionalProperties": false,
+    "definitions": {
+      "com.github.andyglow.jsonschema.characterization.EntryPointsCharSpec.Foo": {
+        "$id": "#com.github.andyglow.jsonschema.characterization.EntryPointsCharSpec.Foo",
+        "additionalProperties": false,
+        "properties": {
+          "a": {
+            "type": "integer"
+          },
+          "b": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "a",
+          "b"
+        ],
+        "type": "object"
+      }
+    },
+    "properties": {
+      "f": {
+        "$ref": "#com.github.andyglow.jsonschema.characterization.EntryPointsCharSpec.Foo"
+      },
+      "l": {
+        "items": {
+          "$ref": "#com.github.andyglow.jsonschema.characterization.EntryPointsCharSpec.Foo"
+        },
+        "type": "array"
+      },
+      "o": {
+        "$ref": "#com.github.andyglow.jsonschema.characterization.EntryPointsCharSpec.Foo"
+      }
+    },
+    "required": [
+      "f",
+      "l"
+    ],
+    "type": "object"
+  },
+  "draft-2020-12": {
+    "$defs": {
+      "com.github.andyglow.jsonschema.characterization.EntryPointsCharSpec.Foo": {
+        "$anchor": "com.github.andyglow.jsonschema.characterization.EntryPointsCharSpec.Foo",
+        "additionalProperties": false,
+        "properties": {
+          "a": {
+            "type": "integer"
+          },
+          "b": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "a",
+          "b"
+        ],
+        "type": "object"
+      }
+    },
+    "$id": "golden",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "f": {
+        "$ref": "#com.github.andyglow.jsonschema.characterization.EntryPointsCharSpec.Foo"
+      },
+      "l": {
+        "items": {
+          "$ref": "#com.github.andyglow.jsonschema.characterization.EntryPointsCharSpec.Foo"
+        },
+        "type": "array"
+      },
+      "o": {
+        "$ref": "#com.github.andyglow.jsonschema.characterization.EntryPointsCharSpec.Foo"
+      }
+    },
+    "required": [
+      "f",
+      "l"
+    ],
+    "type": "object"
+  }
+}

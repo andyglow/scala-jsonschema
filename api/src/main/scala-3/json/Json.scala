@@ -3,7 +3,7 @@ package json
 import com.github.andyglow.jsonschema._
 import com.github.andyglow.jsonschema.derivation.{AutoGuard, SchemaMacro}
 import json.Schema.`object`
-import json.schema.{Predef, Version}
+import json.schema.{JsonSchemaProfile, Predef, Version}
 
 /** The Scala 3 facade, source-compatible with the Scala 2 one (`api/src/main/scala-2/json/Json.scala`). The macro implementation lives in `core` (`com.github.andyglow.jsonschema.derivation`). */
 object Json {
@@ -24,6 +24,7 @@ object Json {
     implicit inline def derived[T](implicit allowed: AutoGuard.Allowed): Predef[T] = ${ SchemaMacro.autoImpl[T]('allowed) }
   }
 
-  def stringify[T, V <: Version: AsValueBuilder](schema: Schema[T], version: V): String =
+  /** `schema` rendered for `version`, as a string. Its `Option`s are shaped by the implicit [[json.schema.JsonSchemaProfile]] in scope, by default `JsonSchemaProfile.Neutral`. */
+  def stringify[T, V <: Version](schema: Schema[T], version: V)(implicit asValue: AsValueBuilder[V], profile: JsonSchemaProfile): String =
     schema.stringify(version)
 }

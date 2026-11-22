@@ -7,7 +7,10 @@
         "required": false,
         "rwMode": "ReadWrite",
         "schema": {
-          "kind": "string"
+          "kind": "option",
+          "schema": {
+            "kind": "string"
+          }
         }
       },
       {
@@ -15,7 +18,10 @@
         "required": false,
         "rwMode": "ReadWrite",
         "schema": {
-          "kind": "integer"
+          "kind": "option",
+          "schema": {
+            "kind": "integer"
+          }
         }
       }
     ]
@@ -25,10 +31,16 @@
     "additionalProperties": false,
     "properties": {
       "bar": {
-        "type": "integer"
+        "type": [
+          "integer",
+          "null"
+        ]
       },
       "name": {
-        "type": "string"
+        "type": [
+          "null",
+          "string"
+        ]
       }
     },
     "type": "object"
@@ -39,10 +51,16 @@
     "additionalProperties": false,
     "properties": {
       "bar": {
-        "type": "integer"
+        "type": [
+          "integer",
+          "null"
+        ]
       },
       "name": {
-        "type": "string"
+        "type": [
+          "null",
+          "string"
+        ]
       }
     },
     "type": "object"
@@ -53,10 +71,16 @@
     "additionalProperties": false,
     "properties": {
       "bar": {
-        "type": "integer"
+        "type": [
+          "integer",
+          "null"
+        ]
       },
       "name": {
-        "type": "string"
+        "type": [
+          "null",
+          "string"
+        ]
       }
     },
     "type": "object"

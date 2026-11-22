@@ -202,7 +202,22 @@ class ParseJsonSchemaSpec extends AnyFunSuite {
   }
 
   test("unsupported type is a failure") {
-    parseType("""{ "type": "null" }""").isFailure shouldBe true
+    parseType("""{ "type": "foo" }""").isFailure shouldBe true
+    parseType("""{ "type": ["string", "integer"] }""").isFailure shouldBe true
+    parseType("""{ "type": ["null", "null"] }""").isFailure shouldBe true
+  }
+
+  test("null, and X or null (how an Option renders)") {
+    parseType("""{ "type": "null" }""").value shouldBe Schema.`null`
+    parseType("""{ "type": ["string", "null"] }""").value shouldBe `oneof`.of(`string`, Schema.`null`)
+    parseType("""{ "type": ["null", "integer"] }""").value shouldBe `oneof`.of(`integer`, Schema.`null`)
+    parseType {
+      """{
+        | "type": "object",
+        | "properties": { "a": { "type": ["array", "null"], "items": { "type": "string" } } }
+        |}
+      """.stripMargin
+    }.value shouldBe `object`(`object`.Field("a", `oneof`.of(`array`[String, List](`string`), Schema.`null`), required = false))
   }
 
   test("apply: accepts a draft-04 schema") {

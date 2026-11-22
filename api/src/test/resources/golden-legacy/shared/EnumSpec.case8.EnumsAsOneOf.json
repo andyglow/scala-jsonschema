@@ -1,0 +1,66 @@
+{
+  "schema": {
+    "kind": "oneof",
+    "members": [
+      {
+        "kind": "const",
+        "value": "V1",
+        "title": "v1",
+        "description": "Version 1"
+      },
+      {
+        "kind": "const",
+        "value": "V2",
+        "title": "v2",
+        "description": "Version 2"
+      }
+    ]
+  },
+  "draft-04": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "oneOf": [
+      {
+        "const": "V1",
+        "description": "Version 1",
+        "title": "v1"
+      },
+      {
+        "const": "V2",
+        "description": "Version 2",
+        "title": "v2"
+      }
+    ]
+  },
+  "draft-07": {
+    "$id": "golden",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "oneOf": [
+      {
+        "const": "V1",
+        "description": "Version 1",
+        "title": "v1"
+      },
+      {
+        "const": "V2",
+        "description": "Version 2",
+        "title": "v2"
+      }
+    ]
+  },
+  "draft-2020-12": {
+    "$id": "golden",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "oneOf": [
+      {
+        "const": "V1",
+        "description": "Version 1",
+        "title": "v1"
+      },
+      {
+        "const": "V2",
+        "description": "Version 2",
+        "title": "v2"
+      }
+    ]
+  }
+}

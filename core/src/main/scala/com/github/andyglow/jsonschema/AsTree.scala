@@ -50,5 +50,7 @@ object AsTree {
     case `ref`(sig)         => Apply("ref", Iterator(sig))
     case `value-class`(tpe) => Apply("value-class", Iterator(AsTree(tpe)))
     case `const`(v)         => Apply("const", Iterator(v.toString))
+    case _: `null`          => "null"
+    case `option`(tpe)      => Apply("option", Iterator(AsTree(tpe)))
   }
 }

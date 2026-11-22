@@ -6,7 +6,9 @@ import json.schema.Version._
 
 class AsDraft07(val v: Draft07) extends AsValue with AsDraftSupport with Pre09 {
 
-  def schema(x: json.Schema[_]): obj = withDefinitionNames(x) {
+  def schema(x: json.Schema[_]): obj = render(lowered(x))
+
+  private def render(x: json.Schema[_]): obj = withDefinitionNames(x) {
     val base = obj(f"$$schema" -> v.uri, f"$$id" -> v.id)
 
     val definitions = inferDefinitions(x)
