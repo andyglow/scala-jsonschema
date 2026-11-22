@@ -38,7 +38,7 @@ println(Json.stringify(schema, Draft07("https://example.com/person.json")))
   "additionalProperties": false,
   "properties": {
     "name": { "type": "string" },
-    "nickname": { "type": "string" },
+    "nickname": { "type": ["string", "null"] },
     "age": { "default": 18, "type": "integer" },
     "company": {
       "type": "object",
@@ -51,9 +51,10 @@ println(Json.stringify(schema, Draft07("https://example.com/person.json")))
 }
 ```
 
-`Option` fields and fields with a default value are optional. A default is written into the schema when it can be
-turned into JSON: primitives, strings and collections/maps of them always can, other types need a `ToValue`, which
-the JSON-library bridges derive from your encoders.
+`Option` fields and fields with a default value are optional. An `Option[X]` is "X or null" wherever it appears
+(see @ref:[Option](rendering.md#option)). A default is written into the schema when it can be turned into JSON:
+primitives, strings and collections/maps of them always can, other types need a `ToValue`, which the JSON-library
+bridges derive from your encoders.
 
 The same code works on Scala 3. There you can also derive the schema with the type, which makes each such type a
 @ref:[definition](definitions.md):

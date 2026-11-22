@@ -14,10 +14,10 @@ class Scala3OnlyCharSpec extends AnyFunSuite {
 
   test("F4: `= Some(x)` emits the default via ToValue", TriageA) {
     import OptionToValue._
-    Json.schema[SomeDefault] shouldEqual `object`[SomeDefault](Field.fromJson("b", `string`, required = false, default = Some(str("x"))))
+    Json.schema[SomeDefault] shouldEqual `object`[SomeDefault](Field.fromJson("b", `option`(`string`), required = false, default = Some(str("x"))))
   }
 
   test("F4: `= Option.empty[String]` emits no default", TriageA) {
-    Json.schema[OptionEmptyTypedDefault] shouldEqual `object`[OptionEmptyTypedDefault](Field("a", `string`, required = false))
+    Json.schema[OptionEmptyTypedDefault] shouldEqual `object`[OptionEmptyTypedDefault](Field("a", `option`(`string`), required = false))
   }
 }

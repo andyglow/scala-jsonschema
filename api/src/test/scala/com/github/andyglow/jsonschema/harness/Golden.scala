@@ -8,6 +8,7 @@ import com.github.andyglow.json.Value._
 import com.github.andyglow.jsonschema.AsValue
 import json.Schema
 import json.Schema._
+import json.schema.JsonSchemaProfile
 import json.schema.Version._
 import org.scalatest.Assertions
 
@@ -46,8 +47,15 @@ object Golden extends Assertions {
     }
   }
 
-  /** Everything that goes into a golden file, as text. */
-  def render(schema: Schema[_]): String = {
+  /** The Legacy set: the golden files as they were in 0.7 (`JsonSchemaProfile.Legacy` must reproduce them byte for byte). Never rewritten by update mode, which only adds missing files; set
+    * `GOLDEN_UPDATE_LEGACY=1` to rewrite them on purpose.
+    */
+  lazy val legacyDir: Path = dir.resolveSibling("golden-legacy")
+
+  def legacyUpdateMode: Boolean = sys.env.get("GOLDEN_UPDATE_LEGACY").exists(v => v == "1" || v == "true")
+
+  /** Everything that goes into a golden file, as text. The schema is dumped as it is; the renders use `profile`. */
+  def render(schema: Schema[_])(implicit profile: JsonSchemaProfile): String = {
     val drafts: List[(String, () => Value)] = List(
       "draft-04"      -> (() => AsValue.schema(schema, Draft04())),
       "draft-07"      -> (() => AsValue.schema(schema, Draft07(Id))),
@@ -62,7 +70,14 @@ object Golden extends Assertions {
     Printer.print(mkObj(("schema" -> SchemaDump(schema)) :: rendered)) + "\n"
   }
 
-  def check(name: String, schema: Schema[_]): Unit = checkIn(dir, name, schema, updateMode)
+  /** Checks `schema` against both sets: `golden/` (the tree as derived, rendered under the default profile, Neutral) and `golden-legacy/` (the tree lowered by `JsonSchemaProfile.Legacy` and rendered
+    * with Legacy as the implicit profile).
+    */
+  def check(name: String, schema: Schema[_]): Unit = {
+    val legacyFile = fileFor(legacyDir, name)
+    checkIn(legacyDir, name, schema.withProfile(JsonSchemaProfile.Legacy), legacyUpdateMode || (updateMode && !Files.exists(legacyFile)))(JsonSchemaProfile.Legacy)
+    checkIn(dir, name, schema, updateMode)
+  }
 
   /** `2.12`, `2.13` or `3`. (On Scala 3 the standard library still reports 2.13.x, hence the class probe.) */
   lazy val scalaBinaryVersion: String = {
@@ -82,7 +97,7 @@ object Golden extends Assertions {
     if (Files.exists(specific)) specific else dir.resolve(name + ".json")
   }
 
-  def checkIn(dir: Path, name: String, schema: Schema[_], update: Boolean): Unit = {
+  def checkIn(dir: Path, name: String, schema: Schema[_], update: Boolean)(implicit profile: JsonSchemaProfile): Unit = {
     val file   = fileFor(dir, name)
     val actual = render(schema)
     if (update) {
@@ -216,6 +231,8 @@ object Golden extends Assertions {
         case `ref`(sig)       => List("kind" -> str("ref"), "sig" -> str(sig))
         case `value-class`(t) => List("kind" -> str("value-class"), "schema" -> apply(t))
         case `const`(v)       => List("kind" -> str("const"), "value" -> v)
+        case _: `null`        => List("kind" -> str("null"))
+        case `option`(t)      => List("kind" -> str("option"), "schema" -> apply(t))
       }
       mkObj(body ++ meta)
     }

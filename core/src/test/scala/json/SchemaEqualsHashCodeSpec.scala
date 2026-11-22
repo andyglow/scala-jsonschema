@@ -109,12 +109,17 @@ class SchemaEqualsHashCodeSpec extends AnyWordSpec {
       assertEqualAndSameHash(`def`[Any]("x", `integer`), `def`[Any]("x", new `integer`))
       assertEqualAndSameHash(`value-class`[Any, Int](`integer`), `value-class`[Any, Int](new `integer`))
       assertEqualAndSameHash(`const`[Any](str("x")), `const`[Any](str("x")))
+      assertEqualAndSameHash(Schema.`null`, new Schema.`null`)
+      assertEqualAndSameHash(`option`[Int](`integer`), `option`[Int](new `integer`))
     }
     "not be vacuously equal" in {
       assertNotEqual(`def`[Any]("x", `integer`), `def`[Any]("y", `integer`))
       assertNotEqual(`const`[Any](str("x")), `const`[Any](str("y")))
       assertNotEqual(`oneof`.of[Any](`string`, `integer`), `oneof`.of[Any](`string`, `boolean`))
       assertNotEqual(`array`[String, List](`string`), `array`[String, List](`string`, unique = true))
+      assertNotEqual(`option`[Int](`integer`), `option`[String](`string`))
+      assertNotEqual(`option`[Int](`integer`), `integer`)
+      assertNotEqual(Schema.`null`, `string`)
     }
   }
 }

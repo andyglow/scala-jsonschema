@@ -10,7 +10,10 @@
             "required": false,
             "rwMode": "ReadWrite",
             "schema": {
-              "kind": "string"
+              "kind": "option",
+              "schema": {
+                "kind": "string"
+              }
             }
           },
           {
@@ -82,7 +85,10 @@
         "additionalProperties": false,
         "properties": {
           "err": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "intVal": {
             "type": "integer"
@@ -147,7 +153,10 @@
         "additionalProperties": false,
         "properties": {
           "err": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "intVal": {
             "type": "integer"
@@ -212,7 +221,10 @@
         "additionalProperties": false,
         "properties": {
           "err": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "intVal": {
             "type": "integer"

@@ -44,10 +44,10 @@ class AsPlaySpec extends AnyPropSpec {
       "additionalProperties" -> false,
       "properties"           -> Json.obj(
         "firstName"   -> Json.obj("type" -> "string"),
-        "middleName"  -> Json.obj("type" -> "string"),
+        "middleName"  -> Json.obj("type" -> Json.arr("string", "null")),
         "lastName"    -> Json.obj("type" -> "string"),
         "age"         -> Json.obj("type" -> "integer"),
-        "lastLoginMs" -> Json.obj("type" -> "number"),
+        "lastLoginMs" -> Json.obj("type" -> Json.arr("number", "null")),
         "role"        -> Json.obj(
           "type"    -> "string",
           "default" -> "e-user",
@@ -75,7 +75,7 @@ class AsPlaySpec extends AnyPropSpec {
           "default" -> Json.obj("login" -> "anonymous", "password" -> "-")
         ),
         "notes" -> Json.obj(
-          "type"                 -> "object",
+          "type"                 -> Json.arr("object", "null"),
           "additionalProperties" -> false,
           "required"             -> Json.arr("head", "tail"),
           "properties"           -> Json.obj(
@@ -87,6 +87,26 @@ class AsPlaySpec extends AnyPropSpec {
       ),
       "required" -> Json.arr("age", "lastName", "firstName")
     )
+  }
+
+  property("Option: X or null by default; Legacy as an implicit or per schema; Option defaults") {
+    import AsPlay._
+    import json.schema.JsonSchemaProfile
+    import json.schema.Version.Draft07
+
+    val s       = json.Json.schema[com.github.andyglow.jsonschema.model.WithOptionDefaults]
+    val neutral = s.asPlay(Draft07("x"))
+    (neutral \ "properties" \ "some").get shouldEqual Json.obj("type" -> Json.arr("integer", "null"), "default" -> 5)
+    (neutral \ "properties" \ "none").get shouldEqual Json.obj("type" -> Json.arr("integer", "null"))
+    (neutral \ "required").toOption shouldBe None
+
+    val legacy = s.withProfile(JsonSchemaProfile.Legacy).asPlay(Draft07("x"))
+    (legacy \ "properties" \ "some").get shouldEqual Json.obj("type" -> "integer", "default" -> 5)
+    (legacy \ "properties" \ "none").get shouldEqual Json.obj("type" -> "integer")
+    locally {
+      implicit val profile: JsonSchemaProfile = JsonSchemaProfile.Legacy
+      s.asPlay(Draft07("x")) shouldEqual legacy
+    }
   }
 
   property("Check Schema.asPlay (+ free notation, as schema/definition") {

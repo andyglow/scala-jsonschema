@@ -132,6 +132,10 @@ trait MacroCake
       implicit def _specFD = specFD
 
       def genTree: SchemaType = tpe match {
+        // `Option[X]` in every position but a field (UProductTypes wraps those): before the sum types, which would derive it as `Some | None`
+        case t if t.typeSymbol == T.option.typeSymbol && t.typeArgs.size == 1 =>
+          val x = t.typeArgs.head
+          U.Opt(t, x, resolve(x, ctx :+ t))
         case Dict(x)       => x
         case Arr(x)        => x
         case Enum(x)       => x

@@ -68,24 +68,27 @@
         "required": false,
         "rwMode": "ReadWrite",
         "schema": {
-          "kind": "enum",
-          "type": {
-            "kind": "string"
-          },
-          "values": [
-            "APRIL",
-            "AUGUST",
-            "DECEMBER",
-            "FEBRUARY",
-            "JANUARY",
-            "JULY",
-            "JUNE",
-            "MARCH",
-            "MAY",
-            "NOVEMBER",
-            "OCTOBER",
-            "SEPTEMBER"
-          ]
+          "kind": "option",
+          "schema": {
+            "kind": "enum",
+            "type": {
+              "kind": "string"
+            },
+            "values": [
+              "APRIL",
+              "AUGUST",
+              "DECEMBER",
+              "FEBRUARY",
+              "JANUARY",
+              "JULY",
+              "JUNE",
+              "MARCH",
+              "MAY",
+              "NOVEMBER",
+              "OCTOBER",
+              "SEPTEMBER"
+            ]
+          }
         }
       }
     ]
@@ -115,21 +118,28 @@
         "type": "object"
       },
       "month": {
-        "enum": [
-          "APRIL",
-          "AUGUST",
-          "DECEMBER",
-          "FEBRUARY",
-          "JANUARY",
-          "JULY",
-          "JUNE",
-          "MARCH",
-          "MAY",
-          "NOVEMBER",
-          "OCTOBER",
-          "SEPTEMBER"
-        ],
-        "type": "string"
+        "oneOf": [
+          {
+            "enum": [
+              "APRIL",
+              "AUGUST",
+              "DECEMBER",
+              "FEBRUARY",
+              "JANUARY",
+              "JULY",
+              "JUNE",
+              "MARCH",
+              "MAY",
+              "NOVEMBER",
+              "OCTOBER",
+              "SEPTEMBER"
+            ],
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ]
       },
       "off": {
         "items": {
@@ -181,21 +191,28 @@
         "type": "object"
       },
       "month": {
-        "enum": [
-          "APRIL",
-          "AUGUST",
-          "DECEMBER",
-          "FEBRUARY",
-          "JANUARY",
-          "JULY",
-          "JUNE",
-          "MARCH",
-          "MAY",
-          "NOVEMBER",
-          "OCTOBER",
-          "SEPTEMBER"
-        ],
-        "type": "string"
+        "oneOf": [
+          {
+            "enum": [
+              "APRIL",
+              "AUGUST",
+              "DECEMBER",
+              "FEBRUARY",
+              "JANUARY",
+              "JULY",
+              "JUNE",
+              "MARCH",
+              "MAY",
+              "NOVEMBER",
+              "OCTOBER",
+              "SEPTEMBER"
+            ],
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ]
       },
       "off": {
         "items": {
@@ -247,21 +264,28 @@
         "type": "object"
       },
       "month": {
-        "enum": [
-          "APRIL",
-          "AUGUST",
-          "DECEMBER",
-          "FEBRUARY",
-          "JANUARY",
-          "JULY",
-          "JUNE",
-          "MARCH",
-          "MAY",
-          "NOVEMBER",
-          "OCTOBER",
-          "SEPTEMBER"
-        ],
-        "type": "string"
+        "oneOf": [
+          {
+            "enum": [
+              "APRIL",
+              "AUGUST",
+              "DECEMBER",
+              "FEBRUARY",
+              "JANUARY",
+              "JULY",
+              "JUNE",
+              "MARCH",
+              "MAY",
+              "NOVEMBER",
+              "OCTOBER",
+              "SEPTEMBER"
+            ],
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ]
       },
       "off": {
         "items": {

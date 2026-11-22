@@ -113,14 +113,26 @@ object ParseJsonSchema {
         }
     }
 
-    val result = tpe.toSuccess("type is not defined") flatMap {
+    def makeSingle(t: String): Try[Schema[_]] = t match {
       case "string"  => makeStrOrEnum
       case "boolean" => makeBool
       case "integer" => makeInt
       case "number"  => makeNum
       case "array"   => makeArr
       case "object"  => makeObj
+      case "null"    => Success(Schema.`null`)
       case other     => Failure(new Exception(s"unsupported type: $other"))
+    }
+
+    // `"type": [X, "null"]` is how an `Option[X]` renders (JsonSchemaProfile.Neutral): `oneof{X, null}`
+    val types = x.value.get("type") collect {
+      case str(t)                                    => List(t)
+      case arr(ts) if ts.forall(_.isInstanceOf[str]) => ts.toList.collect { case str(t) => t }
+    }
+    val result = types.toSuccess("type is not defined") flatMap {
+      case List(t)                                      => makeSingle(t)
+      case List(a, b) if (a == "null") != (b == "null") => makeSingle(if (a == "null") b else a) map { s => `oneof`[Any](immutable.Set[Schema[_]](s, Schema.`null`)) }
+      case other                                        => Failure(new Exception(s"unsupported type: ${other.mkString("[", ", ", "]")}"))
     }
 
     title.map(t => result.map(_.withTitle(t))).getOrElse(result)

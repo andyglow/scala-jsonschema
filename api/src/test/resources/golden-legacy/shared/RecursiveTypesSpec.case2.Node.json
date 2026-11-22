@@ -1,0 +1,174 @@
+{
+  "schema": {
+    "kind": "def",
+    "sig": "com.github.andyglow.jsonschema.RecursiveTypesSpec.case2.Node",
+    "schema": {
+      "kind": "oneof",
+      "members": [
+        {
+          "kind": "object",
+          "fields": [
+            {
+              "name": "tag",
+              "required": true,
+              "rwMode": "ReadWrite",
+              "schema": {
+                "kind": "string"
+              }
+            },
+            {
+              "name": "children",
+              "required": true,
+              "rwMode": "ReadWrite",
+              "schema": {
+                "kind": "array",
+                "unique": false,
+                "items": {
+                  "kind": "ref",
+                  "sig": "com.github.andyglow.jsonschema.RecursiveTypesSpec.case2.Node"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "kind": "object",
+          "fields": [
+            {
+              "name": "content",
+              "required": true,
+              "rwMode": "ReadWrite",
+              "schema": {
+                "kind": "string"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "draft-04": {
+    "$ref": "#/definitions/com.github.andyglow.jsonschema.RecursiveTypesSpec.case2.Node",
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "definitions": {
+      "com.github.andyglow.jsonschema.RecursiveTypesSpec.case2.Node": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "children": {
+                "items": {
+                  "$ref": "#/definitions/com.github.andyglow.jsonschema.RecursiveTypesSpec.case2.Node"
+                },
+                "type": "array"
+              },
+              "tag": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "children",
+              "tag"
+            ]
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "content": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "content"
+            ]
+          }
+        ],
+        "type": "object"
+      }
+    }
+  },
+  "draft-07": {
+    "$id": "golden",
+    "$ref": "#com.github.andyglow.jsonschema.RecursiveTypesSpec.case2.Node",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+      "com.github.andyglow.jsonschema.RecursiveTypesSpec.case2.Node": {
+        "$id": "#com.github.andyglow.jsonschema.RecursiveTypesSpec.case2.Node",
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "children": {
+                "items": {
+                  "$ref": "#com.github.andyglow.jsonschema.RecursiveTypesSpec.case2.Node"
+                },
+                "type": "array"
+              },
+              "tag": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "children",
+              "tag"
+            ]
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "content": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "content"
+            ]
+          }
+        ],
+        "type": "object"
+      }
+    }
+  },
+  "draft-2020-12": {
+    "$defs": {
+      "com.github.andyglow.jsonschema.RecursiveTypesSpec.case2.Node": {
+        "$anchor": "com.github.andyglow.jsonschema.RecursiveTypesSpec.case2.Node",
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "children": {
+                "items": {
+                  "$ref": "#com.github.andyglow.jsonschema.RecursiveTypesSpec.case2.Node"
+                },
+                "type": "array"
+              },
+              "tag": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "children",
+              "tag"
+            ]
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "content": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "content"
+            ]
+          }
+        ],
+        "type": "object"
+      }
+    },
+    "$id": "golden",
+    "$ref": "#com.github.andyglow.jsonschema.RecursiveTypesSpec.case2.Node",
+    "$schema": "https://json-schema.org/draft/2020-12/schema"
+  }
+}

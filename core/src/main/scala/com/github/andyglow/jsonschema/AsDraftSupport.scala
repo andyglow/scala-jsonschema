@@ -40,8 +40,14 @@ trait AsDraftSupport {
   /** The name a definition signature has in the rendered document. */
   protected def definitionName(sig: String): String = Option(definitionNames.get).flatMap(_.get(sig)).getOrElse(sanitizeDefinitionName(sig))
 
-  def apply(x: json.Schema[_]): obj = withDefinitionNames(x) {
-    apply(x, None, includeType = true, isRoot = true)
+  /** A tree that reaches a renderer with `option` nodes left (rendered without `AsValue.schema`, which lowers with the profile in scope) is rendered under the default profile. Idempotent. */
+  protected def lowered(x: json.Schema[_]): json.Schema[_] = json.schema.JsonSchemaProfile.Neutral.lower(x)
+
+  def apply(x: json.Schema[_]): obj = {
+    val y = lowered(x)
+    withDefinitionNames(y) {
+      apply(y, None, includeType = true, isRoot = true)
+    }
   }
 
   def apply(x: json.Schema[_], parent: ParentSchema, includeType: Boolean, isRoot: Boolean): obj = {
@@ -124,7 +130,28 @@ trait AsDraftSupport {
     obj("type" -> x.tpe.jsonType, "enum" -> arr(x.values.toSeq))
   }
 
-  def mkOneOf(vl: ValidationList, x: `oneof`[_], isRoot: Boolean, par: ParentSchema): obj = {
+  def mkOneOf(vl: ValidationList, x: `oneof`[_], isRoot: Boolean, par: ParentSchema): obj =
+    if (x.subTypes.exists(_.isInstanceOf[`null`])) mkNullable(x) else mkPlainOneOf(x, isRoot)
+
+  /** `oneof{X, null}`, which is what a profile makes of `Option[X]`: X's keywords with `"type": [X, "null"]` when X has a single JSON type (type arrays are valid from draft-04 on), otherwise
+    * `oneOf[X, {"type": "null"}]` with each member keeping its own type: an `enum` must not take `null` from a type array, and keywords next to a `$ref` are ignored before 2019-09.
+    */
+  private def mkNullable(x: `oneof`[_]): obj = {
+    def singleType(s: Schema[_]): Boolean = s match {
+      case _: `boolean` | _: `integer` | _: `number`[_] | _: `string`[_] | _: `array`[_, _] | _: `object`[_] | _: `dictionary`[_, _, _] => true
+      case `value-class`(t)                                                                                                             => singleType(t)
+      case _                                                                                                                            => false
+    }
+    val subTypesSeq = x.subTypes.toSeq.sortBy(_.isInstanceOf[`null`]) // `null` last
+    subTypesSeq match {
+      case Seq(t, _: `null`) if singleType(t) =>
+        obj("type" -> `arr`(`str`(t.jsonType), `str`("null"))) ++ apply(t, Some(x), includeType = false, isRoot = false)
+      case _ =>
+        obj("oneOf" -> `arr`(subTypesSeq.map(apply(_, Some(x), includeType = true, isRoot = false))))
+    }
+  }
+
+  private def mkPlainOneOf(x: `oneof`[_], isRoot: Boolean): obj = {
     val subTypesSeq = x.subTypes.toSeq
     val tpe         = subTypesSeq.find {
       case `def`(_, _) => false

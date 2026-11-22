@@ -33,8 +33,11 @@
                 "required": false,
                 "rwMode": "ReadWrite",
                 "schema": {
-                  "kind": "ref",
-                  "sig": "com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList[scala.Predef.String]"
+                  "kind": "option",
+                  "schema": {
+                    "kind": "ref",
+                    "sig": "com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList[scala.Predef.String]"
+                  }
                 }
               }
             ]
@@ -54,7 +57,14 @@
             "type": "string"
           },
           "tail": {
-            "$ref": "#/definitions/com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList_scala.Predef.String_"
+            "oneOf": [
+              {
+                "$ref": "#/definitions/com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList_scala.Predef.String_"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -90,7 +100,14 @@
             "type": "string"
           },
           "tail": {
-            "$ref": "#com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList_scala.Predef.String_"
+            "oneOf": [
+              {
+                "$ref": "#com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList_scala.Predef.String_"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -123,7 +140,14 @@
             "type": "string"
           },
           "tail": {
-            "$ref": "#com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList_scala.Predef.String_"
+            "oneOf": [
+              {
+                "$ref": "#com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList_scala.Predef.String_"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [

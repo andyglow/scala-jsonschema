@@ -7,31 +7,13 @@
         "required": false,
         "rwMode": "ReadWrite",
         "schema": {
-          "kind": "oneof",
-          "members": [
-            {
-              "kind": "object",
-              "fields": [
-                {
-                  "name": "value",
-                  "required": true,
-                  "rwMode": "ReadWrite",
-                  "schema": {
-                    "kind": "integer"
-                  }
-                }
-              ]
-            },
-            {
-              "kind": "enum",
-              "type": {
-                "kind": "string"
-              },
-              "values": [
-                "None"
-              ]
+          "kind": "option",
+          "schema": {
+            "kind": "option",
+            "schema": {
+              "kind": "integer"
             }
-          ]
+          }
         }
       }
     ]
@@ -41,25 +23,9 @@
     "additionalProperties": false,
     "properties": {
       "o": {
-        "oneOf": [
-          {
-            "additionalProperties": false,
-            "properties": {
-              "value": {
-                "type": "integer"
-              }
-            },
-            "required": [
-              "value"
-            ],
-            "type": "object"
-          },
-          {
-            "enum": [
-              "None"
-            ],
-            "type": "string"
-          }
+        "type": [
+          "integer",
+          "null"
         ]
       }
     },
@@ -71,25 +37,9 @@
     "additionalProperties": false,
     "properties": {
       "o": {
-        "oneOf": [
-          {
-            "additionalProperties": false,
-            "properties": {
-              "value": {
-                "type": "integer"
-              }
-            },
-            "required": [
-              "value"
-            ],
-            "type": "object"
-          },
-          {
-            "enum": [
-              "None"
-            ],
-            "type": "string"
-          }
+        "type": [
+          "integer",
+          "null"
         ]
       }
     },
@@ -101,25 +51,9 @@
     "additionalProperties": false,
     "properties": {
       "o": {
-        "oneOf": [
-          {
-            "additionalProperties": false,
-            "properties": {
-              "value": {
-                "type": "integer"
-              }
-            },
-            "required": [
-              "value"
-            ],
-            "type": "object"
-          },
-          {
-            "enum": [
-              "None"
-            ],
-            "type": "string"
-          }
+        "type": [
+          "integer",
+          "null"
         ]
       }
     },

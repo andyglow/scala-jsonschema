@@ -8,9 +8,9 @@ import json.Schema
 /** Products: case classes and tuples -> `object` (Scala 2's `UProductTypes`).
   *
   * Fields are the first parameter list, in declaration order. Field types have the case class's type arguments substituted (`memberType`) and are dealiased at the top level (Scala 2 quirk 2). An
-  * `Option[X]` field becomes an [[Opt]] around X, emitted as X and not required. A default makes the field not required; its value is computed at RUNTIME by calling the companion's default getter
-  * (`$lessinit$greater$default$N`) and converted with `ToValue`, so `= None` emits no default when a `ToValue[Option[X]]` is in scope. Without one, only a `None` / `Option.empty` default compiles
-  * ([[optionDefault]], Scala 2 parity).
+  * `Option[X]` field becomes an [[Opt]] around X, emitted as `option(X)` and not required (a JsonSchemaProfile shapes it at render time). A default makes the field not required; its value is computed
+  * at RUNTIME by calling the companion's default getter (`$lessinit$greater$default$N`) and converted with `ToValue`, so `= None` emits no default when a `ToValue[Option[X]]` is in scope. Without
+  * one, only a `None` / `Option.empty` default compiles ([[optionDefault]], Scala 2 parity).
   *
   * Field decorations: descriptions from `@description`, scaladoc `@param` and `Json.objectSchema` ([[fieldDescriptions]]), `@readOnly` / `@writeOnly` ([[fieldRWMode]]).
   *
@@ -57,12 +57,6 @@ trait Products { this: Derivation =>
     annotations: List[Term]
   ) {
     def required: Boolean = !optional && !hasDefault
-
-    /** The node whose schema the field renders: the Option's element for `Option` fields (v1 rendering). */
-    def valueNode: Node = schema match {
-      case o: Opt if optional => o.inner
-      case other              => other
-    }
   }
 
   final case class Obj(tpe: TypeRepr, kind: ProductKind, fields: List[Field], extra: Extra = Extra()) extends Node {
@@ -76,9 +70,9 @@ trait Products { this: Derivation =>
     }
   }
 
-  def emitField(f: Field): Expr[Schema.`object`.Field[?]] = f.valueNode.tpe.asType match {
+  def emitField(f: Field): Expr[Schema.`object`.Field[?]] = f.schema.tpe.asType match {
     case '[ft] =>
-      val schema = emit(f.valueNode).asExprOf[Schema[ft]]
+      val schema = emit(f.schema).asExprOf[Schema[ft]]
       val name   = Expr(f.name)
       val req    = Expr(f.required)
       val base   = f.default match {
@@ -127,7 +121,7 @@ trait Products { this: Derivation =>
     val fields = ps map { p =>
       val inner = optionElement(p.tpe)
       val node  = inner match {
-        case Some(e) => Opt(p.tpe, resolve(e, ctx.descend(tpe)))
+        case Some(e) => Opt(optionOf(e), resolve(e, ctx.descend(tpe))) // `Option[e]`, also for a `Some[e]` field
         case None    => resolve(p.tpe, ctx.descend(tpe))
       }
       val hasDefault = p.sym.flags.is(Flags.HasDefault)

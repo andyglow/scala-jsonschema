@@ -1,7 +1,8 @@
 # Parser
 
 `scala-jsonschema-parser` goes the other way, with no dependencies: `ParseJson` parses JSON into the library's
-AST, and `ParseJsonSchema` parses a JSON Schema (a draft-04 subset) into a `json.Schema`.
+AST, and `ParseJsonSchema` parses a JSON Schema (a draft-04 subset, including `"type": [X, "null"]`) into a
+`json.Schema`.
 
 ```scala mdoc:compile-only
 import com.github.andyglow.json.ParseJson

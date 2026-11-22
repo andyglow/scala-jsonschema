@@ -13,7 +13,7 @@ object AsSpray {
 
   implicit class SpraySchemaOps[T](val x: Schema[T]) extends AnyVal {
 
-    def asSpray[V <: Version](v: V)(implicit asValue: AsValueBuilder[V]): JsObject = AsSpray(
+    def asSpray[V <: Version](v: V)(implicit asValue: AsValueBuilder[V], profile: _root_.json.schema.JsonSchemaProfile): JsObject = AsSpray(
       AsValue.schema(x, v)
     )
   }

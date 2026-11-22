@@ -1,0 +1,152 @@
+{
+  "schema": {
+    "kind": "object",
+    "fields": [
+      {
+        "name": "id",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "string"
+        }
+      },
+      {
+        "name": "friends",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "def",
+          "sig": "com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList[scala.Predef.String]",
+          "schema": {
+            "kind": "object",
+            "fields": [
+              {
+                "name": "head",
+                "required": true,
+                "rwMode": "ReadWrite",
+                "schema": {
+                  "kind": "string"
+                }
+              },
+              {
+                "name": "tail",
+                "required": false,
+                "rwMode": "ReadWrite",
+                "schema": {
+                  "kind": "ref",
+                  "sig": "com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList[scala.Predef.String]"
+                }
+              }
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "draft-04": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "additionalProperties": false,
+    "definitions": {
+      "com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList_scala.Predef.String_": {
+        "additionalProperties": false,
+        "properties": {
+          "head": {
+            "type": "string"
+          },
+          "tail": {
+            "$ref": "#/definitions/com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList_scala.Predef.String_"
+          }
+        },
+        "required": [
+          "head"
+        ],
+        "type": "object"
+      }
+    },
+    "properties": {
+      "friends": {
+        "$ref": "#/definitions/com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList_scala.Predef.String_"
+      },
+      "id": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "friends",
+      "id"
+    ],
+    "type": "object"
+  },
+  "draft-07": {
+    "$id": "golden",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "additionalProperties": false,
+    "definitions": {
+      "com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList_scala.Predef.String_": {
+        "$id": "#com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList_scala.Predef.String_",
+        "additionalProperties": false,
+        "properties": {
+          "head": {
+            "type": "string"
+          },
+          "tail": {
+            "$ref": "#com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList_scala.Predef.String_"
+          }
+        },
+        "required": [
+          "head"
+        ],
+        "type": "object"
+      }
+    },
+    "properties": {
+      "friends": {
+        "$ref": "#com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList_scala.Predef.String_"
+      },
+      "id": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "friends",
+      "id"
+    ],
+    "type": "object"
+  },
+  "draft-2020-12": {
+    "$defs": {
+      "com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList_scala.Predef.String_": {
+        "$anchor": "com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList_scala.Predef.String_",
+        "additionalProperties": false,
+        "properties": {
+          "head": {
+            "type": "string"
+          },
+          "tail": {
+            "$ref": "#com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList_scala.Predef.String_"
+          }
+        },
+        "required": [
+          "head"
+        ],
+        "type": "object"
+      }
+    },
+    "$id": "golden",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "friends": {
+        "$ref": "#com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList_scala.Predef.String_"
+      },
+      "id": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "friends",
+      "id"
+    ],
+    "type": "object"
+  }
+}

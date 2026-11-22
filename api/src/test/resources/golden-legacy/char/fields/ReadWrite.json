@@ -1,0 +1,122 @@
+{
+  "schema": {
+    "kind": "object",
+    "fields": [
+      {
+        "name": "r",
+        "required": true,
+        "rwMode": "ReadOnly",
+        "schema": {
+          "kind": "integer"
+        }
+      },
+      {
+        "name": "w",
+        "required": true,
+        "rwMode": "WriteOnly",
+        "schema": {
+          "kind": "integer"
+        }
+      },
+      {
+        "name": "both",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "integer"
+        }
+      },
+      {
+        "name": "plain",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "integer"
+        }
+      }
+    ]
+  },
+  "draft-04": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "additionalProperties": false,
+    "properties": {
+      "both": {
+        "type": "integer"
+      },
+      "plain": {
+        "type": "integer"
+      },
+      "r": {
+        "readOnly": true,
+        "type": "integer"
+      },
+      "w": {
+        "type": "integer",
+        "writeOnly": true
+      }
+    },
+    "required": [
+      "both",
+      "plain",
+      "r",
+      "w"
+    ],
+    "type": "object"
+  },
+  "draft-07": {
+    "$id": "golden",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "additionalProperties": false,
+    "properties": {
+      "both": {
+        "type": "integer"
+      },
+      "plain": {
+        "type": "integer"
+      },
+      "r": {
+        "readOnly": true,
+        "type": "integer"
+      },
+      "w": {
+        "type": "integer",
+        "writeOnly": true
+      }
+    },
+    "required": [
+      "both",
+      "plain",
+      "r",
+      "w"
+    ],
+    "type": "object"
+  },
+  "draft-2020-12": {
+    "$id": "golden",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "both": {
+        "type": "integer"
+      },
+      "plain": {
+        "type": "integer"
+      },
+      "r": {
+        "readOnly": true,
+        "type": "integer"
+      },
+      "w": {
+        "type": "integer",
+        "writeOnly": true
+      }
+    },
+    "required": [
+      "both",
+      "plain",
+      "r",
+      "w"
+    ],
+    "type": "object"
+  }
+}

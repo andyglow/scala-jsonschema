@@ -1,6 +1,6 @@
 package com.github.andyglow.jsonschema.characterization
 
-import com.github.andyglow.jsonschema.harness.{Golden, TriageC}
+import com.github.andyglow.jsonschema.harness.Golden
 import json._
 import org.scalatest.funsuite.AnyFunSuite
 
@@ -12,7 +12,8 @@ object GroupCSpec {
 }
 
 /** The former TRIAGE group C. Owner decisions (2026-11-20):
-  *   - Option at root/nested: PENDING (to match how the bridged JSON libraries encode it); these goldens pin TODAY's output and are tagged TRIAGE-C until it's decided;
+  *   - Option at root/nested: decided 2026-11-21 (the Option standard): every `Option[X]` is "X or null" under the default profile (Neutral), `Option[Option[X]]` flattens; the Legacy goldens keep the
+  *     0.7 output (`oneOf(object{value}, enum["None"])`, a field unwraps one layer);
   *   - Either and tuples: keep today's output (pinned). Either and Option in a collection are in [[GroupCSumsSpec]] (they need the sum/collection families);
   *   - covariant implicit pick: moved to group B (exact type match), see TriageBPendingSpec.
   */
@@ -20,12 +21,12 @@ class GroupCSpec extends AnyFunSuite {
   import GroupCSpec._
   import Golden.check
 
-  test("top-level Option (pending decision: current behavior)", TriageC) {
+  test("top-level Option (decided: X or null)") {
     check("groupC/Option[Foo]", Json.schema[Option[Foo]])
     check("groupC/Option[Int]", Json.schema[Option[Int]])
   }
 
-  test("nested Option in a field (pending decision: current behavior)", TriageC) {
+  test("nested Option in a field (decided: flattened, X or null, not required)") {
     check("groupC/HasOptOpt", Json.schema[HasOptOpt])
   }
 
