@@ -42,9 +42,6 @@ def versionRangeDirs(base: File, scalaVersion: String): Seq[File] =
     case _                       => Nil
   }
 
-def runCommand(command: String): State => State =
-  Command.process(command, _, msg => sys.error(s"can't parse command `$command`: $msg"))
-
 lazy val buildInfo = taskKey[Unit]("Prints Build Info")
 
 lazy val commonSettings = ScalaVer.settings ++ Seq(
@@ -73,19 +70,21 @@ lazy val commonSettings = ScalaVer.settings ++ Seq(
   developers        := List(
     Developer(id = "andyglow", name = "Andriy Onyshchuk", email = "andyglow@gmail.com", url = url("https://ua.linkedin.com/in/andyglow"))
   ),
-  releaseCrossBuild             := true,
+  // Not sbt-release's cross build: it loops over the ROOT's crossScalaVersions, which is Nil here, so test and
+  // publishSigned would run for no Scala version at all. sbt's `+` uses each module's own crossScalaVersions.
+  releaseCrossBuild             := false,
   releasePublishArtifactsAction := PgpKeys.publishSigned.value,
   releaseProcess                := Seq[ReleaseStep](
     checkSnapshotDependencies,
     inquireVersions,
     runClean,
-    runTest,
+    releaseStepCommandAndRemaining("+test"),
     setReleaseVersion,
     commitReleaseVersion,
     tagRelease,
-    ReleaseStep(action = runCommand("publishSigned"), enableCrossBuild = true),
+    releaseStepCommandAndRemaining("+publishSigned"),
     // upload while the version is still the release one: after setNextVersion it's a SNAPSHOT and Central refuses it
-    ReleaseStep(action = runCommand("sonaRelease")),
+    releaseStepCommand("sonaRelease"),
     setNextVersion,
     commitNextVersion,
     pushChanges
