@@ -16,6 +16,27 @@ The Scala packages (`json.*`, `com.github.andyglow.*`) haven't changed.
 The optional modules (JSON-library bridges, refined, cats, enumeratum, joda-time, derived, parser) have the same
 version; see @ref:[Modules](modules/index.md).
 
+## Scala.js
+
+From 0.9.0 on, `scala-jsonschema` (with `-core` and `-macros`) and most modules are also published for Scala.js 1.x,
+for Scala 2.12, 2.13 and 3. Use `%%%`:
+
+```scala
+libraryDependencies += "io.github.andyglow" %%% "scala-jsonschema" % "0.9.0"
+```
+
+- Needs **Scala.js 1.23.0** or later (`sbt-scalajs` 1.23.0): a project's linker must be at least as new as the
+  Scala.js IR in the jars it links.
+- spray-json, json4s and joda-time have no Scala.js builds, so their modules are JVM only.
+- Schemas are derived at compile time, so everything works as on the JVM: scaladoc descriptions, `derives json.Schema`,
+  refined types, defaults. On Scala 3, scaladoc of classes from another module needs `-Yread-docs`, as on the JVM.
+- `java.time` types (`LocalDate`, `Instant`, ...) need no extra dependency: their schema only names the type. Values of
+  those types at run time need a `java.time` implementation such as
+  [scala-java-time](https://github.com/cquiroz/scala-java-time), as in any Scala.js code. So does the schema of a
+  Java enum from `java.time` (`DayOfWeek`, `Month`): a Java enum's schema lists its values at run time.
+  `java.util.UUID` and `java.net.URI` are part of Scala.js; `java.sql` types don't exist there.
+- Numbers render as on the JVM: a `Double` bound of `16.0` is `16.0` in the JSON, not `16`.
+
 ## Quick start
 
 ```scala mdoc:compile-only

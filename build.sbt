@@ -36,7 +36,7 @@ def scalaReflect(scalaVersion: String): Seq[ModuleID] =
   if (scalaVersion startsWith "3.") Nil else Seq(("org.scala-lang" % "scala-reflect" % scalaVersion % Compile).withSources().withJavadoc())
 
 // scaladoc-ast/-parser for the published modules; keep in step with sbt-scaladoc in project/plugins.sbt
-val scaladocV = "0.3.0-sjs-local"
+val scaladocV = "0.3.0"
 
 def versionRangeDirs(base: File, scalaVersion: String): Seq[File] =
   CrossVersion.partialVersion(scalaVersion) match {
@@ -63,8 +63,10 @@ lazy val jsSettings = JsEnv.settings ++ platformDirs("js") ++ Seq(
   Test / jsEnv := JsEnv.nodeJSEnv(Map("SCALAJS_TEST_RESOURCES" -> (Test / resourceDirectories).value.mkString(java.io.File.pathSeparator))),
   // the test linker asks for a main class; api's tests have demo `main`s (a warning: "multiple main classes detected"), and the tests need none
   Test / mainClass := None,
-  // no scala-java-time, in the tests either: the java.time Predefs only name the types, so schemas of java.time fields link without it
-  coverageEnabled := false
+  // java.time on JS, for the tests only: a Java enum's schema lists its runtime `values()`, and the tests derive java.time.DayOfWeek.
+  // The library doesn't depend on it: the java.time Predefs (LocalDate, Instant, ...) only name the types
+  libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.6.0" % Test,
+  coverageEnabled                             := false
 )
 
 lazy val jvmSettings = platformDirs("jvm")

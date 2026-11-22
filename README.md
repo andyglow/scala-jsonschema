@@ -38,22 +38,43 @@ The Scala packages (`json.*`, `com.github.andyglow.*`) haven't changed.
 
 Optional modules, all with the same version:
 
-| artifact                       | what it adds                                     | built against                         |
-|--------------------------------|--------------------------------------------------|---------------------------------------|
-| `scala-jsonschema-play-json`   | `schema.asPlay(...)`, defaults via `Writes`      | `org.playframework:play-json` 3.0.x   |
-| `scala-jsonschema-circe-json`  | `schema.asCirce(...)`, defaults via `Encoder`    | `io.circe:circe-core` 0.14.x          |
-| `scala-jsonschema-spray-json`  | `schema.asSpray(...)`, defaults via `JsonWriter` | `io.spray:spray-json` 1.3.x           |
-| `scala-jsonschema-json4s-json` | `schema.asJson4s(...)`                           | `org.json4s:json4s-core` 4.0.x        |
-| `scala-jsonschema-ujson`       | `schema.asU(...)`                                | `com.lihaoyi:ujson`/`upickle` 4.x     |
-| `scala-jsonschema-refined`     | refined types → validations                      | `eu.timepit:refined` 0.11.x           |
-| `scala-jsonschema-cats`        | `NonEmptyList`, `NonEmptyMap`, ...               | `org.typelevel:cats-core` 2.x         |
-| `scala-jsonschema-enumeratum`  | enumeratum enums                                 | `com.beachape:enumeratum` 1.9.x       |
-| `scala-jsonschema-joda-time`   | joda-time types                                  | `joda-time:joda-time` 2.x             |
-| `scala-jsonschema-derived`     | the `DerivedSchema[T]` type class                |                                       |
-| `scala-jsonschema-parser`      | JSON and JSON Schema (draft-04 subset) → `json.Schema` | no dependencies                 |
+| artifact                       | what it adds                                     | built against                         | Scala.js |
+|--------------------------------|--------------------------------------------------|---------------------------------------|----------|
+| `scala-jsonschema-play-json`   | `schema.asPlay(...)`, defaults via `Writes`      | `org.playframework:play-json` 3.0.x   | ✓        |
+| `scala-jsonschema-circe-json`  | `schema.asCirce(...)`, defaults via `Encoder`    | `io.circe:circe-core` 0.14.x          | ✓        |
+| `scala-jsonschema-spray-json`  | `schema.asSpray(...)`, defaults via `JsonWriter` | `io.spray:spray-json` 1.3.x           | JVM only |
+| `scala-jsonschema-json4s-json` | `schema.asJson4s(...)`                           | `org.json4s:json4s-core` 4.0.x        | JVM only |
+| `scala-jsonschema-ujson`       | `schema.asU(...)`                                | `com.lihaoyi:ujson`/`upickle` 4.x     | ✓        |
+| `scala-jsonschema-refined`     | refined types → validations                      | `eu.timepit:refined` 0.11.x           | ✓        |
+| `scala-jsonschema-cats`        | `NonEmptyList`, `NonEmptyMap`, ...               | `org.typelevel:cats-core` 2.x         | ✓        |
+| `scala-jsonschema-enumeratum`  | enumeratum enums                                 | `com.beachape:enumeratum` 1.9.x       | ✓        |
+| `scala-jsonschema-joda-time`   | joda-time types                                  | `joda-time:joda-time` 2.x             | JVM only |
+| `scala-jsonschema-derived`     | the `DerivedSchema[T]` type class                |                                       | ✓        |
+| `scala-jsonschema-parser`      | JSON and JSON Schema (draft-04 subset) → `json.Schema` | no dependencies                 | ✓        |
 
 Play JSON 3 is published as `org.playframework`. Projects still on `com.typesafe.play:play-json` 2.x should stay
 on 0.7.x.
+
+### Scala.js
+
+From 0.9.0 on, `scala-jsonschema` (with `-core` and `-macros`) and the modules marked ✓ above are also published
+for Scala.js 1.x, for Scala 2.12, 2.13 and 3. Use `%%%`:
+
+```scala
+libraryDependencies += "io.github.andyglow" %%% "scala-jsonschema" % "0.9.0"
+```
+
+- Needs **Scala.js 1.23.0** or later (`sbt-scalajs` 1.23.0): a project's linker must be at least as new as the
+  Scala.js IR in the jars it links.
+- spray-json, json4s and joda-time have no Scala.js builds, so their modules are JVM only.
+- Schemas are derived at compile time, so everything works as on the JVM: scaladoc descriptions, `derives json.Schema`,
+  refined types, defaults. On Scala 3, scaladoc of classes from another module needs `-Yread-docs`, as on the JVM.
+- `java.time` types (`LocalDate`, `Instant`, ...) need no extra dependency: their schema only names the type. Values of
+  those types at run time need a `java.time` implementation such as
+  [scala-java-time](https://github.com/cquiroz/scala-java-time), as in any Scala.js code. So does the schema of a
+  Java enum from `java.time` (`DayOfWeek`, `Month`): a Java enum's schema lists its values at run time.
+  `java.util.UUID` and `java.net.URI` are part of Scala.js; `java.sql` types don't exist there.
+- Numbers render as on the JVM: a `Double` bound of `16.0` is `16.0` in the JSON, not `16`.
 
 ## Quick start
 
@@ -929,7 +950,7 @@ with Scala 2 and gives the same schemas. The deliberate differences:
 To see the code the macro generates, compile with `-Djsonschema.print-code=true` (e.g.
 `sbt -Djsonschema.print-code=true compile`): every expansion is printed as an info message.
 
-Not supported (yet): union types, literal types, opaque types (beyond refined) and named tuples; Scala.js.
+Not supported (yet): union types, literal types, opaque types (beyond refined) and named tuples.
 
 ## Known issues
 

@@ -14,6 +14,11 @@
     `case Field(a, b, c, d, e, f)` needs a 7th binder
 
   **New**
+  - **Scala.js**: `scala-jsonschema` (`-core`, `-macros`) and the play-json, circe, ujson, refined, cats, enumeratum,
+    derived and parser modules are published for Scala.js 1.x (`_sjs1`) on Scala 2.12, 2.13 and 3; use `%%%`. Needs
+    Scala.js 1.23.0 or later. spray-json, json4s and joda-time stay JVM only. `java.time` fields need no
+    scala-java-time to derive and link, and numbers render as on the JVM (`16.0`, not `16`). Thanks to
+    Felix Dietze (fdietze) for the first build (#376)
   - `JsonSchemaProfile` knobs, with `with...` builders that keep every other knob: `sumStyle` (`Untagged`,
     `WrapperObject`, `Discriminator(field)`, `PerFamily(family => style)`), `singletonStyle` (`AsString`, `AsTagged`), `memberName`
     (`SimpleName`, `FullName`, `Custom(member => name)`), `optionKeyRequired`, and `honorsSchemaAnnotations`,
