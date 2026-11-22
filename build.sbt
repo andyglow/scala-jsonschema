@@ -31,6 +31,9 @@ useReadableConsoleGit
 def scalaReflect(scalaVersion: String): Seq[ModuleID] =
   if (scalaVersion startsWith "3.") Nil else Seq(("org.scala-lang" % "scala-reflect" % scalaVersion % Compile).withSources().withJavadoc())
 
+// scaladoc-ast/-parser for the published modules; keep in step with sbt-scaladoc in project/plugins.sbt
+val scaladocV = "0.2.0"
+
 def versionRangeDirs(base: File, scalaVersion: String): Seq[File] =
   CrossVersion.partialVersion(scalaVersion) match {
     case Some((2, y)) if y <= 12 => Seq(base / "scala-2.12-")
@@ -94,7 +97,7 @@ lazy val core = { project in file("core") }.settings(
   commonSettings,
   name := "scala-jsonschema-core",
   // the Scala 3 derivation lives in core (`derives json.Schema` needs `Schema.derived`); it parses `Symbol.docstring` with scaladoc-parser
-  libraryDependencies ++= { if (scalaV.value.isScala3) Seq("io.github.andyglow" %% "scaladoc-parser" % "0.1.1") else Nil }
+  libraryDependencies ++= { if (scalaV.value.isScala3) Seq("io.github.andyglow" %% "scaladoc-parser" % scaladocV) else Nil }
 )
 
 lazy val macros = { project in file("macros") }
@@ -106,10 +109,21 @@ lazy val macros = { project in file("macros") }
       if (scalaV.value.isScala3) Nil
       else
         Seq(
-          "io.github.andyglow" %% "scaladoc-ast"    % "0.1.1",
-          "io.github.andyglow" %% "scaladoc-parser" % "0.1.1"
+          "io.github.andyglow" %% "scaladoc-ast"    % scaladocV,
+          "io.github.andyglow" %% "scaladoc-parser" % scaladocV
         ) ++ scalaReflect(scalaVersion.value)
     }
+  )
+
+// Models for api's tests, compiled in their own module: scaladoc of classes from another module. sbt-scaladoc embeds
+// the scaladoc into the bytecode on Scala 2 (compiler plugin); on Scala 3 it's in the TASTy, and api's tests read it
+// with -Yread-docs. Not published.
+lazy val `test-models` = { project in file("modules/test-models") }
+  .enablePlugins(ScaladocPlugin)
+  .settings(
+    commonSettings,
+    name           := "scala-jsonschema-test-models",
+    publish / skip := true
   )
 
 lazy val api = { project in file("api") }
@@ -122,7 +136,9 @@ lazy val api = { project in file("api") }
     libraryDependencies ++= Seq(
       "com.networknt" % "json-schema-validator" % "1.5.9"  % Test,
       "org.slf4j"     % "slf4j-nop"             % "2.0.17" % Test
-    )
+    ),
+    // test-models on the test classpath without `dependsOn`, which would put the unpublished module into api's POM
+    Test / internalDependencyClasspath ++= (`test-models` / Compile / exportedProducts).value
   )
 
 lazy val `play-json` = { project in file("modules/play-json") }
@@ -326,6 +342,7 @@ lazy val root = { project in file(".") }
   .aggregate(
     core,
     macros,
+    `test-models`,
     derived,
     api,
     parser,

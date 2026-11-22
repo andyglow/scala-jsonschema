@@ -430,11 +430,24 @@ models defined in another module or library. `.withTitle`/`.withDescription` wor
 gives its description, and its `@param` tags the field descriptions. A class without a doc comment gets none.
 A `@param` for a field that doesn't exist is a warning. Where the comment comes from:
 
-- **Scala 2:** only classes compiled in the same compiler run as the `Json.schema` call. A model from another
-  module or a jar, or a file an incremental build didn't recompile, has no descriptions.
+- **Scala 2:** by default only classes compiled in the same compiler run as the `Json.schema` call. A model from
+  another module or a jar, or a file an incremental build didn't recompile, has no descriptions, unless the model's
+  module is compiled with the [scaladoc](https://github.com/andyglow/scaladoc) compiler plugin: it embeds the
+  scaladoc into the bytecode, and `Json.schema` reads it from there.
 - **Scala 3:** the same by default. Add `scalacOptions += "-Yread-docs"` to the module that calls `Json.schema`
   (or `derives`), and the scaladoc is also read from the TASTy of other modules, jars and earlier incremental runs.
   This needs the model's module to keep its docs in TASTy, which is the Scala 3 default.
+
+The [sbt-scaladoc](https://github.com/andyglow/scaladoc) plugin sets both up. On Scala 2 it adds the compiler plugin
+(and `scaladoc-ast`, a small runtime dependency of the module); on Scala 3 it adds `-Yread-docs`:
+
+```scala
+// project/plugins.sbt
+addSbtPlugin("io.github.andyglow" % "sbt-scaladoc" % "0.2.0")
+
+// build.sbt: on the module that defines the models (Scala 2) and the one that calls Json.schema (Scala 3)
+lazy val model = project.enablePlugins(ScaladocPlugin)
+```
 
 ## Annotations
 

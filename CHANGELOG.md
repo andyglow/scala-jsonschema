@@ -52,7 +52,10 @@
   [#434](https://github.com/andyglow/scala-jsonschema/pull/434) (`Schema` equality),
   [#435](https://github.com/andyglow/scala-jsonschema/pull/435) (Scala 2 fixes),
   [#436](https://github.com/andyglow/scala-jsonschema/pull/436) (Scala 3 derivation),
-  [#437](https://github.com/andyglow/scala-jsonschema/pull/437) (refined and derived on Scala 3).
+  [#437](https://github.com/andyglow/scala-jsonschema/pull/437) (refined and derived on Scala 3),
+  [#438](https://github.com/andyglow/scala-jsonschema/pull/438) (docs),
+  [#442](https://github.com/andyglow/scala-jsonschema/pull/442) (`Option` as "X or null", `JsonSchemaProfile`),
+  [#443](https://github.com/andyglow/scala-jsonschema/pull/443) (scaladoc 0.2.0).
 
   **Breaking**
   - every `Option[X]` renders as "X or null", at the root, in collections, as map values and as fields: `"type":
@@ -114,6 +117,10 @@
     class cases: a `oneOf`) (#436)
   - Scala 3: scaladoc descriptions, also from other modules and jars with `-Yread-docs`; `import Json.auto.given`;
     `-Djsonschema.print-code=true` prints the generated code (#436)
+  - scaladoc 0.2.0. Scala 2 reads the scaladoc that its compiler plugin embeds into a model's bytecode, so models
+    from other modules and jars get their descriptions; this is now documented and tested (0.2.0's plugin jar is
+    self-contained, and it also embeds classes nested in classes and traits). The docs recommend sbt-scaladoc,
+    which sets up the embedding on Scala 2 and `-Yread-docs` on Scala 3
   - Scala 3: `scala-jsonschema-refined` (used the same way, with literal types: `Greater[5]`,
     `MatchesRegex["[a-z]+"]` in place of shapeless's ``W.`5`.T``) and `scala-jsonschema-derived` (#437)
   - Java enums (`java.time.DayOfWeek`, `java.time.Month`, `java.util.concurrent.TimeUnit`, ...) derive a string
