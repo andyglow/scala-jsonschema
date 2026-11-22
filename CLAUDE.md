@@ -24,6 +24,7 @@ modules/
   play-json, spray-json, circe-json, json4s-json, u-json   bridges: render a schema into that library's AST
   joda-time, cats, refined, enumeratum                     Predefs/support for those types (refined has its own macro)
   derived                                                  DerivedSchema[T] type class
+  test-models                                              not published: models for api's tests of scaladoc from another module (sbt-scaladoc)
   parser                                                   the reverse direction: strict JSON parser + JSON Schema (draft-04 subset) → json.Schema
 docs/      the documentation site (paradox + mdoc): docs/src/main/paradox. Not aggregated by root, not published
 ```
@@ -54,6 +55,7 @@ Whether a type becomes a definition depends on which of the two implicits is in 
 - Before calling something done, run `clean test` on 2.12, 2.13 **and** 3.3.9, plus `scalafmtCheckAll` under each
   (it only checks the current version's source dirs) and `scalafmtSbtCheck`. sbt-scalafmt caches results across
   `clean`: `scalafmtCheckAll` can pass on files it never re-checked. Touch the sources (or use a fresh checkout) before trusting it.
+  `.scalafmt.conf` has `project.git = true`, so files git doesn't track are skipped: `git add` new files first.
 - Docs: `sbt makeDocs` (switches to 2.13, runs mdoc, which compiles the ```` ```scala mdoc:compile-only ```` snippets
   against the modules, then paradox; output `docs/target/site`). Internal links must be `@ref:[text](page.md)`. mdoc wraps
   snippets in a class, so value classes can't be `mdoc` snippets; keep those plain `scala` and verify them some other way. Scala 3-only snippets are plain `scala` too.
