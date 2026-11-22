@@ -1,11 +1,9 @@
 package com.github.andyglow.jsonschema.harness
 
-import java.nio.charset.StandardCharsets.UTF_8
-import java.nio.file.{Files, Path, Paths}
-
 import com.github.andyglow.json.{Escaped, Value}
 import com.github.andyglow.json.Value._
 import com.github.andyglow.jsonschema.AsValue
+import com.github.andyglow.jsonschema.platform.TestFiles
 import json.Schema
 import json.Schema._
 import json.schema.JsonSchemaProfile
@@ -39,18 +37,18 @@ object Golden extends Assertions {
   def updateMode: Boolean =
     sys.env.get("GOLDEN_UPDATE").exists(v => v == "1" || v == "true") || sys.props.get("golden.update").exists(_ == "true")
 
-  /** Directory holding golden files (the source directory, so that update mode writes the real files). */
-  lazy val dir: Path = {
+  /** Directory holding golden files (the source directory, so that update mode writes the real files). Relative to the working directory: the build's root, on the JVM and on Scala.js. */
+  lazy val dir: String = {
     val candidates = sys.props.get("golden.dir").toList ++ List("api/src/test/resources/golden", "src/test/resources/golden")
-    candidates.map(Paths.get(_)).find(p => Files.isDirectory(p)) getOrElse {
-      fail(s"golden directory not found (looked for ${candidates.mkString(", ")} relative to ${Paths.get("").toAbsolutePath}); set -Dgolden.dir")
+    candidates.find(TestFiles.isDirectory) getOrElse {
+      fail(s"golden directory not found (looked for ${candidates.mkString(", ")} relative to ${TestFiles.absolute("")}); set -Dgolden.dir")
     }
   }
 
   /** The Legacy set: the golden files as they were in 0.7 (`JsonSchemaProfile.Legacy` must reproduce them byte for byte). Never rewritten by update mode, which only adds missing files; set
     * `GOLDEN_UPDATE_LEGACY=1` to rewrite them on purpose.
     */
-  lazy val legacyDir: Path = dir.resolveSibling("golden-legacy")
+  lazy val legacyDir: String = TestFiles.resolveSibling(dir, "golden-legacy")
 
   def legacyUpdateMode: Boolean = sys.env.get("GOLDEN_UPDATE_LEGACY").exists(v => v == "1" || v == "true")
 
@@ -75,39 +73,30 @@ object Golden extends Assertions {
     */
   def check(name: String, schema: Schema[_]): Unit = {
     val legacyFile = fileFor(legacyDir, name)
-    checkIn(legacyDir, name, schema.withProfile(JsonSchemaProfile.Legacy), legacyUpdateMode || (updateMode && !Files.exists(legacyFile)))(JsonSchemaProfile.Legacy)
+    checkIn(legacyDir, name, schema.withProfile(JsonSchemaProfile.Legacy), legacyUpdateMode || (updateMode && !TestFiles.exists(legacyFile)))(JsonSchemaProfile.Legacy)
     checkIn(dir, name, schema, updateMode)
   }
 
-  /** `2.12`, `2.13` or `3`. (On Scala 3 the standard library still reports 2.13.x, hence the class probe.) */
-  lazy val scalaBinaryVersion: String = {
-    val isScala3 =
-      try { Class.forName("scala.runtime.Scala3RunTime"); true }
-      catch { case _: ClassNotFoundException => false }
-    if (isScala3) "3" else scala.util.Properties.versionNumberString.split('.').take(2).mkString(".")
-  }
+  /** `2.12`, `2.13` or `3`: sbt's `scalaBinaryVersion`, generated into [[BuildScala]]. (On Scala 3 the standard library still reports 2.13.x, and Scala.js has no `scala.util.Properties`.) */
+  lazy val scalaBinaryVersion: String = BuildScala.binaryVersion
 
   /** The golden file for `name`: a version-specific override `name@<scalaBinaryVersion>.json` if one exists, else `name.json`.
     *
     * Overrides record KNOWN, documented differences between Scala versions (see the harness report). The base file is the target behavior (the one the Scala 3 macro has to reproduce). Update mode
     * writes to whichever file is in use; create an override by copying the base file to `name@2.12.json` and then running update mode on 2.12.
     */
-  def fileFor(dir: Path, name: String): Path = {
-    val specific = dir.resolve(name + "@" + scalaBinaryVersion + ".json")
-    if (Files.exists(specific)) specific else dir.resolve(name + ".json")
+  def fileFor(dir: String, name: String): String = {
+    val specific = TestFiles.resolve(dir, name + "@" + scalaBinaryVersion + ".json")
+    if (TestFiles.exists(specific)) specific else TestFiles.resolve(dir, name + ".json")
   }
 
-  def checkIn(dir: Path, name: String, schema: Schema[_], update: Boolean)(implicit profile: JsonSchemaProfile): Unit = {
+  def checkIn(dir: String, name: String, schema: Schema[_], update: Boolean)(implicit profile: JsonSchemaProfile): Unit = {
     val file   = fileFor(dir, name)
     val actual = render(schema)
     if (update) {
-      val existing = if (Files.exists(file)) Some(read(file)) else None
-      if (!existing.contains(actual)) {
-        Files.createDirectories(file.getParent)
-        Files.write(file, actual.getBytes(UTF_8))
-        ()
-      }
-    } else if (!Files.exists(file)) {
+      val existing = if (TestFiles.exists(file)) Some(read(file)) else None
+      if (!existing.contains(actual)) TestFiles.write(file, actual)
+    } else if (!TestFiles.exists(file)) {
       fail(s"golden file is missing: $file. Run with GOLDEN_UPDATE=1 to create it. Actual:\n$actual")
     } else {
       val expected = read(file)
@@ -115,7 +104,7 @@ object Golden extends Assertions {
     }
   }
 
-  private def read(file: Path): String = new String(Files.readAllBytes(file), UTF_8).replace("\r\n", "\n")
+  private def read(file: String): String = TestFiles.read(file).replace("\r\n", "\n")
 
   /** Line diff: the first differing lines with some context. */
   def diff(expected: String, actual: String): String = {

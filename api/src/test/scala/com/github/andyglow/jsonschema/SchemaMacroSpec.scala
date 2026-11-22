@@ -126,7 +126,10 @@ class SchemaMacroSpec extends AnyWordSpec {
       Json.schema[WeekDay.T] should matchSchema(`enum`.of("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"))
 
       object Planet extends Enumeration {
-        protected case class PlanetVal(mass: Double, radius: Double) extends super.Val {
+        // `super.Val(nextId, noName)` is what `super.Val()` does (no names given). Scala.js warns on `super.Val()` and on a literal null: the values' runtime names need reflection there.
+        // The schema doesn't: the derivation takes the names of the vals at compile time, and the test never prints a value
+        private def noName: String = null
+        protected case class PlanetVal(mass: Double, radius: Double) extends super.Val(nextId, noName) {
           def surfaceGravity: Double                   = Planet.G * mass / (radius * radius)
           def surfaceWeight(otherMass: Double): Double = otherMass * surfaceGravity
         }

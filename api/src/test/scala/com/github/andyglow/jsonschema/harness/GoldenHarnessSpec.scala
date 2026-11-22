@@ -1,9 +1,7 @@
 package com.github.andyglow.jsonschema.harness
 
-import java.nio.charset.StandardCharsets.UTF_8
-import java.nio.file.{Files, Path}
-
 import com.github.andyglow.json.Value._
+import com.github.andyglow.jsonschema.platform.TestFiles
 import json.Schema
 import json.Schema.{`not` => _, _}
 import json.Schema.`object`.Field
@@ -15,7 +13,7 @@ import scala.collection.immutable.ListSet
 
 class GoldenHarnessSpec extends AnyFunSuite {
 
-  private def tmpDir(): Path = Files.createTempDirectory("golden-harness")
+  private def tmpDir(): String = TestFiles.createTempDirectory("golden-harness")
 
   private val schema = `object`[Any](Field("b", `string`), Field("a", `ref`[Any]("x"), required = false))
 
@@ -23,10 +21,10 @@ class GoldenHarnessSpec extends AnyFunSuite {
     val dir = tmpDir()
     val err = intercept[TestFailedException] { Golden.checkIn(dir, "g/s", schema, update = false) }
     err.getMessage should include("golden file is missing")
-    Files.exists(dir.resolve("g/s.json")) shouldBe false
+    TestFiles.exists(TestFiles.resolve(dir, "g/s.json")) shouldBe false
 
     Golden.checkIn(dir, "g/s", schema, update = true)
-    Files.exists(dir.resolve("g/s.json")) shouldBe true
+    TestFiles.exists(TestFiles.resolve(dir, "g/s.json")) shouldBe true
     Golden.checkIn(dir, "g/s", schema, update = false)
   }
 
@@ -46,7 +44,7 @@ class GoldenHarnessSpec extends AnyFunSuite {
     val dir = tmpDir()
     Golden.checkIn(dir, "s", schema, update = true)
     val other = `object`[Any](Field("x", `string`))
-    Files.write(dir.resolve("s@" + Golden.scalaBinaryVersion + ".json"), Golden.render(other).getBytes(UTF_8))
+    TestFiles.write(TestFiles.resolve(dir, "s@" + Golden.scalaBinaryVersion + ".json"), Golden.render(other))
     Golden.checkIn(dir, "s", other, update = false)
     intercept[TestFailedException] { Golden.checkIn(dir, "s", schema, update = false) }
     Golden.scalaBinaryVersion should (be("2.12") or be("2.13") or be("3"))
@@ -54,7 +52,7 @@ class GoldenHarnessSpec extends AnyFunSuite {
 
   test("CRLF golden files are accepted") {
     val dir = tmpDir()
-    Files.write(dir.resolve("s.json"), Golden.render(schema).replace("\n", "\r\n").getBytes(UTF_8))
+    TestFiles.write(TestFiles.resolve(dir, "s.json"), Golden.render(schema).replace("\n", "\r\n"))
     Golden.checkIn(dir, "s", schema, update = false)
   }
 

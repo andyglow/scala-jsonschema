@@ -1,14 +1,12 @@
 package petshop
 
-import com.fasterxml.jackson.databind.{JsonNode, ObjectMapper}
 import com.github.andyglow.json.JsonFormatter
 import com.github.andyglow.jsonschema.AsValue
-import com.networknt.schema.{InputFormat, JsonSchemaFactory, SpecVersion}
 import json.schema.{JsonSchemaProfile, Version}
 import org.scalatest.Assertions._
 
 /** The profiles acceptance harness: a JSON document a library really wrote, validated against a schema rendered under a profile, by a JSON Schema validator (networknt json-schema-validator, a
-  * test-only dependency of `api`). Bridge modules get it through `api % "test->test"`.
+  * test-only dependency of `api`, JVM only: see [[JsonValidator]]). Bridge modules get it through `api % "test->test"`.
   */
 object Acceptance {
 
@@ -33,25 +31,8 @@ object Acceptance {
       v => JsonFormatter.format(AsValue.schema(schema, v))
     )
 
-  private val mapper = new ObjectMapper
-
-  def parse(json: String): JsonNode = mapper.readTree(json)
-
-  /** The validator's errors for `doc` under `schema` (a rendered schema, as JSON text) on `draft`; empty when valid. */
-  def errors(draft: Version, schema: String, doc: String): List[String] = {
-    val flag = draft match {
-      case _: Version.Draft04 => SpecVersion.VersionFlag.V4
-      case _: Version.Draft06 => SpecVersion.VersionFlag.V6
-      case _: Version.Draft07 => SpecVersion.VersionFlag.V7
-      case _: Version.Draft09 => SpecVersion.VersionFlag.V201909
-      case _: Version.Draft12 => SpecVersion.VersionFlag.V202012
-      case Version.Raw        => fail("a raw render has no draft to validate with")
-    }
-    val it = JsonSchemaFactory.getInstance(flag).getSchema(schema).validate(doc, InputFormat.JSON).iterator() // no JavaConverters: deprecated on 2.13, the shim differs per version
-    val es = List.newBuilder[String]
-    while (it.hasNext) es += it.next().getMessage
-    es.result().sorted
-  }
+  /** The validator's errors for `doc` under `schema` (a rendered schema, as JSON text) on `draft`; empty when valid. JVM only: on Scala.js this cancels the test (see [[JsonValidator]]). */
+  def errors(draft: Version, schema: String, doc: String): List[String] = JsonValidator.errors(draft, schema, doc)
 
   /** For each draft, how many of `docs` are valid under the schema `render(draft)` gives. */
   def validCount(render: Version => String, docs: List[String]): Map[String, Int] =
@@ -85,7 +66,7 @@ object Acceptance {
   }
 
   /** Equal as JSON (object key order ignored). */
-  def sameJson(a: String, b: String): Boolean = parse(a) == parse(b)
+  def sameJson(a: String, b: String): Boolean = JsonValidator.sameJson(a, b)
 
   def name(v: Version): String = v match {
     case _: Version.Draft04 => "draft-04"
