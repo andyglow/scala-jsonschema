@@ -1,8 +1,7 @@
 package com.github.andyglow.json
 
-import java.io.InputStream
+import com.github.andyglow.jsonschema.platform.TestFiles
 
-import scala.io.Source
 import scala.util.{Failure, Success}
 import org.scalatest.funsuite.AnyFunSuite
 
@@ -14,23 +13,10 @@ import org.scalatest.funsuite.AnyFunSuite
   */
 class ParseJsonBulkSpec extends AnyFunSuite {
 
-  private def resource(path: String): InputStream = {
-    val is = classOf[ParseJsonBulkSpec].getResourceAsStream(path)
-    if (is == null) throw new IllegalStateException(s"resource not found: $path")
-    is
-  }
+  private def bytes(name: String): Array[Byte] = TestFiles.resource(classOf[ParseJsonBulkSpec], name)
 
-  private def bytes(name: String): Array[Byte] = {
-    val is = resource("/" + name)
-    try Iterator.continually(is.read()).takeWhile(_ != -1).map(_.toByte).toArray
-    finally is.close()
-  }
-
-  private val names: List[String] = {
-    val src = Source.fromInputStream(resource("/examples"), "UTF-8")
-    try src.getLines().map(_.trim).filter(_.nonEmpty).toList
-    finally src.close()
-  }
+  private val names: List[String] =
+    TestFiles.resourceText(classOf[ParseJsonBulkSpec], "examples").split("\n").toList.map(_.trim).filter(_.nonEmpty)
 
   names foreach { name =>
     def parse() = ParseJson(bytes(name))

@@ -24,6 +24,7 @@ jobs:
         os: [ubuntu-latest]
         scala: [2.13.18, 2.12.21, 3.3.9]
         java: [temurin@21]
+        platform: [jvm, js]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout current branch (full)
@@ -42,25 +43,37 @@ jobs:
       - name: Setup sbt
         uses: sbt/setup-sbt@v1
 
+      - name: Setup Node.js
+        if: matrix.platform == 'js'
+        uses: actions/setup-node@v7
+        with:
+          node-version: 26
+
       - name: Check formatting
-        run: sbt '++ ${{ matrix.scala }}; scalafmtCheckAll; scalafmtSbtCheck'
+        if: matrix.platform == 'jvm'
+        run: sbt '++ ${{ matrix.scala }}; scalafmtCheckAll; rootJS/scalafmtCheckAll; scalafmtSbtCheck'
 
       - name: Check that workflows are up to date
         run: sbt '++ ${{ matrix.scala }}; githubWorkflowCheck'
 
-      - name: Build project
+      - name: Build project (JVM)
+        if: matrix.platform == 'jvm'
         run: sbt '++ ${{ matrix.scala }}; test'
 
+      - name: Build project (Scala.js)
+        if: matrix.platform == 'js'
+        run: sbt '++ ${{ matrix.scala }}; rootJS/test'
+
       - name: Generate Code Coverage Reports
-        if: matrix.scala == '2.13.18'
+        if: matrix.scala == '2.13.18' && matrix.platform == 'jvm'
         run: sbt '++ ${{ matrix.scala }}; clean; coverage; test'
 
       - name: Aggregate Code Coverage Report
-        if: matrix.scala == '2.13.18'
+        if: matrix.scala == '2.13.18' && matrix.platform == 'jvm'
         run: sbt '++ ${{ matrix.scala }}; coverageAggregate'
 
       - name: Upload Code Coverage Report
-        if: matrix.scala == '2.13.18'
+        if: matrix.scala == '2.13.18' && matrix.platform == 'jvm'
         uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}

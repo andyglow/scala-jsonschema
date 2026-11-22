@@ -6,7 +6,8 @@ Draft 04 / 06 / 07 / 2019-09 / 2020-12 JSON, and optional bridges convert it to 
 
 Cross-built for Scala 2.12, 2.13 and 3.3 LTS (3.3 from 0.8.0, together with `derives json.Schema` and Scala 3
 `enum`s). Every module and every shared test runs on all three; `refined` and `derived` have their own Scala 3
-macros. Scala.js is deferred. User docs: README.md (the main reference) and the paradox site in `docs/`. They say
+macros. Scala.js (from 0.9.0): every module except spray-json, json4s-json and joda-time (and docs) is also built for
+Scala.js 1.x on all three versions; see "Scala.js" below. User docs: README.md (the main reference) and the paradox site in `docs/`. They say
 the same things, mostly in the same words: a user-visible change updates both (and CHANGELOG.md).
 
 ## Layout
@@ -67,7 +68,32 @@ Whether a type becomes a definition depends on which of the two implicits is in 
   `-Xcheck-macros` (except play-json and u-json: their own macros fail the check).
   To see the code the Scala 3 macro generates: `sbt -Djsonschema.print-code=true ...` (prints every expansion as an info).
 - `build.sbt` restricts compilation to one module at a time (`Tags.limit(Tags.Compile, 1)`). The macro evaluates `Option` default values with `c.eval`, and that races when several modules compile in parallel. Don't remove the restriction until the macro is fixed.
-- Coverage: `sbt "++2.13.18" clean coverage test coverageAggregate`. CI runs this on 2.13.
+- Coverage: `sbt "++2.13.18" clean coverage test coverageAggregate`. CI runs this on 2.13 (JVM rows only).
+
+## Scala.js
+
+- The cross modules are `crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Pure)` via `crossModule(...)` in
+  build.sbt: sources stay in `<module>/src`, the JVM project keeps the module's id (`core`, `api`, ...;
+  `withoutSuffixFor(JVMPlatform)`) and the JS one is `coreJS`, `apiJS`, ... . Targets: `<module>/.jvm/target`,
+  `<module>/.js/target`, so `baseDirectory` of a cross project is `<module>/.jvm` (use `sourceBase(...)` in build.sbt).
+  JVM only (plain projects): spray-json, json4s-json, joda-time, docs.
+- Platform-specific sources: `src/{main,test}/scala-jvm` and `src/{main,test}/scala-js`. Main code has one shim,
+  `com.github.andyglow.json.Decimals` (JS lays out `Double`s the way the JVM does). Test shims: core's
+  `platform.TestFiles` (files, test resources; Node's `fs` on JS), `platform.Concurrently`, api's `petshop.JsonValidator`
+  (networknt on the JVM; on JS validating tests are **canceled**, so they show up as canceled, not passed).
+- **root aggregates the JVM projects only**: `sbt test` needs no Node.js. **`rootJS`** aggregates the JS ones:
+  `sbt rootJS/test`, `sbt "++3.3.9" rootJS/test`, `sbt coreJS/testOnly ...`. The release runs both (`+test`,
+  `+rootJS/test`, `+publishSigned`, `+rootJS/publishSigned`); CI has a `platform: [jvm, js]` axis.
+  `scalafmtCheckAll` on root doesn't see the `scala-js` dirs: run `rootJS/scalafmtCheckAll` too.
+- JS tests run on **Node.js** (project/JsEnv.scala): `$SCALAJS_RUNTIME` (a path to `node`) if set, else `node` on the
+  PATH. Without one, a JS test task fails at once with "No JavaScript runtime" (never skipped); sbt still loads and the
+  JVM work is unaffected. Test resources reach the JS tests through `SCALAJS_TEST_RESOURCES` (set in `jsSettings`).
+- Shared code must stay JS-clean: no reflection (`Class.forName`), no `scala.util.Properties`, no java.io/java.nio
+  files, no blocking on Futures. The linker reports these (`Referring to non-existent ...`) only at `fastLinkJS`/test.
+- `scalacOptions` in commonSettings is `++=`, never `:=`: on Scala 3, `:=` drops `-scalajs` and the `_sjs1_3` jars
+  come out without IR.
+- sbt-scalajs 1.23.0 sets the Scala.js floor for consumers (README states it); scaladoc-ast/-parser `_sjs1` use `%%%`,
+  the sbt-scaladoc compiler plugin stays JVM.
 - git worktrees: `build.sbt` sets `useReadableConsoleGit`, because sbt-git's JGit reader (pulled in by sbt-ghpages)
   can't load the build in a `git worktree` checkout. Keep it.
 
@@ -92,4 +118,5 @@ Whether a type becomes a definition depends on which of the two implicits is in 
   changed; Scala packages stay `com.github.andyglow.*` and `json.*`. The scaladoc libraries moved the same way.
 - Versioning is PVP (`versionScheme := pvp`). Breaking changes bump the second number (0.7.x → 0.8.0).
 - Publishing uses sbt's built-in Sonatype Central Portal support: `sbt release` runs `publishSigned` (cross-built, staged into `target/sona-staging`) and then `sonaRelease`. This needs a PGP key and a Central Portal token.
+  The release also runs `+rootJS/test` and `+rootJS/publishSigned` (the `_sjs1` artifacts), so it needs Node.js.
 - Scala Steward opens dependency PRs. `master` requires a code-owner review.
