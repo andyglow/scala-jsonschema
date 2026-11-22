@@ -5,7 +5,10 @@
   [#434](https://github.com/andyglow/scala-jsonschema/pull/434) (`Schema` equality),
   [#435](https://github.com/andyglow/scala-jsonschema/pull/435) (Scala 2 fixes),
   [#436](https://github.com/andyglow/scala-jsonschema/pull/436) (Scala 3 derivation),
-  [#437](https://github.com/andyglow/scala-jsonschema/pull/437) (refined and derived on Scala 3).
+  [#437](https://github.com/andyglow/scala-jsonschema/pull/437) (refined and derived on Scala 3),
+  [#438](https://github.com/andyglow/scala-jsonschema/pull/438) (docs),
+  [#442](https://github.com/andyglow/scala-jsonschema/pull/442) (`Option` as "X or null", `JsonSchemaProfile`),
+  [#443](https://github.com/andyglow/scala-jsonschema/pull/443) (scaladoc 0.2.0).
 
   **Breaking**
   - every `Option[X]` renders as "X or null", at the root, in collections, as map values and as fields: `"type":
