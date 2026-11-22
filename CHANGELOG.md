@@ -45,7 +45,7 @@
     among members of different types), and a `oneOf` of consts states their values' type (it stated `"const"` as a
     field). Both came from `Flag.EnumsAsOneOf`
 
-- **0.8.0** (unreleased): Scala 3 support. See the README's "Migrating to 0.8.0" and "Scala 3 notes".
+- **0.8.0** (2026-11-22): Scala 3 support. See the README's "Migrating to 0.8.0" and "Scala 3 notes".
   PRs: [#429](https://github.com/andyglow/scala-jsonschema/pull/429) (build stack, Central Portal),
   [#431](https://github.com/andyglow/scala-jsonschema/pull/431) (parser),
   [#433](https://github.com/andyglow/scala-jsonschema/pull/433) (cross-build, groupId),
