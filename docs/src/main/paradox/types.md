@@ -69,7 +69,13 @@ enum Event {                                           // {"oneOf": [{"additiona
 ```
 
 If an implicit `ToValue` for the enum type is in scope (e.g. from a JSON-library bridge and your codec), the enum
-values are the codec's output. When their JSON type can't be known at compile time, add `@typeHint[T]`.
+values are the codec's output. Their schema is your `@typeHint[T]` if you give one; otherwise it comes from the
+values themselves when the schema is rendered: strings make a string enum, any other value is a `const` of it.
+
+These are the default shapes. The derived `family` lists the members in declaration order; a rendered `oneOf` or
+`enum` keeps that order up to 4 entries (with more, the order is fixed, but it is hash order). To match how a JSON library writes sealed families
+(play's `_type`, circe's wrapper object, ...), render with that library's profile: see
+@ref:[Library profiles](rendering.md#library-profiles).
 
 ## Discriminators
 

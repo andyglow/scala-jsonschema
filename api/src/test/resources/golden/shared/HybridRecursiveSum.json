@@ -1,80 +1,130 @@
 {
   "schema": {
-    "kind": "oneof",
+    "kind": "family",
     "members": [
       {
-        "kind": "object",
-        "fields": [
-          {
-            "name": "err",
-            "required": false,
-            "rwMode": "ReadWrite",
-            "schema": {
-              "kind": "option",
+        "name": "Generic",
+        "fullName": "com.github.andyglow.jsonschema.HybridRecursiveSum.Generic",
+        "sig": "com.github.andyglow.jsonschema.HybridRecursiveSum.Generic",
+        "kind": "Product",
+        "schema": {
+          "kind": "object",
+          "fields": [
+            {
+              "name": "err",
+              "required": false,
+              "rwMode": "ReadWrite",
+              "schema": {
+                "kind": "option",
+                "schema": {
+                  "kind": "string"
+                }
+              }
+            },
+            {
+              "name": "intVal",
+              "required": true,
+              "rwMode": "ReadWrite",
+              "schema": {
+                "kind": "integer"
+              }
+            }
+          ]
+        },
+        "class": "com.github.andyglow.jsonschema.HybridRecursiveSum$Generic"
+      },
+      {
+        "name": "L1V1",
+        "fullName": "com.github.andyglow.jsonschema.HybridRecursiveSum.L1V1",
+        "sig": "com.github.andyglow.jsonschema.HybridRecursiveSum.L1V1",
+        "kind": "Product",
+        "schema": {
+          "kind": "object",
+          "fields": [
+            {
+              "name": "error",
+              "required": true,
+              "rwMode": "ReadWrite",
               "schema": {
                 "kind": "string"
               }
             }
-          },
-          {
-            "name": "intVal",
-            "required": true,
-            "rwMode": "ReadWrite",
-            "schema": {
-              "kind": "integer"
-            }
-          }
-        ]
+          ]
+        },
+        "class": "com.github.andyglow.jsonschema.HybridRecursiveSum$L1V1"
       },
       {
-        "kind": "object",
-        "fields": [
-          {
-            "name": "error",
-            "required": true,
-            "rwMode": "ReadWrite",
-            "schema": {
-              "kind": "string"
+        "name": "L1V2",
+        "fullName": "com.github.andyglow.jsonschema.HybridRecursiveSum.L1V2",
+        "sig": "com.github.andyglow.jsonschema.HybridRecursiveSum.L1V2",
+        "kind": "Product",
+        "schema": {
+          "kind": "object",
+          "fields": [
+            {
+              "name": "value",
+              "required": true,
+              "rwMode": "ReadWrite",
+              "schema": {
+                "kind": "integer"
+              }
             }
-          }
-        ]
+          ]
+        },
+        "class": "com.github.andyglow.jsonschema.HybridRecursiveSum$L1V2"
       },
       {
-        "kind": "object",
-        "fields": [
-          {
-            "name": "tpe",
-            "required": true,
-            "rwMode": "ReadWrite",
-            "schema": {
-              "kind": "string"
-            }
-          }
-        ]
-      },
-      {
-        "kind": "object",
-        "fields": [
-          {
-            "name": "value",
-            "required": true,
-            "rwMode": "ReadWrite",
-            "schema": {
-              "kind": "integer"
-            }
-          }
-        ]
-      },
-      {
-        "kind": "enum",
-        "type": {
+        "name": "L1V3",
+        "fullName": "com.github.andyglow.jsonschema.HybridRecursiveSum.L1V3",
+        "sig": "com.github.andyglow.jsonschema.HybridRecursiveSum.L1V3",
+        "kind": "Singleton",
+        "schema": {
           "kind": "string"
         },
-        "values": [
-          "L1V3",
-          "L2V1",
-          "L2V2"
-        ]
+        "value": "L1V3",
+        "class": "com.github.andyglow.jsonschema.HybridRecursiveSum$L1V3$"
+      },
+      {
+        "name": "L2V1",
+        "fullName": "com.github.andyglow.jsonschema.HybridRecursiveSum.L2V1",
+        "sig": "com.github.andyglow.jsonschema.HybridRecursiveSum.L2V1",
+        "kind": "Singleton",
+        "schema": {
+          "kind": "string"
+        },
+        "value": "L2V1",
+        "class": "com.github.andyglow.jsonschema.HybridRecursiveSum$L2V1$"
+      },
+      {
+        "name": "L2V2",
+        "fullName": "com.github.andyglow.jsonschema.HybridRecursiveSum.L2V2",
+        "sig": "com.github.andyglow.jsonschema.HybridRecursiveSum.L2V2",
+        "kind": "Singleton",
+        "schema": {
+          "kind": "string"
+        },
+        "value": "L2V2",
+        "class": "com.github.andyglow.jsonschema.HybridRecursiveSum$L2V2$"
+      },
+      {
+        "name": "L2V3",
+        "fullName": "com.github.andyglow.jsonschema.HybridRecursiveSum.L2V3",
+        "sig": "com.github.andyglow.jsonschema.HybridRecursiveSum.L2V3",
+        "kind": "Product",
+        "schema": {
+          "kind": "object",
+          "fields": [
+            {
+              "name": "tpe",
+              "required": true,
+              "rwMode": "ReadWrite",
+              "schema": {
+                "kind": "string"
+              }
+            }
+          ]
+        },
+        "class": "com.github.andyglow.jsonschema.HybridRecursiveSum$L2V3"
       }
     ]
   },

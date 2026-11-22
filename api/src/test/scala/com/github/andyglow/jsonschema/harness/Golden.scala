@@ -233,6 +233,10 @@ object Golden extends Assertions {
         case `const`(v)       => List("kind" -> str("const"), "value" -> v)
         case _: `null`        => List("kind" -> str("null"))
         case `option`(t)      => List("kind" -> str("option"), "schema" -> apply(t))
+        case f: `family`[_]   =>
+          List("kind" -> str("family"), "members" -> sorted(f.members.map(member))) ++
+            f.discriminator.toList.map(d => "discriminator" -> obj("field" -> str(d.field), "phantom" -> bool(d.phantom))) ++
+            (if (f.enumsAsOneOf) List("enumsAsOneOf" -> (bool(true): Value)) else Nil)
       }
       mkObj(body ++ meta)
     }
@@ -243,6 +247,19 @@ object Golden extends Assertions {
           f.default.toList.map(d => "default" -> d) ++
           f.description.toList.map(d => "description" -> (str(d): Value)) ++
           List("rwMode" -> str(f.rwMode.toString), "schema" -> apply(f.tpe))
+      mkObj(parts)
+    }
+
+    // members sorted like every other array here: Scala 2 lists a family's members in `knownDirectSubclasses` order, which differs between 2.12, 2.13 and Scala 3's declaration order
+    private def member(m: `family`.Member): Value = {
+      val parts: List[(String, Value)] =
+        List("name" -> str(m.name), "fullName" -> str(m.fullName), "sig" -> str(m.sig), "kind" -> str(m.kind.toString), "schema" -> apply(m.schema)) ++
+          m.value.toList.map(v => "value" -> v) ++
+          m.cls.toList.map(c => "class" -> (str(c.getName): Value)) ++
+          m.title.toList.map(x => "title" -> (str(x): Value)) ++
+          m.description.toList.map(x => "description" -> (str(x): Value)) ++
+          m.discriminatorKey.toList.map(x => "discriminatorKey" -> (str(x): Value)) ++
+          m.definition.toList.map(x => "definition" -> (str(x.toString): Value))
       mkObj(parts)
     }
 

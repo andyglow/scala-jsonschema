@@ -347,8 +347,14 @@ object Schema extends SchemaCompanionPlatform {
       required: Boolean,
       default: Option[Value],
       description: Option[String],
-      rwMode: Field.RWMode
+      rwMode: Field.RWMode,
+      hasDefault: Boolean
     ) {
+
+      /** A field without the [[hasDefault]] fact (the 0.8 constructor). */
+      def this(name: String, tpe: Schema[T], required: Boolean, default: Option[Value], description: Option[String], rwMode: Field.RWMode) =
+        this(name, tpe, required, default, description, rwMode, default.isDefined)
+
       def canEqual(that: Any): Boolean        = that.isInstanceOf[Field[_]]
       override def equals(that: Any): Boolean = canEqual(that) && {
         val other = that.asInstanceOf[Field[_]]
@@ -357,7 +363,8 @@ object Schema extends SchemaCompanionPlatform {
         this.tpe == other.tpe &&
         this.default == other.default &&
         this.description == other.description &&
-        this.rwMode == other.rwMode
+        this.rwMode == other.rwMode &&
+        this.hasDefault == other.hasDefault
       }
       override def hashCode: Int    = name.hashCode
       override def toString: String = {
@@ -367,14 +374,20 @@ object Schema extends SchemaCompanionPlatform {
           case (true, Some(v))  => s" /R /$v"
           case (false, Some(v)) => s" /$v"
         }
+        if (hasDefault && default.isEmpty) extra = extra + " /D"
         description foreach { x => extra = extra + s" description=`$x`" }
         s"$name: $tpe: $rwMode$extra"
       }
       def withDescription(x: Option[String]): Field[T] =
-        new Field(name, tpe, required, default, x, rwMode)
-      def withRWMode(x: RWMode): Field[T] = new Field(name, tpe, required, default, description, x)
-      def setReadOnly: Field[T]           = withRWMode(RWMode.ReadOnly)
-      def setWriteOnly: Field[T]          = withRWMode(RWMode.WriteOnly)
+        new Field(name, tpe, required, default, x, rwMode, hasDefault)
+      def withRWMode(x: RWMode): Field[T] = new Field(name, tpe, required, default, description, x, hasDefault)
+
+      /** Whether the Scala field has a default value. Usually `default` holds it, but not always: `= None` (an `Option` field) and defaults the bridge has no `ToValue` for have no JSON default. A
+        * profile uses it where a library omits a field that equals its default (upickle). Not rendered.
+        */
+      def withHasDefault(x: Boolean): Field[T] = new Field(name, tpe, required, default, description, rwMode, x)
+      def setReadOnly: Field[T]                = withRWMode(RWMode.ReadOnly)
+      def setWriteOnly: Field[T]               = withRWMode(RWMode.WriteOnly)
     }
     object Field {
       sealed trait RWMode
@@ -383,6 +396,10 @@ object Schema extends SchemaCompanionPlatform {
         case object WriteOnly extends RWMode
         case object ReadWrite extends RWMode
       }
+
+      /** The 0.8 factory: [[Field.hasDefault]] is `default.isDefined`. */
+      def apply[T](name: String, tpe: Schema[T], required: Boolean, default: Option[Value], description: Option[String], rwMode: RWMode): Field[T] =
+        new Field(name, tpe, required, default, description, rwMode, default.isDefined)
 
       def apply[T](name: String, tpe: Schema[T]): Field[T] =
         new Field(name, tpe, required = true, default = None, description = None, RWMode.ReadWrite)
@@ -397,7 +414,7 @@ object Schema extends SchemaCompanionPlatform {
         default: T,
         rwMode: RWMode = RWMode.ReadWrite
       ): Field[T] =
-        new Field(name, tpe, required, Some(ToValue(default)), description = None, rwMode = rwMode)
+        new Field(name, tpe, required, Some(ToValue(default)), description = None, rwMode = rwMode, hasDefault = true)
 
       def fromJson[T](
         name: String,
@@ -405,7 +422,7 @@ object Schema extends SchemaCompanionPlatform {
         required: Boolean,
         default: Option[Value],
         rwMode: RWMode = RWMode.ReadWrite
-      ): Field[T] = new Field(name, tpe, required, default, description = None, rwMode = rwMode)
+      ): Field[T] = new Field(name, tpe, required, default, description = None, rwMode = rwMode, hasDefault = default.isDefined)
     }
 
     def apply[T](field: Field[_], xs: Field[_]*): `object`[T] = {
@@ -565,6 +582,7 @@ object Schema extends SchemaCompanionPlatform {
           case `not`(y)                => `not`(deepCopy(y))
           case `value-class`(y)        => `value-class`[Any, Any](deepCopy(y).asInstanceOf[Schema[Any]])
           case `option`(y)             => `option`[Any](deepCopy(y).asInstanceOf[Schema[Any]])
+          case f: `family`[_]          => f.withMemberSchemas(deepCopy)
           case `def`(s, y)             => `def`(if (s == oldSig) newSig else s, deepCopy(y))
           case `ref`(s) if s == oldSig => `ref`(newSig)
           case y                       => y
@@ -690,5 +708,133 @@ object Schema extends SchemaCompanionPlatform {
       sb append inner
       sb append ")"
     }
+  }
+
+  // +------------
+  // | Family
+  // +---------------
+  // "The Scala type here is a sealed family" (a sealed trait / abstract class of case classes and objects, or a Scala 3 `enum`), with the facts a JSON library's encoding depends on:
+  // its members (nested sealed families flattened, in declaration order), their names, kinds, schemas and annotations. Both macros emit it for every sealed family. Like `option`,
+  // it has no JSON Schema form of its own: a [[json.schema.JsonSchemaProfile]] lowers it before rendering (Neutral and Legacy to the 0.7 shapes: an untagged `oneOf`, case objects
+  // as an `enum`; a library profile to what that library writes). `Either`, `scala.Enumeration` and Java enums are not families.
+  //
+  final case class `family`[T](members: List[`family`.Member], discriminator: Option[`family`.Discriminator] = None, enumsAsOneOf: Boolean = false) extends Schema[T] {
+    type Self = `family`[T]
+    def mkCopy()                              = new `family`[T](members, discriminator, enumsAsOneOf)
+    override def canEqual(that: Any): Boolean = that.isInstanceOf[`family`[_]]
+    override def equals(obj: Any): Boolean    = obj match {
+      case `family`(m, d, e) => members == m && discriminator == d && enumsAsOneOf == e && super.equals(obj)
+      case _                 => false
+    }
+    override def hashCode: Int = members.hashCode
+
+    /** The JSON type of what the default profile makes of it. */
+    override def jsonType: String = json.schema.JsonSchemaProfile.Neutral.lower(this).jsonType
+    override def toString: String = ToString { sb =>
+      sb append "family("
+      sb append members.mkString(", ")
+      discriminator foreach { d => sb append " | " append d }
+      if (enumsAsOneOf) sb append " | enumsAsOneOf"
+      sb append ")"
+    }
+
+    /** The same family with `f` applied to every member's schema. */
+    def withMemberSchemas(f: Schema[_] => Schema[_]): `family`[T] = new `family`[T](members.map(m => m.copy(schema = f(m.schema))), discriminator, enumsAsOneOf).withExtraFrom(this)
+  }
+  object `family` {
+
+    /** One member of a family.
+      *
+      * @param name
+      *   the simple name: `Dog`
+      * @param fullName
+      *   the class's full name without type arguments: `petshop.Dog` (what play-json's `typeNaming` is given)
+      * @param sig
+      *   the signature (`Json.sig`): 0.7's default `@discriminator` key and `@definition` name
+      * @param kind
+      *   what the member is
+      * @param schema
+      *   for every kind but [[Kind.Singleton]], the member's own schema, without the member's `title`/`description`/`discriminatorKey`/`definition` (the profile applies them). For a singleton, the
+      *   schema of its 0.7 enum value ([[value]]): `string`, or what its `@typeHint` resolves to
+      * @param value
+      *   a singleton's 0.7 enum value: `ToValue[Root](member)` if an implicit `ToValue` of the family was in scope where the schema was derived, otherwise the name. `None` for other kinds
+      * @param cls
+      *   the member's runtime class (`classOf[Dog]`, `Fish.getClass`), for libraries that key by class (json4s type hints). `None` where the runtime class doesn't identify the member (a Scala 3 enum
+      *   case)
+      * @param title
+      *   the member's own `@title` / scaladoc
+      * @param description
+      *   the member's own `@description` / scaladoc
+      * @param discriminatorKey
+      *   `@discriminatorKey`
+      * @param definition
+      *   `@definition` / `@definition("name")`
+      * @param valueField
+      *   for a [[Kind.ValueClass]], the name of its one field: the libraries' derived sum codecs write such a member as `{"<field>": value}`
+      */
+    final case class Member(
+      name: String,
+      fullName: String,
+      sig: String,
+      kind: Kind,
+      schema: Schema[_],
+      value: Option[Value] = None,
+      cls: Option[Class[_]] = None,
+      title: Option[String] = None,
+      description: Option[String] = None,
+      discriminatorKey: Option[String] = None,
+      definition: Option[Definition] = None,
+      valueField: Option[String] = None
+    ) {
+      // `cls` left out: a Class hashes by identity, which differs per run, and a Set of 5+ members would iterate (render) in a different order
+      override def hashCode: Int    = (name, fullName, sig, kind, schema, value, title, description, discriminatorKey, definition, valueField).hashCode
+      override def toString: String = {
+        val sb = new StringBuilder
+        sb append name append ':' append kind append '(' append schema
+        value foreach { v => sb append " = " append JsonFormatter.format(v) }
+        sb append ')'
+        title foreach { x => sb append " title=`" append x append '`' }
+        description foreach { x => sb append " description=`" append x append '`' }
+        discriminatorKey foreach { x => sb append " discriminatorKey=`" append x append '`' }
+        definition foreach { x => sb append " " append x }
+        sb.toString
+      }
+    }
+
+    sealed trait Kind
+    object Kind {
+
+      /** A case class, or a Scala 3 `enum` case with parameters. */
+      case object Product extends Kind
+
+      /** A value class (`extends AnyVal`). Unwrapped under profiles that honor the schema annotations (Neutral, Legacy, spray: as 0.7); written as the case class `{"<field>": value}` under the
+        * library profiles, as their derived sum codecs do.
+        */
+      case object ValueClass extends Kind
+
+      /** A member whose schema came from an implicit `Schema` or `Predef` in scope: used as it is (0.7 adds none of the member's annotations to it). */
+      case object Provided extends Kind
+
+      /** A case object, or a Scala 3 `enum` case without parameters. */
+      case object Singleton extends Kind
+    }
+
+    /** `@definition` on a member: [[Definition.Inferred]] (no argument: named by the signature) or [[Definition.Named]]. */
+    sealed trait Definition
+    object Definition {
+      case object Inferred                 extends Definition
+      final case class Named(name: String) extends Definition
+    }
+
+    /** The value schema of a singleton whose value comes from an implicit `ToValue` of the family without a `@typeHint` (what the codec writes, known only at runtime): `string` for a string,
+      * otherwise the value itself as a `const` (Neutral and Legacy keep such a member a `const`).
+      */
+    def valueSchema(v: Value): Schema[_] = v match {
+      case _: Value.str => `string`[String](None)
+      case other        => `const`[Any](other)
+    }
+
+    /** `@discriminator` on the family, its defaults resolved. */
+    final case class Discriminator(field: String = "type", phantom: Boolean = true)
   }
 }

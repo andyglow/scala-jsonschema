@@ -1,16 +1,31 @@
 {
   "schema": {
-    "kind": "oneof",
+    "kind": "family",
     "members": [
       {
-        "kind": "const",
-        "value": "V1"
+        "name": "V1",
+        "fullName": "com.github.andyglow.jsonschema.EnumSpec.case0.V1",
+        "sig": "com.github.andyglow.jsonschema.EnumSpec.case0.V1",
+        "kind": "Singleton",
+        "schema": {
+          "kind": "string"
+        },
+        "value": "V1",
+        "class": "com.github.andyglow.jsonschema.EnumSpec$case0$V1$"
       },
       {
-        "kind": "const",
-        "value": "V2"
+        "name": "V2",
+        "fullName": "com.github.andyglow.jsonschema.EnumSpec.case0.V2",
+        "sig": "com.github.andyglow.jsonschema.EnumSpec.case0.V2",
+        "kind": "Singleton",
+        "schema": {
+          "kind": "string"
+        },
+        "value": "V2",
+        "class": "com.github.andyglow.jsonschema.EnumSpec$case0$V2$"
       }
-    ]
+    ],
+    "enumsAsOneOf": true
   },
   "draft-04": {
     "$schema": "http://json-schema.org/draft-04/schema#",

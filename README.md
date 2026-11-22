@@ -309,7 +309,13 @@ enum Event {                                           // {"oneOf": [{"additiona
 ```
 
 If an implicit `ToValue` for the enum type is in scope (e.g. from a JSON-library bridge and your codec), the enum
-values are the codec's output. When their JSON type can't be known at compile time, add `@typeHint[T]`.
+values are the codec's output. Their schema is your `@typeHint[T]` if you give one; otherwise it comes from the
+values themselves when the schema is rendered: strings make a string enum, any other value is a `const` of it.
+
+These are the default shapes. The derived `family` lists the members in declaration order; a rendered `oneOf` or
+`enum` keeps that order up to 4 entries (with more, the order is fixed, but it is hash order). To match how a JSON library writes sealed families
+(play's `_type`, circe's wrapper object, ...), render with that library's profile: see
+[Library profiles](#library-profiles).
 
 ### Discriminators
 
@@ -593,6 +599,129 @@ Json.stringify(Json.schema[Pet], Draft07("id"))                      // also AsV
 share one profile across a project, define it in an object and import it where you render. In Scala 3, `import
 Settings.*` doesn't import a `given`: write `import Settings.given`, or declare the profile as an `implicit val`.
 
+### Library profiles
+
+JSON libraries write sealed families differently. For
+
+```scala
+sealed trait Animal
+final case class Dog(name: String) extends Animal
+case object Fish                   extends Animal
+```
+
+play-json writes `{"_type": "petshop.Dog", "name": "Rex"}` and `{"_type": "petshop.Fish"}`, circe-generic
+`{"Dog": {"name": "Rex"}}` and `{"Fish": {}}`, upickle `{"$type": "Dog", "name": "Rex"}` and `"Fish"`, json4s
+`{"name": "Rex"}` and `{}`. The default schema (an untagged `oneOf`, case objects as a string enum, as in 0.7)
+matches none of them. So the macro records the facts of a sealed family (its members, their names and kinds, the
+annotations) in the schema as a `` `family` `` node, like `Option`, and a profile shapes it when you render.
+
+One import gives rendering, `ToValue` and the library's profile (`AsPlay._`, `AsCirce._`, ... stay as they are
+and bring no profile):
+
+```scala
+import com.github.andyglow.jsonschema.profiles.play._    // asPlay: what Json.format writes under the implicit JsonConfiguration in scope
+import com.github.andyglow.jsonschema.profiles.circe._   // asCirce: circe-generic (semiauto); Scala 3: a given io.circe.derivation.Configuration in scope wins
+import com.github.andyglow.jsonschema.profiles.upickle._ // asU: upickle.default
+import com.github.andyglow.jsonschema.profiles.json4s._  // asJson4s: the implicit Formats in scope, else DefaultFormats
+import com.github.andyglow.jsonschema.profiles.spray._   // asSpray: spray derives no sum codecs, so Neutral's shapes (state yours, below)
+```
+
+In Scala 3 write `.*`: the bridges declare `implicit def`s, which `.*` imports.
+
+| library | as it writes `Dog` / `Fish` | profile | read from |
+|---|---|---|---|
+| play-json | `{"_type": "petshop.Dog", "name": ...}` / `{"_type": "petshop.Fish"}` | `PlayProfile.fromConfig(cfg)`, `PlayProfile.default` | `discriminator`, `typeNaming` (given the full name); `optionHandlers` needs nothing (play reads both) |
+| circe | `{"Dog": {...}}` / `{"Fish": {}}`; configured: `{"type": "Dog", ...}` | `CirceProfile.default`, `CirceProfile.configured(discriminator, transformConstructorNames, transformMemberNames)`, Scala 3: `CirceProfile.fromConfig(configuration)` | `discriminator`, `transformConstructorNames` |
+| upickle | `{"$type": "Dog", "name": ...}` / `"Fish"` | `UPickleProfile.fromApi(api)`, `UPickleProfile.default` | `tagName`, `objectTypeKeyWriteFullyQualified`, `objectTypeKeyWriteMap`; an `Option` key must be present unless the field has a default |
+| json4s | `{"name": ...}` / `{}`; with type hints `{"jsonClass": "Dog", ...}` | `Json4sProfile.fromFormats(formats)`, `Json4sProfile.default` | `typeHints`, per family: a family of hinted classes is tagged, one without hints isn't |
+| spray-json | your `RootJsonFormat` | `SprayProfile.default` (Neutral) | nothing: say what your format writes |
+
+Where the library takes its configuration implicitly, the profile follows the same implicit, so a custom
+configuration changes the schema with no extra code:
+
+```scala
+import play.api.libs.json._
+import com.github.andyglow.jsonschema.profiles.play._
+import json.schema.Version._
+
+implicit val cfg: JsonConfiguration = JsonConfiguration(
+  discriminator  = "_kind",
+  typeNaming     = JsonNaming(_.split('.').last),           // "petshop.Dog" -> "Dog"
+  optionHandlers = OptionHandlers.WritesNull
+)
+implicit val animalF: OFormat[Animal] = Json.format[Animal]   // and Dog, Fish, Pet; play's macros read `cfg`
+
+json.Json.schema[Pet].asPlay(Draft12("pet"))                // the same `cfg`: "_kind", "Dog", "age": ["integer", "null"]
+```
+
+The same holds for json4s (`implicit val formats: Formats = DefaultFormats + ShortTypeHints(List(classOf[Dog],
+Fish.getClass), "kind")`) and, in Scala 3, circe's `given Configuration = Configuration.default.withDiscriminator("type")`
+next to `derives ConfiguredCodec`. Where the configuration is not an implicit, pass it:
+
+```scala
+// upickle: your API object
+object MyPickler extends upickle.AttributeTagged { override def tagName = "kind" }
+implicit val profile: JsonSchemaProfile = UPickleProfile.fromApi(MyPickler)
+
+// circe-generic-extras (Scala 2): the fields of its Configuration that shape the output
+implicit val profile: JsonSchemaProfile =
+  CirceProfile.configured(config.discriminator, config.transformConstructorNames, config.transformMemberNames)
+
+// spray: what your hand-written RootJsonFormat[Animal] writes
+implicit val profile: JsonSchemaProfile =
+  SprayProfile.default.withSum(SumStyle.Discriminator("type")).withMemberName(MemberName.SimpleName).withSingleton(SingletonStyle.AsTagged)
+```
+
+With a profile of your own, import `AsX._` (rendering, no profile), not `profiles.<lib>._`. With both in scope,
+Scala 2 reports the ambiguity with a message saying so; Scala 3 picks yours, the closer one. Two `profiles.<lib>._`
+imports in one scope are an error too. Per call, `schema.withProfile(PlayProfile.fromConfig(cfg))` shapes one
+schema whatever is in scope where it is rendered.
+
+What the profiles can't see: the libraries' own annotations (upickle `@key`, circe-generic-extras `@JsonKey`, play's
+`@JsonKey`) and hand-written codecs (give such a type an implicit `Schema`). Renamed fields (play `naming`, circe
+`transformMemberNames`, upickle `objectAttributeKeyWriteMap`) are an error (tried on sample names). json4s 4 fails
+to encode case classes on Scala 3 itself, so its profile is for Scala 2 users.
+
+What a profile describes (the same rules for every library):
+- what the library writes, widened only by what its reader also accepts (play reads a missing `Option` field and
+  `null`, so both validate). Value classes are unwrapped (as fields, collection elements, ...); a value class that
+  is a member of a sealed family is the case class `{"<field>": value}`, as the libraries' derived sum codecs
+  write it;
+- a member's tag (`_type`, `$type`, ...) and name come from the library's configuration, not from
+  `@discriminator`/`@discriminatorKey`: the library's derivation never sees those. They apply under Neutral and
+  Legacy, and under the spray profile, where you write the sum codec yourself. `@title`, `@description` and
+  `@definition` apply under every profile;
+- a setting the profile can't describe is an error when the profile is built (or the schema is lowered), naming
+  the setting, not a schema that rejects the library's own output;
+- a type with an implicit `Schema` or `Predef` is used as it is. A family member with an implicit `Schema` of an
+  object gets the tag in a copy of it; one whose schema isn't an object can't carry a tag, and that is an error;
+- nested sealed traits are flattened, as the libraries do; `Either` is not a family (still the 0.7 `oneOf`).
+
+A profile of your own starts from one of the library profiles, or from `JsonSchemaProfile.Neutral`, and changes
+knobs; each `with...` keeps the others:
+
+| knob | values | |
+|---|---|---|
+| `withSum` | `SumStyle.Untagged`, `WrapperObject`, `Discriminator(field)`, `PerFamily(family => style)` | how members are told apart |
+| `withSingleton` | `SingletonStyle.AsString`, `AsTagged` | a case object as a string, or as an object tagged like the other members |
+| `withMemberName` | `MemberName.SimpleName`, `FullName`, `Custom(member => name)` | the tag of a member |
+| `withOptionKeyRequired` | `true`, `false` | an `Option` field without a default is required (upickle) |
+| `withHonorsSchemaAnnotations` | `true`, `false` | whether `@discriminator`/`@discriminatorKey` apply |
+| `withOption` | `OptionStyle.Nullable`, `Legacy` | `Option` as "X or null", or the 0.7 shapes |
+
+```scala
+import json.schema.JsonSchemaProfile
+import json.schema.JsonSchemaProfile.{MemberName, SingletonStyle, SumStyle}
+
+// a hand-written codec that writes {"type": "Dog", "name": ...} and {"type": "Fish"}
+implicit val profile: JsonSchemaProfile = JsonSchemaProfile.Neutral
+  .withSum(SumStyle.Discriminator("type"))
+  .withMemberName(MemberName.SimpleName)
+  .withSingleton(SingletonStyle.AsTagged)
+
+Json.stringify(Json.schema[Animal], Draft12("animal"))
+```
+
 ## Modules
 
 ### Refined
@@ -674,6 +803,33 @@ applies instead.
 `scala-jsonschema-parser` goes the other way: `com.github.andyglow.json.ParseJson(string)` parses JSON into the
 library's AST, and `com.github.andyglow.jsonschema.ParseJsonSchema(string)` parses a JSON Schema (a draft-04
 subset, including `"type": [X, "null"]`) into a `Try[json.Schema[_]]`.
+
+## Migrating to 0.9.0
+
+The full list is in the [CHANGELOG](CHANGELOG.md).
+
+**Output**
+
+- Sealed families render as before unless you ask for a library profile: the default profile (Neutral) and `JsonSchemaProfile.Legacy` render
+  sealed families exactly as 0.8 and 0.7 did. To get a schema that matches your codec, import your library's
+  profile (see [Library profiles](#library-profiles)).
+- Sealed family members are in declaration order on Scala 2 too (the `family` node; a rendered `oneOf` or `enum`
+  keeps it up to 4 entries, with more the order is fixed hash order). Before, families of 5 and more members could
+  come out in a different order from one build to the next. Members of a family compiled in another project (no
+  source positions) are in name order.
+- Two renderer bugs are fixed, also under Legacy: a `oneOf` with a definition or a `$ref` after its first member
+  threw on draft-04/06/07, and a `const` (`Flag.EnumsAsOneOf`) could render `"type": "const"`, which no document
+  matches.
+
+**API**
+
+- **The derived tree has a `` `family` `` node** for each sealed family (and Scala 3 `enum`), where it had a
+  `oneof` (or an `enum` for case objects only). Code that walks or compares derived trees sees it.
+  `schema.withProfile(JsonSchemaProfile.Neutral)` (or `Legacy`) gives the plain tree, the same as 0.8's.
+- **`object.Field` has a 7th parameter, `hasDefault`**: the Scala field has a default, also when it has no JSON form
+  (`= None`, or no `ToValue` in scope). `new Field(...)` and `Field(...)` with 6 arguments still compile; a pattern
+  `case Field(name, tpe, required, default, description, rwMode)` needs a 7th binder (or match `f: Field[_]` and
+  use its accessors).
 
 ## Migrating to 0.8.0
 

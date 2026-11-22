@@ -26,6 +26,7 @@ final class Derivation(val mode: Mode, val objectSchemaDecorations: List[(String
     with ValueClasses
     with Sums
     with Enums
+    with FamilyEmit
     with Collections {
   import q.reflect.*
 

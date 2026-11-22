@@ -47,7 +47,7 @@ class PathDependentDefaultsSpec extends AnyFunSuite {
 
   test("a None default of a class-nested case class") {
     val h = new Holder
-    Json.schema[h.WithNone] shouldEqual `object`.fromList[Any](List(Field("o", `option`(`integer`), required = false)))
+    Json.schema[h.WithNone] shouldEqual `object`.fromList[Any](List(Field("o", `option`(`integer`), required = false).withHasDefault(true)))
   }
 
   test("a default of a case class reached through a type projection is a clear compile error (Scala 3 crashed)") {

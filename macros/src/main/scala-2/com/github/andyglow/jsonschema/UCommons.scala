@@ -138,6 +138,15 @@ private[jsonschema] trait UCommons extends SchemaTypes with ULogging {
 
   // BORROWED:
   // https://github.com/plokhotnyuk/jsoniter-scala/blob/3612fddf19a8ce23ac973d71e85ef02f79c06fff/jsoniter-scala-macros/src/main/scala/com/github/plokhotnyuk/jsoniter_scala/macros/JsonCodecMaker.scala#L351-L365
+  /** A sealed type's direct subclasses in declaration order (source file, then position), as Scala 3 lists them. `knownDirectSubclasses` is a Set: for 5 and more members its order varied from run to
+    * run (lead decision 2026-11-21: sort, for every profile, Legacy included). Subclasses without a position (loaded from class files) follow, by name.
+    */
+  private def inDeclarationOrder(xs: Set[Symbol]): Seq[Symbol] =
+    xs.toSeq.sortBy { s =>
+      val p = s.pos
+      if (p == NoPosition) (1, "", 0, s.fullName) else (0, p.source.path, p.point, s.fullName)
+    }
+
   def resolveSumTypeRecursively(
     tpe: Type,
     include: Type => Boolean,
@@ -145,7 +154,7 @@ private[jsonschema] trait UCommons extends SchemaTypes with ULogging {
   ): Seq[Type] = {
 
     if (tpe.typeSymbol.isClass) {
-      val leaves = tpe.typeSymbol.asClass.knownDirectSubclasses.toSeq flatMap { s =>
+      val leaves = inDeclarationOrder(tpe.typeSymbol.asClass.knownDirectSubclasses) flatMap { s =>
         val cs     = s.asClass
         val subTpe =
           if (cs.typeParams.isEmpty) cs.toType
@@ -201,9 +210,11 @@ private[jsonschema] trait UCommons extends SchemaTypes with ULogging {
     effectiveTpe: Type,
     annotations: List[Annotation],
     default: Option[Tree],
-    isOption: Boolean
+    isOption: Boolean,
+    declaresDefault: Boolean = false
   ) {
 
+    /** A default with a JSON form (`= None` has none) */
     def hasDefault: Boolean = default.isDefined
 
     object hasAnnotation {

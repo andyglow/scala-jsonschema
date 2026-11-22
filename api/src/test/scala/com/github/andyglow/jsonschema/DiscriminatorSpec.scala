@@ -1,5 +1,6 @@
 package com.github.andyglow.jsonschema
 
+import com.github.andyglow.jsonschema.harness.Families.as07
 import json.{Schema => S, schema => s, Json}, S._, S.`object`.{Field => F}, s._, s.{Version => v}
 import com.github.andyglow.json.Value._
 import org.scalatest.exceptions.TestFailedException
@@ -77,7 +78,7 @@ class DiscriminatorSpec extends AnyWordSpec {
 
       "phantom, no specific keys" in {
         val s = Json.schema[case0.Root]
-        s shouldBe `oneof`
+        as07(s) shouldBe `oneof`
           .of(
             `object`(F("value", `integer`, required = true)).withDiscriminationKey(
               "com.github.andyglow.jsonschema.DiscriminatorSpec.case0.Root.Member1"
@@ -122,7 +123,7 @@ class DiscriminatorSpec extends AnyWordSpec {
 
       "non-phantom, no specific keys" in {
         val s = Json.schema[case1.Root]
-        s shouldBe `oneof`
+        as07(s) shouldBe `oneof`
           .of(
             `object`(F("type", `string`, required = true), F("value", `integer`, required = true))
               .withDiscriminationKey(
@@ -169,7 +170,7 @@ class DiscriminatorSpec extends AnyWordSpec {
 
       "phantom, specific field, no specific keys" in {
         val s = Json.schema[case3.Root]
-        s shouldBe `oneof`
+        as07(s) shouldBe `oneof`
           .of(
             `object`(F("tpe", `string`, required = true), F("value", `integer`, required = true))
               .withDiscriminationKey(
@@ -216,7 +217,7 @@ class DiscriminatorSpec extends AnyWordSpec {
 
       "phantom, specific keys" in {
         val s = Json.schema[case4.Root]
-        s shouldBe `oneof`
+        as07(s) shouldBe `oneof`
           .of(
             `object`(F("value", `integer`, required = true)).withDiscriminationKey("m1"),
             `object`(F("value", `string`, required = true)).withDiscriminationKey("m2")
@@ -249,7 +250,7 @@ class DiscriminatorSpec extends AnyWordSpec {
 
       "definition, phantom, specific keys" in {
         val s = Json.schema[case5.Root]
-        s shouldBe `oneof`
+        as07(s) shouldBe `oneof`
           .of(
             `def`(
               "m1",

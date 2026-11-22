@@ -52,5 +52,17 @@ object AsTree {
     case `const`(v)         => Apply("const", Iterator(v.toString))
     case _: `null`          => "null"
     case `option`(tpe)      => Apply("option", Iterator(AsTree(tpe)))
+    case f: `family`[_]     =>
+      Apply(
+        "family",
+        Iterator(
+          Apply(
+            "members",
+            f.members.iterator.map { m =>
+              Apply(m.name, Iterator[Tree]("kind" -> m.kind.toString, AsTree(m.schema)) ++ m.value.iterator.map[Tree](v => "value" -> v.toString))
+            }
+          )
+        ) ++ f.discriminator.iterator.map(d => "discriminator" -> d.field)
+      )
   }
 }

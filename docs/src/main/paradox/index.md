@@ -21,6 +21,7 @@ instead of runtime reflection. For Scala 2.12, 2.13 and 3.3 LTS.
 * [Validation](validation.md)
 * [Rendering](rendering.md)
 * [Modules](modules/index.md)
+* [Migrating to 0.9.0](migration-0.9.md)
 * [Migrating to 0.8.0](migration.md)
 * [Scala 3](scala3.md)
 

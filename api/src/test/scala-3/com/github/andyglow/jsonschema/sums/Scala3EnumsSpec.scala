@@ -1,7 +1,7 @@
 package com.github.andyglow.jsonschema.sums
 
 import com.github.andyglow.json.{ToValue, Value}
-import com.github.andyglow.jsonschema.harness.CompileErrors.errorOf
+import com.github.andyglow.jsonschema.harness.Families.as07
 import json.*
 import json.Schema.*
 import json.Schema.`object`.Field
@@ -69,18 +69,23 @@ class Scala3EnumsSpec extends AnyFunSuite {
   import Scala3EnumsSpec.*
 
   test("an enum of singleton cases is a string enum of the case names, in declaration order") {
-    val s = Json.schema[Color]
+    val derived = Json.schema[Color]
+    val s       = as07(derived)
     s shouldBe `enum`.of("Red", "Green", "Blue")
     // a Set of 3 keeps insertion order, so this checks the declaration order
     s.asInstanceOf[`enum`[?]].values.toList shouldBe List(Value.str("Red"), Value.str("Green"), Value.str("Blue"))
+    // the family's facts: declaration order; a singleton enum case has no runtime class of its own (reviewer11 A6)
+    val f = derived.asInstanceOf[`family`[?]]
+    f.members.map(m => (m.name, m.kind, m.value, m.cls)) shouldBe List("Red", "Green", "Blue").map(n => (n, `family`.Kind.Singleton, Some(Value.str(n)), None))
+    f.members.head.fullName shouldBe "com.github.andyglow.jsonschema.sums.Scala3EnumsSpec.Color.Red"
   }
 
   test("a parameterized enum of singleton cases is a string enum too") {
-    Json.schema[Planet] shouldBe `enum`.of("Mercury", "Venus")
+    as07(Json.schema[Planet]) shouldBe `enum`.of("Mercury", "Venus")
   }
 
   test("an enum with class cases is a oneOf; its singleton cases become one enum") {
-    Json.schema[Shape] shouldBe `oneof`.of[Shape](
+    as07(Json.schema[Shape]) shouldBe `oneof`.of[Shape](
       `object`(Field("r", `number`[Double])),
       `object`(Field("w", `number`[Double]), Field("h", `number`[Double])),
       `enum`.of("Point")
@@ -88,7 +93,7 @@ class Scala3EnumsSpec extends AnyFunSuite {
   }
 
   test("a generic enum: class cases get the type argument") {
-    Json.schema[Opt[Int]] shouldBe `oneof`.of[Opt[Int]](
+    as07(Json.schema[Opt[Int]]) shouldBe `oneof`.of[Opt[Int]](
       `object`(Field("v", `integer`)),
       `enum`.of("Nada")
     )
@@ -96,7 +101,7 @@ class Scala3EnumsSpec extends AnyFunSuite {
 
   test("a recursive enum") {
     val sig = "com.github.andyglow.jsonschema.sums.Scala3EnumsSpec.Tree"
-    Json.schema[Tree] shouldBe `def`[Tree](
+    as07(Json.schema[Tree]) shouldBe `def`[Tree](
       sig,
       `oneof`.of[Tree](
         `enum`.of("Leaf"),
@@ -106,11 +111,11 @@ class Scala3EnumsSpec extends AnyFunSuite {
   }
 
   test("enum case annotations: texts on consts with EnumsAsOneOf (a `given` flag), dropped otherwise") {
-    Json.schema[Labeled] shouldBe `enum`.of("R", "G")
+    as07(Json.schema[Labeled]) shouldBe `enum`.of("R", "G")
     locally {
       // a local given is visible in its whole block, hence the nested one
       given (Flag & Flag.EnumsAsOneOf) = null
-      Json.schema[Labeled] shouldBe `oneof`.of[Labeled](
+      as07(Json.schema[Labeled]) shouldBe `oneof`.of[Labeled](
         const("R").withTitle("red").withDescription("the red one"),
         const("G").withTitle("green")
       )
@@ -118,7 +123,7 @@ class Scala3EnumsSpec extends AnyFunSuite {
   }
 
   test("@discriminator, @discriminatorKey and @definition on enum class cases") {
-    Json.schema[Event] shouldBe `oneof`
+    as07(Json.schema[Event]) shouldBe `oneof`
       .of[Event](
         `object`(Field("x", `integer`)).withDiscriminationKey("com.github.andyglow.jsonschema.sums.Scala3EnumsSpec.Event.Click"),
         `object`(Field("code", `string`)).withDiscriminationKey("key"),
@@ -128,15 +133,15 @@ class Scala3EnumsSpec extends AnyFunSuite {
   }
 
   test("a user ToValue[Enum] drives the values, typed by @typeHint") {
-    Json.schema[Level] shouldBe `enum`.of(1, 2)
+    as07(Json.schema[Level]) shouldBe `enum`.of(1, 2)
   }
 
-  test("a user ToValue[Enum] without @typeHint doesn't compile") {
-    errorOf(assertCompiles("Json.schema[NoHint]")) should include("Use @typeHint annotation to specify correct type")
+  test("a user ToValue[Enum] without @typeHint: the values from the codec at runtime, as consts (lead decision 2026-11-21; was a compile error)") {
+    as07(Json.schema[NoHint]) shouldBe `oneof`.of[NoHint](const(Value.num(0)), const(Value.num(1)))
   }
 
   test("enums as fields; a `derives` enum is a definition") {
-    Json.schema[Pixel] shouldBe `object`(
+    as07(Json.schema[Pixel]) shouldBe `object`(
       Field("c", `enum`.of("Red", "Green", "Blue")),
       Field("d", `def`[Dir]("com.github.andyglow.jsonschema.sums.Scala3EnumsSpec.Dir", `enum`.of("N", "S"))),
       Field(

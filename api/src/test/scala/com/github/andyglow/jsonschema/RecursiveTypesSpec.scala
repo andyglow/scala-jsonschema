@@ -1,5 +1,6 @@
 package com.github.andyglow.jsonschema
 
+import com.github.andyglow.jsonschema.harness.Families.as07
 import com.github.andyglow.json.JsonFormatter
 import com.github.andyglow.jsonschema.harness.TriageB
 import json.Schema
@@ -75,7 +76,7 @@ class RecursiveTypesSpec extends AnyWordSpec {
       "sum types. inner references root" in {
         import case2._
 
-        json.Json.schema[Node] shouldEqual `def`(
+        as07(json.Json.schema[Node]) shouldEqual `def`(
           "com.github.andyglow.jsonschema.RecursiveTypesSpec.case2.Node",
           `oneof`.of(
             `object`(

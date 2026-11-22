@@ -1,13 +1,40 @@
 {
   "schema": {
-    "kind": "enum",
-    "type": {
-      "kind": "string"
-    },
-    "values": [
-      "F0",
-      "F1",
-      "F2"
+    "kind": "family",
+    "members": [
+      {
+        "name": "F0",
+        "fullName": "com.github.andyglow.jsonschema.model.F0",
+        "sig": "com.github.andyglow.jsonschema.model.F0",
+        "kind": "Singleton",
+        "schema": {
+          "kind": "string"
+        },
+        "value": "F0",
+        "class": "com.github.andyglow.jsonschema.model.F0$"
+      },
+      {
+        "name": "F1",
+        "fullName": "com.github.andyglow.jsonschema.model.F1",
+        "sig": "com.github.andyglow.jsonschema.model.F1",
+        "kind": "Singleton",
+        "schema": {
+          "kind": "string"
+        },
+        "value": "F1",
+        "class": "com.github.andyglow.jsonschema.model.F1$"
+      },
+      {
+        "name": "F2",
+        "fullName": "com.github.andyglow.jsonschema.model.F2",
+        "sig": "com.github.andyglow.jsonschema.model.F2",
+        "kind": "Singleton",
+        "schema": {
+          "kind": "string"
+        },
+        "value": "F2",
+        "class": "com.github.andyglow.jsonschema.model.F2$"
+      }
     ]
   },
   "draft-04": {

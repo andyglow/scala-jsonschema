@@ -1,5 +1,6 @@
 package com.github.andyglow.jsonschema
 
+import com.github.andyglow.jsonschema.harness.Families.as07
 import json._
 import json.Schema._
 import json.schema._
@@ -15,7 +16,7 @@ class SumTypeWithConstantsSpec extends AnyWordSpec {
 
       implicit val flag: Flag with Flag.EnumsAsOneOf = null
 
-      Json.schema[FooBarInsideCompanionWithAnnotations] shouldEqual `oneof`(
+      as07(Json.schema[FooBarInsideCompanionWithAnnotations]) shouldEqual `oneof`(
         Set(
           `object`(Field("val1", `number`[Double])).withTitle("t1").withDescription("d1"),
           `object`(Field("val2", `number`[Double])).withTitle("t2").withDescription("d2"),

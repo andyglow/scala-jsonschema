@@ -1,36 +1,45 @@
 {
   "schema": {
-    "kind": "oneof",
+    "kind": "family",
     "members": [
       {
-        "kind": "object",
-        "fields": [
-          {
-            "name": "id",
-            "required": true,
-            "rwMode": "ReadWrite",
-            "schema": {
-              "kind": "integer"
+        "name": "V1",
+        "fullName": "com.github.andyglow.jsonschema.HybridGenericSum.V1",
+        "sig": "com.github.andyglow.jsonschema.HybridGenericSum.V1[scala.Int]",
+        "kind": "Product",
+        "schema": {
+          "kind": "object",
+          "fields": [
+            {
+              "name": "id",
+              "required": true,
+              "rwMode": "ReadWrite",
+              "schema": {
+                "kind": "integer"
+              }
+            },
+            {
+              "name": "value",
+              "required": true,
+              "rwMode": "ReadWrite",
+              "schema": {
+                "kind": "integer"
+              }
             }
-          },
-          {
-            "name": "value",
-            "required": true,
-            "rwMode": "ReadWrite",
-            "schema": {
-              "kind": "integer"
-            }
-          }
-        ]
+          ]
+        },
+        "class": "com.github.andyglow.jsonschema.HybridGenericSum$V1"
       },
       {
-        "kind": "enum",
-        "type": {
+        "name": "V2",
+        "fullName": "com.github.andyglow.jsonschema.HybridGenericSum.V2",
+        "sig": "com.github.andyglow.jsonschema.HybridGenericSum.V2",
+        "kind": "Singleton",
+        "schema": {
           "kind": "string"
         },
-        "values": [
-          "V2"
-        ]
+        "value": "V2",
+        "class": "com.github.andyglow.jsonschema.HybridGenericSum$V2$"
       }
     ]
   },

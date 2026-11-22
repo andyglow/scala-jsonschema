@@ -1,23 +1,32 @@
 {
   "schema": {
-    "kind": "oneof",
+    "kind": "family",
     "members": [
       {
-        "kind": "object",
-        "fields": [
-          {
-            "name": "t",
-            "required": true,
-            "rwMode": "ReadWrite",
-            "schema": {
-              "kind": "string"
+        "name": "D1",
+        "fullName": "com.github.andyglow.jsonschema.characterization.DiscOrder.D1",
+        "sig": "com.github.andyglow.jsonschema.characterization.DiscOrder.D1",
+        "kind": "Product",
+        "schema": {
+          "kind": "object",
+          "fields": [
+            {
+              "name": "t",
+              "required": true,
+              "rwMode": "ReadWrite",
+              "schema": {
+                "kind": "string"
+              }
             }
-          }
-        ],
-        "discriminationKey": "com.github.andyglow.jsonschema.characterization.DiscOrder.D1"
+          ]
+        },
+        "class": "com.github.andyglow.jsonschema.characterization.DiscOrder$D1"
       }
     ],
-    "discriminationField": "t"
+    "discriminator": {
+      "field": "t",
+      "phantom": false
+    }
   },
   "draft-04": {
     "$schema": "http://json-schema.org/draft-04/schema#",
