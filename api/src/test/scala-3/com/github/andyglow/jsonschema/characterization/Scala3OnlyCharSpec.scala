@@ -18,6 +18,6 @@ class Scala3OnlyCharSpec extends AnyFunSuite {
   }
 
   test("F4: `= Option.empty[String]` emits no default", TriageA) {
-    Json.schema[OptionEmptyTypedDefault] shouldEqual `object`[OptionEmptyTypedDefault](Field("a", `option`(`string`), required = false))
+    Json.schema[OptionEmptyTypedDefault] shouldEqual `object`[OptionEmptyTypedDefault](Field("a", `option`(`string`), required = false).withHasDefault(true))
   }
 }

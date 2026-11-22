@@ -1,5 +1,6 @@
 package com.github.andyglow.jsonschema
 
+import com.github.andyglow.jsonschema.harness.Families.as07
 import json.Json
 import json.Schema.{`number`, `object`, `oneof`}
 import org.scalatest.matchers.should.Matchers._
@@ -11,7 +12,7 @@ class NestedSumTypeSpec extends AnyWordSpec {
   "generate schema for Sealed Trait subclasses defined inside of another object" in {
     import `object`.Field
 
-    Json.schema[NestedFooBar] shouldEqual `oneof`(Set(`object`(Field("foo", `number`[Double])), `object`(Field("bar", `number`[Double]))))
+    as07(Json.schema[NestedFooBar]) shouldEqual `oneof`(Set(`object`(Field("foo", `number`[Double])), `object`(Field("bar", `number`[Double]))))
   }
 }
 

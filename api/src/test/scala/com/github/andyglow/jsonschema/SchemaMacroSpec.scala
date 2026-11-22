@@ -1,5 +1,6 @@
 package com.github.andyglow.jsonschema
 
+import com.github.andyglow.jsonschema.harness.Families.as07
 import json.{Json, Schema}
 import json.schema.validation.Instance._
 import json.Schema._
@@ -125,7 +126,10 @@ class SchemaMacroSpec extends AnyWordSpec {
       Json.schema[WeekDay.T] should matchSchema(`enum`.of("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"))
 
       object Planet extends Enumeration {
-        protected case class PlanetVal(mass: Double, radius: Double) extends super.Val {
+        // `super.Val(nextId, noName)` is what `super.Val()` does (no names given). Scala.js warns on `super.Val()` and on a literal null: the values' runtime names need reflection there.
+        // The schema doesn't: the derivation takes the names of the vals at compile time, and the test never prints a value
+        private def noName: String = null
+        protected case class PlanetVal(mass: Double, radius: Double) extends super.Val(nextId, noName) {
           def surfaceGravity: Double                   = Planet.G * mass / (radius * radius)
           def surfaceWeight(otherMass: Double): Double = otherMass * surfaceGravity
         }
@@ -181,7 +185,7 @@ class SchemaMacroSpec extends AnyWordSpec {
       Color.Green
       Color.Blue
 
-      Json.schema[Color] should matchSchema(`enum`.of("Red", "Green", "Blue"))
+      as07(Json.schema[Color]) should matchSchema(`enum`.of("Red", "Green", "Blue"))
 
       Json.schema[Map[Color, String]] should matchSchema(
         `dictionary`[Color, String, Map](`string`)
@@ -192,7 +196,7 @@ class SchemaMacroSpec extends AnyWordSpec {
     "generate schema for Sealed Trait subclasses" in {
       import `object`.Field
 
-      Json.schema[FooBar] should matchSchema(
+      as07(Json.schema[FooBar]) should matchSchema(
         `oneof`(
           Set(`object`(Field("foo", `number`[Double])), `object`(Field("bar", `number`[Double])))
         )
@@ -202,7 +206,7 @@ class SchemaMacroSpec extends AnyWordSpec {
     "generate schema for Multi Level Sealed Trait subclasses" in {
       import `object`.Field
 
-      Json.schema[MultiLevelSealedTraitRoot] should matchSchema(
+      as07(Json.schema[MultiLevelSealedTraitRoot]) should matchSchema(
         `oneof`(
           Set(
             `object`(Field("a", `integer`)),
@@ -218,7 +222,7 @@ class SchemaMacroSpec extends AnyWordSpec {
     "generate schema for Sealed Trait subclasses defined inside of it's companion object" in {
       import `object`.Field
 
-      Json.schema[FooBarInsideCompanion] should matchSchema(
+      as07(Json.schema[FooBarInsideCompanion]) should matchSchema(
         `oneof`(
           Set(`object`(Field("foo", `number`[Double])), `object`(Field("bar", `number`[Double])))
         )
@@ -228,7 +232,7 @@ class SchemaMacroSpec extends AnyWordSpec {
     "generate schema for hybrid Sealed Trait family" in {
       import `object`.Field
 
-      Json.schema[HybridSum] should matchSchema(
+      as07(Json.schema[HybridSum]) should matchSchema(
         `oneof`(
           Set(`object`(Field("id", `integer`), Field("name", `string`)), `enum`.of("V2", "V3"))
         )
@@ -238,7 +242,7 @@ class SchemaMacroSpec extends AnyWordSpec {
     "generate schema for hybrid generic Sealed Trait family" in {
       import `object`.Field
 
-      Json.schema[HybridGenericSum[Double]] should matchSchema(
+      as07(Json.schema[HybridGenericSum[Double]]) should matchSchema(
         `oneof`(
           Set(`object`(Field("id", `integer`), Field("value", `number`[Double])), `enum`.of("V2"))
         )
@@ -248,7 +252,7 @@ class SchemaMacroSpec extends AnyWordSpec {
     "generate schema for hybrid recursive Sealed Trait family" in {
       import `object`.Field
 
-      Json.schema[HybridRecursiveSum] should matchSchema(
+      as07(Json.schema[HybridRecursiveSum]) should matchSchema(
         `oneof`(
           Set(
             `object`(Field("err", `option`(`string`), required = false), Field("intVal", `integer`)),
@@ -263,7 +267,7 @@ class SchemaMacroSpec extends AnyWordSpec {
 
     "generate schema for Map which Sealed Values Family for values" in {
 
-      Json.schema[Map[String, AnyFooBar]] should matchSchema(
+      as07(Json.schema[Map[String, AnyFooBar]]) should matchSchema(
         `dictionary`[String, AnyFooBar, Map](
           `oneof`.of(`value-class`(`string`), `value-class`(`integer`))
         )
@@ -272,7 +276,7 @@ class SchemaMacroSpec extends AnyWordSpec {
 
     "generate schema for List which Sealed Values Family for values" in {
 
-      Json.schema[List[AnyFooBar]] should matchSchema(
+      as07(Json.schema[List[AnyFooBar]]) should matchSchema(
         `array`[AnyFooBar, List](
           `oneof`.of(`value-class`(`string`), `value-class`(`integer`))
         )

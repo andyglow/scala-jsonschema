@@ -1,37 +1,54 @@
 {
   "schema": {
-    "kind": "oneof",
+    "kind": "family",
     "members": [
       {
-        "kind": "object",
-        "fields": [
-          {
-            "name": "value",
-            "required": true,
-            "rwMode": "ReadWrite",
-            "schema": {
-              "kind": "integer"
+        "name": "Member1",
+        "fullName": "com.github.andyglow.jsonschema.DiscriminatorSpec.case4.Root.Member1",
+        "sig": "com.github.andyglow.jsonschema.DiscriminatorSpec.case4.Root.Member1",
+        "kind": "Product",
+        "schema": {
+          "kind": "object",
+          "fields": [
+            {
+              "name": "value",
+              "required": true,
+              "rwMode": "ReadWrite",
+              "schema": {
+                "kind": "integer"
+              }
             }
-          }
-        ],
-        "discriminationKey": "m1"
+          ]
+        },
+        "class": "com.github.andyglow.jsonschema.DiscriminatorSpec$case4$Root$Member1",
+        "discriminatorKey": "m1"
       },
       {
-        "kind": "object",
-        "fields": [
-          {
-            "name": "value",
-            "required": true,
-            "rwMode": "ReadWrite",
-            "schema": {
-              "kind": "string"
+        "name": "Member2",
+        "fullName": "com.github.andyglow.jsonschema.DiscriminatorSpec.case4.Root.Member2",
+        "sig": "com.github.andyglow.jsonschema.DiscriminatorSpec.case4.Root.Member2",
+        "kind": "Product",
+        "schema": {
+          "kind": "object",
+          "fields": [
+            {
+              "name": "value",
+              "required": true,
+              "rwMode": "ReadWrite",
+              "schema": {
+                "kind": "string"
+              }
             }
-          }
-        ],
-        "discriminationKey": "m2"
+          ]
+        },
+        "class": "com.github.andyglow.jsonschema.DiscriminatorSpec$case4$Root$Member2",
+        "discriminatorKey": "m2"
       }
     ],
-    "discriminationField": "type"
+    "discriminator": {
+      "field": "type",
+      "phantom": true
+    }
   },
   "draft-04": {
     "$schema": "http://json-schema.org/draft-04/schema#",

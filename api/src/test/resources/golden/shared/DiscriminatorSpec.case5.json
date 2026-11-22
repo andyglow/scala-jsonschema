@@ -1,10 +1,12 @@
 {
   "schema": {
-    "kind": "oneof",
+    "kind": "family",
     "members": [
       {
-        "kind": "def",
-        "sig": "m1",
+        "name": "Member1",
+        "fullName": "com.github.andyglow.jsonschema.DiscriminatorSpec.case5.Root.Member1",
+        "sig": "com.github.andyglow.jsonschema.DiscriminatorSpec.case5.Root.Member1",
+        "kind": "Product",
         "schema": {
           "kind": "object",
           "fields": [
@@ -16,13 +18,17 @@
                 "kind": "integer"
               }
             }
-          ],
-          "discriminationKey": "m1"
-        }
+          ]
+        },
+        "class": "com.github.andyglow.jsonschema.DiscriminatorSpec$case5$Root$Member1",
+        "discriminatorKey": "m1",
+        "definition": "Named(m1)"
       },
       {
-        "kind": "def",
-        "sig": "m2",
+        "name": "Member2",
+        "fullName": "com.github.andyglow.jsonschema.DiscriminatorSpec.case5.Root.Member2",
+        "sig": "com.github.andyglow.jsonschema.DiscriminatorSpec.case5.Root.Member2",
+        "kind": "Product",
         "schema": {
           "kind": "object",
           "fields": [
@@ -34,12 +40,17 @@
                 "kind": "string"
               }
             }
-          ],
-          "discriminationKey": "m2"
-        }
+          ]
+        },
+        "class": "com.github.andyglow.jsonschema.DiscriminatorSpec$case5$Root$Member2",
+        "discriminatorKey": "m2",
+        "definition": "Named(m2)"
       }
     ],
-    "discriminationField": "type"
+    "discriminator": {
+      "field": "type",
+      "phantom": true
+    }
   },
   "draft-04": {
     "$schema": "http://json-schema.org/draft-04/schema#",

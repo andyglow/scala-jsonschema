@@ -1,13 +1,40 @@
 {
   "schema": {
-    "kind": "enum",
-    "type": {
-      "kind": "string"
-    },
-    "values": [
-      "Off",
-      "On",
-      "Suspended"
+    "kind": "family",
+    "members": [
+      {
+        "name": "Off",
+        "fullName": "com.github.andyglow.jsonschema.model.Off",
+        "sig": "com.github.andyglow.jsonschema.model.Off",
+        "kind": "Singleton",
+        "schema": {
+          "kind": "string"
+        },
+        "value": "Off",
+        "class": "com.github.andyglow.jsonschema.model.Off$"
+      },
+      {
+        "name": "On",
+        "fullName": "com.github.andyglow.jsonschema.model.On",
+        "sig": "com.github.andyglow.jsonschema.model.On",
+        "kind": "Singleton",
+        "schema": {
+          "kind": "string"
+        },
+        "value": "On",
+        "class": "com.github.andyglow.jsonschema.model.On$"
+      },
+      {
+        "name": "Suspended",
+        "fullName": "com.github.andyglow.jsonschema.model.Suspended",
+        "sig": "com.github.andyglow.jsonschema.model.Suspended",
+        "kind": "Singleton",
+        "schema": {
+          "kind": "string"
+        },
+        "value": "Suspended",
+        "class": "com.github.andyglow.jsonschema.model.Suspended$"
+      }
     ]
   },
   "draft-04": {

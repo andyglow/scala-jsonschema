@@ -1,53 +1,68 @@
 {
   "schema": {
-    "kind": "oneof",
+    "kind": "family",
     "members": [
       {
-        "kind": "object",
-        "fields": [
-          {
-            "name": "tpe",
-            "required": true,
-            "rwMode": "ReadWrite",
-            "schema": {
-              "kind": "string"
+        "name": "Member1",
+        "fullName": "com.github.andyglow.jsonschema.DiscriminatorSpec.case3.Root.Member1",
+        "sig": "com.github.andyglow.jsonschema.DiscriminatorSpec.case3.Root.Member1",
+        "kind": "Product",
+        "schema": {
+          "kind": "object",
+          "fields": [
+            {
+              "name": "tpe",
+              "required": true,
+              "rwMode": "ReadWrite",
+              "schema": {
+                "kind": "string"
+              }
+            },
+            {
+              "name": "value",
+              "required": true,
+              "rwMode": "ReadWrite",
+              "schema": {
+                "kind": "integer"
+              }
             }
-          },
-          {
-            "name": "value",
-            "required": true,
-            "rwMode": "ReadWrite",
-            "schema": {
-              "kind": "integer"
-            }
-          }
-        ],
-        "discriminationKey": "com.github.andyglow.jsonschema.DiscriminatorSpec.case3.Root.Member1"
+          ]
+        },
+        "class": "com.github.andyglow.jsonschema.DiscriminatorSpec$case3$Root$Member1"
       },
       {
-        "kind": "object",
-        "fields": [
-          {
-            "name": "tpe",
-            "required": true,
-            "rwMode": "ReadWrite",
-            "schema": {
-              "kind": "string"
+        "name": "Member2",
+        "fullName": "com.github.andyglow.jsonschema.DiscriminatorSpec.case3.Root.Member2",
+        "sig": "com.github.andyglow.jsonschema.DiscriminatorSpec.case3.Root.Member2",
+        "kind": "Product",
+        "schema": {
+          "kind": "object",
+          "fields": [
+            {
+              "name": "tpe",
+              "required": true,
+              "rwMode": "ReadWrite",
+              "schema": {
+                "kind": "string"
+              }
+            },
+            {
+              "name": "value",
+              "required": true,
+              "rwMode": "ReadWrite",
+              "schema": {
+                "kind": "string"
+              }
             }
-          },
-          {
-            "name": "value",
-            "required": true,
-            "rwMode": "ReadWrite",
-            "schema": {
-              "kind": "string"
-            }
-          }
-        ],
-        "discriminationKey": "com.github.andyglow.jsonschema.DiscriminatorSpec.case3.Root.Member2"
+          ]
+        },
+        "class": "com.github.andyglow.jsonschema.DiscriminatorSpec$case3$Root$Member2"
       }
     ],
-    "discriminationField": "tpe"
+    "discriminator": {
+      "field": "tpe",
+      "phantom": false
+    }
   },
   "draft-04": {
     "$schema": "http://json-schema.org/draft-04/schema#",

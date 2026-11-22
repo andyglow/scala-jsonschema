@@ -1,18 +1,32 @@
 {
   "schema": {
-    "kind": "oneof",
+    "kind": "family",
     "members": [
       {
-        "kind": "value-class",
+        "name": "AnyFooBar1",
+        "fullName": "com.github.andyglow.jsonschema.AnyFooBar1",
+        "sig": "com.github.andyglow.jsonschema.AnyFooBar1",
+        "kind": "ValueClass",
         "schema": {
-          "kind": "integer"
-        }
+          "kind": "value-class",
+          "schema": {
+            "kind": "string"
+          }
+        },
+        "class": "com.github.andyglow.jsonschema.AnyFooBar1"
       },
       {
-        "kind": "value-class",
+        "name": "AnyFooBar2",
+        "fullName": "com.github.andyglow.jsonschema.AnyFooBar2",
+        "sig": "com.github.andyglow.jsonschema.AnyFooBar2",
+        "kind": "ValueClass",
         "schema": {
-          "kind": "string"
-        }
+          "kind": "value-class",
+          "schema": {
+            "kind": "integer"
+          }
+        },
+        "class": "com.github.andyglow.jsonschema.AnyFooBar2"
       }
     ]
   },

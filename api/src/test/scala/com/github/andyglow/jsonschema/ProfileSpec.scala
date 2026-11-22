@@ -69,7 +69,7 @@ class ProfileSpec extends AnyFunSuite {
     fields("nested") shouldEqual Field("nested", `option`(`option`(`integer`)), required = false)
     fields("tags").tpe shouldEqual `array`[Option[String], List](`option`(`string`))
     fields("meta").tpe shouldEqual `dictionary`[String, Option[Int], Map](`option`(`integer`))
-    fields("d2") shouldEqual Field("d2", `option`(`integer`), required = false)
+    fields("d2") shouldEqual Field("d2", `option`(`integer`), required = false).withHasDefault(true) // `= None`: a default with no JSON form
     Json.schema[Option[Int]] shouldEqual `option`(`integer`)
     Json.schema[Option[Option[Bar]]] shouldEqual `option`(`option`(Json.schema[Bar]))
     pet.toDebugString should include("option(")

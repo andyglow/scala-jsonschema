@@ -6,7 +6,8 @@ Draft 04 / 06 / 07 / 2019-09 / 2020-12 JSON, and optional bridges convert it to 
 
 Cross-built for Scala 2.12, 2.13 and 3.3 LTS (3.3 from 0.8.0, together with `derives json.Schema` and Scala 3
 `enum`s). Every module and every shared test runs on all three; `refined` and `derived` have their own Scala 3
-macros. Scala.js is deferred. User docs: README.md (the main reference) and the paradox site in `docs/`. They say
+macros. Scala.js (from 0.9.0): every module except spray-json, json4s-json and joda-time (and docs) is also built for
+Scala.js 1.x on all three versions; see "Scala.js" below. User docs: README.md (the main reference) and the paradox site in `docs/`. They say
 the same things, mostly in the same words: a user-visible change updates both (and CHANGELOG.md).
 
 ## Layout
@@ -34,7 +35,10 @@ Tests: shared specs under `api/src/test/scala`, Scala 3-only ones under `scala-3
 `<name>@<ver>.json` overrides one Scala version. Regenerate with `GOLDEN_UPDATE=1 sbt clean api/test` (a CLEAN build,
 or Scala 2 scaladoc is silently missing) and review the diff. `golden-legacy/` is the frozen 0.7 output that
 `JsonSchemaProfile.Legacy` must reproduce; update mode never rewrites it. Tags `TRIAGE-A/B/C`, `UNTRIAGED` (`harness/Triage.scala`)
-mark tests of decided-but-not-current behavior.
+mark tests of decided-but-not-current behavior. The derived tree keeps `option` and `family` (sealed families) nodes
+that a `JsonSchemaProfile` lowers at render time; tree specs written against the plain 0.7 trees compare
+`harness.Families.as07(tree)`. The bridges' acceptance suite (`api/src/test/scala/petshop/`, `modules/*/src/test/.../petshop/`)
+validates each library's real codec output against the schema under its profile (networknt validator, test scope).
 
 ## The core design rule
 
@@ -58,13 +62,42 @@ Whether a type becomes a definition depends on which of the two implicits is in 
   `.scalafmt.conf` has `project.git = true`, so files git doesn't track are skipped: `git add` new files first.
 - Docs: `sbt makeDocs` (switches to 2.13, runs mdoc, which compiles the ```` ```scala mdoc:compile-only ```` snippets
   against the modules, then paradox; output `docs/target/site`). Internal links must be `@ref:[text](page.md)`. mdoc wraps
-  snippets in a class, so value classes can't be `mdoc` snippets; keep those plain `scala` and verify them some other way. Scala 3-only snippets are plain `scala` too.
+  snippets in a class, so value classes (and play's `Json.format` of a sealed family) can't be `mdoc` snippets; keep those plain `scala` and verify them some other way. Scala 3-only snippets are plain `scala` too.
 - **Run `clean` after editing anything in `macros/` or `core/src/main/scala-3/.../derivation`.** Incremental compilation doesn't recompile macro call sites, so stale tests can pass or fail misleadingly.
 - Scala 3 test builds compile with `-Yread-docs` (scaladoc from TASTy, as users need for models in other modules) and
-  `-Xcheck-macros` (except play-json: its own macro fails the check).
+  `-Xcheck-macros` (except play-json and u-json: their own macros fail the check).
   To see the code the Scala 3 macro generates: `sbt -Djsonschema.print-code=true ...` (prints every expansion as an info).
 - `build.sbt` restricts compilation to one module at a time (`Tags.limit(Tags.Compile, 1)`). The macro evaluates `Option` default values with `c.eval`, and that races when several modules compile in parallel. Don't remove the restriction until the macro is fixed.
-- Coverage: `sbt "++2.13.18" clean coverage test coverageAggregate`. CI runs this on 2.13.
+- Coverage: `sbt "++2.13.18" clean coverage test coverageAggregate`. CI runs this on 2.13 (JVM rows only).
+
+## Scala.js
+
+- The cross modules are `crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Pure)` via `crossModule(...)` in
+  build.sbt: sources stay in `<module>/src`, the JVM project keeps the module's id (`core`, `api`, ...;
+  `withoutSuffixFor(JVMPlatform)`) and the JS one is `coreJS`, `apiJS`, ... . Targets: `<module>/.jvm/target`,
+  `<module>/.js/target`, so `baseDirectory` of a cross project is `<module>/.jvm` (use `sourceBase(...)` in build.sbt).
+  JVM only (plain projects): spray-json, json4s-json, joda-time, docs.
+- Platform-specific sources: `src/{main,test}/scala-jvm` and `src/{main,test}/scala-js`. Main code has one shim,
+  `com.github.andyglow.json.Decimals` (JS lays out `Double`s the way the JVM does). Test shims: core's
+  `platform.TestFiles` (files, test resources; Node's `fs` on JS), `platform.Concurrently`, api's `petshop.JsonValidator`
+  (networknt on the JVM; on JS validating tests are **canceled**, so they show up as canceled, not passed).
+- **root aggregates the JVM projects only**: `sbt test` needs no JS runtime. **`rootJS`** aggregates the JS ones:
+  `sbt rootJS/test`, `sbt "++3.3.9" rootJS/test`, `sbt coreJS/testOnly ...`. The release runs both (`+test`,
+  `+rootJS/test`, `+publishSigned`, `+rootJS/publishSigned`); CI has a `platform: [jvm, js]` axis.
+  `scalafmtCheckAll` on root doesn't see the `scala-js` dirs: run `rootJS/scalafmtCheckAll` too.
+- JS tests run on **Bun locally, Node.js on CI** (project/JsEnv.scala), the first that answers `--version` of:
+  `$SCALAJS_RUNTIME` alone if set (a path to `bun` or `node`; `SCALAJS_RUNTIME=node` forces Node locally), else
+  `node`, `bun` when `$CI` is set (GitHub Actions sets it), else `bun`, `node`. The test log says which one ran
+  (`[info] JS runtime: bun 1.4.5`). Both run through Scala.js' `NodeJSEnv`, which pipes its launcher on stdin: it passes
+  `-`, without which Bun prints its usage and the run dies with `RPCCore$ClosedException`. The runtime is probed at the
+  first JS task, never at load: without one, the task fails at once with "No JavaScript runtime" (never skipped); sbt
+  still loads and the JVM work is unaffected. Test resources reach the JS tests through `SCALAJS_TEST_RESOURCES` (set in `jsSettings`).
+- Shared code must stay JS-clean: no reflection (`Class.forName`), no `scala.util.Properties`, no java.io/java.nio
+  files, no blocking on Futures. The linker reports these (`Referring to non-existent ...`) only at `fastLinkJS`/test.
+- `scalacOptions` in commonSettings is `++=`, never `:=`: on Scala 3, `:=` drops `-scalajs` and the `_sjs1_3` jars
+  come out without IR.
+- sbt-scalajs 1.23.0 sets the Scala.js floor for consumers (README states it); scaladoc-ast/-parser `_sjs1` use `%%%`,
+  the sbt-scaladoc compiler plugin stays JVM.
 - git worktrees: `build.sbt` sets `useReadableConsoleGit`, because sbt-git's JGit reader (pulled in by sbt-ghpages)
   can't load the build in a `git worktree` checkout. Keep it.
 
@@ -89,4 +122,5 @@ Whether a type becomes a definition depends on which of the two implicits is in 
   changed; Scala packages stay `com.github.andyglow.*` and `json.*`. The scaladoc libraries moved the same way.
 - Versioning is PVP (`versionScheme := pvp`). Breaking changes bump the second number (0.7.x → 0.8.0).
 - Publishing uses sbt's built-in Sonatype Central Portal support: `sbt release` runs `publishSigned` (cross-built, staged into `target/sona-staging`) and then `sonaRelease`. This needs a PGP key and a Central Portal token.
+  The release also runs `+rootJS/test` and `+rootJS/publishSigned` (the `_sjs1` artifacts), so it needs Bun or Node.js.
 - Scala Steward opens dependency PRs. `master` requires a code-owner review.

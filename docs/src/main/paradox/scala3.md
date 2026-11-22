@@ -36,7 +36,7 @@ To see the code the macro generates, compile with `-Djsonschema.print-code=true`
 
 ## Not supported (yet)
 
-Union types, literal types, opaque types (beyond refined) and named tuples; Scala.js.
+Union types, literal types, opaque types (beyond refined) and named tuples.
 
 ## Known issues
 

@@ -55,6 +55,7 @@ trait AsDraftSupport {
     val specifics      = inferSpecifics.lift((validationList, x, parent, isRoot)) getOrElse obj.empty
     val base           = x match {
       case _: `def`[_] | _: `allof`[_] | _: `oneof`[_] | _: `ref`[_] => obj.empty
+      case _: `const`[_]                                             => obj.empty // its value implies the type ("type": "const" before, in a mixed oneOf)
       case `value-class`(x) if includeType                           => obj("type" -> x.jsonType)
       case _ if includeType                                          => obj("type" -> x.jsonType)
       case _                                                         => obj.empty
@@ -151,17 +152,31 @@ trait AsDraftSupport {
     }
   }
 
+  private def bodyType(d: `def`[_]): String = d.tpe match {
+    case inner: `def`[_] => bodyType(inner)
+    case `ref`(_)        => "" // unknown: not the same as any type
+    case t               => memberType(t)
+  }
+
+  // a const's JSON type is its value's ("type": "const" was stated on a oneOf of consts before, which nothing matches)
+  private def memberType(s: Schema[_]): String = s match {
+    case `const`(v) => v.tpe
+    case t          => t.jsonType
+  }
+
   private def mkPlainOneOf(x: `oneof`[_], isRoot: Boolean): obj = {
     val subTypesSeq = x.subTypes.toSeq
-    val tpe         = subTypesSeq.find {
-      case `def`(_, _) => false
-      case `ref`(_)    => false
-      case _           => true
-    }.map { _.jsonType }
-    val sameType = subTypesSeq.tail.foldLeft(tpe.isDefined) {
-      case (false, _) => false
-      case (true, t)  => t.jsonType == tpe.get
+    // each member's JSON type: a definition has its body's; a `$ref` to a definition elsewhere has none known here, so it doesn't count (asking either for `jsonType` threw before)
+    val known = subTypesSeq collect {
+      case d: `def`[_]                    => bodyType(d)
+      case t if !t.isInstanceOf[`ref`[_]] => memberType(t)
     }
+    // the type a same-typed oneOf states: the first member's that isn't a definition or a $ref, as in 0.7 (only definitions: none)
+    val tpe = subTypesSeq.find {
+      case `def`(_, _) | `ref`(_) => false
+      case _                      => true
+    }.map(memberType)
+    val sameType = tpe.isDefined && known.forall(_ == tpe.get)
     def rootType = tpe filter { _ => !isRoot } map { t => obj("type" -> `str`(t)) } getOrElse obj()
     if (sameType) {
       rootType ++ obj(
@@ -180,9 +195,11 @@ trait AsDraftSupport {
   }
 
   def mkAllOf(vl: ValidationList, x: `allof`[_], isRoot: Boolean, par: ParentSchema): obj = {
-    val subTypesSeq = x.subTypes.toSeq
-    val tpe         = subTypesSeq.head.jsonType
-    val sameType    = subTypesSeq.tail.foldLeft(true) { case (agg, t) => agg && (t.jsonType == tpe) }
+    val subTypesSeq                  = x.subTypes.toSeq
+    def isRef(s: Schema[_]): Boolean = s.isInstanceOf[`def`[_]] || s.isInstanceOf[`ref`[_]]
+    val typed                        = subTypesSeq.filterNot(isRef) // a `$ref` has no type of its own (asking it threw before)
+    val tpe                          = typed.headOption.fold("")(_.jsonType)
+    val sameType                     = typed.nonEmpty && typed.forall(_.jsonType == tpe)
     if (sameType) {
       obj(
         "type"  -> (if (!isRoot) Some(`str`(tpe)) else None),

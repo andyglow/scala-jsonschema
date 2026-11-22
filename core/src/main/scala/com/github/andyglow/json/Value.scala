@@ -79,13 +79,14 @@ object Value {
 
     def apply(x: Short): num = new num(x.toInt)
 
-    def apply(x: Float): num = new num(x.toDouble)
+    def apply(x: Float): num = new num(Decimals.fromDouble(x.toDouble))
 
-    def apply(x: Double): num = new num(x)
+    // Decimals: as on the JVM (`16.0` stays `16.0`) on Scala.js too
+    def apply(x: Double): num = new num(Decimals.fromDouble(x))
 
     def apply(x: BigInt): num = new num(BigDecimal(x))
 
-    def apply(x: Number): num = new num(BigDecimal(x.doubleValue()))
+    def apply(x: Number): num = new num(Decimals.fromDouble(x.doubleValue()))
   }
 
   case class str(value: String) extends Value {

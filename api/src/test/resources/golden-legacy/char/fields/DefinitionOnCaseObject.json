@@ -31,12 +31,91 @@
     ]
   },
   "draft-04": {
-    "renderError": "scala.NotImplementedError: an implementation is missing"
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "definitions": {
+      "c": {
+        "additionalProperties": false,
+        "properties": {
+          "a": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "a"
+        ],
+        "type": "object"
+      }
+    },
+    "oneOf": [
+      {
+        "$ref": "#/definitions/c"
+      },
+      {
+        "enum": [
+          "O1"
+        ],
+        "type": "string"
+      }
+    ]
   },
   "draft-07": {
-    "renderError": "scala.NotImplementedError: an implementation is missing"
+    "$id": "golden",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+      "c": {
+        "$id": "#c",
+        "additionalProperties": false,
+        "properties": {
+          "a": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "a"
+        ],
+        "type": "object"
+      }
+    },
+    "oneOf": [
+      {
+        "$ref": "#c"
+      },
+      {
+        "enum": [
+          "O1"
+        ],
+        "type": "string"
+      }
+    ]
   },
   "draft-2020-12": {
-    "renderError": "scala.NotImplementedError: an implementation is missing"
+    "$defs": {
+      "c": {
+        "$anchor": "c",
+        "additionalProperties": false,
+        "properties": {
+          "a": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "a"
+        ],
+        "type": "object"
+      }
+    },
+    "$id": "golden",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "oneOf": [
+      {
+        "$ref": "#c"
+      },
+      {
+        "enum": [
+          "O1"
+        ],
+        "type": "string"
+      }
+    ]
   }
 }

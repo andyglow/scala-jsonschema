@@ -159,6 +159,61 @@ private[jsonschema] trait SchemaTypes {
       def prefix                         = q"${N.Schema}.`option`[$innerTpe](${schema.tree})";
       def withExtra(x: SchemaType.Extra) = copy(extra = x)
     }
+
+    /** A sealed family (`json.Schema.family`): the facts, shaped by a JsonSchemaProfile when the schema is rendered. */
+    case class Family(tpe: Type, members: List[Family.Member], discriminator: Option[Discriminator], enumsAsOneOf: Boolean, extra: Extra = Extra()) extends SchemaType {
+      type Self = Family;
+      def prefix = {
+        val d = discriminator.fold[Tree](q"_root_.scala.None")(d => q"_root_.scala.Some(${N.Schema}.`family`.Discriminator(${d.field}, ${d.phantom}))")
+        q"${N.Schema}.`family`[$tpe](_root_.scala.List(..${members.map(_.tree)}), $d, $enumsAsOneOf)"
+      }
+      def withExtra(x: SchemaType.Extra) = copy(extra = x)
+    }
+    object Family {
+      sealed abstract class Kind(val name: String)
+      object Kind {
+        case object Product    extends Kind("Product")
+        case object ValueClass extends Kind("ValueClass")
+        case object Provided   extends Kind("Provided")
+        case object Singleton  extends Kind("Singleton")
+      }
+
+      /** @param schema
+        *   a singleton's value schema, every other member's own schema (no member annotations applied)
+        * @param value
+        *   a singleton's value tree (`Value.str(name)` or `toValue(obj)`)
+        * @param knownString
+        *   a singleton's name when its value is the name (no ToValue): Map keys use it
+        */
+      case class Member(
+        name: String,
+        fullName: String,
+        sig: String,
+        kind: Kind,
+        schema: SchemaType,
+        value: Option[Tree],
+        cls: Option[Tree],
+        texts: Option[Texts],
+        discriminatorKey: Option[String],
+        definition: Option[DefinitionKey],
+        knownString: Option[String],
+        valueField: Option[String] = None
+      ) {
+        def mapSchema(fn: SchemaType => SchemaType): Member = copy(schema = fn(schema))
+        def tree: Tree                                      = {
+          def opt(x: Option[Tree]): Tree   = x.fold[Tree](q"_root_.scala.None")(t => q"_root_.scala.Some($t)")
+          def str(x: Option[String]): Tree = opt(x.map(s => q"$s"))
+          val F                            = q"${N.Schema}.`family`"
+          val defn                         = definition map {
+            case DefinitionKey.Infer      => q"$F.Definition.Inferred"
+            case DefinitionKey.Defined(n) => q"$F.Definition.Named($n)"
+          }
+          q"""$F.Member(
+            $name, $fullName, $sig, $F.Kind.${TermName(kind.name)}, ${schema.tree}, ${opt(value)}, ${opt(cls)},
+            ${str(texts.flatMap(_.title))}, ${str(texts.flatMap(_.description))}, ${str(discriminatorKey)}, ${opt(defn)}, ${str(valueField)})"""
+        }
+      }
+    }
     case class Def(tpe: Type, sig: Tree, schema: SchemaType, extra: Extra = Extra()) extends SchemaType {
       type Self = Def; def prefix = q"${N.Schema}.`def`[$tpe]($sig, ${schema.tree})";
       def withExtra(x: SchemaType.Extra) = copy(extra = x)
@@ -185,10 +240,13 @@ private[jsonschema] trait SchemaTypes {
             effectiveTree = q"$effectiveTree.withDescription(Some($description))"
           }
           rwMode foreach { rwMode => effectiveTree = q"$effectiveTree.withRWMode($rwMode)" }
+          // the Scala default may have no JSON form (`= None`, no ToValue in scope): the fact is kept for the profiles
+          if (hasDefault) effectiveTree = q"$effectiveTree.withHasDefault(true)"
           effectiveTree
         }
         def mapSchema(fn: SchemaType => SchemaType): Field
         def name: String
+        def hasDefault: Boolean
       }
       object Field {
         case class Apply(
@@ -198,7 +256,8 @@ private[jsonschema] trait SchemaTypes {
           required: Option[Tree],
           default: Option[Tree],
           description: Option[String],
-          rwMode: Option[Tree]
+          rwMode: Option[Tree],
+          hasDefault: Boolean = false
         ) extends Field {
           def prefix = (required, default) match {
             case (Some(required), Some(default)) =>
@@ -218,7 +277,8 @@ private[jsonschema] trait SchemaTypes {
           required: Tree,
           default: Tree,
           description: Option[String],
-          rwMode: Option[Tree]
+          rwMode: Option[Tree],
+          hasDefault: Boolean = false
         ) extends Field {
           def prefix =
             q"${N.Schema}.`object`.Field.fromJson[$tpe]($name, ${schema.tree}, $required, $default)"
@@ -263,6 +323,7 @@ private[jsonschema] trait SchemaTypes {
       case s: Def        => s.copy(schema = transformSchema(s.schema)(pf))
       case s: ValueClass => s.copy(schema = transformSchema(s.schema)(pf))
       case s: Opt        => s.copy(schema = transformSchema(s.schema)(pf))
+      case s: Family     => s.copy(members = s.members map { _.mapSchema(transformSchema(_)(pf)) })
       case s: Obj        =>
         s.copy(fields = s.fields map { f =>
           f.mapSchema(transformSchema(_)(pf))

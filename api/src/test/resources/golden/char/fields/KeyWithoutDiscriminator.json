@@ -1,33 +1,47 @@
 {
   "schema": {
-    "kind": "oneof",
+    "kind": "family",
     "members": [
       {
-        "kind": "object",
-        "fields": [
-          {
-            "name": "v",
-            "required": true,
-            "rwMode": "ReadWrite",
-            "schema": {
-              "kind": "integer"
+        "name": "K1",
+        "fullName": "com.github.andyglow.jsonschema.characterization.FieldsAnnotationsCharSpec.KeyWithoutDiscriminator.K1",
+        "sig": "com.github.andyglow.jsonschema.characterization.FieldsAnnotationsCharSpec.KeyWithoutDiscriminator.K1",
+        "kind": "Product",
+        "schema": {
+          "kind": "object",
+          "fields": [
+            {
+              "name": "v",
+              "required": true,
+              "rwMode": "ReadWrite",
+              "schema": {
+                "kind": "integer"
+              }
             }
-          }
-        ],
-        "discriminationKey": "k1"
+          ]
+        },
+        "class": "com.github.andyglow.jsonschema.characterization.FieldsAnnotationsCharSpec$KeyWithoutDiscriminator$K1",
+        "discriminatorKey": "k1"
       },
       {
-        "kind": "object",
-        "fields": [
-          {
-            "name": "w",
-            "required": true,
-            "rwMode": "ReadWrite",
-            "schema": {
-              "kind": "string"
+        "name": "K2",
+        "fullName": "com.github.andyglow.jsonschema.characterization.FieldsAnnotationsCharSpec.KeyWithoutDiscriminator.K2",
+        "sig": "com.github.andyglow.jsonschema.characterization.FieldsAnnotationsCharSpec.KeyWithoutDiscriminator.K2",
+        "kind": "Product",
+        "schema": {
+          "kind": "object",
+          "fields": [
+            {
+              "name": "w",
+              "required": true,
+              "rwMode": "ReadWrite",
+              "schema": {
+                "kind": "string"
+              }
             }
-          }
-        ]
+          ]
+        },
+        "class": "com.github.andyglow.jsonschema.characterization.FieldsAnnotationsCharSpec$KeyWithoutDiscriminator$K2"
       }
     ]
   },

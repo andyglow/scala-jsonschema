@@ -83,11 +83,13 @@ trait Products { this: Derivation =>
         val de = Expr(d)
         '{ $base.withDescription(Some($de)) }
       }
-      f.rwMode match {
+      val withRW = f.rwMode match {
         case RWMode.ReadWrite => withDescr
         case RWMode.ReadOnly  => '{ $withDescr.withRWMode(Schema.`object`.Field.RWMode.ReadOnly) }
         case RWMode.WriteOnly => '{ $withDescr.withRWMode(Schema.`object`.Field.RWMode.WriteOnly) }
       }
+      // the Scala default may have no JSON form (`= None`, no ToValue in scope): the fact is kept for the profiles
+      if (f.hasDefault) '{ $withRW.withHasDefault(true) } else withRW
   }
 
   // ---- construction

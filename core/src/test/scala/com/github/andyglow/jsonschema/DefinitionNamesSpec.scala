@@ -1,15 +1,12 @@
 package com.github.andyglow.jsonschema
 
 import com.github.andyglow.json.Value._
+import com.github.andyglow.jsonschema.platform.Concurrently
 import json.Schema._
 import json.Schema.`object`.Field
 import json.schema.Version._
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers._
-
-import scala.concurrent.{Await, Future}
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
 
 /** Definition names per draft grammar (TRIAGE bugs-1 #8, owner decision 2026-11-20). */
 class DefinitionNamesSpec extends AnyFunSuite {
@@ -103,7 +100,8 @@ class DefinitionNamesSpec extends AnyFunSuite {
     val renderer                = new AsDraft07(Draft07("x"))
     def keys(s: json.Schema[_]) = renderer.schema(s).value("definitions").asInstanceOf[obj].value.keySet
 
-    val runs = Future.sequence((1 to 200).toList.map(i => Future(if (i % 2 == 0) keys(both) -> Set("x.A_B_", "x.A_B__2") else keys(alone) -> Set("x.A_B_"))))
-    Await.result(runs, 1.minute) foreach { case (actual, expected) => actual shouldBe expected }
+    // threads on the JVM; one after another on Scala.js (one thread)
+    val runs = Concurrently.run((1 to 200).toList.map(i => () => if (i % 2 == 0) keys(both) -> Set("x.A_B_", "x.A_B__2") else keys(alone) -> Set("x.A_B_")))
+    runs foreach { case (actual, expected) => actual shouldBe expected }
   }
 }
