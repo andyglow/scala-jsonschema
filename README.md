@@ -21,12 +21,12 @@ Contents: [Install](#install) · [Quick start](#quick-start) · [Definitions and
 [Supported types](#supported-types) · [Sum types and enums](#sum-types-and-enums) ·
 [Titles and descriptions](#titles-and-descriptions) · [Annotations](#annotations) · [Validation](#validation) ·
 [Free objects](#free-objects) · [Rendering](#rendering-drafts-and-json-libraries) · [Modules](#modules) ·
-[Migrating to 0.8.0](#migrating-to-080) · [Scala 3 notes](#scala-3-notes) · [Known issues](#known-issues)
+[Migrating to 0.9.0](#migrating-to-090) · [Migrating to 0.8.0](#migrating-to-080) · [Scala 3 notes](#scala-3-notes) · [Known issues](#known-issues)
 
 ## Install
 
 ```scala
-libraryDependencies += "io.github.andyglow" %% "scala-jsonschema" % "0.8.0"
+libraryDependencies += "io.github.andyglow" %% "scala-jsonschema" % "0.9.0"
 ```
 
 From 0.8.0 on, the groupId is **`io.github.andyglow`**. Releases up to 0.7.x are under `com.github.andyglow`.
@@ -464,7 +464,7 @@ The [sbt-scaladoc](https://github.com/andyglow/scaladoc) plugin sets both up. On
 
 ```scala
 // project/plugins.sbt
-addSbtPlugin("io.github.andyglow" % "sbt-scaladoc" % "0.2.0")
+addSbtPlugin("io.github.andyglow" % "sbt-scaladoc" % "0.3.0")
 
 // build.sbt: on the module that defines the models (Scala 2) and the one that calls Json.schema (Scala 3)
 lazy val model = project.enablePlugins(ScaladocPlugin)

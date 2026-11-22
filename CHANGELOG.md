@@ -1,4 +1,4 @@
-- **0.9.0** (unreleased): schemas that match what your JSON library writes. See the README's "Library profiles" and
+- **0.9.0** (2026-11-22): schemas that match what your JSON library writes. See the README's "Library profiles" and
   "Migrating to 0.9.0".
 
   **Breaking**

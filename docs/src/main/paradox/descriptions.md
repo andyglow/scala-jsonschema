@@ -63,7 +63,7 @@ The [sbt-scaladoc](https://github.com/andyglow/scaladoc) plugin sets both up. On
 
 ```scala
 // project/plugins.sbt
-addSbtPlugin("io.github.andyglow" % "sbt-scaladoc" % "0.2.0")
+addSbtPlugin("io.github.andyglow" % "sbt-scaladoc" % "0.3.0")
 
 // build.sbt: on the module that defines the models (Scala 2) and the one that calls Json.schema (Scala 3)
 lazy val model = project.enablePlugins(ScaladocPlugin)

@@ -3,7 +3,7 @@
 ## Install
 
 ```scala
-libraryDependencies += "io.github.andyglow" %% "scala-jsonschema" % "0.8.0"
+libraryDependencies += "io.github.andyglow" %% "scala-jsonschema" % "0.9.0"
 ```
 
 From 0.8.0 on, the groupId is **`io.github.andyglow`**. Releases up to 0.7.x are under `com.github.andyglow`.
