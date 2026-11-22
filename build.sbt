@@ -233,7 +233,9 @@ lazy val derived = { project in file("modules/derived") }
     libraryDependencies ++= scalaReflect(scalaVersion.value)
   )
 
-lazy val docs = { project in file("documentation") }
+// The documentation site. Sources: docs/src/main/paradox. `sbt makeDocs` runs mdoc (it compiles the ```scala mdoc snippets
+// against the modules below, on 2.13) and then paradox via sbt-site; the site is written to docs/target/site.
+lazy val docs = { project in file("docs") }
   .enablePlugins(
     // - variable substitution
     // - snippets evaluation
@@ -247,20 +249,17 @@ lazy val docs = { project in file("documentation") }
     // publishing to GitHub Pages
     GhpagesPlugin
   )
-//  .dependsOn(api, `joda-time`)
+  .dependsOn(api, `joda-time`, cats, refined, enumeratum, derived, parser, `play-json`)
   .settings(
     ScalaVer.settings213,
-    mdocIn        := baseDirectory.value / "main" / "paradox",
-    mdocVariables := Map("VERSION" -> version.value, "SCALA_VERSION" -> scalaVersion.value),
-    paradoxProperties ++= Map("project.name" -> "Scala JsonSchema", "github.base_url" -> "https://github.com/andyglow/scala-jsonschema"),
+    publish / skip := true,
+    mdocIn         := baseDirectory.value / "src" / "main" / "paradox",
+    mdocVariables  := Map("VERSION" -> version.value, "SCALA_VERSION" -> scalaVersion.value),
+    // drop "github.base_url" (paradox derives it from scmInfo): its "Edit this page" links would point at the mdoc output
+    // (docs/target/mdoc), which isn't in git
+    Compile / paradoxProperties ~= { _ - "github.base_url" + ("project.name" -> "Scala JsonSchema") },
     Compile / paradox / sourceDirectory := mdocOut.value,
     git.remoteRepo                      := scmInfo.value.get.connection,
-    Compile / paradoxMaterialTheme ~= {
-      _.withCustomStylesheet("assets/styles.css")
-    },
-    Compile / paradoxMaterialTheme ~= {
-      _.withCustomJavaScript("assets/dependencies.js")
-    },
 
     // #color
     Compile / paradoxMaterialTheme ~= {
@@ -339,6 +338,7 @@ lazy val root = { project in file(".") }
     update / aggregate := false
   )
 
-addCommandAlias("makeDocs", ";docs/mdoc;docs/makeSite")
+// ++2.13.18: the docs project is 2.13 only, and its dependencies must be built for the same Scala version
+addCommandAlias("makeDocs", ";++2.13.18;docs/mdoc;docs/makeSite")
 addCommandAlias("publishDocs", ";makeDocs;ghpagesPushSite")
 //ParadoxMaterialThemePlugin.paradoxMaterialThemeSettings(Paradox)
