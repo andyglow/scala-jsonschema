@@ -81,13 +81,17 @@ Whether a type becomes a definition depends on which of the two implicits is in 
   `com.github.andyglow.json.Decimals` (JS lays out `Double`s the way the JVM does). Test shims: core's
   `platform.TestFiles` (files, test resources; Node's `fs` on JS), `platform.Concurrently`, api's `petshop.JsonValidator`
   (networknt on the JVM; on JS validating tests are **canceled**, so they show up as canceled, not passed).
-- **root aggregates the JVM projects only**: `sbt test` needs no Node.js. **`rootJS`** aggregates the JS ones:
+- **root aggregates the JVM projects only**: `sbt test` needs no JS runtime. **`rootJS`** aggregates the JS ones:
   `sbt rootJS/test`, `sbt "++3.3.9" rootJS/test`, `sbt coreJS/testOnly ...`. The release runs both (`+test`,
   `+rootJS/test`, `+publishSigned`, `+rootJS/publishSigned`); CI has a `platform: [jvm, js]` axis.
   `scalafmtCheckAll` on root doesn't see the `scala-js` dirs: run `rootJS/scalafmtCheckAll` too.
-- JS tests run on **Node.js** (project/JsEnv.scala): `$SCALAJS_RUNTIME` (a path to `node`) if set, else `node` on the
-  PATH. Without one, a JS test task fails at once with "No JavaScript runtime" (never skipped); sbt still loads and the
-  JVM work is unaffected. Test resources reach the JS tests through `SCALAJS_TEST_RESOURCES` (set in `jsSettings`).
+- JS tests run on **Bun locally, Node.js on CI** (project/JsEnv.scala), the first that answers `--version` of:
+  `$SCALAJS_RUNTIME` alone if set (a path to `bun` or `node`; `SCALAJS_RUNTIME=node` forces Node locally), else
+  `node`, `bun` when `$CI` is set (GitHub Actions sets it), else `bun`, `node`. The test log says which one ran
+  (`[info] JS runtime: bun 1.4.5`). Both run through Scala.js' `NodeJSEnv`, which pipes its launcher on stdin: it passes
+  `-`, without which Bun prints its usage and the run dies with `RPCCore$ClosedException`. The runtime is probed at the
+  first JS task, never at load: without one, the task fails at once with "No JavaScript runtime" (never skipped); sbt
+  still loads and the JVM work is unaffected. Test resources reach the JS tests through `SCALAJS_TEST_RESOURCES` (set in `jsSettings`).
 - Shared code must stay JS-clean: no reflection (`Class.forName`), no `scala.util.Properties`, no java.io/java.nio
   files, no blocking on Futures. The linker reports these (`Referring to non-existent ...`) only at `fastLinkJS`/test.
 - `scalacOptions` in commonSettings is `++=`, never `:=`: on Scala 3, `:=` drops `-scalajs` and the `_sjs1_3` jars
@@ -118,5 +122,5 @@ Whether a type becomes a definition depends on which of the two implicits is in 
   changed; Scala packages stay `com.github.andyglow.*` and `json.*`. The scaladoc libraries moved the same way.
 - Versioning is PVP (`versionScheme := pvp`). Breaking changes bump the second number (0.7.x → 0.8.0).
 - Publishing uses sbt's built-in Sonatype Central Portal support: `sbt release` runs `publishSigned` (cross-built, staged into `target/sona-staging`) and then `sonaRelease`. This needs a PGP key and a Central Portal token.
-  The release also runs `+rootJS/test` and `+rootJS/publishSigned` (the `_sjs1` artifacts), so it needs Node.js.
+  The release also runs `+rootJS/test` and `+rootJS/publishSigned` (the `_sjs1` artifacts), so it needs Bun or Node.js.
 - Scala Steward opens dependency PRs. `master` requires a code-owner review.

@@ -60,7 +60,7 @@ lazy val jsSettings = JsEnv.settings ++ platformDirs("js") ++ Seq(
   // CommonJS, so the tests can import Node's `fs` (golden files). Only linking uses it: the published jars hold IR, which the user's build links
   scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
   // no class path on JS: the tests find their resources in these directories (core's platform.TestFiles)
-  Test / jsEnv := JsEnv.nodeJSEnv(Map("SCALAJS_TEST_RESOURCES" -> (Test / resourceDirectories).value.mkString(java.io.File.pathSeparator))),
+  Test / jsEnv := JsEnv.runtimeEnv(Map("SCALAJS_TEST_RESOURCES" -> (Test / resourceDirectories).value.mkString(java.io.File.pathSeparator))),
   // the test linker asks for a main class; api's tests have demo `main`s (a warning: "multiple main classes detected"), and the tests need none
   Test / mainClass := None,
   // java.time on JS, for the tests only: a Java enum's schema lists its runtime `values()`, and the tests derive java.time.DayOfWeek.
@@ -119,7 +119,7 @@ lazy val commonSettings = ScalaVer.settings ++ Seq(
     inquireVersions,
     runClean,
     releaseStepCommand("rootJS/clean"),
-    // root aggregates the JVM projects, rootJS the Scala.js ones (its tests need Node.js)
+    // root aggregates the JVM projects, rootJS the Scala.js ones (its tests need Bun or Node.js)
     releaseStepCommandAndRemaining("+test"),
     releaseStepCommandAndRemaining("+rootJS/test"),
     setReleaseVersion,
@@ -405,7 +405,7 @@ lazy val docs = { project in file("docs") }
 //    // #copyright
   )
 
-// The JVM projects. `sbt test` runs on the JVM only and needs no Node.js; the Scala.js projects are aggregated by `rootJS`.
+// The JVM projects. `sbt test` runs on the JVM only and needs no JS runtime; the Scala.js projects are aggregated by `rootJS`.
 lazy val root = { project in file(".") }
   .aggregate(
     core.jvm,
@@ -433,7 +433,7 @@ lazy val root = { project in file(".") }
     update / aggregate := false
   )
 
-// The Scala.js projects: `sbt rootJS/test` (needs Node.js, see project/JsEnv.scala). The release runs it next to root.
+// The Scala.js projects: `sbt rootJS/test` (needs Bun or Node.js, see project/JsEnv.scala). The release runs it next to root.
 lazy val rootJS = { project in file(".js") }
   .aggregate(
     core.js,
