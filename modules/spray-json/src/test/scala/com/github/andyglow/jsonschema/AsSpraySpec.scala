@@ -44,10 +44,10 @@ class AsSpraySpec extends AnyPropSpec {
       "additionalProperties" -> JsFalse,
       "properties"           -> JsObject(
         "firstName"   -> JsObject("type" -> JsString("string")),
-        "middleName"  -> JsObject("type" -> JsString("string")),
+        "middleName"  -> JsObject("type" -> JsArray(JsString("string"), JsString("null"))),
         "lastName"    -> JsObject("type" -> JsString("string")),
         "age"         -> JsObject("type" -> JsString("integer")),
-        "lastLoginMs" -> JsObject("type" -> JsString("number")),
+        "lastLoginMs" -> JsObject("type" -> JsArray(JsString("number"), JsString("null"))),
         "role"        -> JsObject(
           "type"    -> JsString("string"),
           "default" -> JsString("e-user"),
@@ -82,7 +82,7 @@ class AsSpraySpec extends AnyPropSpec {
           "default" -> JsObject("login" -> JsString("anonymous"), "password" -> JsString("-"))
         ),
         "notes" -> JsObject(
-          "type"                 -> JsString("object"),
+          "type"                 -> JsArray(JsString("object"), JsString("null")),
           "additionalProperties" -> JsFalse,
           "required"             -> JsArray(JsString("head"), JsString("tail")),
           "properties"           -> JsObject(

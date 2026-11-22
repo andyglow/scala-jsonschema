@@ -1,0 +1,120 @@
+{
+  "schema": {
+    "kind": "oneof",
+    "members": [
+      {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "id",
+            "required": true,
+            "rwMode": "ReadWrite",
+            "schema": {
+              "kind": "integer"
+            }
+          },
+          {
+            "name": "value",
+            "required": true,
+            "rwMode": "ReadWrite",
+            "schema": {
+              "kind": "integer"
+            }
+          }
+        ]
+      },
+      {
+        "kind": "enum",
+        "type": {
+          "kind": "string"
+        },
+        "values": [
+          "V2"
+        ]
+      }
+    ]
+  },
+  "draft-04": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "oneOf": [
+      {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "value": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "value"
+        ],
+        "type": "object"
+      },
+      {
+        "enum": [
+          "V2"
+        ],
+        "type": "string"
+      }
+    ]
+  },
+  "draft-07": {
+    "$id": "golden",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "oneOf": [
+      {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "value": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "value"
+        ],
+        "type": "object"
+      },
+      {
+        "enum": [
+          "V2"
+        ],
+        "type": "string"
+      }
+    ]
+  },
+  "draft-2020-12": {
+    "$id": "golden",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "oneOf": [
+      {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "value": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "value"
+        ],
+        "type": "object"
+      },
+      {
+        "enum": [
+          "V2"
+        ],
+        "type": "string"
+      }
+    ]
+  }
+}

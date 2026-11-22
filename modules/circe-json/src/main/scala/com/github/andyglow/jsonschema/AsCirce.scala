@@ -21,7 +21,7 @@ object AsCirce {
 
   implicit class CirceSchemaOps[T](val x: Schema[T]) extends AnyVal {
 
-    def asCirce[V <: Version](v: V)(implicit asValue: AsValueBuilder[V]): Json = AsCirce(
+    def asCirce[V <: Version](v: V)(implicit asValue: AsValueBuilder[V], profile: _root_.json.schema.JsonSchemaProfile): Json = AsCirce(
       AsValue.schema(x, v)
     )
   }

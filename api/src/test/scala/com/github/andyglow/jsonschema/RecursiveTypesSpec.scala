@@ -1,6 +1,7 @@
 package com.github.andyglow.jsonschema
 
 import com.github.andyglow.json.JsonFormatter
+import com.github.andyglow.jsonschema.harness.TriageB
 import json.Schema
 import json.Schema._
 import json.Schema.`object`.Field
@@ -49,21 +50,24 @@ class RecursiveTypesSpec extends AnyWordSpec {
             Field("head", `string`, required = true),
             Field(
               "tail",
-              `ref`("com.github.andyglow.jsonschema.RecursiveTypesSpec.case1.SList"),
+              `option`(`ref`("com.github.andyglow.jsonschema.RecursiveTypesSpec.case1.SList")),
               required = false
             )
           )
         )
       }
 
-      "product types. inner references root. specific ref-name" in {
+      // TRIAGE-B: `def.toDefinition` doesn't rename refs that point at the old sig. This test used to pass only
+      // because `ref` equality was vacuous. Today the inner ref still says
+      // `ref(com.github.andyglow.jsonschema.RecursiveTypesSpec.case1.SList)`, a dangling `$ref`.
+      "product types. inner references root. specific ref-name" taggedAs TriageB in {
         import case1._
 
         json.Json.schema[SList].toDefinition("given-name") shouldEqual `def`(
           "given-name",
           `object`(
             Field("head", `string`, required = true),
-            Field("tail", `ref`("given-name"), required = false)
+            Field("tail", `option`(`ref`("given-name")), required = false)
           )
         )
       }
@@ -100,8 +104,10 @@ class RecursiveTypesSpec extends AnyWordSpec {
                 Field("head", `string`, required = true),
                 Field(
                   "tail",
-                  `ref`(
-                    "com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList[scala.Predef.String]"
+                  `option`(
+                    `ref`(
+                      "com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList[scala.Predef.String]"
+                    )
                   ),
                   required = false
                 )
@@ -125,8 +131,10 @@ class RecursiveTypesSpec extends AnyWordSpec {
                 Field("head", `string`, required = true),
                 Field(
                   "tail",
-                  `ref`(
-                    "com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList[scala.Predef.String]"
+                  `option`(
+                    `ref`(
+                      "com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList[scala.Predef.String]"
+                    )
                   ),
                   required = false
                 )

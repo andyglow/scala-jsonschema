@@ -37,7 +37,9 @@ class AsUSpec extends AnyPropSpec {
   property("Check Schema.asU draft-04") {
     import AsU._
 
-    implicit val ratingSchema = json.Json.schema[Rating]
+    // a typed implicit in a local object: Scala 3 needs the type, and a typed local implicit in a block is a forward reference on Scala 2
+    object defs { implicit val ratingSchema: json.Schema[Rating] = json.Json.schema[Rating] }
+    import defs._
 //    ratingSchema.refName
 
     json.Json.schema[User].asU(Draft04()) shouldEqual ujson.Obj(
@@ -55,7 +57,7 @@ class AsUSpec extends AnyPropSpec {
           "additionalProperties" -> ujson.False,
           "properties"           -> ujson.Obj(
             "first"  -> ujson.Obj("type" -> ujson.Str("string")),
-            "middle" -> ujson.Obj("type" -> ujson.Str("string")),
+            "middle" -> ujson.Obj("type" -> ujson.Arr("string", "null")),
             "last"   -> ujson.Obj("type" -> ujson.Str("string"))
           ),
           "required" -> ujson.Arr(ujson.Str("first"), ujson.Str("last"))
@@ -76,7 +78,9 @@ class AsUSpec extends AnyPropSpec {
   property("Check Schema.asU draft-06") {
     import AsU._
 
-    implicit val ratingSchema = json.Json.schema[Rating]
+    // a typed implicit in a local object: Scala 3 needs the type, and a typed local implicit in a block is a forward reference on Scala 2
+    object defs { implicit val ratingSchema: json.Schema[Rating] = json.Json.schema[Rating] }
+    import defs._
 //    ratingSchema.refName
 
     json.Json
@@ -97,7 +101,7 @@ class AsUSpec extends AnyPropSpec {
           "additionalProperties" -> ujson.False,
           "properties"           -> ujson.Obj(
             "first"  -> ujson.Obj("type" -> ujson.Str("string")),
-            "middle" -> ujson.Obj("type" -> ujson.Str("string")),
+            "middle" -> ujson.Obj("type" -> ujson.Arr("string", "null")),
             "last"   -> ujson.Obj("type" -> ujson.Str("string"))
           ),
           "required" -> ujson.Arr(ujson.Str("first"), ujson.Str("last"))
@@ -119,7 +123,9 @@ class AsUSpec extends AnyPropSpec {
   property("Check Schema.asU draft-07") {
     import AsU._
 
-    implicit val ratingSchema = json.Json.schema[Rating]
+    // a typed implicit in a local object: Scala 3 needs the type, and a typed local implicit in a block is a forward reference on Scala 2
+    object defs { implicit val ratingSchema: json.Schema[Rating] = json.Json.schema[Rating] }
+    import defs._
 //    ratingSchema.refName
 
     json.Json
@@ -140,7 +146,7 @@ class AsUSpec extends AnyPropSpec {
           "additionalProperties" -> ujson.False,
           "properties"           -> ujson.Obj(
             "first"  -> ujson.Obj("type" -> ujson.Str("string")),
-            "middle" -> ujson.Obj("type" -> ujson.Str("string")),
+            "middle" -> ujson.Obj("type" -> ujson.Arr("string", "null")),
             "last"   -> ujson.Obj("type" -> ujson.Str("string"))
           ),
           "required" -> ujson.Arr(ujson.Str("first"), ujson.Str("last"))
@@ -168,10 +174,10 @@ class AsUSpec extends AnyPropSpec {
       "additionalProperties" -> false,
       "properties"           -> ujson.Obj(
         "firstName"   -> ujson.Obj("type" -> "string"),
-        "middleName"  -> ujson.Obj("type" -> "string"),
+        "middleName"  -> ujson.Obj("type" -> ujson.Arr("string", "null")),
         "lastName"    -> ujson.Obj("type" -> "string"),
         "age"         -> ujson.Obj("type" -> "integer"),
-        "lastLoginMs" -> ujson.Obj("type" -> "number"),
+        "lastLoginMs" -> ujson.Obj("type" -> ujson.Arr("number", "null")),
         "role"        -> ujson.Obj(
           "type"    -> "string",
           "default" -> "e-user",
@@ -202,7 +208,7 @@ class AsUSpec extends AnyPropSpec {
           "default" -> ujson.Obj("login" -> "anonymous", "password" -> "-")
         ),
         "notes" -> ujson.Obj(
-          "type"                 -> "object",
+          "type"                 -> ujson.Arr("object", "null"),
           "additionalProperties" -> false,
           "required"             -> ujson.Arr("head", "tail"),
           "properties"           -> ujson.Obj(

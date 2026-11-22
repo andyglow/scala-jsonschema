@@ -1,0 +1,117 @@
+{
+  "schema": {
+    "kind": "oneof",
+    "members": [
+      {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "v",
+            "required": true,
+            "rwMode": "ReadWrite",
+            "schema": {
+              "kind": "integer"
+            }
+          }
+        ],
+        "discriminationKey": "k1"
+      },
+      {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "w",
+            "required": true,
+            "rwMode": "ReadWrite",
+            "schema": {
+              "kind": "string"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "draft-04": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "oneOf": [
+      {
+        "additionalProperties": false,
+        "properties": {
+          "v": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "v"
+        ]
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "w": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "w"
+        ]
+      }
+    ]
+  },
+  "draft-07": {
+    "$id": "golden",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "oneOf": [
+      {
+        "additionalProperties": false,
+        "properties": {
+          "v": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "v"
+        ]
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "w": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "w"
+        ]
+      }
+    ]
+  },
+  "draft-2020-12": {
+    "$id": "golden",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "oneOf": [
+      {
+        "additionalProperties": false,
+        "properties": {
+          "v": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "v"
+        ]
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "w": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "w"
+        ]
+      }
+    ]
+  }
+}

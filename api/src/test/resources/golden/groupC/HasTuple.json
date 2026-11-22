@@ -1,0 +1,113 @@
+{
+  "schema": {
+    "kind": "object",
+    "fields": [
+      {
+        "name": "t",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "object",
+          "fields": [
+            {
+              "name": "_1",
+              "required": true,
+              "rwMode": "ReadWrite",
+              "schema": {
+                "kind": "integer"
+              }
+            },
+            {
+              "name": "_2",
+              "required": true,
+              "rwMode": "ReadWrite",
+              "schema": {
+                "kind": "string"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "draft-04": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "additionalProperties": false,
+    "properties": {
+      "t": {
+        "additionalProperties": false,
+        "properties": {
+          "_1": {
+            "type": "integer"
+          },
+          "_2": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "_1",
+          "_2"
+        ],
+        "type": "object"
+      }
+    },
+    "required": [
+      "t"
+    ],
+    "type": "object"
+  },
+  "draft-07": {
+    "$id": "golden",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "additionalProperties": false,
+    "properties": {
+      "t": {
+        "additionalProperties": false,
+        "properties": {
+          "_1": {
+            "type": "integer"
+          },
+          "_2": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "_1",
+          "_2"
+        ],
+        "type": "object"
+      }
+    },
+    "required": [
+      "t"
+    ],
+    "type": "object"
+  },
+  "draft-2020-12": {
+    "$id": "golden",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "t": {
+        "additionalProperties": false,
+        "properties": {
+          "_1": {
+            "type": "integer"
+          },
+          "_2": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "_1",
+          "_2"
+        ],
+        "type": "object"
+      }
+    },
+    "required": [
+      "t"
+    ],
+    "type": "object"
+  }
+}

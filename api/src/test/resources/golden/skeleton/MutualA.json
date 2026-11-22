@@ -1,0 +1,159 @@
+{
+  "schema": {
+    "kind": "def",
+    "sig": "com.github.andyglow.jsonschema.skeleton.ResolutionSpec.MutualA",
+    "schema": {
+      "kind": "object",
+      "fields": [
+        {
+          "name": "b",
+          "required": false,
+          "rwMode": "ReadWrite",
+          "schema": {
+            "kind": "option",
+            "schema": {
+              "kind": "object",
+              "fields": [
+                {
+                  "name": "a",
+                  "required": false,
+                  "rwMode": "ReadWrite",
+                  "schema": {
+                    "kind": "option",
+                    "schema": {
+                      "kind": "ref",
+                      "sig": "com.github.andyglow.jsonschema.skeleton.ResolutionSpec.MutualA"
+                    }
+                  }
+                },
+                {
+                  "name": "n",
+                  "required": true,
+                  "rwMode": "ReadWrite",
+                  "schema": {
+                    "kind": "integer"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  "draft-04": {
+    "$ref": "#/definitions/com.github.andyglow.jsonschema.skeleton.ResolutionSpec.MutualA",
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "definitions": {
+      "com.github.andyglow.jsonschema.skeleton.ResolutionSpec.MutualA": {
+        "additionalProperties": false,
+        "properties": {
+          "b": {
+            "additionalProperties": false,
+            "properties": {
+              "a": {
+                "oneOf": [
+                  {
+                    "$ref": "#/definitions/com.github.andyglow.jsonschema.skeleton.ResolutionSpec.MutualA"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "n": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "n"
+            ],
+            "type": [
+              "null",
+              "object"
+            ]
+          }
+        },
+        "type": "object"
+      }
+    }
+  },
+  "draft-07": {
+    "$id": "golden",
+    "$ref": "#com.github.andyglow.jsonschema.skeleton.ResolutionSpec.MutualA",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+      "com.github.andyglow.jsonschema.skeleton.ResolutionSpec.MutualA": {
+        "$id": "#com.github.andyglow.jsonschema.skeleton.ResolutionSpec.MutualA",
+        "additionalProperties": false,
+        "properties": {
+          "b": {
+            "additionalProperties": false,
+            "properties": {
+              "a": {
+                "oneOf": [
+                  {
+                    "$ref": "#com.github.andyglow.jsonschema.skeleton.ResolutionSpec.MutualA"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "n": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "n"
+            ],
+            "type": [
+              "null",
+              "object"
+            ]
+          }
+        },
+        "type": "object"
+      }
+    }
+  },
+  "draft-2020-12": {
+    "$defs": {
+      "com.github.andyglow.jsonschema.skeleton.ResolutionSpec.MutualA": {
+        "$anchor": "com.github.andyglow.jsonschema.skeleton.ResolutionSpec.MutualA",
+        "additionalProperties": false,
+        "properties": {
+          "b": {
+            "additionalProperties": false,
+            "properties": {
+              "a": {
+                "oneOf": [
+                  {
+                    "$ref": "#com.github.andyglow.jsonschema.skeleton.ResolutionSpec.MutualA"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "n": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "n"
+            ],
+            "type": [
+              "null",
+              "object"
+            ]
+          }
+        },
+        "type": "object"
+      }
+    },
+    "$id": "golden",
+    "$ref": "#com.github.andyglow.jsonschema.skeleton.ResolutionSpec.MutualA",
+    "$schema": "https://json-schema.org/draft/2020-12/schema"
+  }
+}

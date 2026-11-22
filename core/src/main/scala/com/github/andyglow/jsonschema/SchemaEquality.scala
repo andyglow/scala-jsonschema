@@ -87,7 +87,7 @@ object SchemaEquality {
         _ <- checkFieldAttributes(path, l, r, ctx)
       } yield { Equal }
 
-      res.left.map[SchemaEquality](UnEqual).merge
+      res.left.map[SchemaEquality](UnEqual.apply).merge
 
     case (l: `def`[_], r: `def`[_]) =>
       if (l.sig == r.sig) {
@@ -97,6 +97,9 @@ object SchemaEquality {
 
     case (l: `not`[_], r: `not`[_]) =>
       internalCompute(path :+ Segment.Schema("not"), l.tpe, r.tpe, ctx)
+
+    case (l: Schema.`option`[_], r: Schema.`option`[_]) =>
+      internalCompute(path :+ Segment.Schema("option"), l.inner, r.inner, ctx)
 
     case (l: `oneof`[_], r: `oneof`[_]) =>
       val leftMisses  = r.subTypes -- l.subTypes

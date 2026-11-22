@@ -47,10 +47,10 @@ class AsJson4sSpec extends AnyPropSpec {
       "additionalProperties" -> JBool(false),
       "properties"           -> JObject(
         "firstName"   -> JObject("type" -> JString("string")),
-        "middleName"  -> JObject("type" -> JString("string")),
+        "middleName"  -> JObject("type" -> JArray(List(JString("string"), JString("null")))),
         "lastName"    -> JObject("type" -> JString("string")),
         "age"         -> JObject("type" -> JString("integer")),
-        "lastLoginMs" -> JObject("type" -> JString("number")),
+        "lastLoginMs" -> JObject("type" -> JArray(List(JString("number"), JString("null")))),
         "role"        -> JObject(
           "type"    -> JString("string"),
           "default" -> JString("e-user"),
@@ -83,7 +83,7 @@ class AsJson4sSpec extends AnyPropSpec {
           "default" -> JObject("login" -> JString("anonymous"), "password" -> JString("-"))
         ),
         "notes" -> JObject(
-          "type"                 -> JString("object"),
+          "type"                 -> JArray(List(JString("object"), JString("null"))),
           "additionalProperties" -> JBool.False,
           "required"             -> JArray(List(JString("head"), JString("tail"))),
           "properties"           -> JObject(

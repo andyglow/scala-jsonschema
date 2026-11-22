@@ -1,0 +1,58 @@
+{
+  "schema": {
+    "kind": "enum",
+    "type": {
+      "kind": "string"
+    },
+    "values": [
+      "DAYS",
+      "HOURS",
+      "MICROSECONDS",
+      "MILLISECONDS",
+      "MINUTES",
+      "NANOSECONDS",
+      "SECONDS"
+    ]
+  },
+  "draft-04": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "enum": [
+      "DAYS",
+      "HOURS",
+      "MICROSECONDS",
+      "MILLISECONDS",
+      "MINUTES",
+      "NANOSECONDS",
+      "SECONDS"
+    ],
+    "type": "string"
+  },
+  "draft-07": {
+    "$id": "golden",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "enum": [
+      "DAYS",
+      "HOURS",
+      "MICROSECONDS",
+      "MILLISECONDS",
+      "MINUTES",
+      "NANOSECONDS",
+      "SECONDS"
+    ],
+    "type": "string"
+  },
+  "draft-2020-12": {
+    "$id": "golden",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "enum": [
+      "DAYS",
+      "HOURS",
+      "MICROSECONDS",
+      "MILLISECONDS",
+      "MINUTES",
+      "NANOSECONDS",
+      "SECONDS"
+    ],
+    "type": "string"
+  }
+}

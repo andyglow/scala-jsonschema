@@ -1,0 +1,119 @@
+{
+  "schema": {
+    "kind": "def",
+    "sig": "com.github.andyglow.jsonschema.skeleton.ResolutionSpec.Linked",
+    "schema": {
+      "kind": "object",
+      "fields": [
+        {
+          "name": "value",
+          "required": true,
+          "rwMode": "ReadWrite",
+          "schema": {
+            "kind": "integer"
+          }
+        },
+        {
+          "name": "next",
+          "required": false,
+          "rwMode": "ReadWrite",
+          "schema": {
+            "kind": "option",
+            "schema": {
+              "kind": "ref",
+              "sig": "com.github.andyglow.jsonschema.skeleton.ResolutionSpec.Linked"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "draft-04": {
+    "$ref": "#/definitions/com.github.andyglow.jsonschema.skeleton.ResolutionSpec.Linked",
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "definitions": {
+      "com.github.andyglow.jsonschema.skeleton.ResolutionSpec.Linked": {
+        "additionalProperties": false,
+        "properties": {
+          "next": {
+            "oneOf": [
+              {
+                "$ref": "#/definitions/com.github.andyglow.jsonschema.skeleton.ResolutionSpec.Linked"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "value": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "value"
+        ],
+        "type": "object"
+      }
+    }
+  },
+  "draft-07": {
+    "$id": "golden",
+    "$ref": "#com.github.andyglow.jsonschema.skeleton.ResolutionSpec.Linked",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+      "com.github.andyglow.jsonschema.skeleton.ResolutionSpec.Linked": {
+        "$id": "#com.github.andyglow.jsonschema.skeleton.ResolutionSpec.Linked",
+        "additionalProperties": false,
+        "properties": {
+          "next": {
+            "oneOf": [
+              {
+                "$ref": "#com.github.andyglow.jsonschema.skeleton.ResolutionSpec.Linked"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "value": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "value"
+        ],
+        "type": "object"
+      }
+    }
+  },
+  "draft-2020-12": {
+    "$defs": {
+      "com.github.andyglow.jsonschema.skeleton.ResolutionSpec.Linked": {
+        "$anchor": "com.github.andyglow.jsonschema.skeleton.ResolutionSpec.Linked",
+        "additionalProperties": false,
+        "properties": {
+          "next": {
+            "oneOf": [
+              {
+                "$ref": "#com.github.andyglow.jsonschema.skeleton.ResolutionSpec.Linked"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "value": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "value"
+        ],
+        "type": "object"
+      }
+    },
+    "$id": "golden",
+    "$ref": "#com.github.andyglow.jsonschema.skeleton.ResolutionSpec.Linked",
+    "$schema": "https://json-schema.org/draft/2020-12/schema"
+  }
+}

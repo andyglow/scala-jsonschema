@@ -22,7 +22,33 @@ trait AsDraftSupport {
 
   type ParentSchema = Option[json.Schema[_]]
 
-  def apply(x: json.Schema[_]): obj = apply(x, None, includeType = true, isRoot = true)
+  /** Makes a definition signature a valid name for this draft (see [[DefinitionNames]]). */
+  protected def sanitizeDefinitionName(sig: String): String
+
+  // the names of the document being rendered; per thread (not inherited by threads started meanwhile), so one renderer can be shared, and nested `apply(x)` calls reuse the document's names
+  private val definitionNames = new ThreadLocal[Map[String, String]]
+
+  /** Renders `body` with the names of all definitions and refs of the document `root`, computed once before rendering it. */
+  protected def withDefinitionNames[A](root: json.Schema[_])(body: => A): A =
+    if (definitionNames.get != null) body
+    else {
+      definitionNames.set(DefinitionNames.assign(root, sanitizeDefinitionName))
+      try body
+      finally definitionNames.remove()
+    }
+
+  /** The name a definition signature has in the rendered document. */
+  protected def definitionName(sig: String): String = Option(definitionNames.get).flatMap(_.get(sig)).getOrElse(sanitizeDefinitionName(sig))
+
+  /** A tree that reaches a renderer with `option` nodes left (rendered without `AsValue.schema`, which lowers with the profile in scope) is rendered under the default profile. Idempotent. */
+  protected def lowered(x: json.Schema[_]): json.Schema[_] = json.schema.JsonSchemaProfile.Neutral.lower(x)
+
+  def apply(x: json.Schema[_]): obj = {
+    val y = lowered(x)
+    withDefinitionNames(y) {
+      apply(y, None, includeType = true, isRoot = true)
+    }
+  }
 
   def apply(x: json.Schema[_], parent: ParentSchema, includeType: Boolean, isRoot: Boolean): obj = {
     val validationList = inferValidations(x)
@@ -69,7 +95,7 @@ trait AsDraftSupport {
 
     val required = x.fields.collect {
       case field if field.required => str(field.name)
-    } ++ discriminatorField.map(str)
+    } ++ discriminatorField.map(str.apply)
 
     val canHaveAdditionalProperties = x.isInstanceOf[`object`.Free]
 
@@ -104,7 +130,28 @@ trait AsDraftSupport {
     obj("type" -> x.tpe.jsonType, "enum" -> arr(x.values.toSeq))
   }
 
-  def mkOneOf(vl: ValidationList, x: `oneof`[_], isRoot: Boolean, par: ParentSchema): obj = {
+  def mkOneOf(vl: ValidationList, x: `oneof`[_], isRoot: Boolean, par: ParentSchema): obj =
+    if (x.subTypes.exists(_.isInstanceOf[`null`])) mkNullable(x) else mkPlainOneOf(x, isRoot)
+
+  /** `oneof{X, null}`, which is what a profile makes of `Option[X]`: X's keywords with `"type": [X, "null"]` when X has a single JSON type (type arrays are valid from draft-04 on), otherwise
+    * `oneOf[X, {"type": "null"}]` with each member keeping its own type: an `enum` must not take `null` from a type array, and keywords next to a `$ref` are ignored before 2019-09.
+    */
+  private def mkNullable(x: `oneof`[_]): obj = {
+    def singleType(s: Schema[_]): Boolean = s match {
+      case _: `boolean` | _: `integer` | _: `number`[_] | _: `string`[_] | _: `array`[_, _] | _: `object`[_] | _: `dictionary`[_, _, _] => true
+      case `value-class`(t)                                                                                                             => singleType(t)
+      case _                                                                                                                            => false
+    }
+    val subTypesSeq = x.subTypes.toSeq.sortBy(_.isInstanceOf[`null`]) // `null` last
+    subTypesSeq match {
+      case Seq(t, _: `null`) if singleType(t) =>
+        obj("type" -> `arr`(`str`(t.jsonType), `str`("null"))) ++ apply(t, Some(x), includeType = false, isRoot = false)
+      case _ =>
+        obj("oneOf" -> `arr`(subTypesSeq.map(apply(_, Some(x), includeType = true, isRoot = false))))
+    }
+  }
+
+  private def mkPlainOneOf(x: `oneof`[_], isRoot: Boolean): obj = {
     val subTypesSeq = x.subTypes.toSeq
     val tpe         = subTypesSeq.find {
       case `def`(_, _) => false
@@ -158,12 +205,12 @@ trait AsDraftSupport {
   }
 
   def mkDef(vl: ValidationList, x: `def`[_], par: ParentSchema): obj = {
-    val ref = x.sig
+    val ref = definitionName(x.sig)
     obj(f"$$ref" -> buildRef(ref))
   }
 
   def mkRef(vl: ValidationList, x: `ref`[_], par: ParentSchema): obj = {
-    val ref = x.sig
+    val ref = definitionName(x.sig)
     obj(f"$$ref" -> buildRef(ref))
   }
 
@@ -237,7 +284,7 @@ trait AsDraftSupport {
   }
 
   def inferDefinition(x: `def`[_], par: ParentSchema): (String, obj) = {
-    val ref = x.sig
+    val ref = definitionName(x.sig)
     ref -> apply(x.tpe, par orElse Some(x), includeType = true, isRoot = false)
   }
 

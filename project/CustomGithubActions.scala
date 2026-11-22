@@ -2,6 +2,13 @@ import sbtghactions.GenerativePlugin.autoImport.{UseRef, WorkflowStep}
 
 object CustomGithubActions {
 
+  // scalafmtCheckAll only sees the source dirs of the current Scala version (e.g. scala-3/ only under ++3.x),
+  // so this runs in every matrix entry.
+  lazy val checkFormatting = WorkflowStep.Sbt(
+    name = Some("Check formatting"),
+    commands = List("scalafmtCheckAll", "scalafmtSbtCheck")
+  )
+
   lazy val generateCC = WorkflowStep.Sbt(
     name = Some("Generate Code Coverage Reports"),
     commands = List("clean", "coverage", "test"),

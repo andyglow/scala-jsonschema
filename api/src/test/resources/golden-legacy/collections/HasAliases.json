@@ -1,0 +1,181 @@
+{
+  "schema": {
+    "kind": "object",
+    "fields": [
+      {
+        "name": "users",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "array",
+          "unique": false,
+          "items": {
+            "kind": "object",
+            "fields": [
+              {
+                "name": "name",
+                "required": true,
+                "rwMode": "ReadWrite",
+                "schema": {
+                  "kind": "string"
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "name": "byName",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "dictionary",
+          "values": {
+            "kind": "object",
+            "fields": [
+              {
+                "name": "name",
+                "required": true,
+                "rwMode": "ReadWrite",
+                "schema": {
+                  "kind": "string"
+                }
+              }
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "draft-04": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "additionalProperties": false,
+    "properties": {
+      "byName": {
+        "patternProperties": {
+          "^.*$": {
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "users": {
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "byName",
+      "users"
+    ],
+    "type": "object"
+  },
+  "draft-07": {
+    "$id": "golden",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "additionalProperties": false,
+    "properties": {
+      "byName": {
+        "patternProperties": {
+          "^.*$": {
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "users": {
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "byName",
+      "users"
+    ],
+    "type": "object"
+  },
+  "draft-2020-12": {
+    "$id": "golden",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "byName": {
+        "patternProperties": {
+          "^.*$": {
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "users": {
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "byName",
+      "users"
+    ],
+    "type": "object"
+  }
+}

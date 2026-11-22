@@ -18,45 +18,55 @@ Global / concurrentRestrictions += Tags.limit(Tags.Compile, 1)
 ThisBuild / versionScheme                       := Some("pvp")
 ThisBuild / crossScalaVersions                  := ScalaVer.values.map(_.full)
 ThisBuild / githubWorkflowPublishTargetBranches := Seq()
-ThisBuild / githubWorkflowJavaVersions          := Seq(JavaSpec.temurin("11"))
+ThisBuild / githubWorkflowJavaVersions          := Seq(JavaSpec.temurin("21"))
+ThisBuild / githubWorkflowBuildPreamble         := Seq(checkFormatting)
 ThisBuild / githubWorkflowBuildPostamble        := Seq(generateCC, aggregateCC, uploadCC)
 
 ThisBuild / scmInfo := Some(ScmInfo(url("https://github.com/andyglow/scala-jsonschema"), "scm:git@github.com:andyglow/scala-jsonschema.git"))
+
+// Worktree-friendly: sbt-git (pulled in by sbt-ghpages) uses JGit, which fails on `git worktree` checkouts
+// with "Bare Repository has neither a working tree, nor an index". The console git reader works everywhere.
+useReadableConsoleGit
+
+def scalaReflect(scalaVersion: String): Seq[ModuleID] =
+  if (scalaVersion startsWith "3.") Nil else Seq(("org.scala-lang" % "scala-reflect" % scalaVersion % Compile).withSources().withJavadoc())
+
+// scaladoc-ast/-parser for the published modules; keep in step with sbt-scaladoc in project/plugins.sbt
+val scaladocV = "0.2.0"
+
+def versionRangeDirs(base: File, scalaVersion: String): Seq[File] =
+  CrossVersion.partialVersion(scalaVersion) match {
+    case Some((2, y)) if y <= 12 => Seq(base / "scala-2.12-")
+    case Some((2, _))            => Seq(base / "scala-2.13+")
+    case Some((3, _))            => Seq(base / "scala-2.13+")
+    case _                       => Nil
+  }
+
+def runCommand(command: String): State => State =
+  Command.process(command, _, msg => sys.error(s"can't parse command `$command`: $msg"))
 
 lazy val buildInfo = taskKey[Unit]("Prints Build Info")
 
 lazy val commonSettings = ScalaVer.settings ++ Seq(
   // logBuffered := false,
 
-  organization     := "com.github.andyglow",
+  organization     := "io.github.andyglow", // groupId only; Scala packages stay com.github.andyglow.* / json.*
   homepage         := Some(new URI("http://github.com/andyglow/scala-jsonschema").toURL),
   startYear        := Some(2017),
   organizationName := "andyglow",
-  Compile / unmanagedSourceDirectories ++= {
-    val bd                                   = baseDirectory.value
-    def extraDirs(suffix: String): Seq[File] = Seq(bd / "src" / "main" / s"scala$suffix")
-    CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, y)) if y <= 12 => extraDirs("-2.12-")
-      case Some((2, y)) if y >= 13 => extraDirs("-2.13+")
-      case _                       => Nil
-    }
-  },
-  Test / unmanagedSourceDirectories ++= {
-    val bd                                   = baseDirectory.value
-    def extraDirs(suffix: String): Seq[File] = Seq(bd / "src" / "test" / s"scala$suffix")
-    CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, y)) if y <= 12 => extraDirs("-2.12-")
-      case Some((2, y)) if y >= 13 => extraDirs("-2.13+")
-      case _                       => Nil
-    }
-  },
-  scalacOptions                 := CompilerOptions(scalaV.value),
+  // sbt adds src/{main,test}/scala-2, scala-3, scala-2.12, scala-2.13 itself.
+  // On top of that: scala-2.12- (2.12 collections) and scala-2.13+ (2.13 collections, also used by Scala 3).
+  Compile / unmanagedSourceDirectories ++= versionRangeDirs(baseDirectory.value / "src" / "main", scalaVersion.value),
+  Test / unmanagedSourceDirectories ++= versionRangeDirs(baseDirectory.value / "src" / "test", scalaVersion.value),
+  scalacOptions := CompilerOptions(scalaV.value),
+  // Scala 3 consumers of the derivation: read scaladoc from TASTy (other modules, files not recompiled), and check the generated trees
+  Test / scalacOptions ++= { if (scalaV.value.isScala3) Seq("-Yread-docs", "-Xcheck-macros") else Nil },
   Compile / doc / scalacOptions := {
     val muted = Seq("-Ywarn-unused")
 
     val base = scalacOptions.value filterNot muted.contains
 
-    base ++ Seq("-groups", "-implicits", "-no-link-warnings")
+    base ++ CompilerOptions.doc(scalaV.value)
   },
   licenses          := Seq(("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))),
   publishMavenStyle := true,
@@ -73,10 +83,11 @@ lazy val commonSettings = ScalaVer.settings ++ Seq(
     setReleaseVersion,
     commitReleaseVersion,
     tagRelease,
-    ReleaseStep(action = Command.process("publishSigned", _), enableCrossBuild = true),
+    ReleaseStep(action = runCommand("publishSigned"), enableCrossBuild = true),
+    // upload while the version is still the release one: after setNextVersion it's a SNAPSHOT and Central refuses it
+    ReleaseStep(action = runCommand("sonaRelease")),
     setNextVersion,
     commitNextVersion,
-    ReleaseStep(action = Command.process("sonaRelease", _)),
     pushChanges
   ),
   libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.20" % Test
@@ -84,7 +95,9 @@ lazy val commonSettings = ScalaVer.settings ++ Seq(
 
 lazy val core = { project in file("core") }.settings(
   commonSettings,
-  name := "scala-jsonschema-core"
+  name := "scala-jsonschema-core",
+  // the Scala 3 derivation lives in core (`derives json.Schema` needs `Schema.derived`); it parses `Symbol.docstring` with scaladoc-parser
+  libraryDependencies ++= { if (scalaV.value.isScala3) Seq("io.github.andyglow" %% "scaladoc-parser" % scaladocV) else Nil }
 )
 
 lazy val macros = { project in file("macros") }
@@ -92,18 +105,34 @@ lazy val macros = { project in file("macros") }
   .settings(
     commonSettings,
     name := "scala-jsonschema-macros",
-    libraryDependencies ++= Seq(
-      "com.github.andyglow" %% "scaladoc-ast"    % "0.0.14",
-      "com.github.andyglow" %% "scaladoc-parser" % "0.0.14",
-      (scalaVersion apply ("org.scala-lang" % "scala-reflect" % _ % Compile)).value.withSources.withJavadoc
-    )
+    libraryDependencies ++= {
+      if (scalaV.value.isScala3) Nil
+      else
+        Seq(
+          "io.github.andyglow" %% "scaladoc-ast"    % scaladocV,
+          "io.github.andyglow" %% "scaladoc-parser" % scaladocV
+        ) ++ scalaReflect(scalaVersion.value)
+    }
+  )
+
+// Models for api's tests, compiled in their own module: scaladoc of classes from another module. sbt-scaladoc embeds
+// the scaladoc into the bytecode on Scala 2 (compiler plugin); on Scala 3 it's in the TASTy, and api's tests read it
+// with -Yread-docs. Not published.
+lazy val `test-models` = { project in file("modules/test-models") }
+  .enablePlugins(ScaladocPlugin)
+  .settings(
+    commonSettings,
+    name           := "scala-jsonschema-test-models",
+    publish / skip := true
   )
 
 lazy val api = { project in file("api") }
   .dependsOn(core, macros)
   .settings(
     commonSettings,
-    name := "scala-jsonschema"
+    name := "scala-jsonschema",
+    // test-models on the test classpath without `dependsOn`, which would put the unpublished module into api's POM
+    Test / internalDependencyClasspath ++= (`test-models` / Compile / exportedProducts).value
   )
 
 lazy val `play-json` = { project in file("modules/play-json") }
@@ -111,7 +140,9 @@ lazy val `play-json` = { project in file("modules/play-json") }
   .settings(
     commonSettings,
     name                                       := "scala-jsonschema-play-json",
-    libraryDependencies += "org.playframework" %% "play-json" % "3.0.6"
+    libraryDependencies += "org.playframework" %% "play-json" % "3.0.6",
+    // play-json 3.0.6's own Scala 3 macro (`Json.writes`) fails -Xcheck-macros ("Expression created in a splice was used outside of that splice")
+    Test / scalacOptions -= "-Xcheck-macros"
   )
 
 lazy val `spray-json` = { project in file("modules/spray-json") }
@@ -185,12 +216,12 @@ lazy val `refined` = { project in file("modules/refined") }
     commonSettings,
     name                                := "scala-jsonschema-refined",
     libraryDependencies += "eu.timepit" %% "refined" % "0.11.4",
-    libraryDependencies += (scalaVersion apply ("org.scala-lang" % "scala-reflect" % _ % Compile)).value.withSources.withJavadoc,
+    libraryDependencies ++= scalaReflect(scalaVersion.value),
 
     // mute unused imports because otherwise IN TESTS it complains on
     // unused `import com.github.andyglow.jsonschema.RefinedSupport._`
-    // which is not true
-    Test / scalacOptions -= "-Ywarn-unused:imports,-patvars,-privates,-locals,-implicits"
+    // which is not true (the derivation macro's own implicit search uses it; Scala 3 doesn't count that either)
+    Test / scalacOptions --= Seq("-Ywarn-unused:imports,-patvars,-privates,-locals,-implicits", "-Wunused:imports")
   )
 
 lazy val parser = { project in file("modules/parser") }
@@ -205,7 +236,9 @@ lazy val enumeratum = { project in file("modules/enumeratum") }
   .settings(
     commonSettings,
     name                                  := "scala-jsonschema-enumeratum",
-    libraryDependencies += "com.beachape" %% "enumeratum" % "1.9.8"
+    libraryDependencies += "com.beachape" %% "enumeratum" % "1.9.8",
+    // enumeratum's own Scala 3 macro (`findValues`) needs the trees of the enum's members
+    Test / scalacOptions ++= { if (scalaV.value.isScala3) Seq("-Yretain-trees") else Nil }
   )
 
 lazy val derived = { project in file("modules/derived") }
@@ -213,12 +246,12 @@ lazy val derived = { project in file("modules/derived") }
   .settings(
     commonSettings,
     name := "scala-jsonschema-derived",
-    libraryDependencies ++= Seq(
-      (scalaVersion apply ("org.scala-lang" % "scala-reflect" % _ % Compile)).value.withSources.withJavadoc
-    )
+    libraryDependencies ++= scalaReflect(scalaVersion.value)
   )
 
-lazy val docs = { project in file("documentation") }
+// The documentation site. Sources: docs/src/main/paradox. `sbt makeDocs` runs mdoc (it compiles the ```scala mdoc snippets
+// against the modules below, on 2.13) and then paradox via sbt-site; the site is written to docs/target/site.
+lazy val docs = { project in file("docs") }
   .enablePlugins(
     // - variable substitution
     // - snippets evaluation
@@ -232,20 +265,17 @@ lazy val docs = { project in file("documentation") }
     // publishing to GitHub Pages
     GhpagesPlugin
   )
-//  .dependsOn(api, `joda-time`)
+  .dependsOn(api, `joda-time`, cats, refined, enumeratum, derived, parser, `play-json`)
   .settings(
     ScalaVer.settings213,
-    mdocIn        := baseDirectory.value / "main" / "paradox",
-    mdocVariables := Map("VERSION" -> version.value, "SCALA_VERSION" -> scalaVersion.value),
-    paradoxProperties ++= Map("project.name" -> "Scala JsonSchema", "github.base_url" -> "https://github.com/andyglow/scala-jsonschema"),
+    publish / skip := true,
+    mdocIn         := baseDirectory.value / "src" / "main" / "paradox",
+    mdocVariables  := Map("VERSION" -> version.value, "SCALA_VERSION" -> scalaVersion.value),
+    // drop "github.base_url" (paradox derives it from scmInfo): its "Edit this page" links would point at the mdoc output
+    // (docs/target/mdoc), which isn't in git
+    Compile / paradoxProperties ~= { _ - "github.base_url" + ("project.name" -> "Scala JsonSchema") },
     Compile / paradox / sourceDirectory := mdocOut.value,
     git.remoteRepo                      := scmInfo.value.get.connection,
-    Compile / paradoxMaterialTheme ~= {
-      _.withCustomStylesheet("assets/styles.css")
-    },
-    Compile / paradoxMaterialTheme ~= {
-      _.withCustomJavaScript("assets/dependencies.js")
-    },
 
     // #color
     Compile / paradoxMaterialTheme ~= {
@@ -302,6 +332,7 @@ lazy val root = { project in file(".") }
   .aggregate(
     core,
     macros,
+    `test-models`,
     derived,
     api,
     parser,
@@ -324,6 +355,7 @@ lazy val root = { project in file(".") }
     update / aggregate := false
   )
 
-addCommandAlias("makeDocs", ";docs/mdoc;docs/makeSite")
+// ++2.13.18: the docs project is 2.13 only, and its dependencies must be built for the same Scala version
+addCommandAlias("makeDocs", ";++2.13.18;docs/mdoc;docs/makeSite")
 addCommandAlias("publishDocs", ";makeDocs;ghpagesPushSite")
 //ParadoxMaterialThemePlugin.paradoxMaterialThemeSettings(Paradox)

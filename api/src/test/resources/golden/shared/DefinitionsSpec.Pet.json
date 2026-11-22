@@ -1,0 +1,158 @@
+{
+  "schema": {
+    "kind": "oneof",
+    "members": [
+      {
+        "kind": "def",
+        "sig": "com.github.andyglow.jsonschema.DefinitionsSpec.Pet.Cat",
+        "schema": {
+          "kind": "object",
+          "fields": [
+            {
+              "name": "color",
+              "required": true,
+              "rwMode": "ReadWrite",
+              "schema": {
+                "kind": "string"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "kind": "def",
+        "sig": "alligator",
+        "schema": {
+          "kind": "object",
+          "fields": [
+            {
+              "name": "toothLeft",
+              "required": true,
+              "rwMode": "ReadWrite",
+              "schema": {
+                "kind": "integer"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "draft-04": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "definitions": {
+      "alligator": {
+        "additionalProperties": false,
+        "properties": {
+          "toothLeft": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "toothLeft"
+        ],
+        "type": "object"
+      },
+      "com.github.andyglow.jsonschema.DefinitionsSpec.Pet.Cat": {
+        "additionalProperties": false,
+        "properties": {
+          "color": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "color"
+        ],
+        "type": "object"
+      }
+    },
+    "oneOf": [
+      {
+        "$ref": "#/definitions/alligator"
+      },
+      {
+        "$ref": "#/definitions/com.github.andyglow.jsonschema.DefinitionsSpec.Pet.Cat"
+      }
+    ]
+  },
+  "draft-07": {
+    "$id": "golden",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+      "alligator": {
+        "$id": "#alligator",
+        "additionalProperties": false,
+        "properties": {
+          "toothLeft": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "toothLeft"
+        ],
+        "type": "object"
+      },
+      "com.github.andyglow.jsonschema.DefinitionsSpec.Pet.Cat": {
+        "$id": "#com.github.andyglow.jsonschema.DefinitionsSpec.Pet.Cat",
+        "additionalProperties": false,
+        "properties": {
+          "color": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "color"
+        ],
+        "type": "object"
+      }
+    },
+    "oneOf": [
+      {
+        "$ref": "#alligator"
+      },
+      {
+        "$ref": "#com.github.andyglow.jsonschema.DefinitionsSpec.Pet.Cat"
+      }
+    ]
+  },
+  "draft-2020-12": {
+    "$defs": {
+      "alligator": {
+        "$anchor": "alligator",
+        "additionalProperties": false,
+        "properties": {
+          "toothLeft": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "toothLeft"
+        ],
+        "type": "object"
+      },
+      "com.github.andyglow.jsonschema.DefinitionsSpec.Pet.Cat": {
+        "$anchor": "com.github.andyglow.jsonschema.DefinitionsSpec.Pet.Cat",
+        "additionalProperties": false,
+        "properties": {
+          "color": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "color"
+        ],
+        "type": "object"
+      }
+    },
+    "$id": "golden",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "oneOf": [
+      {
+        "$ref": "#alligator"
+      },
+      {
+        "$ref": "#com.github.andyglow.jsonschema.DefinitionsSpec.Pet.Cat"
+      }
+    ]
+  }
+}

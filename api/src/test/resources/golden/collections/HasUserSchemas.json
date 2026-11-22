@@ -1,0 +1,328 @@
+{
+  "schema": {
+    "kind": "object",
+    "fields": [
+      {
+        "name": "users",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "def",
+          "sig": "scala.collection.immutable.List[com.github.andyglow.jsonschema.collections.CollectionsSpec.User]",
+          "schema": {
+            "kind": "array",
+            "unique": false,
+            "items": {
+              "kind": "object",
+              "fields": [
+                {
+                  "name": "name",
+                  "required": true,
+                  "rwMode": "ReadWrite",
+                  "schema": {
+                    "kind": "string"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "name": "byName",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "def",
+          "sig": "scala.collection.immutable.Map[scala.Predef.String,scala.List[com.github.andyglow.jsonschema.collections.CollectionsSpec.User]]",
+          "schema": {
+            "kind": "dictionary",
+            "values": {
+              "kind": "array",
+              "unique": false,
+              "items": {
+                "kind": "object",
+                "fields": [
+                  {
+                    "name": "name",
+                    "required": true,
+                    "rwMode": "ReadWrite",
+                    "schema": {
+                      "kind": "string"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "nested",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "def",
+          "sig": "scala.collection.immutable.List[scala.Vector[com.github.andyglow.jsonschema.collections.CollectionsSpec.User]]",
+          "schema": {
+            "kind": "array",
+            "unique": false,
+            "items": {
+              "kind": "array",
+              "unique": false,
+              "items": {
+                "kind": "object",
+                "fields": [
+                  {
+                    "name": "name",
+                    "required": true,
+                    "rwMode": "ReadWrite",
+                    "schema": {
+                      "kind": "string"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    ]
+  },
+  "draft-04": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "additionalProperties": false,
+    "definitions": {
+      "scala.collection.immutable.List_com.github.andyglow.jsonschema.collections.CollectionsSpec.User_": {
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "scala.collection.immutable.List_scala.Vector_com.github.andyglow.jsonschema.collections.CollectionsSpec.User__": {
+        "items": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "type": "array"
+      },
+      "scala.collection.immutable.Map_scala.Predef.String,scala.List_com.github.andyglow.jsonschema.collections.CollectionsSpec.User__": {
+        "patternProperties": {
+          "^.*$": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "properties": {
+      "byName": {
+        "$ref": "#/definitions/scala.collection.immutable.Map_scala.Predef.String,scala.List_com.github.andyglow.jsonschema.collections.CollectionsSpec.User__"
+      },
+      "nested": {
+        "$ref": "#/definitions/scala.collection.immutable.List_scala.Vector_com.github.andyglow.jsonschema.collections.CollectionsSpec.User__"
+      },
+      "users": {
+        "$ref": "#/definitions/scala.collection.immutable.List_com.github.andyglow.jsonschema.collections.CollectionsSpec.User_"
+      }
+    },
+    "required": [
+      "byName",
+      "nested",
+      "users"
+    ],
+    "type": "object"
+  },
+  "draft-07": {
+    "$id": "golden",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "additionalProperties": false,
+    "definitions": {
+      "scala.collection.immutable.List_com.github.andyglow.jsonschema.collections.CollectionsSpec.User_": {
+        "$id": "#scala.collection.immutable.List_com.github.andyglow.jsonschema.collections.CollectionsSpec.User_",
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "scala.collection.immutable.List_scala.Vector_com.github.andyglow.jsonschema.collections.CollectionsSpec.User__": {
+        "$id": "#scala.collection.immutable.List_scala.Vector_com.github.andyglow.jsonschema.collections.CollectionsSpec.User__",
+        "items": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "type": "array"
+      },
+      "scala.collection.immutable.Map_scala.Predef.String_scala.List_com.github.andyglow.jsonschema.collections.CollectionsSpec.User__": {
+        "$id": "#scala.collection.immutable.Map_scala.Predef.String_scala.List_com.github.andyglow.jsonschema.collections.CollectionsSpec.User__",
+        "patternProperties": {
+          "^.*$": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "properties": {
+      "byName": {
+        "$ref": "#scala.collection.immutable.Map_scala.Predef.String_scala.List_com.github.andyglow.jsonschema.collections.CollectionsSpec.User__"
+      },
+      "nested": {
+        "$ref": "#scala.collection.immutable.List_scala.Vector_com.github.andyglow.jsonschema.collections.CollectionsSpec.User__"
+      },
+      "users": {
+        "$ref": "#scala.collection.immutable.List_com.github.andyglow.jsonschema.collections.CollectionsSpec.User_"
+      }
+    },
+    "required": [
+      "byName",
+      "nested",
+      "users"
+    ],
+    "type": "object"
+  },
+  "draft-2020-12": {
+    "$defs": {
+      "scala.collection.immutable.List_com.github.andyglow.jsonschema.collections.CollectionsSpec.User_": {
+        "$anchor": "scala.collection.immutable.List_com.github.andyglow.jsonschema.collections.CollectionsSpec.User_",
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "scala.collection.immutable.List_scala.Vector_com.github.andyglow.jsonschema.collections.CollectionsSpec.User__": {
+        "$anchor": "scala.collection.immutable.List_scala.Vector_com.github.andyglow.jsonschema.collections.CollectionsSpec.User__",
+        "items": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "type": "array"
+      },
+      "scala.collection.immutable.Map_scala.Predef.String_scala.List_com.github.andyglow.jsonschema.collections.CollectionsSpec.User__": {
+        "$anchor": "scala.collection.immutable.Map_scala.Predef.String_scala.List_com.github.andyglow.jsonschema.collections.CollectionsSpec.User__",
+        "patternProperties": {
+          "^.*$": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "$id": "golden",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "byName": {
+        "$ref": "#scala.collection.immutable.Map_scala.Predef.String_scala.List_com.github.andyglow.jsonschema.collections.CollectionsSpec.User__"
+      },
+      "nested": {
+        "$ref": "#scala.collection.immutable.List_scala.Vector_com.github.andyglow.jsonschema.collections.CollectionsSpec.User__"
+      },
+      "users": {
+        "$ref": "#scala.collection.immutable.List_com.github.andyglow.jsonschema.collections.CollectionsSpec.User_"
+      }
+    },
+    "required": [
+      "byName",
+      "nested",
+      "users"
+    ],
+    "type": "object"
+  }
+}

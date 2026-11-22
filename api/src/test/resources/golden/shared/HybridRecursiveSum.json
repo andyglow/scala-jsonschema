@@ -1,0 +1,284 @@
+{
+  "schema": {
+    "kind": "oneof",
+    "members": [
+      {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "err",
+            "required": false,
+            "rwMode": "ReadWrite",
+            "schema": {
+              "kind": "option",
+              "schema": {
+                "kind": "string"
+              }
+            }
+          },
+          {
+            "name": "intVal",
+            "required": true,
+            "rwMode": "ReadWrite",
+            "schema": {
+              "kind": "integer"
+            }
+          }
+        ]
+      },
+      {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "error",
+            "required": true,
+            "rwMode": "ReadWrite",
+            "schema": {
+              "kind": "string"
+            }
+          }
+        ]
+      },
+      {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "tpe",
+            "required": true,
+            "rwMode": "ReadWrite",
+            "schema": {
+              "kind": "string"
+            }
+          }
+        ]
+      },
+      {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "value",
+            "required": true,
+            "rwMode": "ReadWrite",
+            "schema": {
+              "kind": "integer"
+            }
+          }
+        ]
+      },
+      {
+        "kind": "enum",
+        "type": {
+          "kind": "string"
+        },
+        "values": [
+          "L1V3",
+          "L2V1",
+          "L2V2"
+        ]
+      }
+    ]
+  },
+  "draft-04": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "oneOf": [
+      {
+        "additionalProperties": false,
+        "properties": {
+          "err": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "intVal": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "intVal"
+        ],
+        "type": "object"
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "tpe": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "tpe"
+        ],
+        "type": "object"
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "value": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "value"
+        ],
+        "type": "object"
+      },
+      {
+        "enum": [
+          "L1V3",
+          "L2V1",
+          "L2V2"
+        ],
+        "type": "string"
+      }
+    ]
+  },
+  "draft-07": {
+    "$id": "golden",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "oneOf": [
+      {
+        "additionalProperties": false,
+        "properties": {
+          "err": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "intVal": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "intVal"
+        ],
+        "type": "object"
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "tpe": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "tpe"
+        ],
+        "type": "object"
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "value": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "value"
+        ],
+        "type": "object"
+      },
+      {
+        "enum": [
+          "L1V3",
+          "L2V1",
+          "L2V2"
+        ],
+        "type": "string"
+      }
+    ]
+  },
+  "draft-2020-12": {
+    "$id": "golden",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "oneOf": [
+      {
+        "additionalProperties": false,
+        "properties": {
+          "err": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "intVal": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "intVal"
+        ],
+        "type": "object"
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "tpe": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "tpe"
+        ],
+        "type": "object"
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "value": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "value"
+        ],
+        "type": "object"
+      },
+      {
+        "enum": [
+          "L1V3",
+          "L2V1",
+          "L2V2"
+        ],
+        "type": "string"
+      }
+    ]
+  }
+}

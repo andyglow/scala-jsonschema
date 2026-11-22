@@ -1,0 +1,40 @@
+{
+  "schema": {
+    "kind": "def",
+    "sig": "java.lang.String",
+    "schema": {
+      "kind": "string"
+    }
+  },
+  "draft-04": {
+    "$ref": "#/definitions/java.lang.String",
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "definitions": {
+      "java.lang.String": {
+        "type": "string"
+      }
+    }
+  },
+  "draft-07": {
+    "$id": "golden",
+    "$ref": "#java.lang.String",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+      "java.lang.String": {
+        "$id": "#java.lang.String",
+        "type": "string"
+      }
+    }
+  },
+  "draft-2020-12": {
+    "$defs": {
+      "java.lang.String": {
+        "$anchor": "java.lang.String",
+        "type": "string"
+      }
+    },
+    "$id": "golden",
+    "$ref": "#java.lang.String",
+    "$schema": "https://json-schema.org/draft/2020-12/schema"
+  }
+}

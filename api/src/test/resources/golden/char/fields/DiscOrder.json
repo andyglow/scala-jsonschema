@@ -1,0 +1,78 @@
+{
+  "schema": {
+    "kind": "oneof",
+    "members": [
+      {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "t",
+            "required": true,
+            "rwMode": "ReadWrite",
+            "schema": {
+              "kind": "string"
+            }
+          }
+        ],
+        "discriminationKey": "com.github.andyglow.jsonschema.characterization.DiscOrder.D1"
+      }
+    ],
+    "discriminationField": "t"
+  },
+  "draft-04": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "oneOf": [
+      {
+        "additionalProperties": false,
+        "properties": {
+          "t": {
+            "enum": [
+              "com.github.andyglow.jsonschema.characterization.DiscOrder.D1"
+            ]
+          }
+        },
+        "required": [
+          "t"
+        ]
+      }
+    ]
+  },
+  "draft-07": {
+    "$id": "golden",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "oneOf": [
+      {
+        "additionalProperties": false,
+        "properties": {
+          "t": {
+            "enum": [
+              "com.github.andyglow.jsonschema.characterization.DiscOrder.D1"
+            ]
+          }
+        },
+        "required": [
+          "t"
+        ]
+      }
+    ]
+  },
+  "draft-2020-12": {
+    "$id": "golden",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "oneOf": [
+      {
+        "additionalProperties": false,
+        "properties": {
+          "t": {
+            "enum": [
+              "com.github.andyglow.jsonschema.characterization.DiscOrder.D1"
+            ]
+          }
+        },
+        "required": [
+          "t"
+        ]
+      }
+    ]
+  }
+}

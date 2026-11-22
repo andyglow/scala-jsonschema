@@ -1,0 +1,197 @@
+{
+  "schema": {
+    "kind": "oneof",
+    "members": [
+      {
+        "kind": "def",
+        "sig": "m1",
+        "schema": {
+          "kind": "object",
+          "fields": [
+            {
+              "name": "value",
+              "required": true,
+              "rwMode": "ReadWrite",
+              "schema": {
+                "kind": "integer"
+              }
+            }
+          ],
+          "discriminationKey": "m1"
+        }
+      },
+      {
+        "kind": "def",
+        "sig": "m2",
+        "schema": {
+          "kind": "object",
+          "fields": [
+            {
+              "name": "value",
+              "required": true,
+              "rwMode": "ReadWrite",
+              "schema": {
+                "kind": "string"
+              }
+            }
+          ],
+          "discriminationKey": "m2"
+        }
+      }
+    ],
+    "discriminationField": "type"
+  },
+  "draft-04": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "definitions": {
+      "m1": {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "enum": [
+              "m1"
+            ]
+          },
+          "value": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "type",
+          "value"
+        ],
+        "type": "object"
+      },
+      "m2": {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "enum": [
+              "m2"
+            ]
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "value"
+        ],
+        "type": "object"
+      }
+    },
+    "oneOf": [
+      {
+        "$ref": "#/definitions/m1"
+      },
+      {
+        "$ref": "#/definitions/m2"
+      }
+    ]
+  },
+  "draft-07": {
+    "$id": "golden",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+      "m1": {
+        "$id": "#m1",
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "enum": [
+              "m1"
+            ]
+          },
+          "value": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "type",
+          "value"
+        ],
+        "type": "object"
+      },
+      "m2": {
+        "$id": "#m2",
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "enum": [
+              "m2"
+            ]
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "value"
+        ],
+        "type": "object"
+      }
+    },
+    "oneOf": [
+      {
+        "$ref": "#m1"
+      },
+      {
+        "$ref": "#m2"
+      }
+    ]
+  },
+  "draft-2020-12": {
+    "$defs": {
+      "m1": {
+        "$anchor": "m1",
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "enum": [
+              "m1"
+            ]
+          },
+          "value": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "type",
+          "value"
+        ],
+        "type": "object"
+      },
+      "m2": {
+        "$anchor": "m2",
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "enum": [
+              "m2"
+            ]
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "value"
+        ],
+        "type": "object"
+      }
+    },
+    "$id": "golden",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "oneOf": [
+      {
+        "$ref": "#m1"
+      },
+      {
+        "$ref": "#m2"
+      }
+    ]
+  }
+}

@@ -1,3 +1,140 @@
+- **0.8.0** (unreleased): Scala 3 support. See the README's "Migrating to 0.8.0" and "Scala 3 notes".
+  PRs: [#429](https://github.com/andyglow/scala-jsonschema/pull/429) (build stack, Central Portal),
+  [#431](https://github.com/andyglow/scala-jsonschema/pull/431) (parser),
+  [#433](https://github.com/andyglow/scala-jsonschema/pull/433) (cross-build, groupId),
+  [#434](https://github.com/andyglow/scala-jsonschema/pull/434) (`Schema` equality),
+  [#435](https://github.com/andyglow/scala-jsonschema/pull/435) (Scala 2 fixes),
+  [#436](https://github.com/andyglow/scala-jsonschema/pull/436) (Scala 3 derivation),
+  [#437](https://github.com/andyglow/scala-jsonschema/pull/437) (refined and derived on Scala 3),
+  [#438](https://github.com/andyglow/scala-jsonschema/pull/438) (docs),
+  [#442](https://github.com/andyglow/scala-jsonschema/pull/442) (`Option` as "X or null", `JsonSchemaProfile`),
+  [#443](https://github.com/andyglow/scala-jsonschema/pull/443) (scaladoc 0.2.0).
+
+  **Breaking**
+  - every `Option[X]` renders as "X or null", at the root, in collections, as map values and as fields: `"type":
+    [X, "null"]` where X has one JSON type, otherwise `oneOf: [X, {"type": "null"}]`. An `Option` field is still not
+    required; `Option[Option[X]]` is the same as `Option[X]`. Before, a field was X (so the `"o": null` that circe
+    and upickle write didn't validate) and any other `Option` was `oneOf(object{value: X}, enum["None"])`, which no
+    JSON library writes. `JsonSchemaProfile.Legacy` gives the 0.7 output back, byte for byte: one implicit
+    `JsonSchemaProfile` where you render, or `schema.withProfile(JsonSchemaProfile.Legacy)`
+  - the derived `json.Schema` tree keeps `Option` as the new `` `option` `` node: an `Option` field is
+    `Field("o", option(X), required = false)` (was X), any other `Option` is `option(X)` (was the `Some`/`None`
+    `oneof`). Code that walks or compares derived trees sees it; `withProfile(JsonSchemaProfile.Legacy)` gives the
+    0.7 tree. New leaf `` `null` `` (`{"type": "null"}`)
+  - `AsValue.schema`, `Json.stringify`, the `stringify`/`draft04`/`draft06`/`draft07` syntax and `asPlay`, `asCirce`,
+    `asSpray`, `asJson4s`, `asU` take an implicit `JsonSchemaProfile` (source compatible: without one in scope,
+    `JsonSchemaProfile.Neutral` is used)
+  - the groupId is `io.github.andyglow` (was `com.github.andyglow`); the Scala packages are unchanged (#433)
+  - Scala 2.11 is no longer published (#429). Built against current libraries: play-json 3.0.6 (now
+    `org.playframework`; stay on 0.7.x for `com.typesafe.play` 2.x), circe 0.14.17, json4s 4.0.7, ujson/upickle
+    4.4.3, joda-time 2.15.1, cats 2.13.0, refined 0.11.4, enumeratum 1.9.8. Bytecode is still Java 8
+  - rendered definition names follow each draft's grammar: every character a draft doesn't allow in a definition
+    name is replaced with `_` (`com.acme.Box[scala.Int]` → `com.acme.Box_scala.Int_`), for draft-04 in
+    `#/definitions/...` refs, for 06/07 in `$id`/`$ref` plain-name fragments, for 2019-09/2020-12 in `$anchor`/`$ref`.
+    Collisions get `_2`, `_3`, ... (in signature order; a name that already conforms keeps it). `Json.sig`, the
+    `Schema` value and the raw renderer keep the readable signature (#435)
+  - type aliases are seen through: `Json.schema[IntBox]` for `type IntBox = Box[Int]` works, refs and definitions
+    reached through an alias get the same name (also when only a type argument is spelled through an alias), and
+    a root implicit `Schema[String]` is the definition `java.lang.String` (was `scala.Predef.String`), the same
+    name a field already got. Type arguments aren't dealiased: `Box[String]` is still `Box[scala.Predef.String]` (#435)
+  - an implicit `Schema` is used only for exactly its type: an implicit `Schema[Sub]` no longer stands in for
+    a sealed `Base` (which lost its other subtypes) or makes a non-sealed trait derivable (#435)
+  - `json.Schema` equality: `` `ref` `` compares its signature (before, any two refs were equal, so e.g.
+    `oneof(Set(ref(A), ref(B)))` collapsed to one member); `object.Field` equality includes the description;
+    a free object no longer equals the strict one; `hashCode` is consistent with `equals` for every node (#434)
+  - Scala 2: `Json.sig` (and so definition names) of backticked or symbolic type names is decoded (`odd name`, not
+    `odd$u0020name`), as on Scala 3; the renderers make it a valid name (`odd_name`) (#435)
+  - Scala 2: a class without a doc comment no longer inherits another one. Before, it took the nearest earlier doc
+    comment in its file (of another class, a method, a val, or the enclosing class), as its description and its
+    `@param` field descriptions; a stray `@param` could even fail the build with `unknown field`. Now only the doc
+    comment right before the declaration counts (annotations, modifiers and ordinary comments may sit in between),
+    the same as on Scala 3 (scaladoc-parser 0.1.1)
+  - a scaladoc `@param` for a field that doesn't exist is a warning, for the root and nested types alike (before:
+    a compile error on the root only). An unknown field in `Json.objectSchema(...)` decorations is still an error
+  - refined: the implicit is `refinedJsonSchema[R <: Refined[A, B], A, B]` (was `[A, B]`); this matters only where
+    its type arguments are passed explicitly (#437)
+  - parser: `ParseJson` is a strict RFC 8259 parser (it accepted invalid JSON, didn't decode escapes and lost field
+    order); failures are `JsonParseException`s with the offset; `MutableValue` and the Java classes are gone (#431)
+
+  **New**
+  - `json.schema.JsonSchemaProfile`: how the renderer shapes what the derivation records but doesn't decide (in
+    0.8, `Option`). `JsonSchemaProfile.Neutral` is the default, `JsonSchemaProfile.Legacy` is the 0.7 output.
+    `schema.withProfile(p)` shapes a schema right away; a later render keeps that shape
+  - parser: `ParseJsonSchema` reads `"type": "null"` and `"type": [X, "null"]` (as `oneof{X, null}`)
+  - Scala 3.3 LTS: every module is published for Scala 3, and the same user code compiles on Scala 2 and 3
+    (`Json.schema`, `Json.objectSchema`, `Json.sig`, `Json.auto`) (#433, #436, #437)
+  - Scala 3: `derives json.Schema`, the same as a user-provided implicit `Schema` in the companion: the type
+    becomes a definition, referred to with `$ref`. For a generic class, `Schema[Box[X]]` exists when `X` has an
+    implicit `Schema` (then `Box[X]` is a definition); otherwise `Box[X]` is derived inline (#436)
+  - Scala 3: `enum`s follow the sealed-family rules (only singleton cases: a string enum of the case names; with
+    class cases: a `oneOf`) (#436)
+  - Scala 3: scaladoc descriptions, also from other modules and jars with `-Yread-docs`; `import Json.auto.given`;
+    `-Djsonschema.print-code=true` prints the generated code (#436)
+  - scaladoc 0.2.0. Scala 2 reads the scaladoc that its compiler plugin embeds into a model's bytecode, so models
+    from other modules and jars get their descriptions; this is now documented and tested (0.2.0's plugin jar is
+    self-contained, and it also embeds classes nested in classes and traits). The docs recommend sbt-scaladoc,
+    which sets up the embedding on Scala 2 and `-Yread-docs` on Scala 3
+  - Scala 3: `scala-jsonschema-refined` (used the same way, with literal types: `Greater[5]`,
+    `MatchesRegex["[a-z]+"]` in place of shapeless's ``W.`5`.T``) and `scala-jsonschema-derived` (#437)
+  - Java enums (`java.time.DayOfWeek`, `java.time.Month`, `java.util.concurrent.TimeUnit`, ...) derive a string
+    enum of their constant names, also as Map keys (before: a macro crash) (#435)
+  - `withValidation` on a `Seq` schema (`` Json.schema[Seq[String]].withValidation(`minItems` := 1) ``) compiles
+    without explicit type arguments (new `Magnet.seqMagnet`); the collection magnets are ordered by priority
+    (exact collection > `Seq` > `Iterable`), which Scala 3 needs for `List`/`Vector`/`Set`. No existing call
+    picks a different magnet (#437)
+
+  **Fixed**
+  - `import json.Json.auto._` works (before, any use crashed scalac with a StackOverflowError): it provides an
+    implicit `Predef[T]` for any derivable `T`, and doesn't change what `Json.schema` derives (#435)
+  - `def.toDefinition(name)` renames only its own definition and the refs to it (before, it renamed every nested
+    definition and left refs to the old name dangling) (#434)
+  - copies of a free object stay free: `withTitle`, `withDescription`, `duplicate`, `withField`, `dropField`,
+    `withFieldsUpdated` and `toDefinition` no longer turn `additionalProperties: true` into `false`
+  - clear compile errors instead of errors in the generated code or macro crashes for: a Map key without a
+    `KeyPattern` (e.g. `UUID`), an enum key with `Flag.EnumsAsOneOf`, a `mutable.Map`, and collections whose
+    type parameter isn't the element type (e.g. `BitSet`), or Maps that don't take the key and value types as
+    their type parameters (e.g. `IntMap[V]`)
+  - a Map other than `Map` itself (`SortedMap[Int, X]`, `ListMap[Long, X]`) with a key pattern derives (before: an
+    error in the generated code)
+  - more clear compile errors instead of macro crashes: `Json.sig`/definition names of structural types,
+    `Json.objectSchema` with decorations that aren't literal pairs, `Json.objectSchema` of a type that resolves to
+    a definition, and an `Option` default that can't be evaluated at compile time. Definition names of compound
+    (`A with B`) and annotated types work
+  - generics: a default like `xs: List[T] = Nil` and a generic value class `Id[T](v: T)` work; the type
+    arguments of a generic subclass are matched by name (`Impl[B, A] extends Base[A, B]`), not by position
+  - a case class without fields derives an empty object; annotations on backticked/symbolic field names
+    (`` `my-field` ``) are kept; a scaladoc with only `@param` tags no longer sets the description to ""
+  - Scala 2: field annotations aimed at the underlying field (`@(description @field)("...")`, `@(readOnly @field)`)
+    are read, together with the parameter's own (before, they were silently ignored)
+  - case classes local to a method or block are derived (before: a macro crash). On Scala 2 such a class can't
+    have default values (a clear error)
+  - Scala 2: default values of a case class declared inside a class (`class Holder { case class Inner(a: Int = 1) }`,
+    derived inside `Holder` or as `Json.schema[h.Inner]`) work (before: an error in the generated code, `object
+    Holder is not a member of package ...`). Through a type projection (`Json.schema[Holder#Inner]`) they're a clear
+    compile error on Scala 2 and 3 (before, Scala 3 crashed)
+  - Scala 2: an implicit `Predef` defined with `Json.schema` of its own type (`implicit val p: Predef[X] =
+    Predef(Json.schema[X])`, also a `def` or `lazy val`) no longer picks itself up (before: a NullPointerException /
+    ExceptionInInitializerError at initialization, a StackOverflowError for a `def`). An implicit `Schema` defined
+    over more than two lines no longer picks itself up either (before: `def(<name>, null)`). Scala 3 already did both
+  - Scala 2.12.21/2.13.17+: `@definition` without a label infers the name again (the compiler inlines the
+    annotation's default argument) (#429)
+  - parser: `ParseJsonSchema` accepted no schema with the default `checkSchema = true`; an invalid property schema
+    or an unsupported `type` is a `Failure` (was an exception); properties keep their order (#431)
+
+  **Scala 3 differences** (deliberate; see the README's "Scala 3 notes")
+  - a sealed family with a subclass that is anonymous or local to a block (`new Root {}`, a case class declared
+    inside a method) is a compile error, because Scala 3 can't list such subclasses (Scala 2 rejects the anonymous
+    ones too, but derives a local case class); a class declared inside an `Enumeration` object derives as a class
+    (Scala 2: as that object's enum); an `Enumeration`'s enum lists only its `Value`s (Scala 2 also listed vals of
+    any type with a base class named `Value`)
+  - an alias that only renames a type (`type MyList[A] = List[A]`) is gone before the macro sees it, so names show
+    the type it stands for; standard collections in type arguments are spelled `scala.List`, `scala.Predef.Map`, ...
+  - an `Option` default other than `None`/`Option.empty` written out (`= Defs.none`, `= (None)`) needs a
+    `ToValue[Option[X]]`; Scala 2 evaluates it at compile time
+  - refined: `refined[T]` has no `T <: Refined[_, _]` bound (`Refined` is an opaque type on Scala 3; a non-refined
+    `T` is a compile error). An unsupported predicate or an empty range found while deriving (`Json.schema[X]` with
+    such a field) fails with the derivation's `is not supported` error, followed by the refined macro's message
+    (Scala 2: the refined macro's message alone)
 - **0.7.10**
   - draft 2020-12 implemented
   - dependencies updated 

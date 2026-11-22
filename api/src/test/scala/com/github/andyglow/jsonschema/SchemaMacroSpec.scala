@@ -29,8 +29,8 @@ class SchemaMacroSpec extends AnyWordSpec {
 
       Json.schema[Foo2] should matchSchema(
         `object`(
-          Field("name", `string`, required = false),
-          Field("bar", `integer`, required = false)
+          Field("name", `option`(`string`), required = false),
+          Field("bar", `option`(`integer`), required = false)
         )
       )
     }
@@ -54,7 +54,7 @@ class SchemaMacroSpec extends AnyWordSpec {
         `object`(
           Field("set", `array`(`integer`, unique = true), required = false, default = Set(1, 5, 9)),
           Field("list", `array`(`boolean`), required = false, default = List(true, false)),
-          Field("vector", `array`(`number`[Long]), required = false, default = Vector(9, 7)),
+          Field("vector", `array`[Long, Vector](`number`[Long]), required = false, default = Vector(9L, 7L)),
           Field(
             "strMap",
             `dictionary`(`number`[Double]),
@@ -251,7 +251,7 @@ class SchemaMacroSpec extends AnyWordSpec {
       Json.schema[HybridRecursiveSum] should matchSchema(
         `oneof`(
           Set(
-            `object`(Field("err", `string`, required = false), Field("intVal", `integer`)),
+            `object`(Field("err", `option`(`string`), required = false), Field("intVal", `integer`)),
             `object`(Field("tpe", `string`)),
             `object`(Field("error", `string`)),
             `object`(Field("value", `integer`)),

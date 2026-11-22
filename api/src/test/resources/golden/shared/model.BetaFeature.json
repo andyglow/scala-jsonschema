@@ -1,0 +1,42 @@
+{
+  "schema": {
+    "kind": "enum",
+    "type": {
+      "kind": "string"
+    },
+    "values": [
+      "F0",
+      "F1",
+      "F2"
+    ]
+  },
+  "draft-04": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "enum": [
+      "F0",
+      "F1",
+      "F2"
+    ],
+    "type": "string"
+  },
+  "draft-07": {
+    "$id": "golden",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "enum": [
+      "F0",
+      "F1",
+      "F2"
+    ],
+    "type": "string"
+  },
+  "draft-2020-12": {
+    "$id": "golden",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "enum": [
+      "F0",
+      "F1",
+      "F2"
+    ],
+    "type": "string"
+  }
+}

@@ -1,0 +1,110 @@
+{
+  "schema": {
+    "kind": "object",
+    "fields": [
+      {
+        "name": "s",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "def",
+          "sig": "java.lang.String",
+          "schema": {
+            "kind": "string"
+          }
+        }
+      },
+      {
+        "name": "l",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "array",
+          "unique": false,
+          "items": {
+            "kind": "string"
+          }
+        }
+      }
+    ]
+  },
+  "draft-04": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "additionalProperties": false,
+    "definitions": {
+      "java.lang.String": {
+        "type": "string"
+      }
+    },
+    "properties": {
+      "l": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "s": {
+        "$ref": "#/definitions/java.lang.String"
+      }
+    },
+    "required": [
+      "l",
+      "s"
+    ],
+    "type": "object"
+  },
+  "draft-07": {
+    "$id": "golden",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "additionalProperties": false,
+    "definitions": {
+      "java.lang.String": {
+        "$id": "#java.lang.String",
+        "type": "string"
+      }
+    },
+    "properties": {
+      "l": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "s": {
+        "$ref": "#java.lang.String"
+      }
+    },
+    "required": [
+      "l",
+      "s"
+    ],
+    "type": "object"
+  },
+  "draft-2020-12": {
+    "$defs": {
+      "java.lang.String": {
+        "$anchor": "java.lang.String",
+        "type": "string"
+      }
+    },
+    "$id": "golden",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "l": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "s": {
+        "$ref": "#java.lang.String"
+      }
+    },
+    "required": [
+      "l",
+      "s"
+    ],
+    "type": "object"
+  }
+}

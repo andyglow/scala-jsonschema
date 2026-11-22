@@ -1,0 +1,572 @@
+{
+  "schema": {
+    "kind": "object",
+    "fields": [
+      {
+        "name": "list",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "array",
+          "unique": false,
+          "items": {
+            "kind": "def",
+            "sig": "com.github.andyglow.jsonschema.collections.CollectionsSpec.User",
+            "schema": {
+              "kind": "object",
+              "fields": [
+                {
+                  "name": "name",
+                  "required": true,
+                  "rwMode": "ReadWrite",
+                  "schema": {
+                    "kind": "string"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "name": "vector",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "array",
+          "unique": false,
+          "items": {
+            "kind": "def",
+            "sig": "com.github.andyglow.jsonschema.collections.CollectionsSpec.User",
+            "schema": {
+              "kind": "object",
+              "fields": [
+                {
+                  "name": "name",
+                  "required": true,
+                  "rwMode": "ReadWrite",
+                  "schema": {
+                    "kind": "string"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "name": "seq",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "array",
+          "unique": false,
+          "items": {
+            "kind": "def",
+            "sig": "com.github.andyglow.jsonschema.collections.CollectionsSpec.User",
+            "schema": {
+              "kind": "object",
+              "fields": [
+                {
+                  "name": "name",
+                  "required": true,
+                  "rwMode": "ReadWrite",
+                  "schema": {
+                    "kind": "string"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "name": "indexedSeq",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "array",
+          "unique": false,
+          "items": {
+            "kind": "def",
+            "sig": "com.github.andyglow.jsonschema.collections.CollectionsSpec.User",
+            "schema": {
+              "kind": "object",
+              "fields": [
+                {
+                  "name": "name",
+                  "required": true,
+                  "rwMode": "ReadWrite",
+                  "schema": {
+                    "kind": "string"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "name": "iterable",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "array",
+          "unique": false,
+          "items": {
+            "kind": "def",
+            "sig": "com.github.andyglow.jsonschema.collections.CollectionsSpec.User",
+            "schema": {
+              "kind": "object",
+              "fields": [
+                {
+                  "name": "name",
+                  "required": true,
+                  "rwMode": "ReadWrite",
+                  "schema": {
+                    "kind": "string"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "name": "set",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "array",
+          "unique": true,
+          "items": {
+            "kind": "def",
+            "sig": "com.github.andyglow.jsonschema.collections.CollectionsSpec.User",
+            "schema": {
+              "kind": "object",
+              "fields": [
+                {
+                  "name": "name",
+                  "required": true,
+                  "rwMode": "ReadWrite",
+                  "schema": {
+                    "kind": "string"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "name": "listSet",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "array",
+          "unique": true,
+          "items": {
+            "kind": "def",
+            "sig": "com.github.andyglow.jsonschema.collections.CollectionsSpec.User",
+            "schema": {
+              "kind": "object",
+              "fields": [
+                {
+                  "name": "name",
+                  "required": true,
+                  "rwMode": "ReadWrite",
+                  "schema": {
+                    "kind": "string"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "name": "mutableSet",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "array",
+          "unique": false,
+          "items": {
+            "kind": "def",
+            "sig": "com.github.andyglow.jsonschema.collections.CollectionsSpec.User",
+            "schema": {
+              "kind": "object",
+              "fields": [
+                {
+                  "name": "name",
+                  "required": true,
+                  "rwMode": "ReadWrite",
+                  "schema": {
+                    "kind": "string"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "name": "array",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "array",
+          "unique": false,
+          "items": {
+            "kind": "def",
+            "sig": "com.github.andyglow.jsonschema.collections.CollectionsSpec.User",
+            "schema": {
+              "kind": "object",
+              "fields": [
+                {
+                  "name": "name",
+                  "required": true,
+                  "rwMode": "ReadWrite",
+                  "schema": {
+                    "kind": "string"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "name": "nested",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "array",
+          "unique": false,
+          "items": {
+            "kind": "array",
+            "unique": true,
+            "items": {
+              "kind": "def",
+              "sig": "com.github.andyglow.jsonschema.collections.CollectionsSpec.User",
+              "schema": {
+                "kind": "object",
+                "fields": [
+                  {
+                    "name": "name",
+                    "required": true,
+                    "rwMode": "ReadWrite",
+                    "schema": {
+                      "kind": "string"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    ]
+  },
+  "draft-04": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "additionalProperties": false,
+    "definitions": {
+      "com.github.andyglow.jsonschema.collections.CollectionsSpec.User": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      }
+    },
+    "properties": {
+      "array": {
+        "items": {
+          "$ref": "#/definitions/com.github.andyglow.jsonschema.collections.CollectionsSpec.User"
+        },
+        "type": "array"
+      },
+      "indexedSeq": {
+        "items": {
+          "$ref": "#/definitions/com.github.andyglow.jsonschema.collections.CollectionsSpec.User"
+        },
+        "type": "array"
+      },
+      "iterable": {
+        "items": {
+          "$ref": "#/definitions/com.github.andyglow.jsonschema.collections.CollectionsSpec.User"
+        },
+        "type": "array"
+      },
+      "list": {
+        "items": {
+          "$ref": "#/definitions/com.github.andyglow.jsonschema.collections.CollectionsSpec.User"
+        },
+        "type": "array"
+      },
+      "listSet": {
+        "items": {
+          "$ref": "#/definitions/com.github.andyglow.jsonschema.collections.CollectionsSpec.User"
+        },
+        "type": "array",
+        "uniqueItems": true
+      },
+      "mutableSet": {
+        "items": {
+          "$ref": "#/definitions/com.github.andyglow.jsonschema.collections.CollectionsSpec.User"
+        },
+        "type": "array"
+      },
+      "nested": {
+        "items": {
+          "items": {
+            "$ref": "#/definitions/com.github.andyglow.jsonschema.collections.CollectionsSpec.User"
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
+        "type": "array"
+      },
+      "seq": {
+        "items": {
+          "$ref": "#/definitions/com.github.andyglow.jsonschema.collections.CollectionsSpec.User"
+        },
+        "type": "array"
+      },
+      "set": {
+        "items": {
+          "$ref": "#/definitions/com.github.andyglow.jsonschema.collections.CollectionsSpec.User"
+        },
+        "type": "array",
+        "uniqueItems": true
+      },
+      "vector": {
+        "items": {
+          "$ref": "#/definitions/com.github.andyglow.jsonschema.collections.CollectionsSpec.User"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "array",
+      "indexedSeq",
+      "iterable",
+      "list",
+      "listSet",
+      "mutableSet",
+      "nested",
+      "seq",
+      "set",
+      "vector"
+    ],
+    "type": "object"
+  },
+  "draft-07": {
+    "$id": "golden",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "additionalProperties": false,
+    "definitions": {
+      "com.github.andyglow.jsonschema.collections.CollectionsSpec.User": {
+        "$id": "#com.github.andyglow.jsonschema.collections.CollectionsSpec.User",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      }
+    },
+    "properties": {
+      "array": {
+        "items": {
+          "$ref": "#com.github.andyglow.jsonschema.collections.CollectionsSpec.User"
+        },
+        "type": "array"
+      },
+      "indexedSeq": {
+        "items": {
+          "$ref": "#com.github.andyglow.jsonschema.collections.CollectionsSpec.User"
+        },
+        "type": "array"
+      },
+      "iterable": {
+        "items": {
+          "$ref": "#com.github.andyglow.jsonschema.collections.CollectionsSpec.User"
+        },
+        "type": "array"
+      },
+      "list": {
+        "items": {
+          "$ref": "#com.github.andyglow.jsonschema.collections.CollectionsSpec.User"
+        },
+        "type": "array"
+      },
+      "listSet": {
+        "items": {
+          "$ref": "#com.github.andyglow.jsonschema.collections.CollectionsSpec.User"
+        },
+        "type": "array",
+        "uniqueItems": true
+      },
+      "mutableSet": {
+        "items": {
+          "$ref": "#com.github.andyglow.jsonschema.collections.CollectionsSpec.User"
+        },
+        "type": "array"
+      },
+      "nested": {
+        "items": {
+          "items": {
+            "$ref": "#com.github.andyglow.jsonschema.collections.CollectionsSpec.User"
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
+        "type": "array"
+      },
+      "seq": {
+        "items": {
+          "$ref": "#com.github.andyglow.jsonschema.collections.CollectionsSpec.User"
+        },
+        "type": "array"
+      },
+      "set": {
+        "items": {
+          "$ref": "#com.github.andyglow.jsonschema.collections.CollectionsSpec.User"
+        },
+        "type": "array",
+        "uniqueItems": true
+      },
+      "vector": {
+        "items": {
+          "$ref": "#com.github.andyglow.jsonschema.collections.CollectionsSpec.User"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "array",
+      "indexedSeq",
+      "iterable",
+      "list",
+      "listSet",
+      "mutableSet",
+      "nested",
+      "seq",
+      "set",
+      "vector"
+    ],
+    "type": "object"
+  },
+  "draft-2020-12": {
+    "$defs": {
+      "com.github.andyglow.jsonschema.collections.CollectionsSpec.User": {
+        "$anchor": "com.github.andyglow.jsonschema.collections.CollectionsSpec.User",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      }
+    },
+    "$id": "golden",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "array": {
+        "items": {
+          "$ref": "#com.github.andyglow.jsonschema.collections.CollectionsSpec.User"
+        },
+        "type": "array"
+      },
+      "indexedSeq": {
+        "items": {
+          "$ref": "#com.github.andyglow.jsonschema.collections.CollectionsSpec.User"
+        },
+        "type": "array"
+      },
+      "iterable": {
+        "items": {
+          "$ref": "#com.github.andyglow.jsonschema.collections.CollectionsSpec.User"
+        },
+        "type": "array"
+      },
+      "list": {
+        "items": {
+          "$ref": "#com.github.andyglow.jsonschema.collections.CollectionsSpec.User"
+        },
+        "type": "array"
+      },
+      "listSet": {
+        "items": {
+          "$ref": "#com.github.andyglow.jsonschema.collections.CollectionsSpec.User"
+        },
+        "type": "array",
+        "uniqueItems": true
+      },
+      "mutableSet": {
+        "items": {
+          "$ref": "#com.github.andyglow.jsonschema.collections.CollectionsSpec.User"
+        },
+        "type": "array"
+      },
+      "nested": {
+        "items": {
+          "items": {
+            "$ref": "#com.github.andyglow.jsonschema.collections.CollectionsSpec.User"
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
+        "type": "array"
+      },
+      "seq": {
+        "items": {
+          "$ref": "#com.github.andyglow.jsonschema.collections.CollectionsSpec.User"
+        },
+        "type": "array"
+      },
+      "set": {
+        "items": {
+          "$ref": "#com.github.andyglow.jsonschema.collections.CollectionsSpec.User"
+        },
+        "type": "array",
+        "uniqueItems": true
+      },
+      "vector": {
+        "items": {
+          "$ref": "#com.github.andyglow.jsonschema.collections.CollectionsSpec.User"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "array",
+      "indexedSeq",
+      "iterable",
+      "list",
+      "listSet",
+      "mutableSet",
+      "nested",
+      "seq",
+      "set",
+      "vector"
+    ],
+    "type": "object"
+  }
+}

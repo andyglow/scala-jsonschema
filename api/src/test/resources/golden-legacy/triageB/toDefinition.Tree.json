@@ -1,0 +1,183 @@
+{
+  "schema": {
+    "kind": "def",
+    "sig": "Tree",
+    "schema": {
+      "kind": "object",
+      "fields": [
+        {
+          "name": "name",
+          "required": true,
+          "rwMode": "ReadWrite",
+          "schema": {
+            "kind": "string"
+          }
+        },
+        {
+          "name": "meta",
+          "required": true,
+          "rwMode": "ReadWrite",
+          "schema": {
+            "kind": "def",
+            "sig": "com.github.andyglow.jsonschema.characterization.TriageBPendingSpec.Meta",
+            "schema": {
+              "kind": "object",
+              "fields": [
+                {
+                  "name": "createdBy",
+                  "required": true,
+                  "rwMode": "ReadWrite",
+                  "schema": {
+                    "kind": "string"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "children",
+          "required": true,
+          "rwMode": "ReadWrite",
+          "schema": {
+            "kind": "array",
+            "unique": false,
+            "items": {
+              "kind": "ref",
+              "sig": "Tree"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "draft-04": {
+    "$ref": "#/definitions/Tree",
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "definitions": {
+      "Tree": {
+        "additionalProperties": false,
+        "properties": {
+          "children": {
+            "items": {
+              "$ref": "#/definitions/Tree"
+            },
+            "type": "array"
+          },
+          "meta": {
+            "$ref": "#/definitions/com.github.andyglow.jsonschema.characterization.TriageBPendingSpec.Meta"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "children",
+          "meta",
+          "name"
+        ],
+        "type": "object"
+      },
+      "com.github.andyglow.jsonschema.characterization.TriageBPendingSpec.Meta": {
+        "additionalProperties": false,
+        "properties": {
+          "createdBy": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "createdBy"
+        ],
+        "type": "object"
+      }
+    }
+  },
+  "draft-07": {
+    "$id": "golden",
+    "$ref": "#Tree",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+      "Tree": {
+        "$id": "#Tree",
+        "additionalProperties": false,
+        "properties": {
+          "children": {
+            "items": {
+              "$ref": "#Tree"
+            },
+            "type": "array"
+          },
+          "meta": {
+            "$ref": "#com.github.andyglow.jsonschema.characterization.TriageBPendingSpec.Meta"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "children",
+          "meta",
+          "name"
+        ],
+        "type": "object"
+      },
+      "com.github.andyglow.jsonschema.characterization.TriageBPendingSpec.Meta": {
+        "$id": "#com.github.andyglow.jsonschema.characterization.TriageBPendingSpec.Meta",
+        "additionalProperties": false,
+        "properties": {
+          "createdBy": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "createdBy"
+        ],
+        "type": "object"
+      }
+    }
+  },
+  "draft-2020-12": {
+    "$defs": {
+      "Tree": {
+        "$anchor": "Tree",
+        "additionalProperties": false,
+        "properties": {
+          "children": {
+            "items": {
+              "$ref": "#Tree"
+            },
+            "type": "array"
+          },
+          "meta": {
+            "$ref": "#com.github.andyglow.jsonschema.characterization.TriageBPendingSpec.Meta"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "children",
+          "meta",
+          "name"
+        ],
+        "type": "object"
+      },
+      "com.github.andyglow.jsonschema.characterization.TriageBPendingSpec.Meta": {
+        "$anchor": "com.github.andyglow.jsonschema.characterization.TriageBPendingSpec.Meta",
+        "additionalProperties": false,
+        "properties": {
+          "createdBy": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "createdBy"
+        ],
+        "type": "object"
+      }
+    },
+    "$id": "golden",
+    "$ref": "#Tree",
+    "$schema": "https://json-schema.org/draft/2020-12/schema"
+  }
+}

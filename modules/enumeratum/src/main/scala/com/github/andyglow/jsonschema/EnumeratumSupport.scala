@@ -10,7 +10,7 @@ import json.Schema.`dictionary`._
 trait LowPriorityEnumSupport {
 
   implicit def mkEnumeratumEnum[T <: EnumEntry](implicit co: Enum[T]): P[T] =
-    P(`enum`(`string`, co.namesToValuesMap.keySet.map(Value.str)))
+    P(`enum`(`string`, co.namesToValuesMap.keySet.map(Value.str.apply)))
 
   implicit def mkEnumeratumKeyPattern[T <: EnumEntry](implicit co: Enum[T]): KeyPattern[T] =
     KeyPattern.forEnum[T](co.namesToValuesMap.keySet)
@@ -54,7 +54,7 @@ object EnumeratumSupport extends LowPriorityEnumSupport {
   ): KeyPattern[T] = KeyPattern.forEnum[T](co.valuesToEntriesMap.keySet map { _.toString })
 
   implicit def mkEnumeratumStringEnum[T <: StringEnumEntry](implicit co: StringEnum[T]): P[T] = P(
-    `enum`(`string`, co.valuesToEntriesMap.keySet.map(Value.str))
+    `enum`(`string`, co.valuesToEntriesMap.keySet.map(Value.str.apply))
   )
   implicit def mkEnumeratumStringKeyPattern[T <: StringEnumEntry](implicit
     co: StringEnum[T]

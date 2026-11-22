@@ -1,925 +1,794 @@
 # Scala JSON Schema
-[![Support ukraine](https://img.shields.io/static/v1?label=United24&message=Support%20Ukraine&color=lightgrey&link=https%3A%2F%2Fu24.gov.ua&logo=data%3Aimage%2Fpng%3Bbase64%2CiVBORw0KGgoAAAANSUhEUgAAASwAAADICAYAAABS39xVAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAANKSURBVHhe7dZBThRhFEbRnx1IgvtFiIoxbgemOHLAhAoJ1QyaBahroKxqE%2BMS6iZncPKSbwE3b4yr6W58en4Z148zwC5tjbqabrdgvZ59PS5nn2eAfVobtbbquAXrcBquJ4B9Wht1%2BrQEC9g9wQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8j4F6zL%2BTA%2BHpfxYR0A9mhr1OXzPC5u7g%2Fvv%2F1YLr58B9ilU6Nu7ufx6%2BH88Hs6X9YLsEtbo34%2BvJvH29M4LC9jWZ4Admpt1NqqNVjTGqz5bFkmgJ1aG%2FX2KFhAgWABGYIFZAgWkCFYQIZgARmCBWQIFpAhWECGYAEZggVkCBaQIVhAhmABGYIFZAgWkCFYQIZgARmCBWQIFpAhWECGYAEZggVkCBaQIVhAhmABGYIFZAgWkCFYQIZgARmCBWQIFpAhWECGYAEZggVkCBaQIVhAhmABGYIFZAgWkCFYQIZgARmCBWQIFpAhWECGYAEZggVkCBaQIVhAhmABGYIFZAgWkCFYQIZgARmCBWQIFpAhWECGYAEZggVkCBaQIVhAhmABGYIFZAgWkCFYQIZgARmCBWQIFpAhWECGYAEZggVkCBaQIVhAhmABGYIFZAgWkCFYQIZgARmCBWQIFpAhWECGYAEZggVkCBaQIVhAhmABGYIFZAgWkCFYQIZgARmCBWQIFpAhWECGYAEZggVk%2FBes1%2BX4dwDYpbVRa6uOW7Du3p7Hy1YvgF3aGjWN2z9qCgwkg1n6XwAAAABJRU5ErkJggg%3D%3D)](https://u24.gov.ua)
+[![Support ukraine](https://img.shields.io/static/v1?label=United24&message=Support%20Ukraine&color=lightgrey&link=https%3A%2F%2Fu24.gov.ua&logo=data%3Aimage%2Fpng%3Bbase64%2CiVBORw0KGgoAAAANSUhEUgAAASwAAADICAYAAABS39xVAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAANKSURBVHhe7dZBThRhFEbRnx1IgvtFiIoxbgemOHLAhAoJ1QyaBahroKxqE%2BMS6iZncPKSbwE3b4yr6W58en4Z148zwC5tjbqabrdgvZ59PS5nn2eAfVobtbbquAXrcBquJ4B9Wht1%2BrQEC9g9wQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8gQLCBDsIAMwQIyBAvIECwgQ7CADMECMgQLyBAsIEOwgAzBAjIEC8j4F6zL%2BTA%2BHpfxYR0A9mhr1OXzPC5u7g%2Fvv%2F1YLr58B9ilU6Nu7ufx6%2BH88Hs6X9YLsEtbo34%2BvJvH29M4LC9jWZ4Admpt1NqqNVjTGqz5bFkmgJ1aG%2FX2KFhAgWABGYIFZAgWkCFYQIZgARmCBWQIFpAhWECGYAEZggVkCBaQIVhAhmABGYIFZAgWkCFYQIZgARmCBWQIFpAhWECGYAEZggVkCBaQIVhAhmABGYIFZAgWkCFYQIZgARmCBWQIFpAhWECGYAEZggVkCBaQIVhAhmABGYIFZAgWkCFYQIZgARmCBWQIFpAhWECGYAEZggVkCBaQIVhAhmABGYIFZAgWkCFYQIZgARmCBWQIFpAhWECGYAEZggVkCBaQIVhAhmABGYIFZAgWkCFYQIZgARmCBWQIFpAhWECGYAEZggVkCBaQIVhAhmABGYIFZAgWkCFYQIZgARmCBWQIFpAhWECGYAEZggVkCBaQIVhAhmABGYIFZAgWkCFYQIZgARmCBWQIFpAhWECGYAEZggVkCBaQIVhAhmABGYIFZAgWkCFYQIZgARmCBWQIFpAhWECGYAEZggVk%2FBes1%2BX4dwDYpbVRa6uOW7Du3p7Hy1YvgF3aGjWN2z9qCgwkg1n6XwAAAABJRU5ErkJggg%3D%3D)](https://u24.gov.ua)
 [![Build](https://github.com/andyglow/scala-jsonschema/actions/workflows/ci.yml/badge.svg?event=push)](https://github.com/andyglow/scala-jsonschema/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/andyglow/scala-jsonschema/branch/master/graph/badge.svg?token=e8E62N8PiJ)](https://codecov.io/gh/andyglow/scala-jsonschema)
-![](https://img.shields.io/static/v1.svg?label=Supported&nbsp;Scala&message=2.12,2.13&color=gray)
-[![Version](https://img.shields.io/badge/dynamic/json.svg?label=Released&nbsp;Version&query=%24.response.docs%5B0%5D.latestVersion&url=https%3A%2F%2Fsearch.maven.org%2Fsolrsearch%2Fselect%3Fq%3Dscala-jsonschema-core_2.13%26start%3D0%26rows%3D1)](https://search.maven.org/artifact/com.github.andyglow/scala-jsonschema-core_2.13/)
+![](https://img.shields.io/static/v1.svg?label=Supported&nbsp;Scala&message=2.12,2.13,3.3&color=gray)
+[![Version](https://img.shields.io/badge/dynamic/json.svg?label=Released&nbsp;Version&query=%24.response.docs%5B0%5D.latestVersion&url=https%3A%2F%2Fsearch.maven.org%2Fsolrsearch%2Fselect%3Fq%3Dg%3Aio.github.andyglow%2BAND%2Ba%3Ascala-jsonschema-core_2.13%26start%3D0%26rows%3D1)](https://search.maven.org/artifact/io.github.andyglow/scala-jsonschema-core_2.13/)
 
-*SBT dependencies:*
+Generate [JSON Schema](https://json-schema.org) from Scala types at compile time, the way JSON libraries derive
+their codecs. Inspired by Coursera's [AutoSchema](https://github.com/coursera/autoschema), but built on macros
+instead of runtime reflection.
 
-Main module:
+- Case classes (optional `Option` fields, default values), value classes, generic and recursive types
+- Sealed families, Scala 3 `enum`s, `scala.Enumeration` and Java enums
+- Collections and maps, `java.time`, `UUID`, `URI`, ... out of the box
+- Titles and descriptions from annotations, from scaladoc, or passed in explicitly
+- Validations (`pattern`, `minimum`, `maxItems`, ...)
+- Renders Draft 04, 06, 07, 2019-09 and 2020-12, as its own JSON AST or as play-json, circe, spray-json, json4s or ujson
+- Support for refined, cats, enumeratum and joda-time
+
+Contents: [Install](#install) · [Quick start](#quick-start) · [Definitions and `$ref`s](#definitions-and-refs) ·
+[Supported types](#supported-types) · [Sum types and enums](#sum-types-and-enums) ·
+[Titles and descriptions](#titles-and-descriptions) · [Annotations](#annotations) · [Validation](#validation) ·
+[Free objects](#free-objects) · [Rendering](#rendering-drafts-and-json-libraries) · [Modules](#modules) ·
+[Migrating to 0.8.0](#migrating-to-080) · [Scala 3 notes](#scala-3-notes) · [Known issues](#known-issues)
+
+## Install
 
 ```scala
-libraryDependencies += "com.github.andyglow" %% "scala-jsonschema" % <version> // <-- required
+libraryDependencies += "io.github.andyglow" %% "scala-jsonschema" % "0.8.0"
 ```
 
-Other libraries:
+From 0.8.0 on, the groupId is **`io.github.andyglow`**. Releases up to 0.7.x are under `com.github.andyglow`.
+The Scala packages (`json.*`, `com.github.andyglow.*`) haven't changed.
 
-```scala
-libraryDependencies ++= Seq(
-  "com.github.andyglow" %% "scala-jsonschema-core" % <version>,              // <-- transitive
-  "com.github.andyglow" %% "scala-jsonschema-macros" % <version> % Provided, // <-- transitive
-  // json bridge. pick one
-  "com.github.andyglow" %% "scala-jsonschema-play-json" % <version>,         // <-- optional
-  "com.github.andyglow" %% "scala-jsonschema-spray-json" % <version>,        // <-- optional
-  "com.github.andyglow" %% "scala-jsonschema-circe-json" % <version>,        // <-- optional
-  "com.github.andyglow" %% "scala-jsonschema-json4s-json" % <version>,       // <-- optional
-  "com.github.andyglow" %% "scala-jsonschema-ujson" % <version>,             // <-- optional
-  // joda-time support
-  "com.github.andyglow" %% "scala-jsonschema-joda-time" % <version>,         // <-- optional
-  // cats support
-  "com.github.andyglow" %% "scala-jsonschema-cats" % <version>,              // <-- optional
-  // refined support
-  "com.github.andyglow" %% "scala-jsonschema-refined" % <version>,           // <-- optional
-  // enumeratum support
-  "com.github.andyglow" %% "scala-jsonschema-enumeratum" % <version>,        // <-- optional
-  // zero-dependency json and jsonschema parser
-  "com.github.andyglow" %% "scala-jsonschema-parser" % <version>             // <-- optional
-)
-```
+- Scala **2.12**, **2.13** and **3.3 LTS** (and later 3.x). Scala 2.11 support ended with 0.7.x.
+- Runs on **Java 8** or later.
+- `scala-jsonschema` pulls in `scala-jsonschema-core` and `scala-jsonschema-macros`.
 
-*Compatibility:*
+Optional modules, all with the same version:
 
-- Scala 2.12 and 2.13 (Scala 2.11 support ended with `0.7.x`), JDK 11+
-- Bridges and integrations are built against
+| artifact                       | what it adds                                     | built against                         |
+|--------------------------------|--------------------------------------------------|---------------------------------------|
+| `scala-jsonschema-play-json`   | `schema.asPlay(...)`, defaults via `Writes`      | `org.playframework:play-json` 3.0.x   |
+| `scala-jsonschema-circe-json`  | `schema.asCirce(...)`, defaults via `Encoder`    | `io.circe:circe-core` 0.14.x          |
+| `scala-jsonschema-spray-json`  | `schema.asSpray(...)`, defaults via `JsonWriter` | `io.spray:spray-json` 1.3.x           |
+| `scala-jsonschema-json4s-json` | `schema.asJson4s(...)`                           | `org.json4s:json4s-core` 4.0.x        |
+| `scala-jsonschema-ujson`       | `schema.asU(...)`                                | `com.lihaoyi:ujson`/`upickle` 4.x     |
+| `scala-jsonschema-refined`     | refined types → validations                      | `eu.timepit:refined` 0.11.x           |
+| `scala-jsonschema-cats`        | `NonEmptyList`, `NonEmptyMap`, ...               | `org.typelevel:cats-core` 2.x         |
+| `scala-jsonschema-enumeratum`  | enumeratum enums                                 | `com.beachape:enumeratum` 1.9.x       |
+| `scala-jsonschema-joda-time`   | joda-time types                                  | `joda-time:joda-time` 2.x             |
+| `scala-jsonschema-derived`     | the `DerivedSchema[T]` type class                |                                       |
+| `scala-jsonschema-parser`      | JSON and JSON Schema (draft-04 subset) → `json.Schema` | no dependencies                 |
 
-  | module                          | library                                    |
-  |---------------------------------|--------------------------------------------|
-  | `scala-jsonschema-play-json`    | `org.playframework:play-json` 3.0.x        |
-  | `scala-jsonschema-spray-json`   | `io.spray:spray-json` 1.3.x                |
-  | `scala-jsonschema-circe-json`   | `io.circe:circe-*` 0.14.x                  |
-  | `scala-jsonschema-json4s-json`  | `org.json4s:json4s-core` 4.0.x             |
-  | `scala-jsonschema-ujson`        | `com.lihaoyi:ujson`/`upickle` 4.x          |
-  | `scala-jsonschema-joda-time`    | `joda-time:joda-time` 2.x                  |
-  | `scala-jsonschema-cats`         | `org.typelevel:cats-core` 2.x              |
-  | `scala-jsonschema-refined`      | `eu.timepit:refined` 0.11.x                |
-  | `scala-jsonschema-enumeratum`   | `com.beachape:enumeratum` 1.9.x            |
+Play JSON 3 is published as `org.playframework`. Projects still on `com.typesafe.play:play-json` 2.x should stay
+on 0.7.x.
 
-  Note that Play JSON 3 is published under `org.playframework`; projects still on
-  `com.typesafe.play:play-json` 2.x should stay on `scala-jsonschema` `0.7.x`.
+## Quick start
 
-
-## Generate JSON Schema from Scala classes
-
-The goal of this library is to make JSON Schema generation done the way all popular JSON reading/writing libraries do.
-Inspired by Coursera Autoschema but uses `Scala Macros` instead of `Java Reflection`.
-
-## Features
-- Supports Json Schema `draft-04`, `draft-06`, `draft-07`, `draft-09`, `draft-12`
-- Supports `case classes`
-- Supports `value classes`
-- Supports `sealed trait enums`
-- Supports `sealed trait case classes`
-- Supports `recursive types`
-- Supports `scala.Enumeration`
-- Treats `scala.Option` as optional fields
-- As well as treats fields with `default values` as optional
-- Any `Iterable` is treated as `array`
-- Pluggable [Joda-Time](https://github.com/JodaOrg/joda-time) Support
-- Pluggable [Cats](https://github.com/typelevel/cats) Support
-- Pluggable [Refined](https://github.com/fthomas/refined) Support
-- Pluggable [Enumeratum](https://github.com/lloydmeta/enumeratum) Support
-- Supports generic data types
-
-### Types supported out of the box
-- `Boolean`
-- Numeric
-    - `Short`
-    - `Int`
-    - `Char`
-    - `Double`
-    - `Float`
-    - `Long`
-    - `BigInt`
-    - `BigDecimal`
-- `String`
-- Date Time
-    - `java.util.Date`
-    - `java.sql.Timestamp`
-    - `java.time.Instant`
-    - `java.time.LocalDateTime`
-    - `java.sql.Date`
-    - `java.time.LocalDate`
-    - `java.sql.Time`
-    - `java.time.LocalTime`
-- with JodaTime module imported
-    - `org.joda.time.Instant`
-    - `org.joda.time.DateTime`
-    - `org.joda.time.LocalDateTime`
-    - `org.joda.time.LocalDate`
-    - `org.joda.time.LocalTime`
-- with Cats module imported
-    - `cats.data.NonEmptyList`
-    - `cats.data.NonEmptyVector`
-    - `cats.data.NonEmptySet`
-    - `cats.data.NonEmptyChain`
-    - `cats.data.NonEmptyMap`
-    - `cats.data.NonEmptyStream` (for scala 2.12)
-    - `cats.data.NonEmptyLazyList` (for scala 2.13)
-    - `cats.data.OneAnd`
-- with Refined module imported you can refine original types with these
-    - boolean
-        - `eu.timepit.refined.boolean.And`
-        - `eu.timepit.refined.boolean.Or`
-        - `eu.timepit.refined.boolean.Not`
-    - string
-        - `eu.timepit.refined.collection.Size`
-        - `eu.timepit.refined.collection.MinSize`
-        - `eu.timepit.refined.collection.MaxSize`
-        - `eu.timepit.refined.collection.Empty`
-        - `eu.timepit.refined.collection.NonEmpty`
-        - `eu.timepit.refined.string.Uuid`
-        - `eu.timepit.refined.string.Uri`
-        - `eu.timepit.refined.string.Url`
-        - `eu.timepit.refined.string.IPv4`
-        - `eu.timepit.refined.string.IPv6`
-        - `eu.timepit.refined.string.Xml`
-        - `eu.timepit.refined.string.StartsWith`
-        - `eu.timepit.refined.string.EndsWith`
-        - `eu.timepit.refined.string.MatchesRegex`
-        - `eu.timepit.refined.string.Trimmed`
-    - number
-        - `eu.timepit.refined.numeric.Positive`
-        - `eu.timepit.refined.numeric.Negative`
-        - `eu.timepit.refined.numeric.NonPositive`
-        - `eu.timepit.refined.numeric.NonNegative`
-        - `eu.timepit.refined.numeric.Greather`
-        - `eu.timepit.refined.numeric.Less`
-        - `eu.timepit.refined.numeric.GreaterEqual`
-        - `eu.timepit.refined.numeric.LessEqual`
-        - `eu.timepit.refined.numeric.Divisable`
-    - collection
-        - `eu.timepit.refined.collection.Size`
-        - `eu.timepit.refined.collection.MinSize`
-        - `eu.timepit.refined.collection.MaxSize`
-        - `eu.timepit.refined.collection.Empty`
-        - `eu.timepit.refined.collection.NonEmpty`
-- with Enumeratum module enabled
-    - `enums` based on `EnumEntry`/`Enum`            
-    - `enums` based on `ValueEnumEntry`/`ValueEnum`            
-- Misc
-    - `java.util.UUID`
-    - `java.net.URL`
-    - `java.net.URI`
-- Collections
-    - String Map (eg. `Map[String, T]`)
-    - Int Map (eg. `Map[Int, T]`)
-    - `Iterable[T]`
-- Sealed Trait hierarchy of case objects (Enums)
-- Case Classes
-    - default value
-- Sealed Trait hierarchy of case classes
-- Value Classes    
-
-## Example
-Suppose you have defined this data structures
-```scala
-sealed trait Gender
-
-object Gender {
-
-    case object Male extends Gender
-
-    case object Female extends Gender
-}
-
-case class Company(name: String)
-
-case class Car(name: String, manufacturer: Company)
-
-case class Person(
-    firstName: String,
-    middleName: Option[String],
-    lastName: String,
-    gender: Gender,
-    birthDay: java.time.LocalDateTime,
-    company: Company,
-    cars: Seq[Car])
-```
-
-Now you have several ways to specify your schema.
-
-### In-Lined
-In simple words in-lined mode means you will have no `definitions`. Type you want to use as source for schema will
-be represented in json schema without reusable data blocks.  
 ```scala
 import json._
+import json.schema.Version._
 
-val personSchema: json.Schema[Person] = Json.schema[Person]
+case class Company(name: String)
+case class Person(name: String, nickname: Option[String], age: Int = 18, company: Company)
+
+val schema: json.Schema[Person] = Json.schema[Person]
+
+println(Json.stringify(schema, Draft07("https://example.com/person.json")))
 ```
-As result you will receive this:
+
 ```json
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://example.com/person.json",
   "type": "object",
   "additionalProperties": false,
   "properties": {
-    "middleName": {
-      "type": "string"
-    },
-    "cars": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "manufacturer": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "name": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "name"
-            ]
-          }
-        },
-        "required": [
-          "name",
-          "manufacturer"
-        ]
-      }
-    },
+    "name": { "type": "string" },
+    "nickname": { "type": ["string", "null"] },
+    "age": { "default": 18, "type": "integer" },
     "company": {
       "type": "object",
       "additionalProperties": false,
-      "properties": {
-        "name": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "name"
-      ]
-    },
-    "lastName": {
-      "type": "string"
-    },
-    "firstName": {
-      "type": "string"
-    },
-    "birthDay": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "gender": {
-      "type": "string",
-      "enum": [
-        "Male",
-        "Female"
-      ]
+      "properties": { "name": { "type": "string" } },
+      "required": ["name"]
     }
   },
-  "required": [
-    "company",
-    "lastName",
-    "birthDay",
-    "gender",
-    "firstName",
-    "cars"
-  ]
+  "required": ["name", "company"]
 }
 ```
 
-### Regular
-Schema generated in Regular mode will contain so many `definitions` so many separated definitions you provide.
-Lets take a look at example code: 
+`Option` fields and fields with a default value are optional. An `Option[X]` is "X or null" wherever it appears
+(see [`Option`](#option)). A default is written into the schema when it can be turned into JSON: primitives, strings
+and collections/maps of them always can, other types need a `ToValue`, which the JSON-library bridges derive from
+your encoders (`import com.github.andyglow.jsonschema.AsPlay._` etc.).
+
+The same code works on Scala 3. There you can also derive the schema with the type:
+
+```scala
+case class Company(name: String) derives json.Schema
+case class Person(name: String, nickname: Option[String], age: Int = 18, company: Company) derives json.Schema
+
+val schema: json.Schema[Person] = Json.schema[Person] // or summon[json.Schema[Person]]
+```
+
+`derives json.Schema` declares a schema for the type, so each such type becomes a definition (next section):
+
+```json
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://example.com/person.json",
+  "$ref": "#com.example.Person",
+  "definitions": {
+    "com.example.Company": { "$id": "#com.example.Company", "type": "object", ... },
+    "com.example.Person": {
+      "$id": "#com.example.Person",
+      "type": "object",
+      "properties": { ..., "company": { "$ref": "#com.example.Company" } },
+      ...
+    }
+  }
+}
+```
+
+The entry points (`json.Json`):
+
+| call                                   | result                                                         |
+|----------------------------------------|----------------------------------------------------------------|
+| `Json.schema[T]`                       | `json.Schema[T]`, derived at compile time                      |
+| `Json.objectSchema[T]("field" -> "description", ...)` | the schema of a case class as `json.Schema.object[T]`, with field descriptions |
+| `Json.sig[T].signature`                | the type's name as used for definitions (`scala.List[com.example.Company]`) |
+| `Json.stringify(schema, version)`      | the rendered JSON as a `String`                                |
+| `import Json.auto._` (Scala 3: also `import Json.auto.given`) | an implicit `json.schema.Predef[T]` for every derivable `T` |
+
+## Definitions and `$ref`s
+
+For every type it meets, the macro looks for, in this order:
+
+1. an implicit **`json.Schema[T]`**: the type becomes a **definition**, and every use of it is a `$ref` to it;
+2. an implicit **`json.schema.Predef[T]`**: its schema is **inlined** where the type is used (all built-in types,
+   `String`, numbers, `java.time`, collections, are `Predef`s);
+3. neither: the schema is **derived** from the type's structure and inlined.
+
+So you choose what becomes a definition by declaring an implicit `Schema` for it:
 
 ```scala
 import json._
-
-implicit val genderSchema: json.Schema[Gender] = Json.schema[Gender]
 
 implicit val companySchema: json.Schema[Company] = Json.schema[Company]
 
-implicit val carSchema: json.Schema[Car] = Json.schema[Car]
-
-implicit val personSchema: json.Schema[Person] = Json.schema[Person]
+val personSchema: json.Schema[Person] = Json.schema[Person]
 ```
-Here we defined, besides Person schema, gender, company and car schemas. 
-The result will be looking this way then.
+
 ```json
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "additionalProperties": false,
   "properties": {
-    "middleName": {
-      "type": "string"
-    },
-    "cars": {
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/com.github.andyglow.jsonschema.ExampleMsg.Car"
-      }
-    },
-    "company": {
-      "$ref": "#/definitions/com.github.andyglow.jsonschema.ExampleMsg.Company"
-    },
-    "lastName": {
-      "type": "string"
-    },
-    "firstName": {
-      "type": "string"
-    },
-    "birthDay": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "gender": {
-      "$ref": "#/definitions/com.github.andyglow.jsonschema.ExampleMsg.Gender"
-    }
+    ...,
+    "company": { "$ref": "#com.example.Company" }
   },
-  "required": [
-    "company",
-    "lastName",
-    "birthDay",
-    "gender",
-    "firstName",
-    "cars"
-  ],
   "definitions": {
-    "com.github.andyglow.jsonschema.ExampleMsg.Company": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "name": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "name"
-      ]
-    },
-    "com.github.andyglow.jsonschema.ExampleMsg.Car": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "manufacturer": {
-          "$ref": "#/definitions/com.github.andyglow.jsonschema.ExampleMsg.Company"
-        }
-      },
-      "required": [
-        "name",
-        "manufacturer"
-      ]
-    },
-    "com.github.andyglow.jsonschema.ExampleMsg.Gender": {
-      "type": "string",
-      "enum": [
-        "Male",
-        "Female"
-      ]
-    }
+    "com.example.Company": { "$id": "#com.example.Company", "type": "object", ... }
   }
 }
 ```
 
-## Definitions / References
-There is a couple of ways to specify reference of schema.
-1. It could be generated from type name (including type args)
-2. You can do it yourself. It is useful when you want to provide couple of schemas with same type but with different validation rules.
+On Scala 3, `derives json.Schema` counts as such an implicit `Schema`. For a generic class
+(`case class Box[A](value: A) derives json.Schema`), the derived `Schema[Box[X]]` exists only when `X` has an
+implicit `Schema` itself (e.g. `X` derives too):
 
-So originally you use
+- `Box[Company]` (with `Company derives json.Schema`) is then an implicit `Schema` like any other: as a field it is a
+  definition named `Box[Company]` (at the root, a summoned `Schema[Box[Company]]` isn't wrapped in a definition);
+- `Box[Int]` has none (built-in types are `Predef`s), so it is derived inline where it is used.
+  `summon[json.Schema[Box[Int]]]` doesn't compile; `Json.schema[Box[Int]]` always works.
+
+A `Predef` provides a schema for a type without making it a definition, e.g. for a type the macro can't derive:
+
+```scala
+import json.Schema
+import json.schema.Predef
+import java.util.Currency
+
+implicit val currencyPredef: Predef[Currency] = Predef(Schema.`string`[Currency])
+
+case class Price(amount: BigDecimal, currency: Currency)
+
+Json.schema[Price] // currency: {"type": "string"}, no definition
+```
+
+`import Json.auto._` gives a `Predef` for every type the macro can derive, for APIs that ask for one
+(`def f[T](implicit p: Predef[T])`). These derived `Predef`s are inlined like any other, so the import doesn't
+change what `Json.schema` derives: an explicit implicit `Schema` still becomes a definition.
+
+```scala
+import json.schema.Predef
+import Json.auto._ // Scala 3: import Json.auto.given also works
+
+def schemaOf[T](implicit p: Predef[T]): json.Schema[T] = p.schema
+
+schemaOf[Person]
+```
+
+### Definition names
+
+A definition is named after the type's full name, with its type arguments: `com.example.Company`,
+`com.example.Box[scala.Int]`. Rename one with `toDefinition`. This is also the way to have two schemas of the same
+type, e.g. a validated one:
+
 ```scala
 import json._
+import json.schema.validation.Instance._
+import json.schema.validation.Magnet
 
-implicit val someStrSchema: json.Schema[String] = Json.schema[String]
-
-implicit val someArrSchema: json.Schema[Array[String]] = Json.schema[Array[String]]
-
-println(JsonFormatter.format(AsValue.schema(someArrSchema)))
-``` 
-
-```json
-{
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "array",
-  "items": {
-    "$ref": "#/definitions/java.lang.String"
-  },
-  "definitions": {
-    "java.lang.String": {
-      "type": "string"
-    }
-  }
-}
-```
-
-See that `java.lang.String`?
-
-To use custom name, just apply it.
-```scala
-import json._
-
-implicit val someStrSchema: json.Schema[String] = Json.schema[String].toDefinition("my-lovely-string")
-
-implicit val someArrSchema: json.Schema[Array[String]] = Json.schema[Array[String]]
-
-println(JsonFormatter.format(AsValue.schema(someArrSchema, json.schema.Version.Draft04())))
-``` 
-
-```json
-{
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "array",
-  "items": {
-    "$ref": "#/definitions/my-lovely-string"
-  },
-  "definitions": {
-    "my-lovely-string": {
-      "type": "string"
-    }
-  }
-}
-```
-
-There is, though, one circumstance that will make you think twice defining `implicit val someStrSchema: json.Schema[String] = Json.schema[String]` as it will influence all string fields or components of your schema.
-Say you want to use simple string along with validated string for ID representation.
-As the library operates at compile time level it completely rely on type information and
-thus it limits us to only one solution: specify special types as types.
-
-### Use Value Classes.
-```scala
 case class UserId(value: String) extends AnyVal
-
 case class User(id: UserId, name: String)
+
+// a value class has no built-in validation bound: say which validations apply to it
+implicit val userIdMagnet: Magnet[UserId, String] = Magnet.mk[UserId, String]
+
+implicit val userIdSchema: json.Schema[UserId] =
+  Json.schema[UserId].toDefinition("user-id").withValidation(`pattern` := "^[a-f0-9]{16}$")
+
+val userSchema: json.Schema[User] = Json.schema[User]
 ```
 
-Then you can do
-```scala
-import json._
-
-implicit val userIdSchema: json.Schema[UserId] = Json.schema[UserId].toDefinition("userId")
-
-implicit val userSchema: json.Schema[User] = Json.schema[User]
-
-println(JsonFormatter.format(AsValue.schema(someArrSchema)))
-``` 
-
-and expect
 ```json
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "additionalProperties": false,
   "properties": {
-    "id": {
-      "$ref": "#/definitions/userId"
-    },
-    "name": {
-      "type": "string"
-    },
-    "required": [
-      "id",
-      "name"
-    ],
-    "definitions": {
-      "userId": {
-        "type": "string"
-      }
-    }
-  }
-}
-``` 
-
-## Validation
-It is also possible to add specific validation rules to our schemas.
-
-Available validations:
-- multipleOf
-- maximum
-- minimum
-- exclusiveMaximum
-- exclusiveMinimum
-- maxLength
-- minLength
-- pattern
-- maxItems
-- minItems
-- uniqueItems
-- maxProperties
-- minProperties
-
-Example
-```scala
-import json._
-import json.Validation._
-
-implicit val vb = ValidationBound.mk[UserId, String]
-
-implicit val userIdSchema: json.Schema[UserId] = Json.schema[UserId].toDefinition("userId") withValidation (
-  `pattern` := "[a-f\\d]{16}"
-)
-``` 
-Definition will look then like
-```json
-{
-  "userId": {
-    "type": "string",
-    "pattern": "[a-f\\d]{16}"
-  }
-}
-```
-
-## Free objects
-Sometimes you need to include some more relaxed structure like the json itself into your models.
-In such cases you want your final schema would contain something like this:
-```json
-{
-  "type": "object",
-  "additionalProperties": true
-}
-```   
-In order to get this, you can use `Schema.object.Free`. Like in this Play-Json based example:
-```scala
-import play.api.libs.json._
-
-// model
-case class Payload(id: String, name: String, metadata: JsObject)
-
-// metadata schema
-implicit val metaSchema: json.Schema[JsObject] = json.Schema.`object`.Free[JsObject]()
-
-// or alternatively define a metadata Predef in case you need this to not go to definition section of json-schema
-// implicit val metaPredef: json.schema.Predef[JsObject] = json.schema.Predef(json.Schema.`object`.Free[JsObject]())
-
-// payload schema
-val payloadSchema: json.Schema[Payload] = Json.schema[Payload]
-``` 
-
-Also, there is API to make object definition Free (and vice versa, a Free definition Strict)
-```scala
-case class Person(name: String, age: Int)
-val personSchema = Json.objectSchema[Person]
-val freePersonSchema = personSchema.free
-val strictPersonSchema = freePersonSchema.strict
-
-strictPersonSchema == personSchema // equal
-```
-
-## Joda Time
-Joda Time Support allows you to use joda-time classes within your models.
-Here is an example.
- 
-```scala
-import com.github.andyglow.jsonschema.JodaTimeSupport._
-import org.joda.time._
-
-case class Event(id: String, timestamp: Instant)
-
-val eventSchema: Schema[Event] = Json.schema[Event]
-
-println(JsonFormatter.format(AsValue.schema(eventSchema)))
-```
-results in
-```
-{
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "object",
-  "additionalProperties": false,
-  "properties": {
-    "id": {
-      "type": "string"
-    },
-    "timestamp": {
-      "$ref": "#/definitions/org.joda.time.Instant"
-    }
+    "id": { "$ref": "#user-id" },
+    "name": { "type": "string" }
   },
-  "required": [
-    "id",
-    "timestamp"
-  ],
+  "required": ["id", "name"],
   "definitions": {
-    "org.joda.time.Instant": {
-      "type": "string",
-      "format": "date-time"
-    }
+    "user-id": { "$id": "#user-id", "type": "string", "pattern": "^[a-f0-9]{16}$" }
   }
 }
 ```
 
-## Cats
-In order to enable integration with `cats` we not only add it to dependencies, we also need tp import the integration package.
-```scala
-import com.github.andyglow.jsonschema.CatsSupport._
-```
-// TODO: provide examples
+In the rendered JSON, characters a draft doesn't allow in a definition name are replaced with `_`
+(`com.example.Box[scala.Int]` → `com.example.Box_scala.Int_`); see [Migrating to 0.8.0](#migrating-to-080).
+`Json.sig` and the `json.Schema` value keep the readable name.
 
-## Refined
-For Refined types to get described accordingly we, besides adding integration to dependency list, need to import the integration package.
-```scala
-import com.github.andyglow.jsonschema.RefinedSupport._
-```
-// TODO: provide examples
+Recursive types (`case class Node(children: List[Node])`) become a definition automatically.
 
-## Enumeratum
-To stitch Enumeratum support in we need to, add correcponding integration to dependencies, as well as import the integration package.
-```scala
-import com.github.andyglow.jsonschema.EnumeratumSupport._
-```
-// TODO: provide examples
+## Supported types
 
-## Json Libraries
-The library uses its own Json model _com.github.andyglow.json.Value_ to represent Json Schema as JSON document.
-But project contains additionally several modules which could connect it with library of your choice.
+| Scala type                                                                  | JSON Schema                                     |
+|-----------------------------------------------------------------------------|-------------------------------------------------|
+| `String`, `Char`, `java.lang.Character`                                     | `string` (`Char`: exactly one character)        |
+| `Boolean`                                                                   | `boolean`                                       |
+| `Int`                                                                       | `integer`                                       |
+| `Byte`, `Short`, `Long`, `BigInt`, `Float`, `Double`, `BigDecimal`          | `number`                                        |
+| `java.time.Instant`, `LocalDateTime`, `ZonedDateTime`, `java.util.Date`, `java.sql.Timestamp` | `string`, format `date-time`  |
+| `java.time.LocalDate`, `java.sql.Date`                                      | `string`, format `date`                         |
+| `java.time.LocalTime`, `java.sql.Time`                                      | `string`, format `time`                         |
+| `java.time.Duration`, `scala.concurrent.duration.Duration`                  | `string`, format `duration`                     |
+| `java.util.UUID`                                                            | `string`, format `uuid`                         |
+| `java.net.URI`, `java.net.URL`                                              | `string`, format `uri`                          |
+| `Option[T]`                                                                 | `T` or `null`; a field is not required ([more](#option)) |
+| `Iterable[T]` (`List`, `Seq`, `Vector`, `Set`, `Array`, ...)                | `array` (`Set`: `uniqueItems`)                  |
+| `Map[String, V]`, `Map[Int, V]`, ...                                        | `object` with `patternProperties`               |
+| case class                                                                  | `object`                                        |
+| value class                                                                 | its underlying type                             |
+| sealed family, `enum`, `Enumeration`, Java enum                             | see [below](#sum-types-and-enums)               |
 
-Currently supported:
-- Play Json
-- Spray Json
-- Circe
-- Json4s
-- uJson
-
-Example usage: _Play_
-```scala
-import com.github.andyglow.jsonschema.AsPlay._
-import json.schema.Version._
-import play.api.libs.json._
-
-case class Foo(name: String)
-
-val fooSchema: JsValue = Json.schema[Foo].asPlay(Draft04())
-``` 
-
-Example usage: _Spray_
-```scala
-import com.github.andyglow.jsonschema.AsSpray._
-import json.schema.Version._
-import spray.json._
-
-case class Foo(name: String)
-
-val fooSchema: JsValue = Json.schema[Foo].asSpray(Draft04())
-``` 
-
-Example usage: _Circe_
-```scala
-import com.github.andyglow.jsonschema.AsCirce._
-import json.schema.Version._
-import io.circe._
-
-case class Foo(name: String)
-
-val fooSchema: Json = Json.schema[Foo].asCirce(Draft04())
-``` 
-
-Example usage: _Json4s_
-```scala
-import com.github.andyglow.jsonschema.AsJson4s._
-import json.schema.Version._
-import org.json4s.JsonAST._
-
-case class Foo(name: String)
-
-val fooSchema: JValue = Json.schema[Foo].asJson4s(Draft04())
-``` 
-
-Example usage: _uJson_
-```scala
-import com.github.andyglow.jsonschema.AsU._
-import json.schema.Version._
-
-case class Foo(name: String)
-
-val fooSchema: ujson.Value = Json.schema[Foo].asU(Draft04())
-``` 
-
-## Enumerations
-A few words about enumeration support.
-Most of the time enumerations are enumerations, we don't need to know anything
-else except allowed values, that's it. But.. sometimes we need something more. 
-Sometimes we need the specified values to show up some extra information.
-Some titles, descriptions, etc. `json-schema` doesn't support this, unfortunately.
-But we can work around this. We can make macro to generate `oneof(const1, const2, const3, ...)` instead of `enum`.
-For that you need to provide a special flag.
+A `Map` key needs a known pattern: `String`, `Char`, `Byte`, `Short`, `Int`, `Long` and enums have one. For another
+key type, provide one:
 
 ```scala
-implicit val jsonSchemaFlags: Flag with Flag.EnumsAsOneOf = null
+import json.Schema.dictionary.KeyPattern
+
+implicit val uuidKey: KeyPattern[java.util.UUID] = KeyPattern.mk[java.util.UUID]("^[0-9a-f-]{36}$")
 ```
 
-this should show up in implicit scope of the macro. 
+## Sum types and enums
 
-Example.. Say we have a `Gender` enum specified like this
+```scala
+sealed trait Color
+object Color {
+  case object Red extends Color
+  case object Green extends Color
+}
+
+sealed trait Shape
+object Shape {
+  case class Circle(radius: Double) extends Shape
+  case class Rectangle(width: Double, height: Double) extends Shape
+}
 ```
+
+- A sealed family of case objects is a string enum of their names: `Json.schema[Color]` →
+  `{"type": "string", "enum": ["Red", "Green"]}`.
+- A sealed family with case classes is a `oneOf` of its members' schemas (case objects among them are merged into
+  one enum member).
+- `scala.Enumeration` values and Java enums (`java.time.DayOfWeek`, ...) are string enums of their names.
+- Scala 3 `enum`s follow the same rules: only singleton cases give a string enum, cases with parameters a `oneOf`.
+
+```scala
+// Scala 3
+enum Status { case Active, Suspended }                 // {"type": "string", "enum": ["Active", "Suspended"]}
+
+enum Event {                                           // {"oneOf": [{"additionalProperties": false, "properties": {"id": ...}, ...}, ...]}
+  case Created(id: String)
+  case Deleted(id: String, reason: Option[String])
+}
+```
+
+If an implicit `ToValue` for the enum type is in scope (e.g. from a JSON-library bridge and your codec), the enum
+values are the codec's output. When their JSON type can't be known at compile time, add `@typeHint[T]`.
+
+### Discriminators
+
+`@discriminator` adds a field with the member's key to each member of a `oneOf`. The key is the member's full
+name, or the `@discriminatorKey` you give it. With `phantom = false` the field must exist in each member.
+
+```scala
+import json.schema._
+
+@discriminator(field = "kind") sealed trait Pet
+object Pet {
+  @discriminatorKey("cat") case class Cat(name: String) extends Pet
+  @discriminatorKey("dog") case class Dog(name: String) extends Pet
+}
+```
+
+```json
+{
+  "oneOf": [
+    {
+      "additionalProperties": false,
+      "properties": { "name": { "type": "string" }, "kind": { "enum": ["cat"] } },
+      "required": ["name", "kind"]
+    },
+    {
+      "additionalProperties": false,
+      "properties": { "name": { "type": "string" }, "kind": { "enum": ["dog"] } },
+      "required": ["name", "kind"]
+    }
+  ]
+}
+```
+
+`@definition` (or `@definition("name")`) on a member makes that member a definition.
+
+### Enums as `oneOf` (`Flag.EnumsAsOneOf`)
+
+A JSON Schema `enum` can't carry a title or description per value. With this implicit flag in scope, enums are
+rendered as a `oneOf` of `const`s instead, which can:
+
+```scala
+import json.schema._
+
 sealed trait Gender
 object Gender {
-    case object Male extends Gender
-    case object Female extends Gender
+  @title("The Male") case object Male extends Gender
+
+  /** The Female */
+  case object Female extends Gender
 }
+
+implicit val flags: Flag with Flag.EnumsAsOneOf = null
+
+Json.schema[Gender]
 ```
 
-Usually `Json.schema[Gender]` returns something like this
-```json
-{
-  "type": "string",
-  "enum": [
-    "Male",
-    "Female"
-  ]
-}
-```
-But after the flag added, what we have is
 ```json
 {
   "oneOf": [
-    { "const": "Male" },
-    { "const": "Female" }
+    { "title": "The Male", "const": "Male" },
+    { "description": "The Female", "const": "Female" }
   ]
 }
 ```
-With this said, we can add some titles and descriptions into our models. 
-For example this model definition, with `EnumsAsOneOf` flag enabled
-```scala
-  sealed trait Gender
-  object Gender {
-    @title("The Male") case object Male extends Gender
-    /** The Female
-      */
-    case object Female extends Gender
-  }
-```
-will produce schema such as
-```json
-{
-  "oneOf": [
-    {
-      "title": "The Male",
-      "const": "Male"
-    },
-    {
-      "description": "The Female",
-      "const": "Female"
-    }
-  ]
-}
-```
-For better explanation on how to apply documentation tags to the model please refer to the next chapter.
 
-## Documentation
-By documentation, we mean extra information that can be carried along with the schema in
-order to improve its clarity. This all basically is about support of 2 fields: `title`, `description`.
-There are 3 places where these fields may take a place.
-- `root` model level
-- `definition` level
-- `one-of` / `all-of` / `any-of` level
+## Titles and descriptions
 
-We have 3 ways to maintain documented models are supported.
+There are three sources: annotations, scaladoc, and decorations passed to `Json.objectSchema`.
 
-1. Annotations   
-2. Config
-3. Scaladoc
-
-### Annotations
-Scala-JsonSchema specifies 2 annotations that can help you specify a model 
-`@title` and `@description` as well as fields `@description`s.
-
-Example:
 ```scala
 import json._
 import json.schema._
 
 @title("A Title")
 @description("My perfect class")
-case class Model(
-    @description("A Param") a: String,
-    @description("B Param") b: Int)
-
-val schema = Json.objectSchema[Model]()
-```
-this, being translated into json, gets you
-```json
-{
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "description": "My perfect class",
-  "title": "A Title",
-  "type": "object",
-  "additionalProperties": false,
-  "properties": {
-    "a": {
-      "type": "string",
-      "description": "A Param"
-    },
-    "b": {
-      "type": "integer",
-      "description": "B Param"
-    }
-  },
-  "required": [
-    "a",
-    "b"
-  ]
-}
-```
-
-### Config
-Another approach that you can use to keep your models concise, 
-but documented is to provide documentation separately. As config.
-
-Here is an example:
-```scala
-import json._
-
-case class Model(a: String, b: Int)
-
-val schema = Json.objectSchema[Model](
-  "a" -> "A Param",
-  "b" -> "B Param"
-) .withDescription("My perfect class")
-  .withTitle("A Title")
-```
-this, being translated into json, gets you the same effect as annotation based approach
-```json
-{
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "description": "My perfect class",
-  "title": "A Title",
-  "type": "object",
-  "additionalProperties": false,
-  "properties": {
-    "a": {
-      "type": "string",
-      "description": "A Param"
-    },
-    "b": {
-      "type": "integer",
-      "description": "B Param"
-    }
-  },
-  "required": [
-    "a",
-    "b"
-  ]
-}
-```
-
-This approach also nicely fits when models are specified in separate module or external library.
-
-### Scaladoc
-Also it is possible to infer descriptions from scaladoc. 
-This allows to reuse scaladoc that you might want to have anyways.
-This approach has it's own drawbacks, though.
-- model classes must reside in the same module with schemas
-- it requires non-incremental build or full-rebuild to take effect 
-
-Example:
-```scala
-import json._
+case class Annotated(@description("A Param") a: String, @description("B Param") b: Int)
 
 /** My perfect class
- * 
- * @param a A Param
- * @param b B Param
- */
-case class Model(a: String, b: Int)
-val schema = Json.objectSchema[Model]()
+  *
+  * @param a A Param
+  * @param b B Param
+  */
+case class Documented(a: String, b: Int)
+
+case class Plain(a: String, b: Int)
+
+Json.objectSchema[Annotated]()
+Json.objectSchema[Documented]() // the same descriptions, no title
+Json.objectSchema[Plain]("a" -> "A Param", "b" -> "B Param").withTitle("A Title").withDescription("My perfect class")
 ```
-this, being translated into json, gets you
+
+All three give
+
 ```json
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "description": "My perfect class",
   "type": "object",
+  "description": "My perfect class",
+  "title": "A Title",
   "additionalProperties": false,
   "properties": {
-    "a": {
-      "type": "string",
-      "description": "A Param"
-    },
-    "b": {
-      "type": "integer",
-      "description": "B Param"
-    }
+    "a": { "type": "string", "description": "A Param" },
+    "b": { "type": "integer", "description": "B Param" }
   },
-  "required": [
-    "a",
-    "b"
-  ]
+  "required": ["a", "b"]
 }
 ```
-One little difference comparing to previous approaches is that this way you can't have `title` specified. 
 
-### Combined approach
-All these 3 techniques can be used all together.
-The only thing you need to have in mind if going this way is that to extract different type 
-of label Scala-JsonSchema will check certain sources in certain order.
- 
-| Element                         | Order                                   |
-| ------------------------------- | --------------------------------------- |
-| case class `title`              | `Config` -> `Annotation` -> `Scaladoc`  |
-| case class `description`        | `Config` -> `Annotation` -> `Scaladoc`  |
-| case class field `description`  | `Config` -> `Annotation` -> `Scaladoc`  |
+When several sources are present, the order is: decorations, then annotations, then scaladoc. Decorations suit
+models defined in another module or library. `.withTitle`/`.withDescription` work on any schema.
+
+**Scaladoc.** The doc comment right before a class (annotations, modifiers and ordinary comments may sit in between)
+gives its description, and its `@param` tags the field descriptions. A class without a doc comment gets none.
+A `@param` for a field that doesn't exist is a warning. Where the comment comes from:
+
+- **Scala 2:** by default only classes compiled in the same compiler run as the `Json.schema` call. A model from
+  another module or a jar, or a file an incremental build didn't recompile, has no descriptions, unless the model's
+  module is compiled with the [scaladoc](https://github.com/andyglow/scaladoc) compiler plugin: it embeds the
+  scaladoc into the bytecode, and `Json.schema` reads it from there.
+- **Scala 3:** the same by default. Add `scalacOptions += "-Yread-docs"` to the module that calls `Json.schema`
+  (or `derives`), and the scaladoc is also read from the TASTy of other modules, jars and earlier incremental runs.
+  This needs the model's module to keep its docs in TASTy, which is the Scala 3 default.
+
+The [sbt-scaladoc](https://github.com/andyglow/scaladoc) plugin sets both up. On Scala 2 it adds the compiler plugin
+(and `scaladoc-ast`, a small runtime dependency of the module); on Scala 3 it adds `-Yread-docs`:
+
+```scala
+// project/plugins.sbt
+addSbtPlugin("io.github.andyglow" % "sbt-scaladoc" % "0.2.0")
+
+// build.sbt: on the module that defines the models (Scala 2) and the one that calls Json.schema (Scala 3)
+lazy val model = project.enablePlugins(ScaladocPlugin)
+```
 
 ## Annotations
-| Annotation     | Scope  | Description                                     |
-| -------------- | -------| ----------------------------------------------- |
-| @readOnly      | Field  | Adds `"readOnly": true` to property definition  |
-| @writeOnly     | Field  | Adds `"writeOnly": true` to property definition |
+
+Package `json.schema`:
+
+| annotation                                    | on                    | effect                                                        |
+|-----------------------------------------------|-----------------------|---------------------------------------------------------------|
+| `@title("...")`                               | type, enum value      | `title`                                                       |
+| `@description("...")`                         | type, field, enum value | `description`                                               |
+| `@readOnly`                                   | field                 | `"readOnly": true`                                            |
+| `@writeOnly`                                  | field                 | `"writeOnly": true`                                           |
+| `@discriminator(field = "type", phantom = true)` | sealed root        | adds a discriminator field to each `oneOf` member             |
+| `@discriminatorKey("key")`                    | sealed member         | the member's discriminator value (default: its full name)     |
+| `@definition` / `@definition("name")`         | sealed member         | makes it a definition                                         |
+| `@typeHint[T]`                                | sealed root, member   | the JSON type of enum values that come from a `ToValue`       |
+
+On Scala 2, a field annotation can also target the underlying field: `@(description @field)("...")`.
+
+## Validation
+
+`withValidation` adds validation keywords. Each one is checked against the schema's type at compile time (a
+`maxLength` on an `Int` doesn't compile).
+
+```scala
+import json._
+import json.schema.validation.Instance._
+
+Json.schema[String].withValidation(`minLength` := 1, `maxLength` := 100)
+Json.schema[Int].withValidation(`minimum` := 0, `maximum` := 10)
+Json.schema[Set[String]].withValidation(`maxItems` := 5)
+```
+
+| applies to         | keywords                                                                              |
+|--------------------|---------------------------------------------------------------------------------------|
+| numbers            | `multipleOf`, `minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum`            |
+| strings            | `minLength`, `maxLength`, `pattern`, `contentEncoding`, `contentMediaType`, `contentSchema` |
+| arrays             | `minItems`, `maxItems`, `uniqueItems`, `minContains`, `maxContains`                   |
+| maps               | `minProperties`, `maxProperties`, `patternProperties`                                 |
+
+For your own types (e.g. a value class), declare which group applies with a `json.schema.validation.Magnet`, as in
+the [`UserId` example](#definition-names) above.
+
+## Free objects
+
+A free object allows any properties (`"additionalProperties": true`). Use it for a field that holds arbitrary JSON:
+
+```scala
+import play.api.libs.json.JsObject
+
+case class Payload(id: String, metadata: JsObject)
+
+implicit val metadataSchema: json.Schema[JsObject] = json.Schema.`object`.Free[JsObject]()
+// or, to inline it instead of making it a definition:
+// implicit val metadataPredef: json.schema.Predef[JsObject] = json.schema.Predef(json.Schema.`object`.Free[JsObject]())
+
+val payloadSchema = json.Json.schema[Payload]
+```
+
+Any object schema can be made free, and back:
+
+```scala
+val personSchema       = Json.objectSchema[Person]()
+val freePersonSchema   = personSchema.free   // additionalProperties: true
+val strictPersonSchema = freePersonSchema.strict
+
+strictPersonSchema == personSchema // true
+```
+
+## Rendering: drafts and JSON libraries
+
+A `json.Schema` is independent of the JSON Schema draft and of any JSON library. You pick the draft when rendering:
+
+| version (`json.schema.Version`) | `$schema`                                       | definitions             | `$ref`                        |
+|---------------------------------|-------------------------------------------------|-------------------------|-------------------------------|
+| `Draft04()`                     | `http://json-schema.org/draft-04/schema#`       | `definitions`           | `#/definitions/<name>`        |
+| `Draft06(id)`, `Draft07(id)`    | `http://json-schema.org/draft-0{6,7}/schema#`   | `definitions` + `$id`   | `#<name>`                     |
+| `Draft09(id)` (2019-09)         | `https://json-schema.org/draft/2019-09/schema`  | `$defs` + `$anchor`     | `#<name>`                     |
+| `Draft12(id)` (2020-12)         | `https://json-schema.org/draft/2020-12/schema`  | `$defs` + `$anchor`     | `#<name>`                     |
+
+```scala
+import json._
+import json.schema.Version._
+import com.github.andyglow.jsonschema.AsValue
+
+Json.stringify(schema, Draft12("https://example.com/person.json")) // String
+AsValue.schema(schema, Draft04())                                    // com.github.andyglow.json.Value, the library's own AST
+```
+
+With a bridge module, render into your JSON library's AST:
+
+```scala
+import json.schema.Version._
+
+import com.github.andyglow.jsonschema.AsPlay._    // json.Json.schema[Foo].asPlay(Draft07("id"))    : play.api.libs.json.JsObject
+import com.github.andyglow.jsonschema.AsCirce._   // json.Json.schema[Foo].asCirce(Draft07("id"))   : io.circe.Json
+import com.github.andyglow.jsonschema.AsSpray._   // json.Json.schema[Foo].asSpray(Draft07("id"))   : spray.json.JsValue
+import com.github.andyglow.jsonschema.AsJson4s._  // json.Json.schema[Foo].asJson4s(Draft07("id")) : org.json4s.JValue
+import com.github.andyglow.jsonschema.AsU._       // json.Json.schema[Foo].asU(Draft07("id"))       : ujson.Value
+```
+
+These libraries have their own `Json` object, so write `json.Json.schema` when you import their package with `_`.
+The bridges also provide `ToValue` from the library's encoders, so default values of your own types get rendered.
+
+### `Option`
+
+Every `Option[X]` is "X or null": at the root, as a collection element, as a map value and as a field. An `Option`
+field is also not required, and `Option[Option[X]]` is the same as `Option[X]`. This is what circe, play-json,
+spray-json and upickle write (`None` is `null`, or the field is left out) and read back (upickle's reader wants
+the key present unless the field has a default).
+
+```scala
+case class Pet(name: String, age: Option[Int], tags: List[Option[String]], owner: Option[Owner])
+```
+
+Draft-04, abridged (`Owner` has an implicit `Schema`, so it is a definition):
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": { "type": "string" },
+    "age": { "type": ["integer", "null"] },
+    "tags": { "type": "array", "items": { "type": ["string", "null"] } },
+    "owner": { "oneOf": [{ "$ref": "#/definitions/Owner" }, { "type": "null" }] }
+  },
+  "required": ["name", "tags"]
+}
+```
+
+Where X has one JSON type (a string, number, integer, boolean, array or object), the output is X with
+`"type": [X, "null"]`. Otherwise (an enum, a `$ref`, a sealed family) it is `oneOf: [X, {"type": "null"}]`.
+
+The macro keeps the fact "this is an `Option`" in the schema as an `` `option` `` node, and the renderer shapes it
+with a `json.schema.JsonSchemaProfile`. The default profile is `JsonSchemaProfile.Neutral`, as above.
+`JsonSchemaProfile.Legacy` renders exactly what 0.7 rendered: an `Option` field is X and not required, any other
+`Option[X]` is `oneOf: [{"type": "string", "enum": ["None"]}, {"type": "object", "properties": {"value": X}, ...}]`. Use it for one
+schema, or for every render where an implicit profile is in scope:
+
+```scala
+import json.schema.JsonSchemaProfile
+
+Json.schema[Pet].withProfile(JsonSchemaProfile.Legacy)               // a json.Schema with the 0.7 shapes
+
+implicit val profile: JsonSchemaProfile = JsonSchemaProfile.Legacy   // Scala 3: given JsonSchemaProfile = JsonSchemaProfile.Legacy
+Json.stringify(Json.schema[Pet], Draft07("id"))                      // also AsValue.schema, asPlay, asCirce, ...
+```
+
+`withProfile` shapes the schema right away, so a later render keeps that shape whatever profile is in scope. To
+share one profile across a project, define it in an object and import it where you render. In Scala 3, `import
+Settings.*` doesn't import a `given`: write `import Settings.given`, or declare the profile as an `implicit val`.
+
+## Modules
+
+### Refined
+
+```scala
+import com.github.andyglow.jsonschema.RefinedSupport._
+import eu.timepit.refined.api.Refined
+import eu.timepit.refined.collection._
+import eu.timepit.refined.numeric._
+import eu.timepit.refined.string._
+
+case class Signup(
+  login: String Refined MatchesRegex["^[a-z][a-z0-9]{2,15}$"], // {"type": "string", "pattern": "^[a-z][a-z0-9]{2,15}$"}
+  age: Int Refined Greater[17],                                // {"type": "integer", "exclusiveMinimum": 17}
+  tags: List[String] Refined MaxSize[5]                        // {"type": "array", "maxItems": 5, ...}
+)
+
+Json.schema[Signup]
+```
+
+Predicates are written with literal types on Scala 2.13 and 3. On Scala 2.12 use shapeless's witnesses:
+``Greater[W.`17`.T]``. Supported predicates:
+
+- boolean: `And`, `Or`, `Not`
+- numeric: `Positive`, `Negative`, `NonPositive`, `NonNegative`, `Greater`, `Less`, `GreaterEqual`, `LessEqual`, `Divisible`
+- string: `MatchesRegex`, `StartsWith`, `EndsWith`, `Uuid`, `Uri`, `Url`, `IPv4`, `IPv6`, `Xml`, `Trimmed`
+- collection (strings and collections): `Size`, `MinSize`, `MaxSize`, `Empty`, `NonEmpty`
+
+### Cats
+
+```scala
+import com.github.andyglow.jsonschema.CatsSupport._
+import cats.data.{NonEmptyList, NonEmptyMap}
+
+case class Team(members: NonEmptyList[String], scores: NonEmptyMap[String, Int])
+
+Json.schema[Team] // members: array with "minItems": 1; scores: object with "minProperties": 1
+```
+
+Supported: `NonEmptyList`, `NonEmptyVector`, `NonEmptySet`, `NonEmptyChain`, `NonEmptyMap`, `OneAnd`,
+`NonEmptyLazyList` (2.13, 3) / `NonEmptyStream` (2.12), `Chain`.
+
+### Enumeratum
+
+```scala
+import com.github.andyglow.jsonschema.EnumeratumSupport._
+```
+
+`Enum` entries give a string enum of their names. `IntEnum`, `LongEnum`, `ShortEnum`, `ByteEnum` (and the
+string/char value enums) give an enum of their values. They work as `Map` keys too.
+
+### Joda-Time
+
+```scala
+import com.github.andyglow.jsonschema.JodaTimeSupport._
+```
+
+Adds `org.joda.time.Instant`, `DateTime`, `LocalDateTime` (format `date-time`), `LocalDate` (`date`), `LocalTime`
+(`time`) and `Duration` (`duration`). They are implicit `Schema`s, so they appear as definitions. To inline them
+instead, import the `Predef`s: `import com.github.andyglow.jsonschema.JodaTimeSupport.predef._`.
+
+### DerivedSchema
+
+`scala-jsonschema-derived` provides `json.schema.derived.DerivedSchema[T]`, a type class for "a schema derived
+from `T`'s structure", e.g. for a context bound:
+
+```scala
+import json.schema.derived.DerivedSchema
+
+def describe[T](implicit ds: DerivedSchema[T]): json.Schema[T] = ds.schema
+```
+
+The root type is always derived and inlined, even when an implicit `Schema[T]` exists (nested types follow the
+usual rules). A type that can't be derived has no instance, so a default argument or a lower-priority implicit
+applies instead.
+
+### Parser
+
+`scala-jsonschema-parser` goes the other way: `com.github.andyglow.json.ParseJson(string)` parses JSON into the
+library's AST, and `com.github.andyglow.jsonschema.ParseJsonSchema(string)` parses a JSON Schema (a draft-04
+subset, including `"type": [X, "null"]`) into a `Try[json.Schema[_]]`.
+
+## Migrating to 0.8.0
+
+The full list is in the [CHANGELOG](CHANGELOG.md).
+
+**Build**
+
+- The groupId is `io.github.andyglow` (was `com.github.andyglow`). Imports don't change.
+- Scala 2.11 is no longer published. Scala 3.3 is.
+- Bridges and modules are built against current library versions, notably play-json 3 (`org.playframework`).
+
+**Output that changes**
+
+- **Every `Option[X]` is "X or null"** (see [`Option`](#option)). An `Option` field was X, so `"o": null` (what
+  circe and upickle write by default) didn't validate; it is now `"type": [X, "null"]`, still not required. An
+  `Option` at the root, in a collection or as a map value was `oneOf` of `{"value": X}` and `"None"`, which no JSON
+  library writes. `Option[Option[X]]` is the same as `Option[X]`. To get the 0.7 output back, render with
+  `JsonSchemaProfile.Legacy`: one implicit where you render
+  (`implicit val profile: JsonSchemaProfile = JsonSchemaProfile.Legacy`), or `schema.withProfile(JsonSchemaProfile.Legacy)`.
+  Legacy reproduces 0.7 byte for byte.
+- **Definition names in the rendered JSON follow each draft's grammar.** Characters a draft doesn't allow are
+  replaced with `_` in `definitions`/`$defs` keys, `$id`, `$anchor` and `$ref`: `com.acme.Box[scala.Int]` →
+  `com.acme.Box_scala.Int_`. Draft-04 keeps the characters valid in a URI fragment; drafts 06, 07 and 2019-09
+  allow `[A-Za-z][-A-Za-z0-9.:_]*`; 2020-12 allows `[A-Za-z_][-A-Za-z0-9._]*` (a name that has to start with a
+  letter gets a prefix). If two names collide, the one that already conformed keeps it and the others get `_2`,
+  `_3`, ... Names that already conform (`com.acme.Foo`) don't change. `Json.sig`, the `json.Schema` value and
+  the raw renderer keep the readable name.
+- **A type alias is seen through.** A definition reached through an alias is named after the type it stands for,
+  so a root implicit `Schema[String]` is `java.lang.String` (was `scala.Predef.String`), like a `String` field.
+  Type arguments keep their spelling: `Box[String]` is still `Box[scala.Predef.String]`.
+- **An implicit `Schema` is used only for exactly its type.** An implicit `Schema[Sub]` no longer stands in for its
+  sealed parent (that dropped the other subtypes), nor makes a non-sealed trait derivable.
+- **Scala 2: `Json.sig` of a backticked type name is decoded** (`` pkg.`odd name` `` → `pkg.odd name`, was
+  `pkg.odd$u0020name`), as on Scala 3. The renderers then make it a valid name (`odd_name`).
+- **Scala 2: an undocumented class gets no description.** It used to take the nearest earlier doc comment in its
+  file (of another class, a method, ...), including its `@param`s. Only the doc comment right before the
+  declaration counts now.
+- **Scala 2: field annotations with the `@field` meta-annotation are read** (`@(description @field)("...")`);
+  they used to be ignored.
+- Copies of a free object stay free (`withTitle`, `withDescription`, `withField`, `toDefinition`, ... used to make
+  it strict).
+
+**API**
+
+- **The derived `json.Schema` keeps `Option` as an `` `option` `` node.** An `Option` field is
+  `Field("o", option(integer), required = false)` (was `integer`), and an `Option` elsewhere is `option(X)` (was
+  `oneof` of `Some`/`None`). This matters if you walk the tree yourself (your own renderer, `withFieldsUpdated` on
+  `f.tpe`, comparing with a hand-written `json.Schema` in tests). `schema.withProfile(JsonSchemaProfile.Legacy)`
+  gives the 0.7 tree. The model also has a `` `null` `` leaf (`{"type": "null"}`).
+- The renderers (`AsValue.schema`, `Json.stringify`, `asPlay`, `asCirce`, ...) take an implicit
+  `JsonSchemaProfile`. Nothing changes at the call site: without one in scope, `JsonSchemaProfile.Neutral` is used.
+- `json.Schema` equality is structural: a `ref` compares its signature (any two refs used to be equal), a field
+  compares its description, a free object doesn't equal the strict one.
+- `def.toDefinition(name)` renames only its own definition and the refs to it.
+- `import Json.auto._` works (it used to crash the compiler). See [above](#definitions-and-refs) for what it does.
+- A scaladoc `@param` for a field that doesn't exist is a warning (it used to fail on the root type).
+- Many cases that crashed the macro or produced uncompilable code are now clear compile errors (a `Map` key
+  without a pattern, a `mutable.Map`, structural types, ...), and some now just work: local case classes, Java
+  enums, generic value classes, `Map` subtypes such as `SortedMap` and `ListMap` with a key pattern.
+- refined: the implicit is `refinedJsonSchema[R <: Refined[A, B], A, B]` (was `[A, B]`). This matters only if you
+  pass its type arguments explicitly. On Scala 3, predicates take literal types (`Greater[5]`) instead of
+  ``W.`5`.T``.
+- parser: `ParseJson` is a strict RFC 8259 parser (it used to accept invalid JSON and didn't decode escapes).
+  Failures are `JsonParseException`s with the offset; `MutableValue` and the Java classes are gone.
+  `ParseJsonSchema` reads `"type": "null"` and `"type": [X, "null"]` (as `oneof{X, null}`), so the schemas this
+  version renders for `Option` fields parse.
+
+## Scala 3 notes
+
+What's new on Scala 3: `derives json.Schema`, native `enum`s, `import Json.auto.given`, and `-Yread-docs` for
+scaladoc from other modules (see [Titles and descriptions](#titles-and-descriptions)). Everything else is shared
+with Scala 2 and gives the same schemas. The deliberate differences:
+
+- **Aliases that only rename a type are gone before the macro sees them.** For `type MyList[A] = List[A]`,
+  `Json.sig` and definition names show `scala.List[scala.Int]` (Scala 2: `pkg.MyList[scala.Int]`). Standard
+  collections in type arguments are spelled the usual way (`scala.List`, `scala.Predef.Map`) even if you wrote
+  `scala.collection.immutable.List`, so a name doesn't depend on where the model was compiled. Other aliases
+  (`type Users = List[User]`) give the same names as on Scala 2.
+- **Sealed families can't have anonymous or block-local subclasses** (`new Root {}`, a case class declared inside
+  a method): a compile error, because Scala 3 can't list them. A local case class on its own works, also with
+  default values (Scala 2 rejects those defaults).
+- **`Enumeration`:** the enum lists only the object's `Value`s; a class declared inside an `Enumeration` object
+  is derived as a class.
+- **`Option` defaults.** On both versions `= None` gives no default, and any other `Option` default needs a
+  `ToValue[Option[X]]` (the bridges provide one). Scala 2 evaluates the default at compile time to see whether it
+  is `None`; Scala 3 recognizes only `None` and `Option.empty` written out, so `= Defaults.none`, `= (None)` or
+  `= { None }` need the `ToValue` too.
+- **A generic `derives` class** has a `Schema[Box[X]]` only when `X` has an implicit `Schema`: then `Box[X]` is a
+  definition, otherwise it is derived inline (see [Definitions](#definitions-and-refs)). Inside the derived
+  schema, an implicit `Schema` for an abstract type parameter is used as it is at runtime: an existing definition
+  keeps its name, anything else is inlined.
+- **refined:** `refined[T]` has no `T <: Refined[_, _]` bound (Refined is an opaque type on Scala 3; a non-refined
+  `T` is a compile error), and an unsupported predicate found while deriving fails with the derivation's
+  `is not supported` error followed by refined's own message.
+- Compile errors quote Scala 3 code, so their text differs from Scala 2's.
+
+To see the code the macro generates, compile with `-Djsonschema.print-code=true` (e.g.
+`sbt -Djsonschema.print-code=true compile`): every expansion is printed as an info message.
+
+Not supported (yet): union types, literal types, opaque types (beyond refined) and named tuples; Scala.js.
+
+## Known issues
+
+- **Scala 3: recursive generic `derives`.** For `case class Tree[A](value: A, children: List[Tree[A]]) derives json.Schema`,
+  `Tree[Int]` used as a field or as the root of `Json.schema` is a definition named `pkg.Tree[scala.Int]`, but a
+  summoned `Schema[Tree[X]]` (e.g. `summon[json.Schema[Tree[Company]]]`, `Company derives json.Schema`) and a
+  `Tree[A]` inside another generic `derives` class keep the type parameter's name (`pkg.Tree[pkg.Tree.A]`), so two
+  instantiations in one schema share it.
+- **Scala 2: an implicit declared on the line just before a `Json.schema` call may be ignored.** The Scala 2 macro
+  recognizes `implicit val x: Schema[X] = Json.schema[X]` (so that it doesn't refer to itself) by reading the
+  source text around the call, and a name on the previous line can match. Keep a blank line between such
+  implicits.
+- Tuples are objects (`{"_1": ..., "_2": ...}`) and `Either[L, R]` is a `oneOf` of `{"value": L}` and `{"value": R}`.
+- On draft-04, `exclusiveMinimum`/`exclusiveMaximum` are rendered as numbers (draft-06 style).
+
+## Documentation site
+
+The site sources are in `docs/src/main/paradox`. Build it with `sbt makeDocs` (output in `docs/target/site`).

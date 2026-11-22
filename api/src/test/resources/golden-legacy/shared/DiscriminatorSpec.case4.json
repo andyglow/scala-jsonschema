@@ -1,0 +1,155 @@
+{
+  "schema": {
+    "kind": "oneof",
+    "members": [
+      {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "value",
+            "required": true,
+            "rwMode": "ReadWrite",
+            "schema": {
+              "kind": "integer"
+            }
+          }
+        ],
+        "discriminationKey": "m1"
+      },
+      {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "value",
+            "required": true,
+            "rwMode": "ReadWrite",
+            "schema": {
+              "kind": "string"
+            }
+          }
+        ],
+        "discriminationKey": "m2"
+      }
+    ],
+    "discriminationField": "type"
+  },
+  "draft-04": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "oneOf": [
+      {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "enum": [
+              "m1"
+            ]
+          },
+          "value": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "type",
+          "value"
+        ]
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "enum": [
+              "m2"
+            ]
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "value"
+        ]
+      }
+    ]
+  },
+  "draft-07": {
+    "$id": "golden",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "oneOf": [
+      {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "enum": [
+              "m1"
+            ]
+          },
+          "value": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "type",
+          "value"
+        ]
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "enum": [
+              "m2"
+            ]
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "value"
+        ]
+      }
+    ]
+  },
+  "draft-2020-12": {
+    "$id": "golden",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "oneOf": [
+      {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "enum": [
+              "m1"
+            ]
+          },
+          "value": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "type",
+          "value"
+        ]
+      },
+      {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "enum": [
+              "m2"
+            ]
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "value"
+        ]
+      }
+    ]
+  }
+}

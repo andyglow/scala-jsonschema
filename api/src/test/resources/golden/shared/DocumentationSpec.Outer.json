@@ -1,0 +1,153 @@
+{
+  "schema": {
+    "kind": "object",
+    "fields": [
+      {
+        "name": "a",
+        "required": true,
+        "description": "\"A\" Param",
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "string"
+        }
+      },
+      {
+        "name": "inner",
+        "required": true,
+        "description": "Inner Param",
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "object",
+          "fields": [
+            {
+              "name": "a",
+              "required": true,
+              "description": "\"A\" Param",
+              "rwMode": "ReadWrite",
+              "schema": {
+                "kind": "string"
+              }
+            },
+            {
+              "name": "b",
+              "required": true,
+              "description": "`B` Param",
+              "rwMode": "ReadWrite",
+              "schema": {
+                "kind": "integer"
+              }
+            }
+          ]
+        }
+      }
+    ],
+    "description": "Outer"
+  },
+  "draft-04": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "additionalProperties": false,
+    "description": "Outer",
+    "properties": {
+      "a": {
+        "description": "\"A\" Param",
+        "type": "string"
+      },
+      "inner": {
+        "additionalProperties": false,
+        "description": "Inner Param",
+        "properties": {
+          "a": {
+            "description": "\"A\" Param",
+            "type": "string"
+          },
+          "b": {
+            "description": "`B` Param",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "a",
+          "b"
+        ],
+        "type": "object"
+      }
+    },
+    "required": [
+      "a",
+      "inner"
+    ],
+    "type": "object"
+  },
+  "draft-07": {
+    "$id": "golden",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "additionalProperties": false,
+    "description": "Outer",
+    "properties": {
+      "a": {
+        "description": "\"A\" Param",
+        "type": "string"
+      },
+      "inner": {
+        "additionalProperties": false,
+        "description": "Inner Param",
+        "properties": {
+          "a": {
+            "description": "\"A\" Param",
+            "type": "string"
+          },
+          "b": {
+            "description": "`B` Param",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "a",
+          "b"
+        ],
+        "type": "object"
+      }
+    },
+    "required": [
+      "a",
+      "inner"
+    ],
+    "type": "object"
+  },
+  "draft-2020-12": {
+    "$id": "golden",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "description": "Outer",
+    "properties": {
+      "a": {
+        "description": "\"A\" Param",
+        "type": "string"
+      },
+      "inner": {
+        "additionalProperties": false,
+        "description": "Inner Param",
+        "properties": {
+          "a": {
+            "description": "\"A\" Param",
+            "type": "string"
+          },
+          "b": {
+            "description": "`B` Param",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "a",
+          "b"
+        ],
+        "type": "object"
+      }
+    },
+    "required": [
+      "a",
+      "inner"
+    ],
+    "type": "object"
+  }
+}

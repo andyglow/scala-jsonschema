@@ -5,6 +5,10 @@ addSbtPlugin("com.github.sbt" % "sbt-pgp"       % "2.4.0")
 // github actions
 addSbtPlugin("com.github.sbt" % "sbt-github-actions" % "0.32.2")
 
+// scaladoc: only on the unpublished test-models module (embeds scaladoc on Scala 2); the published modules declare
+// scaladoc-ast/-parser by hand, because the plugin makes scaladoc-parser `Provided`
+addSbtPlugin("io.github.andyglow" % "sbt-scaladoc" % "0.2.0")
+
 // Format
 addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.6.2")
 

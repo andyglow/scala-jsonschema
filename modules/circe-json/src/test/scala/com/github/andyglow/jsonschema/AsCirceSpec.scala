@@ -47,10 +47,10 @@ class AsCirceSpec extends AnyPropSpec {
       "additionalProperties" -> Json.False,
       "properties"           -> Json.obj(
         "firstName"   -> Json.obj("type" -> Json.fromString("string")),
-        "middleName"  -> Json.obj("type" -> Json.fromString("string")),
+        "middleName"  -> Json.obj("type" -> Json.arr(Json.fromString("string"), Json.fromString("null"))),
         "lastName"    -> Json.obj("type" -> Json.fromString("string")),
         "age"         -> Json.obj("type" -> Json.fromString("integer")),
-        "lastLoginMs" -> Json.obj("type" -> Json.fromString("number")),
+        "lastLoginMs" -> Json.obj("type" -> Json.arr(Json.fromString("number"), Json.fromString("null"))),
         "role"        -> Json.obj(
           "type"    -> Json.fromString("string"),
           "default" -> Json.fromString("e-user"),
@@ -92,7 +92,7 @@ class AsCirceSpec extends AnyPropSpec {
             .obj("login" -> Json.fromString("anonymous"), "password" -> Json.fromString("-"))
         ),
         "notes" -> Json.obj(
-          "type"                 -> Json.fromString("object"),
+          "type"                 -> Json.arr(Json.fromString("object"), Json.fromString("null")),
           "additionalProperties" -> Json.False,
           "required"             -> Json.arr(Json.fromString("head"), Json.fromString("tail")),
           "properties"           -> Json.obj(
