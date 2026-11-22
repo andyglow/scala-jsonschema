@@ -4,8 +4,8 @@ import org.scalatest.Tag
 
 /** Tags for tests that describe the decided, not the current, behavior.
   *
-  * A `TriageB` test asserts the FIXED behavior of a TRIAGE group B bug (see the team's TRIAGE.md) and wraps its body in `pendingUntilFixed { ... }`, so it is reported as pending today and starts
-  * failing ("should no longer be pending") as soon as the fix lands. Whoever fixes the bug removes the `pendingUntilFixed` wrapper and keeps the test.
+  * A `TriageB` test asserts the FIXED behavior of a TRIAGE group B bug (see the team's TRIAGE.md). While a bug is open, the test wraps its body in `pendingUntilFixed { ... }` (reported as pending,
+  * failing with "should no longer be pending" once the fix lands); whoever fixes the bug removes the wrapper and keeps the test. All group B bugs are fixed on Scala 2.
   *
   * Run just these with `testOnly -- -n TRIAGE-B`.
   */

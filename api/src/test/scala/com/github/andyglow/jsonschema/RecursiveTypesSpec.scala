@@ -60,7 +60,7 @@ class RecursiveTypesSpec extends AnyWordSpec {
       // TRIAGE-B: `def.toDefinition` doesn't rename refs that point at the old sig. This test used to pass only
       // because `ref` equality was vacuous. Today the inner ref still says
       // `ref(com.github.andyglow.jsonschema.RecursiveTypesSpec.case1.SList)`, a dangling `$ref`.
-      "product types. inner references root. specific ref-name" taggedAs TriageB in pendingUntilFixed {
+      "product types. inner references root. specific ref-name" taggedAs TriageB in {
         import case1._
 
         json.Json.schema[SList].toDefinition("given-name") shouldEqual `def`(
@@ -70,7 +70,6 @@ class RecursiveTypesSpec extends AnyWordSpec {
             Field("tail", `ref`("given-name"), required = false)
           )
         )
-        ()
       }
 
       "sum types. inner references root" in {

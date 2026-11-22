@@ -1,6 +1,6 @@
 package com.github.andyglow.jsonschema.characterization
 
-import com.github.andyglow.jsonschema.harness.{ErrorPhrases, Golden, Scala, TriageA, Untriaged}
+import com.github.andyglow.jsonschema.harness.{ErrorPhrases, Golden, Scala, TriageA}
 import com.github.andyglow.jsonschema.harness.CompileErrors.errorOf
 import json._
 import json.Schema._
@@ -111,10 +111,11 @@ class EntryPointsCharSpec extends AnyFunSuite {
     check("char/entry/HasTitled", Json.schema[HasTitled])
   }
 
-  test("E3: Json.sig keeps the ENCODED name of a backticked class", Untriaged) {
-    // Scala 2 uses the encoded fullName (`odd$u0020name`); Scala 3's fullName is decoded. Parity says keep the Scala 2
-    // spelling; open question for the owner (the names end up in $ref/definitions keys).
-    Json.sig[`odd name`].signature shouldBe "com.github.andyglow.jsonschema.characterization.odd$u0020name"
+  test("E3: Json.sig gives the DECODED name of a backticked class; renderers make it a valid definition name") {
+    // 0.7 on Scala 2: the encoded fullName (`odd$u0020name`). Owner decision 2026-11-20: Json.sig stays the readable
+    // (decoded) name, as Scala 3's fullName is, and only the renderers replace what a draft doesn't allow
+    Json.sig[`odd name`].signature shouldBe "com.github.andyglow.jsonschema.characterization.odd name"
+    check("char/entry/HasOdd", Json.schema[HasOdd])
   }
 
   test("E3: Json.sig for local, nested and backticked names") {
@@ -137,5 +138,3 @@ class EntryPointsCharSpec extends AnyFunSuite {
     )
   }
 }
-
-case class `odd name`(x: Int)

@@ -47,6 +47,23 @@ private[jsonschema] trait UImplicits { this: UContext with UCommons with USignat
       case _ => false
     }
 
+    // `Json.auto.derived[T]` is an implicit Predef[T] macro. A search for Predef[T] returns it unexpanded, and it expands when our output is typechecked: a derivation of T inside the
+    // derivation of T, forever (a scalac StackOverflowError in 0.7). It is also imported, so it shadows the built-in and companion Predefs (Predef[Int], ...).
+    // So when the search picks `auto.derived` itself, search again with `derived` shadowed by a local non-implicit name (an implicit is only eligible if it's accessible by its simple
+    // name), which finds the implicit the search would have found without the import. If that's `auto.derived` again (e.g. imported under another name), there's none: derive inline.
+    // Hence importing Json.auto never turns a type into a definition and never changes a schema derived without it.
+    private def isAutoDerived(x: Tree): Boolean =
+      x.symbol != null && x.symbol != NoSymbol && x.symbol.isMethod && x.symbol.fullName == "json.Json.auto.derived"
+
+    private def inferPredef(pType: Type): Tree = c.inferImplicitValue(pType) match {
+      case x if isAutoDerived(x) =>
+        c.typecheck(q"{ val derived = (); _root_.scala.Predef.implicitly[$pType] }", silent = true) match {
+          case Block(_, Apply(_, List(y))) if !isAutoDerived(y) => y
+          case _                                                => EmptyTree
+        }
+      case x => x
+    }
+
     def get(tpe: Type): Option[SchemaType] = {
 
       val sType = appliedType(T.schemaC, tpe) // .dealias.widen
@@ -61,17 +78,23 @@ private[jsonschema] trait UImplicits { this: UContext with UCommons with USignat
       // ```
       // if taken from schema - must be exposed as `ref`
       // if taken from predef - exposing as is
+      def lookupPredef: ImplicitSchema = inferPredef(pType) match {
+        case EmptyTree => NotFound
+        case x         => FromPredef(q"$x.schema")
+      }
+
+      // Schema is covariant, so a search for Schema[Base] also accepts an implicit Schema[Sub]. Only an implicit for exactly T counts (owner decision 2026-11-20): otherwise
+      // Schema[Sub1] would stand for the whole sealed family of Base (Sub2 lost), or make a non-sealed trait "derivable".
+      def isForExactly(x: Tree): Boolean =
+        x.tpe != null && x.tpe.baseType(T.schemaC.typeSymbol).typeArgs.headOption.exists(_ =:= tpe)
+
       def lookupSchema: ImplicitSchema = {
         // schema
         c.inferImplicitValue(sType) match {
-          case EmptyTree =>
-            // predef
-            c.inferImplicitValue(pType) match {
-              case EmptyTree => NotFound
-              case x         => FromPredef(q"$x.schema")
-            }
-          case x if isSelfRef(x) => NotFound
-          case x                 => FromSchema(x)
+          case EmptyTree             => lookupPredef
+          case x if isSelfRef(x)     => NotFound
+          case x if !isForExactly(x) => lookupPredef
+          case x                     => FromSchema(x)
         }
       }
 

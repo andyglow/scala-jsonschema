@@ -13,4 +13,7 @@ object AsRaw extends AsValue with AsDraftSupport with Post09 {
       if (definitions.fields.nonEmpty) obj("definitions" -> definitions) else obj()
     }
   }
+
+  // raw output keeps the signatures as they are
+  protected def sanitizeDefinitionName(sig: String): String = sig
 }

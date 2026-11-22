@@ -1,40 +1,40 @@
 {
   "schema": {
     "kind": "def",
-    "sig": "scala.Predef.String",
+    "sig": "java.lang.String",
     "schema": {
       "kind": "string"
     }
   },
   "draft-04": {
-    "$ref": "#/definitions/scala.Predef.String",
+    "$ref": "#/definitions/java.lang.String",
     "$schema": "http://json-schema.org/draft-04/schema#",
     "definitions": {
-      "scala.Predef.String": {
+      "java.lang.String": {
         "type": "string"
       }
     }
   },
   "draft-07": {
     "$id": "golden",
-    "$ref": "#scala.Predef.String",
+    "$ref": "#java.lang.String",
     "$schema": "http://json-schema.org/draft-07/schema#",
     "definitions": {
-      "scala.Predef.String": {
-        "$id": "#scala.Predef.String",
+      "java.lang.String": {
+        "$id": "#java.lang.String",
         "type": "string"
       }
     }
   },
   "draft-2020-12": {
     "$defs": {
-      "scala.Predef.String": {
-        "$anchor": "scala.Predef.String",
+      "java.lang.String": {
+        "$anchor": "java.lang.String",
         "type": "string"
       }
     },
     "$id": "golden",
-    "$ref": "#scala.Predef.String",
+    "$ref": "#java.lang.String",
     "$schema": "https://json-schema.org/draft/2020-12/schema"
   }
 }

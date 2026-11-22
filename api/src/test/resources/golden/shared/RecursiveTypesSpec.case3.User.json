@@ -47,14 +47,14 @@
     "$schema": "http://json-schema.org/draft-04/schema#",
     "additionalProperties": false,
     "definitions": {
-      "com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList[scala.Predef.String]": {
+      "com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList_scala.Predef.String_": {
         "additionalProperties": false,
         "properties": {
           "head": {
             "type": "string"
           },
           "tail": {
-            "$ref": "#/definitions/com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList[scala.Predef.String]"
+            "$ref": "#/definitions/com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList_scala.Predef.String_"
           }
         },
         "required": [
@@ -65,7 +65,7 @@
     },
     "properties": {
       "friends": {
-        "$ref": "#/definitions/com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList[scala.Predef.String]"
+        "$ref": "#/definitions/com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList_scala.Predef.String_"
       },
       "id": {
         "type": "string"
@@ -82,15 +82,15 @@
     "$schema": "http://json-schema.org/draft-07/schema#",
     "additionalProperties": false,
     "definitions": {
-      "com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList[scala.Predef.String]": {
-        "$id": "#com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList[scala.Predef.String]",
+      "com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList_scala.Predef.String_": {
+        "$id": "#com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList_scala.Predef.String_",
         "additionalProperties": false,
         "properties": {
           "head": {
             "type": "string"
           },
           "tail": {
-            "$ref": "#com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList[scala.Predef.String]"
+            "$ref": "#com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList_scala.Predef.String_"
           }
         },
         "required": [
@@ -101,7 +101,7 @@
     },
     "properties": {
       "friends": {
-        "$ref": "#com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList[scala.Predef.String]"
+        "$ref": "#com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList_scala.Predef.String_"
       },
       "id": {
         "type": "string"
@@ -115,15 +115,15 @@
   },
   "draft-2020-12": {
     "$defs": {
-      "com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList[scala.Predef.String]": {
-        "$anchor": "com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList[scala.Predef.String]",
+      "com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList_scala.Predef.String_": {
+        "$anchor": "com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList_scala.Predef.String_",
         "additionalProperties": false,
         "properties": {
           "head": {
             "type": "string"
           },
           "tail": {
-            "$ref": "#com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList[scala.Predef.String]"
+            "$ref": "#com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList_scala.Predef.String_"
           }
         },
         "required": [
@@ -137,7 +137,7 @@
     "additionalProperties": false,
     "properties": {
       "friends": {
-        "$ref": "#com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList[scala.Predef.String]"
+        "$ref": "#com.github.andyglow.jsonschema.RecursiveTypesSpec.case3.LList_scala.Predef.String_"
       },
       "id": {
         "type": "string"

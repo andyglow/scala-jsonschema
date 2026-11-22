@@ -1,11 +1,12 @@
 package com.github.andyglow.jsonschema.characterization
 
-import com.github.andyglow.jsonschema.harness.{ErrorPhrases, Golden}
-import com.github.andyglow.jsonschema.harness.CompileErrors.errorOf
+import com.github.andyglow.jsonschema.harness.Golden
 import json._
 import json.schema._
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers._
+
+import scala.annotation.nowarn
 
 // NOTE: the order of the models matters. On Scala 2 a class WITHOUT a doc comment picks up the nearest preceding comment in
 // the file (BACKLOG #5), so undocumented models that must stay undocumented come first.
@@ -23,6 +24,7 @@ object ScaladocCharSpec {
   /** @param zz
     *   no such field
     */
+  @nowarn("msg=has @param for unknown field") // the warning under test
   case class Stale(a: Int)
 
   /** Leaked doc
@@ -49,9 +51,10 @@ class ScaladocCharSpec extends AnyFunSuite {
     check("char/scaladoc/Precedence.objectSchema", Json.objectSchema[Precedence]("a" -> "from config", "b" -> "from config"))
   }
 
-  test("F8: a stale @param fails on the root (Json.schema and objectSchema)") {
-    errorOf(assertCompiles("Json.schema[Stale]")) should include(ErrorPhrases.UnknownField + "zz")
-    errorOf(assertCompiles("Json.objectSchema[Stale]()")) should include(ErrorPhrases.UnknownField + "zz")
+  test("F8: a stale @param is ignored on the root too, with a warning (Json.schema and objectSchema)") {
+    // 0.7: the root failed with `unknown field: zz`, a nested type was silently accepted
+    check("char/scaladoc/Stale", Json.schema[Stale])
+    Json.objectSchema[Stale]() shouldBe Json.schema[Stale]
   }
 
   test("F8: a stale @param of a nested type is ignored") {

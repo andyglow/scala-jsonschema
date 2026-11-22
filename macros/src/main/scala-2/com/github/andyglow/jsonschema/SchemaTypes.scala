@@ -101,7 +101,11 @@ private[jsonschema] trait SchemaTypes {
       def withExtra(x: SchemaType.Extra) = copy(extra = x)
     }
     case class Obj(tpe: Type, fields: List[Obj.Field], extra: Extra = Extra()) extends SchemaType {
-      type Self = Obj; def prefix = q"${N.Schema}.`object`[$tpe](..${fields map { _.tree }})";
+      type Self = Obj;
+      // `object.apply` takes at least one field, so a zero-field case class needs `fromList`
+      def prefix =
+        if (fields.isEmpty) q"${N.Schema}.`object`.fromList[$tpe](_root_.scala.Nil)"
+        else q"${N.Schema}.`object`[$tpe](..${fields map { _.tree }})";
       def withExtra(x: SchemaType.Extra) = copy(extra = x)
     }
     case class Enum(

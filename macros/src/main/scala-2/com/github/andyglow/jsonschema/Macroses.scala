@@ -66,13 +66,14 @@ trait MacroCake
     val tpe = weakTypeOf[T]
     validateNonValueCaseClass(tpe, "Json.objectSchema") {
       val specFD = FieldDecorations.fromSpec(decorations)
-      deriveInternal[T, json.Schema.`object`](specFD)
+      deriveInternal[T, json.Schema.`object`](specFD, requireObject = true)
     }
   }
 
   protected def deriveInternal[T: c.WeakTypeTag, S[_]](
     specFD: FieldDecorations = FieldDecorations.Empty,
-    noImplicitSearch: Boolean = false
+    noImplicitSearch: Boolean = false,
+    requireObject: Boolean = false
   ): c.Expr[S[T]] = {
     val tpe = weakTypeOf[T]
 
@@ -86,6 +87,12 @@ trait MacroCake
       val st = recursiveTypes.substitute(
         resolve(tpe, ctx, specFD, noImplicitSearch)
       )
+
+      if (requireObject && !st.isInstanceOf[U.Obj])
+        c.abort(
+          c.enclosingPosition,
+          s"Json.objectSchema[$tpe]: $tpe doesn't derive to an object schema (an implicit json.Schema[$tpe] or json.schema.Predef[$tpe] is in scope, or $tpe is recursive). Use Json.schema[$tpe]"
+        )
 
       st.withExtra(
         st.extra.copy(
@@ -104,15 +111,20 @@ trait MacroCake
   }
 
   def resolve(
-    tpe: Type,
+    tpe0: Type,
     ctx: ResolutionContext,
     specFD: FieldDecorations = FieldDecorations.Empty,
     noImplicitSearch: Boolean = false
   ): SchemaType = {
-    if (ctx contains tpe) {
-      val sig = signature(tpe)
-      ctx.onCycle(tpe)
-      U.Ref(tpe, q"$sig")
+    // see through a type alias (`type IntBox = Box[Int]`, `type Users = List[User]`): the alias has no type arguments of its own, and refs and defs must be named after the same type
+    val tpe  = tpe0.dealias
+    val seen = ctx find tpe
+    if (seen.isDefined) {
+      // a recursive ref takes the name of the def it closes: `dealias` doesn't normalize type arguments, so the current spelling may differ
+      val defTpe = seen.get
+      val sig    = signature(defTpe)
+      ctx.onCycle(defTpe)
+      U.Ref(defTpe, q"$sig")
     } else if (T.isNothing(tpe)) {
       c.abort(c.enclosingPosition, "No json.Schema[_] for Nothing")
     } else {
