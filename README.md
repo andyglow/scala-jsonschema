@@ -84,7 +84,21 @@ for the full list):
   sealed parent `Base` (that dropped the other subtypes) or for a non-sealed trait (which now fails to derive).
 - **A scaladoc `@param` for a non-existent field is a warning**, for the root and nested types alike (it failed the
   root before).
+- **Scala 2: an undocumented class gets no description.** It used to inherit the nearest earlier doc comment in its
+  file (of another class, a method, ...), including its `@param` field descriptions. Now only the doc comment right
+  before the declaration counts, as on Scala 3.
 - `def.toDefinition(name)` renames only its own definition and the refs to it.
+- **Scala 3: type names that Scala 3 doesn't keep.** Scala 3 replaces a parameterized alias that only renames a
+  type (`type MyList[A] = List[A]`, `type Wrapped[A] = Box[A]`) before the macro sees it, so `Json.sig` and
+  definition names show the type it stands for (`scala.List[scala.Int]`, `pkg.Box[scala.Int]`). Scala 2 shows the
+  alias (`pkg.MyList[scala.Int]`). Definition names also spell the standard collections the usual way in type
+  arguments (`scala.List`, `scala.Vector`, `scala.Predef.Map`, ...), even where you wrote the full class name
+  (`scala.collection.immutable.List`, which Scala 2 keeps). That way the name is the same whether the model is
+  compiled with your code or comes from another module. Other aliases (`type StrMap[V] = Map[String, V]`,
+  `type Users = List[User]`) and the usual spellings of the standard collections give the same names on Scala 2
+  and 3.
+- **Scala 2: field annotations with the `@field` meta-annotation count** (`@(description @field)("...")`,
+  `@(readOnly @field)`, `@(writeOnly @field)`); they were silently ignored.
 
 ## Generate JSON Schema from Scala classes
 
@@ -518,6 +532,22 @@ and expect
 }
 ``` 
 
+### Scala 3: `derives json.Schema`
+On Scala 3 (port in progress), `derives json.Schema` is the same as a user-provided implicit `json.Schema` in the companion,
+so the type becomes a definition named after it, and fields of that type refer to it with `$ref`.
+```scala
+case class Person(name: String) derives json.Schema
+case class Team(lead: Person, deputy: Option[Person])  // both fields: {"$ref": "#/definitions/<pkg>.Person"}
+```
+A generic class's `derives` needs a `json.Schema` (not just a built-in) for each type argument: `summon[json.Schema[Box[Int]]]`
+doesn't compile, while `Json.schema[Box[Int]]` derives `Box[Int]` inline. A type argument that is a definition keeps its name.
+
+A *recursive* generic class with `derives` (`case class Tree[A](value: A, children: List[Tree[A]]) derives json.Schema`) gets a definition
+named after the type parameter inside its given (`<pkg>.Tree[<pkg>.Tree.A]`). Where `Tree[Int]` is used as a field (or as the root of `Json.schema`),
+the definition and its `$ref`s are renamed to `<pkg>.Tree[scala.Int]`, so `Tree[Int]` and `Tree[String]` in one schema don't collide.
+Known limitations (BACKLOG #9): `summon[json.Schema[Tree[Int]]]` itself keeps the type-parameter name, and so does a `Tree[A]` nested inside
+another generic `derives` class (`case class Forest[A](tree: Tree[A]) derives json.Schema`).
+
 ## Implicit Predefs (`Json.auto`)
 
 Some APIs ask for an implicit `json.schema.Predef[T]` rather than a schema value. `import json.Json.auto._`
@@ -916,6 +946,9 @@ This allows to reuse scaladoc that you might want to have anyways.
 This approach has it's own drawbacks, though.
 - model classes must reside in the same module with schemas
 - it requires non-incremental build or full-rebuild to take effect 
+
+Only the doc comment right before a class counts (annotations, modifiers and ordinary comments may sit in between).
+A class without one gets no description.
 
 Example:
 ```scala

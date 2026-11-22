@@ -115,7 +115,7 @@ sealed trait Schema[+T] {
     toDefinition(refName)
 }
 
-object Schema {
+object Schema extends SchemaCompanionPlatform {
 
   def apply[T: Schema]: Schema[T] = implicitly
 

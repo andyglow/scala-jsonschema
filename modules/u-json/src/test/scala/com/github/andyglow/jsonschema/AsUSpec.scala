@@ -37,7 +37,9 @@ class AsUSpec extends AnyPropSpec {
   property("Check Schema.asU draft-04") {
     import AsU._
 
-    implicit val ratingSchema = json.Json.schema[Rating]
+    // a typed implicit in a local object: Scala 3 needs the type, and a typed local implicit in a block is a forward reference on Scala 2
+    object defs { implicit val ratingSchema: json.Schema[Rating] = json.Json.schema[Rating] }
+    import defs._
 //    ratingSchema.refName
 
     json.Json.schema[User].asU(Draft04()) shouldEqual ujson.Obj(
@@ -76,7 +78,9 @@ class AsUSpec extends AnyPropSpec {
   property("Check Schema.asU draft-06") {
     import AsU._
 
-    implicit val ratingSchema = json.Json.schema[Rating]
+    // a typed implicit in a local object: Scala 3 needs the type, and a typed local implicit in a block is a forward reference on Scala 2
+    object defs { implicit val ratingSchema: json.Schema[Rating] = json.Json.schema[Rating] }
+    import defs._
 //    ratingSchema.refName
 
     json.Json
@@ -119,7 +123,9 @@ class AsUSpec extends AnyPropSpec {
   property("Check Schema.asU draft-07") {
     import AsU._
 
-    implicit val ratingSchema = json.Json.schema[Rating]
+    // a typed implicit in a local object: Scala 3 needs the type, and a typed local implicit in a block is a forward reference on Scala 2
+    object defs { implicit val ratingSchema: json.Schema[Rating] = json.Json.schema[Rating] }
+    import defs._
 //    ratingSchema.refName
 
     json.Json

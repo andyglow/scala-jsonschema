@@ -74,8 +74,12 @@ class DefinitionsSpec extends AnyWordSpec {
     }
 
     "be exposed out of value-classes (type signatures)" in {
-      implicit val idS   = Json.schema[UserId]
-      implicit val nameS = Json.schema[UserName]
+      // typed implicits in a local object: Scala 3 needs the type, and a typed local implicit in a block is a forward reference on Scala 2
+      object defs {
+        implicit val idS: Schema[UserId]     = Json.schema[UserId]
+        implicit val nameS: Schema[UserName] = Json.schema[UserName]
+      }
+      import defs._
 
       val userS = Json.schema[User]
 
@@ -118,11 +122,15 @@ class DefinitionsSpec extends AnyWordSpec {
     "be exposed out of value-classes (custom names used)" in {
       import json.schema.validation.Instance._
 
-      implicit val idS   = Json.schema[UserId] toDefinition "user-id"
-      implicit val nameM = Magnet.mk[UserName, String]
-      implicit val nameS = Json.schema[UserName] toDefinition "user-name" withValidation (
-        `maxLength` := 100
-      )
+      // typed implicits in a local object: Scala 3 needs the type, and a typed local implicit in a block is a forward reference on Scala 2
+      object defs {
+        implicit val idS: Schema[UserId]             = Json.schema[UserId] toDefinition "user-id"
+        implicit val nameM: Magnet[UserName, String] = Magnet.mk[UserName, String]
+        implicit val nameS: Schema[UserName]         = Json.schema[UserName] toDefinition "user-name" withValidation (
+          `maxLength` := 100
+        )
+      }
+      import defs._
 
       val userS = Json.schema[User]
 
@@ -151,8 +159,12 @@ class DefinitionsSpec extends AnyWordSpec {
     }
 
     "be exposed out of value-classes (type signatures, reverse order)" in {
-      implicit val nameS = Json.schema[UserName]
-      implicit val idS   = Json.schema[UserId]
+      // typed implicits in a local object: Scala 3 needs the type, and a typed local implicit in a block is a forward reference on Scala 2
+      object defs {
+        implicit val nameS: Schema[UserName] = Json.schema[UserName]
+        implicit val idS: Schema[UserId]     = Json.schema[UserId]
+      }
+      import defs._
 
       val userS = Json.schema[User]
 
@@ -193,8 +205,12 @@ class DefinitionsSpec extends AnyWordSpec {
     }
 
     "be exposed out of value-classes (custom names used, reverse order)" in {
-      implicit val nameS = Json.schema[UserName] toDefinition "user-name"
-      implicit val idS   = Json.schema[UserId] toDefinition "user-id"
+      // typed implicits in a local object: Scala 3 needs the type, and a typed local implicit in a block is a forward reference on Scala 2
+      object defs {
+        implicit val nameS: Schema[UserName] = Json.schema[UserName] toDefinition "user-name"
+        implicit val idS: Schema[UserId]     = Json.schema[UserId] toDefinition "user-id"
+      }
+      import defs._
 
       val userS = Json.schema[User]
 

@@ -8,13 +8,9 @@ import json.Schema.`object`.Field
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers._
 
-/** Expected Scala 3 values for TRIAGE-A behaviors that don't compile on Scala 2 at all.
-  *
-  * NOT COMPILED YET: written against the Scala 2 API by hand. The s3/build scaffolding skips test files that call the macro
-  * on Scala 3 until the Scala 3 derivation exists; then this file runs.
-  */
+/** Expected Scala 3 values for TRIAGE-A behaviors that don't compile on Scala 2 at all (models in FieldsCharSpec). */
 class Scala3OnlyCharSpec extends AnyFunSuite {
-  import FieldsAnnotationsCharSpec._
+  import FieldsCharSpec._
 
   test("F4: `= Some(x)` emits the default via ToValue", TriageA) {
     import OptionToValue._

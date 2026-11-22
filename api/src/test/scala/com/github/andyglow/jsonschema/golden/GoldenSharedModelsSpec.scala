@@ -7,8 +7,8 @@ import json.Json
 import json.schema.Flag
 import org.scalatest.funsuite.AnyFunSuite
 
-/** Golden files for the models the existing specs share (they live in those specs' companion objects or at the top level of the test package). The existing specs check these models with
-  * order-insensitive matchers; the golden files pin the exact Schema tree (incl. field order and ref names) and the rendered JSON.
+/** Golden files for the models the existing specs share (they live in those specs' companion objects or at the top level of the test package). The plain products are in [[GoldenProductModelsSpec]].
+  * The existing specs check these models with order-insensitive matchers; the golden files pin the exact Schema tree (incl. field order and ref names) and the rendered JSON.
   */
 class GoldenSharedModelsSpec extends AnyFunSuite {
   import Golden.check
@@ -51,20 +51,10 @@ class GoldenSharedModelsSpec extends AnyFunSuite {
     check("shared/SumTypeModels.FooBarInsideCompanionWithAnnotations.EnumsAsOneOf", Json.schema[FooBarInsideCompanionWithAnnotations])
   }
 
-  test("model package") {
+  test("model package (sum types)") {
     check("shared/model.Active", Json.schema[Active])
     check("shared/model.BetaFeature", Json.schema[BetaFeature])
     check("shared/model.Role", Json.schema[Role])
-    check("shared/model.Credentials", Json.schema[Credentials])
-    check("shared/model.Notes", Json.schema[Notes])
-    check("shared/model.Foo", Json.schema[Foo])
-  }
-
-  test("GenericSchemaMacroSpec models") {
-    check("shared/GenericCC[Int]", Json.schema[GenericCC[Int]])
-    check("shared/DoubleGenericCC[String]", Json.schema[DoubleGenericCC[String]])
-    check("shared/DoubleGenericCCWithDefaults[Long]", Json.schema[DoubleGenericCCWithDefaults[Long]])
-    check("shared/DoubleGenericCCWithPredefinedDefaults[Long]", Json.schema[DoubleGenericCCWithPredefinedDefaults[Long]])
   }
 
   test("DefinitionsSpec models") {
@@ -104,22 +94,5 @@ class GoldenSharedModelsSpec extends AnyFunSuite {
     check("shared/RecursiveTypesSpec.case1.SList", Json.schema[case1.SList])
     check("shared/RecursiveTypesSpec.case2.Node", Json.schema[case2.Node])
     check("shared/RecursiveTypesSpec.case3.User", Json.schema[case3.User])
-  }
-
-  test("RWSpec models") {
-    check("shared/RWSpec.Foo", Json.schema[RWSpec.Foo])
-  }
-
-  test("DocumentationSpec models") {
-    import DocumentationSpec._
-    check("shared/DocumentationSpec.FromScaladoc", Json.schema[FromScaladoc])
-    check("shared/DocumentationSpec.FromAnnotations", Json.schema[FromAnnotations])
-    check("shared/DocumentationSpec.EscapeCheck", Json.schema[EscapeCheck])
-    check("shared/DocumentationSpec.Outer", Json.schema[Outer])
-    check("shared/DocumentationSpec.FromSpec.objectSchema", Json.objectSchema[FromSpec]("a" -> "A Param", "b" -> "B Param"))
-  }
-
-  test("CRLFSourceSpec models") {
-    check("shared/CRLFSourceSpec.CC", Json.schema[CRLFSourceSpec.CC])
   }
 }

@@ -23,11 +23,15 @@ private[jsonschema] trait SchemaTypes {
       )
     }
 
+    /** Explicit type arguments for `withValidation` (`[TT >: T, B]`), where inferring them would pick a `validation.Magnet` that doesn't exist. */
+    protected def validationTypeArgs: List[Tree] = Nil
+
     final def tree: Tree = {
 
       val withValidationsApplied =
-        if (extra.validations.nonEmpty) q"$prefix.withValidation(..${extra.validations})"
-        else prefix
+        if (extra.validations.isEmpty) prefix
+        else if (validationTypeArgs.isEmpty) q"$prefix.withValidation(..${extra.validations})"
+        else q"$prefix.withValidation[..$validationTypeArgs](..${extra.validations})"
       val withTitle = extra.title.fold(withValidationsApplied) { x =>
         q"$withValidationsApplied.withTitle($x)"
       }
@@ -97,6 +101,10 @@ private[jsonschema] trait SchemaTypes {
       type Self = Dict;
       def prefix =
         q"${N.Schema}.`dictionary`[$keyTpe, $valueTpe, $containerTpe](${valueSchema.tree})";
+      // the key pattern is a `Map[_, _]` validation; for a container other than Map itself (SortedMap, ListMap) the magnet
+      // would be searched for `C[K, V]`, and there is none
+      override protected def validationTypeArgs: List[Tree] =
+        List(tq"_root_.scala.collection.immutable.Map[$keyTpe, $valueTpe]", tq"_root_.scala.collection.immutable.Map[_, _]")
       val tpe                            = appliedType(containerTpe, List(keyTpe, valueTpe));
       def withExtra(x: SchemaType.Extra) = copy(extra = x)
     }

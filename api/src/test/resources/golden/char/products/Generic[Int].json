@@ -3,43 +3,39 @@
     "kind": "object",
     "fields": [
       {
-        "name": "a",
+        "name": "t",
         "required": true,
-        "description": "A Param",
-        "rwMode": "ReadWrite",
-        "schema": {
-          "kind": "string"
-        }
-      },
-      {
-        "name": "b",
-        "required": true,
-        "description": "B Param",
+        "description": "a T",
         "rwMode": "ReadWrite",
         "schema": {
           "kind": "integer"
         }
+      },
+      {
+        "name": "ts",
+        "required": false,
+        "rwMode": "ReadOnly",
+        "schema": {
+          "kind": "integer"
+        }
       }
-    ],
-    "description": "My perfect class"
+    ]
   },
   "draft-04": {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "additionalProperties": false,
-    "description": "My perfect class",
     "properties": {
-      "a": {
-        "description": "A Param",
-        "type": "string"
+      "t": {
+        "description": "a T",
+        "type": "integer"
       },
-      "b": {
-        "description": "B Param",
+      "ts": {
+        "readOnly": true,
         "type": "integer"
       }
     },
     "required": [
-      "a",
-      "b"
+      "t"
     ],
     "type": "object"
   },
@@ -47,20 +43,18 @@
     "$id": "golden",
     "$schema": "http://json-schema.org/draft-07/schema#",
     "additionalProperties": false,
-    "description": "My perfect class",
     "properties": {
-      "a": {
-        "description": "A Param",
-        "type": "string"
+      "t": {
+        "description": "a T",
+        "type": "integer"
       },
-      "b": {
-        "description": "B Param",
+      "ts": {
+        "readOnly": true,
         "type": "integer"
       }
     },
     "required": [
-      "a",
-      "b"
+      "t"
     ],
     "type": "object"
   },
@@ -68,20 +62,18 @@
     "$id": "golden",
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "additionalProperties": false,
-    "description": "My perfect class",
     "properties": {
-      "a": {
-        "description": "A Param",
-        "type": "string"
+      "t": {
+        "description": "a T",
+        "type": "integer"
       },
-      "b": {
-        "description": "B Param",
+      "ts": {
+        "readOnly": true,
         "type": "integer"
       }
     },
     "required": [
-      "a",
-      "b"
+      "t"
     ],
     "type": "object"
   }

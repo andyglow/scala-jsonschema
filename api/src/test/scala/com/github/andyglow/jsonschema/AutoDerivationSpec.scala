@@ -84,6 +84,8 @@ class AutoDerivationSpec extends AnyFunSuite {
     import Json.auto._
     val s = Json.schema[HasExplicit]
     s shouldEqual Plain.hasExplicit
+    // auto's own Predef keeps it too (this also uses the import: Json.schema never takes auto's given, so on Scala 3 the import is otherwise unused)
+    predefOf[HasExplicit] shouldEqual s
     s shouldEqual `object`[HasExplicit](
       Field("e", `def`[Explicit]("com.github.andyglow.jsonschema.AutoDerivationSpec.Explicit", `object`[Explicit](Field("x", `string`)))),
       Field("f", `object`[Foo](Field("a", `integer`)))

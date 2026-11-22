@@ -54,7 +54,7 @@ class SchemaMacroSpec extends AnyWordSpec {
         `object`(
           Field("set", `array`(`integer`, unique = true), required = false, default = Set(1, 5, 9)),
           Field("list", `array`(`boolean`), required = false, default = List(true, false)),
-          Field("vector", `array`(`number`[Long]), required = false, default = Vector(9, 7)),
+          Field("vector", `array`[Long, Vector](`number`[Long]), required = false, default = Vector(9L, 7L)),
           Field(
             "strMap",
             `dictionary`(`number`[Double]),

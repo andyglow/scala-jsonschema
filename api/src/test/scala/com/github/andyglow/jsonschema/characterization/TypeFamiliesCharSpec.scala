@@ -3,8 +3,6 @@ package com.github.andyglow.jsonschema.characterization
 import com.github.andyglow.jsonschema.harness.{ErrorPhrases, Golden, Scala}
 import com.github.andyglow.jsonschema.harness.CompileErrors.{errorOf, outcome}
 import json._
-import json.Schema._
-import json.schema.Flag
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers._
 
@@ -20,14 +18,6 @@ object TypeFamiliesCharSpec {
   class NonCaseValueClass(val v: Int) extends AnyVal
   case class Box[T](v: T)
   type IntBox = Box[Int]
-  sealed trait NoKids
-
-  object Colors extends Enumeration {
-    val Red   = Value("custom-red")
-    val Green = Value
-    val Blue  = Value(10, "custom-blue")
-  }
-  case class HasColors(c: Colors.Value)
 
   case class JavaStringKeys(m: Map[java.lang.String, Int])
   case class ScalaStringKeys(m: Map[String, Int])
@@ -83,15 +73,8 @@ class TypeFamiliesCharSpec extends AnyFunSuite {
     errorOf(assertCompiles("Json.schema[NonCaseValueClass]")) should include(NotSupported)
   }
 
-  test("T3: a Java enum is a string enum of its constant names (bugs-1 #3)") {
-    // 0.7: macro crash `ScalaReflectionException: Java enum MINUTES is not a class`
-    import java.time.{DayOfWeek, Month}
-    val days = DayOfWeek.values.toList.map(d => com.github.andyglow.json.Value.str(d.name))
-    Json.schema[DayOfWeek] shouldEqual `enum`.of[DayOfWeek](`string`, days.head, days.tail: _*)
-    check("char/types/java.util.concurrent.TimeUnit", Json.schema[java.util.concurrent.TimeUnit])
-    check("char/types/java.time.DayOfWeek", Json.schema[DayOfWeek])
-    check("char/types/java.time.Month", Json.schema[Month])
-    // as a field, in a collection, as a Map key
+  test("T3: a Java enum as a field, in a collection, as a Map key (bugs-1 #3)") {
+    // the Java enum on its own: SumsEnumsCharSpec
     check("char/types/Shift", Json.schema[Shift])
   }
 
@@ -99,17 +82,6 @@ class TypeFamiliesCharSpec extends AnyFunSuite {
     // `type IntBox = Box[Int]`: 0.7 said `schema for T is not supported` (the alias has no type arguments of its own)
     check("char/types/Box[Int]", Json.schema[Box[Int]])
     check("char/types/Box[Int]", Json.schema[IntBox])
-  }
-
-  test("T6: a sealed trait without subclasses doesn't compile") {
-    errorOf(assertCompiles("Json.schema[NoKids]")) should include(NoItems)
-  }
-
-  test("T8: scala.Enumeration uses val names, not the Value(name) strings") {
-    val s = Json.schema[Colors.Value]
-    check("char/types/Colors.Value", s)
-    s shouldBe `enum`.of("Red", "Green", "Blue")
-    check("char/types/HasColors", Json.schema[HasColors])
   }
 
   test("T10: map key patterns") {
@@ -122,7 +94,8 @@ class TypeFamiliesCharSpec extends AnyFunSuite {
   }
 
   test("T10: enum map keys with EnumsAsOneOf don't compile (TRIAGE-B, see TriageBPendingSpec)") {
-    val err = errorOf(assertCompiles("{ implicit val flag: Flag with Flag.EnumsAsOneOf = null; Json.schema[EnumKeys] }"))
+    // the flag fully qualified: an import used only inside the quoted code is an unused import on Scala 3
+    val err = errorOf(assertCompiles("{ implicit val flag: json.schema.Flag with json.schema.Flag.EnumsAsOneOf = null; Json.schema[EnumKeys] }"))
     // 0.7: an error in the generated code (`array[K, Map]`); now a macro error naming the key type
     err should include(NotSupported)
     err should include("EnumsAsOneOf")

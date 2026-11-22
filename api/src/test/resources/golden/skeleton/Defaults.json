@@ -4,61 +4,86 @@
     "fields": [
       {
         "name": "a",
-        "required": true,
-        "description": "leaked param",
+        "required": false,
+        "default": "x",
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "string"
+        }
+      },
+      {
+        "name": "b",
+        "required": false,
         "rwMode": "ReadWrite",
         "schema": {
           "kind": "integer"
         }
+      },
+      {
+        "name": "d",
+        "required": false,
+        "default": 1.5,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "number"
+        }
       }
-    ],
-    "description": "Leaked doc"
+    ]
   },
   "draft-04": {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "additionalProperties": false,
-    "description": "Leaked doc",
     "properties": {
       "a": {
-        "description": "leaked param",
+        "default": "x",
+        "type": "string"
+      },
+      "b": {
         "type": "integer"
+      },
+      "d": {
+        "default": 1.5,
+        "type": "number"
       }
     },
-    "required": [
-      "a"
-    ],
     "type": "object"
   },
   "draft-07": {
     "$id": "golden",
     "$schema": "http://json-schema.org/draft-07/schema#",
     "additionalProperties": false,
-    "description": "Leaked doc",
     "properties": {
       "a": {
-        "description": "leaked param",
+        "default": "x",
+        "type": "string"
+      },
+      "b": {
         "type": "integer"
+      },
+      "d": {
+        "default": 1.5,
+        "type": "number"
       }
     },
-    "required": [
-      "a"
-    ],
     "type": "object"
   },
   "draft-2020-12": {
     "$id": "golden",
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "additionalProperties": false,
-    "description": "Leaked doc",
     "properties": {
       "a": {
-        "description": "leaked param",
+        "default": "x",
+        "type": "string"
+      },
+      "b": {
         "type": "integer"
+      },
+      "d": {
+        "default": 1.5,
+        "type": "number"
       }
     },
-    "required": [
-      "a"
-    ],
     "type": "object"
   }
 }
