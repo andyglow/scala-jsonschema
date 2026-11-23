@@ -313,7 +313,7 @@ lazy val enumeratum = crossModule(crossProject(JSPlatform, JVMPlatform))
   .dependsOn(core, api)
   .settings(
     name                                   := "scala-jsonschema-enumeratum",
-    libraryDependencies += "com.beachape" %%% "enumeratum" % "1.9.8",
+    libraryDependencies += "com.beachape" %%% "enumeratum" % "1.9.9",
     // enumeratum's own Scala 3 macro (`findValues`) needs the trees of the enum's members
     Test / scalacOptions ++= { if (scalaV.value.isScala3) Seq("-Yretain-trees") else Nil }
   )
