@@ -195,7 +195,7 @@ lazy val api = crossModule(crossProject(JSPlatform, JVMPlatform))
     // the profiles acceptance suite (api's petshop harness, run by every bridge module via test->test) validates real codec output against rendered schemas.
     // 1.5.x is the last line built for Java 8 (classfile 52); slf4j-nop mutes its logging. JVM only: the validator is a Java library
     libraryDependencies ++= Seq(
-      "com.networknt" % "json-schema-validator" % "1.5.9"  % Test,
+      "com.networknt" % "json-schema-validator" % "3.0.9"  % Test,
       "org.slf4j"     % "slf4j-nop"             % "2.0.17" % Test
     ),
     // test-models on the test classpath without `dependsOn`, which would put the unpublished module into api's POM
