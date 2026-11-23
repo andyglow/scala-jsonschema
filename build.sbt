@@ -36,7 +36,7 @@ def scalaReflect(scalaVersion: String): Seq[ModuleID] =
   if (scalaVersion startsWith "3.") Nil else Seq(("org.scala-lang" % "scala-reflect" % scalaVersion % Compile).withSources().withJavadoc())
 
 // scaladoc-ast/-parser for the published modules; keep in step with sbt-scaladoc in project/plugins.sbt
-val scaladocV = "0.3.0"
+val scaladocV = "0.4.0"
 
 def versionRangeDirs(base: File, scalaVersion: String): Seq[File] =
   CrossVersion.partialVersion(scalaVersion) match {
