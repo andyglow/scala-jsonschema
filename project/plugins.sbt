@@ -12,7 +12,7 @@ addSbtPlugin("org.portable-scala" % "sbt-scalajs-crossproject" % "1.3.2")
 
 // scaladoc: only on the unpublished test-models module (embeds scaladoc on Scala 2); the published modules declare
 // scaladoc-ast/-parser by hand, because the plugin makes scaladoc-parser `Provided`
-addSbtPlugin("io.github.andyglow" % "sbt-scaladoc" % "0.3.0")
+addSbtPlugin("io.github.andyglow" % "sbt-scaladoc" % "0.5.0")
 
 // Format
 addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.6.2")
