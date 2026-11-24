@@ -1,5 +1,5 @@
 # refined: name the unsupported predicate on Scala 2, and accept aliased predicates  (issue #516, item B23)
-Status: draft
+Status: approved (r-b23, 2026-11-23)
 
 ## Problem
 
