@@ -1,5 +1,5 @@
 # Field naming in profiles  (issue #292, closed #270, item D4)
-Status: draft
+Status: approved (r-d4, 2026-11-23)
 
 ## Problem
 
