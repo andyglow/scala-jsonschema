@@ -40,6 +40,12 @@ object CirceSemiautoCodecs {
 object CirceSchemas {
   import com.github.andyglow.jsonschema.AsCirce.toValue // the Some(1) default's value
   val reading: Schema[Reading] = json.Json.schema[Reading]
+
+  // circe writes a Char / java.lang.Character as a one-character string (#463)
+  case class Initials(first: Char, last: Character)
+  implicit val initialsE: Encoder[Initials] = io.circe.generic.semiauto.deriveEncoder
+  val initials: Schema[Initials]            = json.Json.schema[Initials]
+  val someInitials: List[Initials]          = List(Initials('a', 'Z'), Initials(' ', '\n'), Initials('é', '.'))
 }
 
 class CirceAcceptanceSpec extends AnyWordSpec {
@@ -67,6 +73,7 @@ class CirceAcceptanceSpec extends AnyWordSpec {
     "members nested in the trait's companion" in assertValid(rendered(Schemas.box), written(Samples.boxes))
     "a family of case objects only" in assertValid(rendered(Schemas.paint), written(Samples.paints))
     "Option fields with defaults" in assertValid(rendered(CirceSchemas.reading), written(Samples.readings))
+    "Char and java.lang.Character fields (#463)" in assertValid(rendered(CirceSchemas.initials), written(CirceSchemas.someInitials))
     "ignore @discriminator, which circe's derivation never sees (R4B)" in assertValid(rendered(Schemas.shape), written(Samples.shapes))
     "wrap a member that has an implicit Schema of its own" in assertValid(rendered(Schemas.payment), written(Samples.payments))
     "be the cross-check row of circe semiauto" in {
