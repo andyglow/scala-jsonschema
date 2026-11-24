@@ -1,5 +1,7 @@
 package com.github.andyglow.jsonschema.derivation
 
+import scala.quoted.*
+
 /** Scala 3 tuple types spelled as `*:` chains (`Int *: String *: EmptyTuple`, what `Tuple.Concat` / `Tuple.Map` / mirrors produce), issue #467. See `docs/design/467-s3-tuple-cons.md`.
   *
   *   - a chain of known arity 1..22 is normalized to its `TupleN` at the top of [[Resolve.resolve]], so it is the same type as `(A, B)` everywhere: output, implicit search, definition names;
@@ -52,9 +54,16 @@ trait Tuples { this: Derivation =>
   }
 
   /** `tpe` itself, or its `simplified` form (a field typed `Tuple.Concat[A, B]`) when only that is a tuple shape. */
+  /** A match type, or a match-type alias applied (`Tuple.Concat[A, B]`: `dealias` doesn't unfold those): the only types `simplified` can turn into a tuple. */
+  private def isMatchType(tpe: TypeRepr): Boolean = tpe match {
+    case _: MatchType       => true
+    case AppliedType(tc, _) => !tc.typeSymbol.isClassDef
+    case _                  => false
+  }
+
   private def asTuple(tpe: TypeRepr): (TypeRepr, TupleShape) =
     tupleShape(tpe) match {
-      case TupleShape.NotATuple =>
+      case TupleShape.NotATuple if isMatchType(tpe.dealias) => // only a match type is worth reducing (B10-R7)
         val s = tpe.dealias.simplified
         tupleShape(s) match {
           case TupleShape.NotATuple => (tpe, TupleShape.NotATuple)
@@ -69,6 +78,12 @@ trait Tuples { this: Derivation =>
     case (t, _)                                           => t
   }
 
+  /** `T` is a `*:` chain of known arity (for `Json.objectSchema`'s case-class check: the raw `*:` isn't one). */
+  def isKnownTuple[T: Type]: Boolean = asTuple(TypeRepr.of[T]) match {
+    case (_, TupleShape.Known(_)) => true
+    case _                        => false
+  }
+
   /** The type the root's title/description are read from: the `TupleN` of a short chain (not the library's `*:` scaladoc), none for a longer one, else `tpe`. */
   def rootTextsType(tpe: TypeRepr): Option[TypeRepr] = asTuple(tpe) match {
     case (_, TupleShape.Known(elems)) if elems.size > 22 => None
@@ -81,10 +96,17 @@ trait Tuples { this: Derivation =>
     def where = if (ctx.isRoot) "" else s", ${ctx.show}"
     tupleShape(tpe) match {
       case TupleShape.Known(elems) =>
-        val fields = elems.zipWithIndex map { (e, i) =>
+        val names = elems.indices.toList.map(i => s"_${i + 1}")
+        // `Json.objectSchema` decorations (root only), checked like a case class's (Products.fieldDescriptions)
+        val fromSpec = if (ctx.isRoot) objectSchemaDecorations else Nil
+        fromSpec foreach { (k, _) =>
+          if (!names.contains(k)) report.errorAndAbort(s"unknown field: $k. ${signature(tpe, dealiased = true)} fields are: ${names.mkString(", ")}")
+        }
+        val descrs = fromSpec.toMap
+        val fields = elems.zip(names) map { (e, name) =>
           val ft               = e.dealias
           val (node, optional) = fieldNode(tpe, ft, ctx)
-          Field(s"_${i + 1}", ft, node, optional, hasDefault = false, default = None, description = None, rwMode = RWMode.ReadWrite, annotations = Nil)
+          Field(name, ft, node, optional, hasDefault = false, default = None, description = descrs.get(name), rwMode = RWMode.ReadWrite, annotations = Nil)
         }
         Some(Obj(tpe, ProductKind.Tuple(fields.size), fields))
       case TupleShape.Unknown =>

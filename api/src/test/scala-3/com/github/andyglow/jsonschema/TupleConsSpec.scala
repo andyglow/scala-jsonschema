@@ -74,6 +74,15 @@ class TupleConsSpec extends AnyFunSuite {
     Json.schema[Has23] shouldEqual `object`[Has23](Field("t", `object`.fromList[T23](fields)))
   }
 
+  test("Json.objectSchema takes the cons spelling, also beyond 22 elements (B10-R6)") {
+    Json.objectSchema[Int *: String *: EmptyTuple]() shouldEqual Json.objectSchema[(Int, String)]()
+    Json.objectSchema[Int *: String *: EmptyTuple]("_1" -> "a number") shouldEqual Json.objectSchema[(Int, String)]("_1" -> "a number")
+    Json.objectSchema[T23]() shouldEqual `object`.fromList[T23]((1 to 23).toList.map(i => Field(s"_$i", `integer`)))
+    Json.objectSchema[T23]("_23" -> "the last").fields.find(_.name == "_23").flatMap(_.description) shouldBe Some("the last")
+    typeCheckErrors("""Json.objectSchema[T23]("_24" -> "none")""").map(_.message).mkString should include("unknown field: _24")
+    typeCheckErrors("Json.objectSchema[Tuple]()").map(_.message).mkString should include("can't be used against non-case classes")
+  }
+
   test("more than 22 elements under an implicit: a definition named by the *: signature") {
     import Given23.given
     val name = List.fill(23)("scala.*:[scala.Int,").mkString + "scala.EmptyTuple" + "]" * 23

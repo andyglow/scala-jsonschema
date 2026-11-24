@@ -93,13 +93,15 @@ object Derivation {
   def deriveObject[T: Type](decorations: Expr[Seq[(String, String)]])(using Quotes): Expr[Schema.`object`[T]] = {
     import quotes.reflect.*
     val ObjectSchema = "Json.objectSchema"
+    val d            = new Derivation(Mode.ObjectSchema, decorationsOf(decorations))
     val sym          = TypeRepr.of[T].dealias.typeSymbol
-    if (!sym.isClassDef) report.errorAndAbort(s"$ObjectSchema: can be used only against case classes")
+    // a `*:` chain of known arity is a tuple, i.e. a case class (`TupleN`), or the same object beyond 22 (Tuples.scala)
+    if (d.isKnownTuple[T]) ()
+    else if (!sym.isClassDef) report.errorAndAbort(s"$ObjectSchema: can be used only against case classes")
     // a case object passes (Scala 2: its module class is a case class) and fails in the derivation: "is not supported"
     else if (!sym.flags.is(Flags.Case)) report.errorAndAbort(s"$ObjectSchema: can't be used against non-case classes")
     else if (TypeRepr.of[T] <:< TypeRepr.of[AnyVal]) report.errorAndAbort(s"$ObjectSchema: can't be used against value classes")
 
-    val d    = new Derivation(Mode.ObjectSchema, decorationsOf(decorations))
     val node = d.build[T]
     node match {
       case _: d.Obj => ()

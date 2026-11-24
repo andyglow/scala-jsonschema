@@ -171,3 +171,11 @@ Round 1 (r-b10, doc 696f4a1):
 - B10-R3 (nit) no new dangling `, ` → accepted: `, ${ctx.show}` only off the root.
 - B10-R4 (nit) >22 definition names → accepted: documented under option A, one name pinned in a test.
 - B10-R5 (nit) 3.8 stdlib docs → no change needed; the no-description assertions stay in step 5.
+
+Code review round 1 (r-b10, PR #472 at 34e4877):
+- B10-R6 (must) `Json.objectSchema[Int *: String *: EmptyTuple]()` failed the case-class pre-check in `Derivation.deriveObject`
+  (it looked at the raw `*:` symbol) → accepted: the pre-check passes a `*:` chain of known arity (`isKnownTuple`); a `>22`
+  root also takes `objectSchema` decorations, with the same "unknown field" check as a case class. Tests added
+  (short and 23-element chains, a decoration, an unknown field, `objectSchema[Tuple]` still rejected).
+- B10-R7 (nit) `simplified` on every type → accepted: the second look runs only for a match type or an applied match-type
+  alias (`Tuple.Concat[A, B]`: `dealias` doesn't unfold it, so the check is "applied type constructor that isn't a class").
