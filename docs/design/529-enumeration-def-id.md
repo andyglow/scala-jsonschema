@@ -114,6 +114,11 @@ And a field `d: Z1.Cat` with its own implicit `Schema` becomes a definition `<pk
 `<pkg>.Zoo.Cat`. Both definitions have the same shape, so the schema is valid; it's only duplicated. Making members
 follow the outer prefix would change tags, so it's rejected.
 
+> **Note (added by the lead, from B33-R4):** B33 (#539) rebases family members onto the outer prefix (`asSeenFrom`) to fix
+> abstract type members. Once B33 lands, "members have the prefix `Zoo.this`, so the rule doesn't apply" is no longer why
+> tags stay: B33's step 4 is (members are named from today's member type). If B29 lands first, B33's step 4 pins become
+> the regression test for these tags.
+
 Prototype (uncommitted, both versions): the repro gets distinct names on 2.12/2.13/3.3, and the whole JVM suite passes with
 no other output change. See "Prototype result" below.
 
