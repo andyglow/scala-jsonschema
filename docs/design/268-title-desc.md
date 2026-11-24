@@ -1,5 +1,5 @@
 # Render `title` / `description` on every schema, and `@title` on fields  (issues #268, #290; item B1)
-Status: draft
+Status: approved (r-b1, 2026-11-23)
 
 ## Problem
 The draft renderers (`core/src/main/scala/com/github/andyglow/jsonschema/AsDraftSupport.scala`) emit a node's
@@ -179,6 +179,7 @@ non-object/non-const nodes in its lowering (L1).
    that titles/descriptions render on every schema kind, a definition's (or a field's on a definition-typed field) next
    to its `$ref`, which validators before 2019-09 ignore, so it's for doc tools there (B1-R6); and that
    `JsonSchemaProfile.Legacy` keeps 0.7's object/const-only texts. `makeDocs`. No CHANGELOG (lead).
+7. Gates per protocol step 8 (core + macros + api touched: JVM 2.12/2.13/3, `rootJS/test` on all three, fmt checks).
 
 ## Out of scope
 - (B1-R2) A **nested** derived type's own `@title`/`@description`/scaladoc (`case class Nested(c: Color, i: Inner)`
@@ -189,7 +190,6 @@ non-object/non-const nodes in its lowering (L1).
 - `value-class.toDefinition` / `withValidationsAddedFrom` dropping texts and validations: item B13.
 - #290's "customizable annotations" (user-defined keywords): needs an extension point in the ADT and renderers; the
   PR says it stays open (B1-R7).
-7. Gates per protocol step 8 (core + macros + api touched: JVM 2.12/2.13/3, `rootJS/test` on all three, fmt checks).
 
 ## Compatibility
 - Source/binary: no public signature changes (F2; the Legacy knob is private). Patch release under PVP (0.9.1).
@@ -213,3 +213,5 @@ Round 1 (r-b1, on cc4d73e):
 - B1-R5 (nit) L1 knob details + Legacy scaladoc → accepted: step 3.
 - B1-R6 (nit) `$ref` siblings before 2019-09 in the docs → accepted: step 6.
 - B1-R7 (nit) PR body: `Fixes #290`, custom annotations stay open → accepted: "Out of scope" + PR body.
+Round 2 (r-b1, on 8750908): approved; R4 pushback accepted.
+- B1-R8 (nit) plan step 7 sat under "Out of scope" → accepted: moved back into the plan.
