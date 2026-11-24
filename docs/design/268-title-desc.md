@@ -152,9 +152,9 @@ non-object/non-const nodes in its lowering (L1).
      `def(sig, inner.duplicate(title = vc.title orElse inner.title, description = vc.description orElse inner.description))`;
      `case d @ def(originalSig, inner)` keeps `d`'s own title/description (only those: its validations stay dropped,
      as today), so they render next to the `$ref` like a hand-built definition's.
-   - `value-class.toDefinition`: the body gets the same texts (`tpe.withValidationsAddedFrom(this)` starts from
-     `mkCopy()` and keeps neither node's texts). Validations are not touched (the reviewer reports
-     `withValidationsAddedFrom` separately to the lead).
+   - NOT `value-class.toDefinition` (`tpe.withValidationsAddedFrom(this)` starts from `mkCopy()` and keeps neither
+     node's texts nor the receiver's validations): that's item B13 (validations-copy), which fixes
+     `withValidationsAddedFrom` itself.
    Under Legacy the body is a string, so L1 strips it again: 0.7 output kept.
 4. Tests:
    - `TitleDescriptionSpec` (already committed) goes green; add: `def`/`ref` site texts (`$ref` sibling), `allof`, `not`,
@@ -162,7 +162,7 @@ non-object/non-const nodes in its lowering (L1).
      title (outer wins), field `@title` on a definition-typed field, on an `Option` field, `@(title @field)` (Scala 2),
      field `@title` under `Json.objectSchema`, and Legacy cases for each kind (no texts, as 0.7) incl. `withProfile(Legacy)`.
    - (B1-R1) a titled value class given as `implicit val s: Schema[VC] = Json.schema[VC]` and used as a field: the
-     definition body has the texts; `Json.schema[VC].toDefinition("x")`: same; under Legacy: no texts (0.7).
+     definition body has the texts; under Legacy: no texts (0.7). (`toDefinition` is B13's.)
    - (B1-R3) F2 with definitions and recursion, on both Scala versions: (a) the same definition-typed type in two
      fields, one with `@title` → one definition, the title only next to the titled field's `$ref`, the body untouched;
      (b) `case class Node(@title("kids") kids: List[Node])` (title on the array, the item stays a plain `$ref`);
@@ -184,8 +184,9 @@ non-object/non-const nodes in its lowering (L1).
 - (B1-R2) A **nested** derived type's own `@title`/`@description`/scaladoc (`case class Nested(c: Color, i: Inner)`
   with titled `Color`/`Inner`): the derivation doesn't put them in the tree (only the root and implicit-`Schema`
   definitions get type texts; `Derivation.scala` L37 "R8", parity decision 2026-11-20). Changing that is a derivation
-  change with output changes for every annotated nested type, not a rendering bug; the reviewer flags it to the lead
-  as a follow-up. The docs above stop promising it.
+  change with output changes for every annotated nested type, not a rendering bug: the lead queued it as item B12
+  (nested-texts), to build on this PR. The docs above stop promising it.
+- `value-class.toDefinition` / `withValidationsAddedFrom` dropping texts and validations: item B13.
 - #290's "customizable annotations" (user-defined keywords): needs an extension point in the ADT and renderers; the
   PR says it stays open (B1-R7).
 7. Gates per protocol step 8 (core + macros + api touched: JVM 2.12/2.13/3, `rootJS/test` on all three, fmt checks).
@@ -201,8 +202,8 @@ non-object/non-const nodes in its lowering (L1).
 
 ## Review log
 Round 1 (r-b1, on cc4d73e):
-- B1-R1 (must) value class → definition drops texts (`def.adapt`, `value-class.toDefinition`) → accepted: plan step 3b
-  + tests in step 4. Also applied to `def.adapt`'s `def` case (it re-wraps and drops the def node's own texts); only
+- B1-R1 (must) value class → definition drops texts (`def.adapt`, `value-class.toDefinition`) → accepted, narrowed
+  after the lead's reply to `def.adapt` (`toDefinition` is B13's): plan step 3b + tests in step 4. Also applied to `def.adapt`'s `def` case (it re-wraps and drops the def node's own texts); only
   title/description are kept there, its validations stay dropped as today.
 - B1-R2 (must) nested-type texts → accepted: new "Out of scope" section; README/paradox wording in step 6.
 - B1-R3 (must) F2 tests with definitions/recursion → accepted: step 4, cases (a)–(c).
