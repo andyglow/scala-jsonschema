@@ -92,9 +92,12 @@ A runtime read there sees no values (top) or some of them (middle). So the macro
 the initializer of the very `Enumeration` object it derives: walking the owners from the call site (Scala 2
 `c.internal.enclosingOwner`, Scala 3 `Symbol.spliceOwner`), it reaches that object's module class through strict vals,
 the constructor and anonymous functions only (a `def`, a `lazy val`, or another class/object on the way means "not
-during initialization"). Then it doesn't read at runtime. It reads the names from the object's trees instead, which are
-available there because the call site is in the same compilation unit (Scala 2: the enclosing `ModuleDef`,
-`c.enclosingClass`; Scala 3: `moduleClass.tree`, same run):
+during initialization"). If so, and the call site comes **before** the last of the object's own `Value` vals (same
+source, so both positions are known: `c.enclosingPosition` / `Position.ofMacroExpansion` vs the val symbols' `pos`), it
+doesn't read at runtime. Below the last own value the runtime read is complete and exact, so it is used there (with the
+fallback). Before it, the macro reads the names from the object's trees, which are available because the call site is
+in the same compilation unit (Scala 2: the enclosing `ModuleDef`, `c.enclosingClass`; Scala 3: `moduleClass.tree`, same
+run):
 
 | a val's right-hand side | name |
 |---|---|
@@ -102,6 +105,7 @@ available there because the call site is in the same compilation unit (Scala 2: 
 | `Value`, `Value(id)` | the val's name (what `toString` gives on the JVM and JS) |
 | an alias (`Scala`, not a call of `Value`) | not a value: skipped |
 | anything else (`Value(prefix + "x")`, a custom `Val`) | the val's name, plus a compile warning: "can't tell the name of `TopSchema.B` at compile time; build the schema after the values, or in a lazy val or def, to read it at runtime" |
+| a value inherited from a parent class (`abstract class Base extends Enumeration { val P = Value("p!") }`) | read at runtime through a reference to the val (`this.P.toString`): the parent's constructor has run, so it exists. Listed first (its id is lower) |
 
 So the top-of-object case gives `enum("a-1", "B")`: correct, no warning, no crash. The runtime `fallback` covers what the
 owner walk can't see (a `def` called by an early strict val): there the macro's names are today's val names, so the
@@ -161,8 +165,8 @@ vals from outside the object, and in the initializer case reads `null` fields (a
 ## Decision
 A: outside the object, the derivation emits a reference to the `Enumeration` object, and the schema (value enum and Map
 key pattern) lists `values.map(_.toString)` when it is built, which is by definition what the codecs write and read.
-Inside the object's own initializer it reads the names from the object's trees (literals, else val names, with a warning
-when it can't tell). An object with no values is a compile error. A type projection (`E#Value`, no stable path) keeps
+Inside the object's own initializer, before its last value, it reads the names from the object's trees (literals, else
+val names, with a warning when it can't tell; inherited values at runtime). An object with no values is a compile error. A type projection (`E#Value`, no stable path) keeps
 today's val names.
 
 ## Implementation plan
@@ -180,8 +184,13 @@ implement after they merge. If B16 lands first, `keyPattern` joins without `esca
    - `inInitializer`: the owner walk of option A. Scala 2: from `c.internal.enclosingOwner` while the owner isn't a class;
      stop with `false` at a method that isn't an anonymous function or at a lazy val; `true` if the class reached is
      `objTpe.typeSymbol.moduleClass`. Scala 3: the same from `Symbol.spliceOwner` (`Flags.Lazy`, `isDefDef` and not
-     `isAnonymousFunction`, `isClassDef`).
-   - `literalNames`: only when `inInitializer`: the object's template `ValDef`s, the table in option A. Strip
+     `isAnonymousFunction`, `isClassDef`). Then `beforeLastValue`: the call site's start is before the start of the last
+     own (`decls`) `Value` val, both in the same source file. The tree path is taken when both hold; otherwise the
+     runtime path.
+   - `literalNames`: only on the tree path: the inherited `Value` vals (in `members`, not in `decls`) as runtime
+     `toString` of a reference to each (`Value.str(this.P.toString)`: the parent constructor has run; a `private` one
+     in the parent is unreachable: val name + the warning), followed by the object's own template `ValDef`s, the table
+     in option A. On this path the enum is emitted from a list of `Expr[Value]`/trees (some literal, some runtime). Strip
      `Typed`/`Inlined`/`Block` wrappers (Scala 3); match `Apply(Ident(Value) | Select(_, Value), args)` syntactically on
      Scala 2 (later vals are not typechecked yet). Warn with `c.warning(c.enclosingPosition, ...)` /
      `report.warning(...)`. `c.enclosingClass` is deprecated in 2.12/2.13: `@nowarn` it (2.12: `scala.annotation.nowarn`
@@ -217,11 +226,16 @@ implement after they merge. If B16 lands first, `keyPattern` joins without `esca
      member of the enum. With networknt (JVM; canceled on JS): `"C++"` and `{"C++":1}` valid, `"CPP"` and `{"CPP":1}`
      invalid, on 04/07/2020-12.
    - In-object cases, each an object of its own with `implicit val schema: Schema[Value]`, expected output:
-     top (before the values) → literal names, `enum("a-1", "B")`, no warning; middle and bottom → the same (all values,
-     from the trees: the owner walk doesn't compare positions); `lazy val` at the top → runtime; `def` at the top, called from a strict val at the
-     top → fallback (today's val names); a computed name or a custom `Val` at the top → val names, with the warning (that
-     model needs `@nowarn("msg=can't tell the name")` to keep the build warning-free; the output is the assertion).
-     No crash in any of them: assert that touching the object doesn't throw.
+     top (before the values) → literal names, `enum("a-1", "B")`, no warning; middle → the same (all values, from the
+     trees); bottom → runtime (a computed name there is exact, no warning); `lazy val` at the top → runtime; `def` at the
+     top, called from a strict val at the top → fallback (today's val names); a computed name or a custom `Val` at the
+     top → val names, with the warning; an object extending an abstract `Enumeration` class with a named value
+     (`Value("p!")`), schema at the top → `"p!"` first, then the own names. No crash in any of them: assert that touching
+     the object doesn't throw.
+   - The warning in tests (R10): the models that trigger it carry `@nowarn("msg=can't tell the name")`. First check that
+     this filter suppresses a macro-reported warning (`c.warning` at `c.enclosingPosition` / `report.warning`) on 2.12.21,
+     2.13.18 and 3.3.9; if it doesn't on one, scope a `-Wconf:msg=can't tell the name:s` to that test file's compilation
+     instead (e.g. a `Test / scalacOptions` entry limited to the version), so the build stays warning-free.
    - Empty: `Json.schema[Empty.Value]` doesn't compile, with the new message (`CompileErrors.errorOf`, both versions).
    - `characterization/SumsEnumsCharSpec`: T8 becomes "uses toString (the Value(name) strings)", expecting
      `enum.of("custom-red", "Green", "custom-blue")`; the quirk test: `WithOtherValue.Value` is `enum.of("A")` on both
@@ -246,9 +260,8 @@ implement after they merge. If B16 lands first, `keyPattern` joins without `esca
    `Enumeration`.
 8. Gates per the protocol (all three Scala versions JVM, `rootJS/test` on all three: core and macros change).
 
-Risks: any strict val in the object takes the tree path, also below the values, so a computed name there warns where a
-runtime read would have worked (comparing the call site's position with the last value's would refine it; left out as
-rare, the warning says to use a `lazy val`); a `def` building the schema, called indirectly during initialization after some values exist, lists only those
+Risks: the position check depends on both positions being in the same source (always true for a call in the object's
+own body; if a position is missing, take the tree path, the safe one); a `def` building the schema, called indirectly during initialization after some values exist, lists only those
 (the fallback only kicks in when there are none; documented); the owner walk is new code on both versions and needs
 the in-object tests above; a schema now forces the object to initialize (it would anyway to encode a value); the JVM's
 alias name is unstable across runs (inherent to `Enumeration`; the schema and the codec read the same cached `toString`
@@ -287,3 +300,13 @@ Round 1 (r-b16, on 6b63d1d):
   goldens (step 5), Risks.
 - B16-R6 (nit) order in the docs text → accepted: "in id order (`values`)" in step 7, example in option A.
 - B16-R7 (nit) plan details → accepted: "only these" matches named in step 3; the play `KeyWrites` note in Why and step 5.
+
+Round 2 (r-b16, on b4a39de):
+- B16-R8 (nit) inherited values on the tree path → accepted: read at runtime through a reference to each inherited val
+  (the parent constructor has run), listed first; a `private` one: val name + warning. Table row in option A, step 2,
+  an in-object test.
+- B16-R9 (nit, optional) position refinement → taken: the tree path only when the call site is before the last own
+  `Value` val; below it the runtime path (exact for computed names, no warning). Option A, step 2, tests (bottom →
+  runtime), Risks (the noted risk is gone; missing positions → tree path).
+- B16-R10 (nit) `@nowarn` for the macro warning → accepted: a plan item in step 5 to check it on all three versions,
+  with a scoped `-Wconf` as the fallback.
