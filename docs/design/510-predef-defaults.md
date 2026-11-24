@@ -263,9 +263,13 @@ objects, because the module objects users import already share lexical scope wit
      - compile time: a `Map[String, ToValue[_]]` from each Predef member's name to its instance, e.g.
        `"uuidS" -> implicitly[ToValue[UUID]]`, `"arrayS" -> implicitly[ToValue[Array[Int]]]`, `"dictS" -> implicitly[ToValue[Map[Long, Int]]]`.
        A missing `ToValue` fails the build.
-     - run time (it enumerates): reflect over `Class.forName("json.schema.Predef$").getMethods` and collect the names
-       of the public methods whose return type is `json.schema.Predef` (the vals' accessors and the generic `def`s,
-       inherited `LowPriorityPredefs` members included). Assert that this set equals the map's key set. A new Predef
+     - run time (it enumerates): reflect over `Class.forName("json.schema.Predef$").getMethods` (inherited
+       `LowPriorityPredefs` members included). `Predef` is a value class (`case class Predef[T](schema: Schema[T]) extends AnyVal`),
+       so its accessors erase to the underlying `json.Schema` (B18-R7, `javap`: `public json.Schema<java.util.UUID> uuidS()`).
+       Collect the names of the public methods whose return type is `json.Schema`. Drop names containing `$`
+       (`copy$extension`, `copy$default$1$extension`, ...) and the case-class companion's `apply`/`unapply`. That leaves the
+       vals' accessors and the generic `def`s (`listS(json.Schema<T>)`). Check the resulting set on 2.12, 2.13 and 3.3:
+       print it once and compare it with `Predef.scala`. Assert that this set equals the map's key set. A new Predef
        then fails the test until its `ToValue` and its line are added. Use method names, not generic return types:
        Scala emits `Predef<Object>` for `Predef[Int]`/`Predef[Byte]`, so the type argument doesn't identify a primitive.
        Explicitly exempt, with the reason in a comment, any Predef that intentionally has no `ToValue` (none in Phase 1).
@@ -352,9 +356,11 @@ implicit scope. They have to be imported, which puts them in **lexical** scope, 
 A nested object per module, like joda's existing `JodaTimeSupport.predef` (the opt-in for Predefs instead of
 Schemas). A user writes `import JodaTimeSupport.toValues._` to get defaults without a JSON library. Nobody's
 current imports change, so no output changes. With a bridge *and* `toValues` imported, both candidates are
-lexical. Scala's specificity rule then prefers the module's instance (non-generic, or generic in a narrower
-type) over the bridge's `toValue[T]`. The plan pins this with a test on 2.12/2.13/3. The user asked for it by
-importing it, so that's fine. Texts:
+lexical. Under the 2.12/2.13/3.3 rules, specificity is expected to prefer the module's instance (non-generic, or
+generic in a narrower type) over the bridge's `toValue[T]`. Newer Scala 3 versions (3.5/3.6+) changed how givens are
+prioritized, and users compile the expansion with their own compiler, so the result may differ there (B18-R8).
+The plan's test pins the result on 2.12/2.13/3.3. Because the import is opt-in, either winner is acceptable: the
+user chose to import it, and an ambiguity is a compile error that names both candidates. Texts:
 - joda (JVM only, so `val`s are fine): `toString` for all six, which is ISO and what play-joda writes. Measured:
   `DateTime` `2024-01-02T03:04:00.000Z`, `Instant` `1970-01-01T00:00:00.000Z`, `LocalDateTime`
   `2024-01-02T03:04:00.000`, `LocalDate` `2024-01-02`, `LocalTime` `10:00:00.000`, `Duration` `PT1.500S`.
@@ -434,3 +440,9 @@ Round 1 (r-b18, on f59dbe3):
 - B18-R4 (nit) merge order with B17 → accepted: a `= null` test (TRIAGE-A to B17 until it merges) plus a line in Risks.
 - B18-R5 (nit) `js.Date` platform text → accepted as a listed per-type alternative (lost, with the reason).
 - B18-R6 (nit) C covers more than B17 decided → accepted: a paragraph under option C with non-null user-type examples.
+
+Round 2 (r-b18, on a282f05; R1–R6 resolved):
+- B18-R7 (must) `Predef` is a value class, so the pairing reflection must look for `json.Schema` return types → accepted:
+  filter on `json.Schema`, drop `$`-names and `apply`/`unapply`, and check the set on all three versions.
+- B18-R8 (nit) P2-A precedence wording → accepted: "expected under 2.12/2.13/3.3 rules", newer Scala 3 given
+  prioritization noted, and either winner is acceptable for an opt-in import.
