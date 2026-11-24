@@ -1,5 +1,5 @@
 # Draft-04: exclusive bounds as boolean modifiers  (issue #530, item B30)
-Status: draft
+Status: approved (r-b30, 2026-11-23)
 
 ## Problem
 
