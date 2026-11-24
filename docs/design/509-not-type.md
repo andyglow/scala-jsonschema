@@ -1,5 +1,5 @@
 # A rendered `not` states `"type": "not"`  (issue #509, item B22)
-Status: draft
+Status: approved (r-b22, 2026-11-23)
 
 ## Problem
 
