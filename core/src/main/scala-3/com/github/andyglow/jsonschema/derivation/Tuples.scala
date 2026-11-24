@@ -53,7 +53,6 @@ trait Tuples { this: Derivation =>
     else TupleShape.NotATuple
   }
 
-  /** `tpe` itself, or its `simplified` form (a field typed `Tuple.Concat[A, B]`) when only that is a tuple shape. */
   /** A match type, or a match-type alias applied (`Tuple.Concat[A, B]`: `dealias` doesn't unfold those): the only types `simplified` can turn into a tuple. */
   private def isMatchType(tpe: TypeRepr): Boolean = tpe match {
     case _: MatchType       => true
@@ -61,6 +60,7 @@ trait Tuples { this: Derivation =>
     case _                  => false
   }
 
+  /** `tpe` itself, or its `simplified` form (a field typed `Tuple.Concat[A, B]`) when only that is a tuple shape. */
   private def asTuple(tpe: TypeRepr): (TypeRepr, TupleShape) =
     tupleShape(tpe) match {
       case TupleShape.NotATuple if isMatchType(tpe.dealias) => // only a match type is worth reducing (B10-R7)
