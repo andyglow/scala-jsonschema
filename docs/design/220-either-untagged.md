@@ -1,5 +1,8 @@
 # `Either` shaped by the profile: an `eitherStyle` knob  (issue #220, item E7)
-Status: draft
+Status: draft (round 1 answered)
+
+Depends on #470 (B3: `Schema.anyof`, the `OverlappingMembers` knob and its disjointness check). The implementation
+goes on top of B3, as E6 does. This doc-only branch stays on `master`.
 
 ## Problem
 
@@ -90,7 +93,7 @@ root `oneOf` states no `type`):
 | style | `"e": ...` |
 |---|---|
 | `ValueWrapped` | `{"type":"object","oneOf":[{"additionalProperties":false,"properties":{"value":{"type":"integer"}},"required":["value"]}, {... "string" ...}]}` (unchanged) |
-| `Untagged` | `{"oneOf":[{"type":"integer"},{"type":"string"}]}` |
+| `Untagged` | `{"oneOf":[{"type":"integer"},{"type":"string"}]}`. Sides that can't be proven disjoint get `anyOf` (A5): `Either[String, UUID]` → `{"type":"string","anyOf":[{},{"format":"uuid"}]}` |
 | `AsFamily` under circe (`WrapperObject` + `SimpleName`) | `{"type":"object","oneOf":[{"additionalProperties":false,"properties":{"Left":{"type":"object","additionalProperties":false,"properties":{"value":{"type":"integer"}},"required":["value"]}},"required":["Left"]}, {... "Right" ...}]}` |
 | `WrapperObject("Left","Right")` | `{"type":"object","oneOf":[{"additionalProperties":false,"properties":{"Left":{"type":"integer"}},"required":["Left"]}, {... "Right": string ...}]}` |
 | `Indexed` (draft-04/06/07/2019-09) | `{"type":"array","oneOf":[{"items":[{"type":"integer","enum":[0]},{"type":"integer"}],"additionalItems":false,"minItems":2}, {"items":[{"type":"integer","enum":[1]},{"type":"string"}],"additionalItems":false,"minItems":2}]}` |
@@ -105,8 +108,23 @@ is circe's `encodeEither` and zio-json, `Indexed` is upickle.
   output. The shape lives in one place (the lowering), so Scala 2 and 3 can't diverge again (it fixes the
   `Either[Option[X], _]` parity difference for free).
 - Cons: a new case in the sealed `Schema` (core's tree tools, the harness and users' exhaustive matches have to know it,
-  as for `option`/`family`/E2's `any`). `Indexed` needs a positional-array node that the model doesn't have (sub-decision
-  A2).
+  as for `option`/`family`/E2's `any`). Every existing `Either` derives to the new node instead of a `oneof`, so user
+  code that walks derived trees sees a different node. Breaking under PVP (see Compatibility). `Indexed` needs a
+  positional-array node that the model doesn't have (sub-decision A2).
+
+### E. Like A, but the fact as a marker on today's `oneof`  — LOST (the patch-compatible variant)
+The same idea as B3's option F. The macros keep emitting today's `oneof[{value: L}, {value: R}]`, mixed with a marker
+`sealed trait EitherFact { this: oneof[_] => def left: Schema[_]; def right: Schema[_] }`, built by `oneof.either(l, r)`.
+The lowering re-shapes a marked `oneof` by `eitherStyle`. Everything else is as in A (styles, profiles, tests).
+- Pros: no new ADT case, and the derived tree has the same node as today. A third-party renderer that ignores the marker
+  prints today's output. Source and binary compatible (0.9.x).
+- Cons: every rebuild of a `oneof` must keep the marker (`mkCopy`, `duplicate`/`withExtraFrom`, `deepCopy`,
+  `Lowering.apply`, B3's ordered rebuilds), the discipline `Free` needs. The marker also holds `left`/`right`
+  next to members derived from them, so the two can drift when a user edits the tree. Code that walks the tree sees a
+  `oneof` whose meaning depends on the profile.
+- Why it lost: like B3's F, it trades a visible, one-time break for a permanent, silent one, and B3 (which E7 now
+  depends on) already makes the next release 0.10.0. **If the owner ships B3 as F (0.9.x), E7 takes E**: it changes
+  only plan steps 1, 4 and 5 (a marker instead of a class; the macros add the marker to the `oneof` they already emit).
 
 ### B. A compile-time flag `json.schema.Flag.EitherUntagged`  — LOST
 Like `Flag.EnumsAsOneOf`: with an implicit flag in scope where `Json.schema` is called, the macros emit `oneof[L, R]`.
@@ -153,11 +171,21 @@ user's codec writes, and Neutral has been "0.7 shapes, `Option` as nullable".
 - (c) LOST: approximate with `array(oneOf[enum[0], L])` plus `minItems`/`maxItems` 2. It accepts `[1, 0]` and `[0, 0]`,
   so it doesn't describe the encoding.
 
-**A3. `ValueWrapped`'s `value` field is always required**, as on Scala 2 (0.7). WON: Legacy is the 0.7 output, and 0.7
-was Scala 2. This changes Scala 3's `Either[Option[X], _]` / `Either[_, Option[X]]` to match Scala 2 (Neutral: the
-member gets `"required": ["value"]` back; Legacy: `value` becomes 0.7's `oneOf[{"value": X}, "None"]`). *Alternative:*
-follow Scala 3 (not required) on both versions. That changes Scala 2/Legacy output, which the Legacy policy forbids
-without the lead.
+**A3. Is `ValueWrapped`'s `value` field required when its side is an `Option`? Lead's decision (2026-11-23): (ii), not
+required everywhere. (i) and (iii) stay as the owner's alternatives.** Today
+it is required on Scala 2 and not on Scala 3. Scala 2's `required` comes from `Left`'s field being typed as the
+unsubstituted type parameter `A`, so the "an `Option` field isn't required" rule doesn't fire. That is arguably a 0.7
+bug, not a 0.7 style (E7-R3). `AsFamily`'s members use the same field and follow the same answer. Three choices:
+- (i) **required everywhere** (Scala 2 = 0.7). Only Scala 3 output changes: Neutral adds `"required": ["value"]` to the
+  member; Legacy turns `value` into 0.7's `oneOf[{"value": X}, "None"]`. Legacy is byte-exact 0.7 on both versions. It
+  changes the smaller (newer, since 0.8.0) user base and touches no Scala 2 output (my first recommendation).
+- (ii) **not required everywhere** (the Option-field rule). **WON (lead).** Only Scala 2 output changes: Neutral drops
+  `"required": ["value"]`, and Legacy switches to the dropped-layer field (`value: X`, not required). It is what the
+  rule says for every other `Option` field. Scala 2's `required` is a 0.7 bug (the rule didn't fire on a type
+  parameter), and the Legacy policy fixes bugs under Legacy too, with the change listed in the PR.
+- (iii) **Legacy required, the other profiles not required.** 0.7 bytes under Legacy and the rule elsewhere. It
+  changes Scala 2 Neutral and Scala 3 Legacy, and it couples the field to `optionStyle`.
+No golden pins this case today. The new `EitherShapes` golden pins whichever is chosen, as one file for Scala 2 and 3.
 
 **A4. An implicit `Schema`/`Predef` for `Left[A, B]` or `Right[A, B]` is no longer consulted.** WON: the macros resolve `L`
 and `R` directly, like `Option`'s element. Nobody declares schemas for `Left`/`Right`. Someone who did can declare
@@ -165,26 +193,47 @@ and `R` directly, like `Option`'s element. Nobody declares schemas for `Left`/`R
 `oneof` when such an implicit exists. That keeps a second `Either` code path alive in both macros for a case nobody
 has.
 
-**A5. Overlapping sides are not decided here.** `Untagged` renders `oneOf` (today's keyword).
-`Either[Int, Double]` then rejects `1` (it is an `integer` and a `number`). That is right for spray (it rejects
-ambiguous values itself) and wrong for json4s (first side wins). `ValueWrapped` has the same problem today
-(`{"value": 1}`). It is B14's (after B3's `anyof` node and its `OverlappingMembers` knob): once B3 is in, `eitherAt`
-passes its `oneof` through B3's overlap check like a family (one call). The other styles are tagged, so their sides
-never overlap.
+**A5. Overlapping sides: B3's rule, from the start (E7-R1).** An exclusive `oneOf` of overlapping sides rejects values
+the libraries write. On networknt draft-07 and 2020-12 (r-e7's probe), `Either[String, UUID]` + a UUID,
+`Either[String, LocalDate]` + `"2024-01-02"`, `Either[Int, Long]` + `5` (Long is `number` until D2) and
+`Either[String, Color]` (an enum) + `"Red"` are all invalid ("2 are valid"). These are common `Either` shapes, and
+`Untagged` would make them the default for json4s and spray. So E7 is built on B3 (#470). The styles that build a new
+`oneof` (`Untagged`, `WrapperObject`, `Indexed`) pass it through B3's disjointness check, and with
+`overlappingMembers = AnyOf` (B3's default, every built-in profile) sides that can't be proven disjoint become
+`anyof`. `OneOf` keeps `oneOf`. By style:
+- `Untagged`: `oneOf` when B3 proves the sides disjoint (`Either[Int, String]`, `Either[Foo, Bar]` with distinct required
+  fields), otherwise `anyOf`. `anyOf` always states its type (B3), which also fixes the root case.
+- `WrapperObject`: always `oneOf` (B3's key rule: one required key per closed object).
+- `Indexed`: B3's check doesn't know `tuple`, so it says "overlap" and the result is `anyOf`. That is still exact,
+  because the first items' one-value enums `0`/`1` never both match, and `anyOf` states `"type": "array"` at the root.
+  Teaching the check a "(tuple) disjoint when some position is disjoint" rule would give `oneOf`. It is not needed,
+  and it is left out to keep B3's check unchanged.
+- `AsFamily`: `familyAt` does it (B3 applies its rule to untagged families; tagged ones stay `oneOf`).
+- `ValueWrapped` (and so Neutral and Legacy): today's plain `oneof`, unchanged. Whether it goes through the check too
+  (`Either[Int, Double]`'s `{"value": 1}` is rejected today) is B14's call. It is one call in `eitherAt`. With B3 merged,
+  `AsFamily` under an untagged `sumStyle` may then be `anyOf` where `ValueWrapped` is `oneOf`, and B14 should align them.
+
+**Spray gets `anyOf`** (the default knob), not `oneOf`. spray's reader rejects an ambiguous value, but its writer still
+writes one (`Left("2024-01-02")` as `"2024-01-02"`), and a profile describes what the library writes. Getting `oneOf`
+through `SprayProfile.default.withOverlappingMembers(OneOf)` would also change spray's families (B3's knob is per
+profile, not per node), for an exactness only spray's reader needs. A user who wants it sets the knob.
 
 ## Decision
 
 A: a new `Schema.either(left, right)` node recorded by both macros, lowered by a new profile knob
 `eitherStyle: EitherStyle` (`ValueWrapped` default = today, `Untagged`, `AsFamily`, `WrapperObject(l, r)`, `Indexed`).
 The bridge profiles describe their library: spray and json4s `Untagged`, upickle `Indexed` (on a new positional-array
-node `Schema.tuple`), circe `AsFamily`. play keeps `ValueWrapped` (play has no `Either` format). Neutral and Legacy
-output doesn't change; Scala 3 joins Scala 2 for `Either[Option[X], _]`.
+node `Schema.tuple`), circe `AsFamily`. play keeps `ValueWrapped` (play has no `Either` format). Built on B3: the new
+`oneof`s go through B3's overlap check, so overlapping untagged sides are `anyOf`. Neutral and Legacy output doesn't
+change, except the `Either[Option[X], _]` parity fix (A3 (ii), the lead's call: `value` not required, so Scala 2
+joins Scala 3). Breaking under PVP (0.10.0, with B3), or
+E for a 0.9.x patch.
 
 ## Implementation plan
 
 Part 1: the node, the knob, four styles (everything except `Indexed`). Part 2: `Schema.tuple` + `Indexed` + the upickle
-profile. Both parts can go in one PR, or Part 2 in a second one.
-Run `clean` before testing (macro changes).
+profile. Both parts can go in one PR, or Part 2 in a second one. Base: B3's branch (#470), or `master` once B3 has
+merged. Run `clean` before testing (macro changes).
 
 ### Part 1
 
@@ -206,30 +255,37 @@ Run `clean` before testing (macro changes).
      outer node, as for `option`).
    - `eitherAt(e)`. The wrapping styles build their objects around the **unlowered** sides and then `apply` the
      object, so each side goes through `field(...)` as a derived field would (a Legacy `option` side lowers as the
-     Scala 2 `Left` object did, A3). `Untagged` and `Indexed` lower the sides directly (`apply(e.left)`):
-     - `ValueWrapped`: `oneof(Set(apply(obj(Field("value", e.left, required = true))), apply(obj(Field("value", e.right, required = true)))), None)`,
+     Scala 3 derivation's `Left` object does). `Untagged` and `Indexed` lower the sides directly (`apply(e.left)`). The
+     `value` field's `required` follows A3 (ii): `required = !side.isInstanceOf[`option`[_]]`, the rule the macros use for
+     any `Option` field. (Under (i) it would be `true`; under (iii) `true` only when `p.optionStyle == Legacy`.) `Untagged`, `WrapperObject` and `Indexed` finish with B3's overlap step:
+     `inclusiveIfOverlapping(members)`, i.e. the same private helper `familyAt` uses for untagged families (factor it
+     out of `familyAt` if B3 inlined it), honoring `p.overlappingMembers` (A5):
+     - `ValueWrapped`: `oneof(ListSet(apply(obj(Field("value", e.left, required = A3))), apply(obj(Field("value", e.right, required = A3)))), None)`,
        objects built with `object.fromList`. Member order Left, Right (a 2-element `Set` iterates in insertion order, as
        `optionAt` relies on).
-     - `Untagged`: `oneof(Set(apply(e.left), apply(e.right)), None)`. Edge: for `Either[X, X]` the `Set` has one element:
-       render `X` itself. Today's `ValueWrapped` collapses the same way (`oneOf[{"value": X}]`, a single member, B3's
-       report). B3's ordered set changes the `oneof` side of that, not this one. Note it in the scaladoc.
-     - `WrapperObject(lk, rk)`: `oneof(Set(apply(obj(Field(lk, e.left, true))), apply(obj(Field(rk, e.right, true)))), None)`.
-       The case class rejects `lk == rk` (`require`, the sides couldn't be told apart).
+       (B3 makes the `oneof`/`anyof` members `ListSet`s; on today's `Set` a 2-element set iterates in insertion order too).
+     - `Untagged`: overlap step over `List(apply(e.left), apply(e.right))`. Edge: for `Either[X, X]` the sides are equal:
+       render `X` itself (one entry, as B3 keeps exact twins as one entry). Today's `ValueWrapped` collapses the same way
+       (`oneOf[{"value": X}]`, a single member). Note it in the scaladoc.
+     - `WrapperObject(lk, rk)`: overlap step over the two wrapper objects (always disjoint by B3's key rule, so `oneOf`).
+       The case class rejects `lk == rk` (`require`, the sides couldn't be told apart). Both wrapper keys are required,
+       whatever the side: `encodeEither` always writes the key (`{"Left": null}` for an `Option` side).
      - `AsFamily`: `familyAt(family(List(member("Left", "scala.util.Left", classOf[Left[_, _]], e.left), member("Right", ...)),
-       None, enumsAsOneOf = false))`. Members are `Kind.Product` with schema `obj(Field("value", side, required = true))`
-       (unlowered: `familyAt` lowers each member's schema itself), `sig` = the full name (only used under a honored
+       None, enumsAsOneOf = false))`. Members are `Kind.Product` with schema `obj(Field("value", side, required = A3))`
+       (the same `value` field as `ValueWrapped`; unlowered: `familyAt` lowers each member's schema itself), `sig` = the full name (only used under a honored
        `@discriminator`, which `Either` can't carry), no texts. Under Untagged sum profiles this equals `ValueWrapped`.
    - Idempotence: a lowered tree has no `either` left (`lower` stays idempotent). Extend the `lower` scaladoc.
 3. **Core tree tools**: `AsTree.scala` (`case `either`(l, r) => Apply("either", Iterator(AsTree(l), AsTree(r)))`),
    `SchemaEquality.scala` (pairwise like `option`, ~L101), `DefinitionNames.scala` (`signatures(l) ++ signatures(r)`,
    ~L59), `AsDraftSupport.lowered` comment ("`option`, `family` or `either` nodes left").
 4. **Scala 2 macro** (`macros/src/main/scala-2/...`):
-   - `SchemaTypes.scala`: `case class Either(tpe: Type, leftTpe: Type, rightTpe: Type, left: SchemaType, right: SchemaType, extra: Extra = Extra())`
+   - `SchemaTypes.scala`: `case class EitherOf(tpe: Type, leftTpe: Type, rightTpe: Type, left: SchemaType, right: SchemaType, extra: Extra = Extra())`
+     (not `Either`: it would shadow `scala.Either` wherever the cake imports `U._`, e.g. `ScalaParser`, `USumTypes`)
      with `prefix = q"${N.Schema}.`either`[$leftTpe, $rightTpe](${left.tree}, ${right.tree})"`. Add it to
      `transformSchema` (~L320) next to `Opt`, and wherever `Opt`/`OneOf` are walked (grep `case .*Opt(` /
      `OneOf(` in `macros/`: recursion/def wrapping, `withTypeAnnotations`).
    - `Macroses.genTree` (~L136): right after the `Option` case,
-     `case t if t.typeSymbol == typeOf[scala.util.Either[_, _]].typeSymbol && t.typeArgs.size == 2 => U.Either(t, l, r, resolve(l, ctx :+ t), resolve(r, ctx :+ t))`
+     `case t if t.typeSymbol == typeOf[scala.util.Either[_, _]].typeSymbol && t.typeArgs.size == 2 => U.EitherOf(t, l, r, resolve(l, ctx :+ t), resolve(r, ctx :+ t))`
      (`tpe` is dealiased already, so `scala.Either` works too).
    - `USumTypes.scala`: drop `isEither` and `eitherOneOf` (Either never reaches `SumType` now).
 5. **Scala 3 derivation** (`core/src/main/scala-3/.../derivation/`):
@@ -261,12 +317,22 @@ Run `clean` before testing (macro changes).
      `golden/` and the missing `golden-legacy/` files. Scala 2 and 3 must produce one file, which pins A3's parity fix.
    - A new `api/src/test/scala/.../profiles/EitherStyleSpec.scala`: for `Either[Int, String]` and a field of it, each
      style's lowered tree (`withProfile(Neutral.withEither(x))`) and its draft-07 / 2020-12 JSON; `withEither` keeps
-     the other knobs (and `with...` keeps `eitherStyle`); `WrapperObject("k", "k")` throws; `Untagged` of `Either[X, X]`;
+     the other knobs (and `with...` keeps `eitherStyle`); `WrapperObject("k", "k")` throws;
      `AsFamily` under `Neutral.withSum(Discriminator("t"))` gives `{"t": "scala.util.Left", "value": ...}`; lowering is
-     idempotent; `Legacy.lower` equals today's tree.
+     idempotent; `Legacy.lower` equals today's tree. Validated with networknt on 04/07/2020-12, not only compared as
+     trees (E7-R7):
+     - overlap (E7-R1), under `Untagged`: `Either[String, UUID]` + a UUID, `Either[String, LocalDate]` + `"2024-01-02"`,
+       `Either[Int, Long]` + `5`, `Either[String, Color]` (a case-object enum) + `"Red"`: valid (`anyOf`); with
+       `withOverlappingMembers(OneOf)`: invalid (pins the knob). `Either[Int, String]` stays `oneOf`;
+     - root (E7-R5): a root `Either[Foo, Bar]` (objects) under every style rejects `5`, `"s"` and `null`, and accepts its
+       own documents. The doc states the keyword per style: A5;
+     - `Option[Either[Int, Long]]` under `Untagged` (nullable over an `anyOf`: B3's `mkNullable` path) accepts `5`,
+       `null`, and rejects `"s"`;
+     - `Either[String, String]` under `Untagged` is `{"type": "string"}` itself and accepts `"a"`.
    - Acceptance (each bridge module's petshop spec): the library's real `Either` output (root and field) validates
-     under its profile on 04/07/2020-12, and another style's output doesn't. spray: `DefaultJsonProtocol` (2.12/2.13/3).
-     json4s (Scala 2 dir, as today): `DefaultFormats` and `ShortTypeHints`. circe: `generic.auto._` (2.12/2.13/3),
+     under its profile on 04/07/2020-12, and another style's output doesn't. spray: `DefaultJsonProtocol` (2.12/2.13/3),
+     also `Either[Int, Long]` with `Right(5L)` (written as `5`, valid under the `anyOf`, A5). json4s (Scala 2 dir, as
+     today): `DefaultFormats` and `ShortTypeHints`, also `Either[String, Int]`/`Either[Int, Long]` overlap documents. circe: `generic.auto._` (2.12/2.13/3),
      generic-extras `auto._` with a discriminator (Scala 2 dir), and an `encodeEither` user with
      `CirceProfile.default.withEither(WrapperObject("Left", "Right"))`. upickle (Part 2). play: no codec, so assert the
      unchanged output. Add the new docs to `LibraryOutputs` only if the cross-check uses them (it is about `Pet`; leave
@@ -277,6 +343,10 @@ Run `clean` before testing (macro changes).
      is shaped (the style per profile). Add a row to the knob table:
      `withEither | EitherStyle.ValueWrapped, Untagged, AsFamily, WrapperObject(left, right), Indexed | how an Either is written`.
      The library table can name each library's `Either` encoding in the "as it writes" column or a sentence below it.
+     circe (E7-R6): one line saying that `AsFamily` is what `generic.auto` writes. With semiauto there is no
+     `Encoder[Either]`, and a user's `Encoder.encodeEither(l, r)` is
+     `CirceProfile.default.withEither(EitherStyle.WrapperObject(l, r))`. Another line says that overlapping untagged sides
+     render `anyOf` (B3's knob).
    - README "Known issues": drop the `Either` half of the tuples line (tuples stay). Add the workaround (D) for a codec no
      style describes: an implicit `Schema[Either[A, B]]`.
    - `docs/src/main/paradox/rendering.md`: the same two changes (~L180 bullet, knob table ~L191). Run `sbt makeDocs`.
@@ -292,7 +362,8 @@ Run `clean` before testing (macro changes).
     (`protected def tupleItems(items: List[obj]): obj`) in `AsDraft12` to `"prefixItems": [...], "items": false, "minItems": n`.
     Add it to `memberType`/`jsonType` paths (it is `"array"`), `inferDefinitions` (definitions inside items), `AsTree`,
     `SchemaEquality`, `DefinitionNames`, `Lowering.apply` (walk the items), the harness tree dump (`"tuple"`).
-11. **Indexed lowering**: `oneof(Set(tuple(List(enum(integer, Set(num(0))), apply(e.left))), tuple(List(enum(integer, Set(num(1))), apply(e.right)))), None)`.
+11. **Indexed lowering**: the overlap step over `List(tuple(List(enum(integer, Set(num(0))), apply(e.left))), tuple(List(enum(integer, Set(num(1))), apply(e.right))))`.
+    B3's check doesn't know `tuple`, so the result is `anyof` (exact, see A5).
     Use a one-value `enum`, not `const`, because draft-04 has no `const` (the renderer writes it anyway, which is a
     known issue).
 12. **upickle profile**: `UPickleProfile.fromApi` sets `Indexed` (every `AttributeTagged` API shares upickle's
@@ -303,6 +374,9 @@ Run `clean` before testing (macro changes).
     The test confirms it.
 
 ### Risks
+- Depends on B3 (#470). If B3's design changes (e.g. the owner picks its marker variant F), E7 follows: option E, and
+  `eitherAt` calls whatever overlap step B3 ships. If B3 is dropped, E7 must not ship `Untagged` as a plain `oneOf`
+  (E7-R1). It would then need its own small overlap rule, and that is a re-review.
 - Merge conflicts with neighbours that touch the same matches and `Knobs`: E2 (`any` node), B3 (`anyof`,
   `OverlappingMembers` knob), D4 (field-naming knob). They are mechanical. Rebase onto whichever lands first.
 - A missed walker in the Scala 2 macro (a `SchemaType` match without the new case) shows up as a `MatchError` at
@@ -318,16 +392,38 @@ Run `clean` before testing (macro changes).
   still compiles. An implicit `Schema[Left[..]]`/`Schema[Right[..]]` is no longer used (A4). Nobody is known to have one.
 - **Binary**: new classes and members only (a trait method with a body is an interface default method on 2.12+ and 3).
 - **Output**:
-  - Neutral and Legacy: rendered output unchanged on Scala 2. On Scala 3, `Either` with an `Option` side gets
-    `value` required, as on Scala 2 (A3). The derived tree changes (`either` node) for every `Either`: visible in
-    `toString`, `AsTree` and the golden tree sections, not in rendered JSON.
+  - Neutral and Legacy: rendered output unchanged, except `Either` with an `Option` side on Scala 2 (A3 (ii): `value`
+    no longer required; Legacy: the dropped-layer `value: X`). The derived tree changes (`either` node) for every `Either`: visible in
+    `toString`, `AsTree`, the golden tree sections and any user code that walks derived trees, not in rendered JSON.
   - Bridge profiles: `Either` changes under spray, json4s, circe (Part 1) and upickle (Part 2), to what each library
-    writes. play: unchanged.
-- **PVP**: the API is additive (0.9.x). The bridge profiles' output change is a fix (today's schema rejects all of the
-  library's own output) but still a visible change. The owner decides whether that fits a 0.9.x patch or waits for
-  0.10.0 with B3/E2.
-- **Legacy**: 0.7 output byte for byte; `golden-legacy/` unchanged (new files only for the new model).
+    writes. Overlapping untagged sides render `anyOf` (A5). play: unchanged.
+- **PVP: breaking, 0.10.0** (E7-R2). There are three reasons: (a) a new case in the exported sealed `Schema` (as B3
+  judged its `anyof`, B3-R1); (b) `Json.schema[Either[A, B]]` returns a different node for every existing `Either`, so
+  code that matches derived trees changes behaviour silently; (c) the default output of 3 (Part 2: 4) bridge
+  profiles changes. The team is split on (a): E2's doc calls a new node 0.9.x. The lead or owner should rule once for
+  B3, E2, E6 and E7. For a 0.9.x patch, E (a marker on `oneof`) removes (a) and (b). (c) remains: a fix (today's schema
+  rejects all of the library's own output), but visible. E7 depends on B3, so it ships in B3's release in any case.
+- **Legacy**: 0.7 output byte for byte for every existing golden. `golden-legacy/` is unchanged (new files only for
+  the new model). The `Either[Option[X], _]` case follows A3 (ii): Scala 2's Legacy output changes as a bug fix, which
+  the lead's policy allows when listed. No existing golden-legacy file has this case.
 - **Core rule**: unchanged. An implicit `Schema[Either[A, B]]` / `Predef[Either[A, B]]` wins before any of this. `L` and
   `R` follow the rule like any type.
 
 ## Review log
+Round 1 (r-e7, on 1fa81eb):
+- E7-R1 (must) `Untagged` as an exclusive `oneOf` rejects overlapping sides the libraries write; build on B3 →
+  accepted: the doc depends on #470. `Untagged`/`WrapperObject`/`Indexed` go through B3's overlap check (A5, plan
+  step 2). Spray gets `anyOf` (its writer writes ambiguous values; B3's knob is per profile, so `OneOf` is the user's
+  choice). `ValueWrapped`/Legacy are left to B14. The four overlap cases and spray/json4s overlap documents are in the
+  tests. Decision, Risks and Compatibility are updated.
+- E7-R2 (must) one PVP verdict → accepted: breaking, 0.10.0, for (a) the new case, (b) a different derived node, (c)
+  the bridge output. The B3/E2 split is noted for the lead/owner to rule once. The patch alternative is the new option E
+  (a marker on `oneof`, as B3's F), and it is an open question for the PR.
+- E7-R3 (must) A3 is a side-effect output change, needs the lead; Scala 2's `required` is a 0.7 bug → accepted: three
+  choices presented and mailed to the lead. The lead chose (ii), not required everywhere; (i)/(iii) are kept as owner
+  alternatives. Plan step 2 and Compatibility are updated.
+- E7-R4 (nit) `U.Either` shadows `scala.Either` → accepted: `U.EitherOf`.
+- E7-R5 (nit) root position, keyword per style → accepted: the keyword per style is in A5; the root tests reject `5`,
+  `"s"` and `null` under every style. `Indexed` gets `anyOf` (B3's check doesn't know `tuple`; exact anyway).
+- E7-R6 (nit) README line for circe semiauto + `encodeEither` → accepted (plan step 8).
+- E7-R7 (nit) `Option[Either]` and `Either[X, X]` under `Untagged`, validated → accepted (plan step 7).
