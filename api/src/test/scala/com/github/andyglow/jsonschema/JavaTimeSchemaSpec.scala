@@ -131,7 +131,7 @@ object JavaTimeSchemaSpec {
 
   case class Times(odt: OffsetDateTime, ot: OffsetTime, p: Period, y: Year, ym: YearMonth, md: MonthDay, zo: ZoneOffset, zid: ZoneId, fd: FiniteDuration)
 
-  val PeriodPattern     = "^P(?!$)(?:-?[0-9]+Y)?(?:-?[0-9]+M)?(?:-?[0-9]+D)?$"
+  val PeriodPattern     = "^P(?:-?[0-9]+Y(?:-?[0-9]+M)?(?:-?[0-9]+D)?|-?[0-9]+M(?:-?[0-9]+D)?|-?[0-9]+D)$"
   val YearPattern       = "^[-+]?[0-9]+$"
   val YearMonthPattern  = "^[-+]?[0-9]{4,}-(?:0[1-9]|1[0-2])$"
   val MonthDayPattern   = "^--(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])$"

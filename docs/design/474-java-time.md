@@ -72,7 +72,7 @@ Add to `json.schema.Predef` (core, shared by both macros, both platforms):
 | OffsetDateTime | `string(date-time)` | `{"type":"string","format":"date-time"}` |
 | OffsetTime | `string(time)` | `{"type":"string","format":"time"}` |
 | FiniteDuration | `string(duration)`, the same as `Duration` | `{"type":"string"}`; `+ "format":"duration"` from 2019-09 |
-| Period | `string` + `pattern ^P(?!$)(?:-?[0-9]+Y)?(?:-?[0-9]+M)?(?:-?[0-9]+D)?$` | `{"type":"string","pattern":...}` |
+| Period | `string` + `pattern ^P(?:-?[0-9]+Y(?:-?[0-9]+M)?(?:-?[0-9]+D)?\|-?[0-9]+M(?:-?[0-9]+D)?\|-?[0-9]+D)$` | `{"type":"string","pattern":...}` |
 | Year | `string` + `pattern ^[-+]?[0-9]+$` | ditto |
 | YearMonth | `string` + `pattern ^[-+]?[0-9]{4,}-(?:0[1-9]\|1[0-2])$` | ditto |
 | MonthDay | `string` + `pattern ^--(?:0[1-9]\|1[0-2])-(?:0[1-9]\|[12][0-9]\|3[01])$` | ditto |
@@ -81,7 +81,12 @@ Add to `json.schema.Predef` (core, shared by both macros, both platforms):
 
 - The patterns accept exactly what `toString` and the codecs above write (the "written form"), not every text
   `parse` accepts. `Year` takes both the unpadded `toString` (`5`) and the padded ISO text (`0005`, `+12345`).
-  `[0-9]` instead of `\d` (ECMA 262 vs Java regex Unicode classes), as the KeyPatterns do. `(?!$)` keeps out a bare `P`.
+  `[0-9]` instead of `\d` (ECMA 262 vs Java regex Unicode classes), as the KeyPatterns do. No lookaround (RE2-based
+  validators, e.g. Go's `regexp`, refuse it): the three `Period` branches (starts with Y, with M, with D) keep out a
+  bare `P`.
+- `date-time` rejects a year above 9999 (`+12024-01-02T03:04:05Z`, RFC 3339 has 4-digit years), as it does for
+  `Instant`/`ZonedDateTime` today. Accepted on purpose: such values are rare, and a pattern would lose the format's
+  meaning for documentation tools. Don't "fix" it with a pattern.
 - `OffsetDateTime`/`OffsetTime` carry an offset, so RFC 3339 `date-time`/`time` fit the ISO text the codecs write.
   (`toString` drops `:00` seconds, which the formats reject; the codecs use the ISO formatters, which don't. Same as
   the existing `ZonedDateTime`/`Instant` Predefs.)
@@ -116,6 +121,13 @@ every Predef (e.g. a `Predef[Any]` would apply everywhere) and is binary-incompa
 standard text. One more `implicit val` is simpler.
 
 ### Per-type alternatives (easy to choose instead)
+- **`FiniteDuration` as plain `string` (no format).** No library writes ISO 8601 for it: `toString` gives
+  `"1500 milliseconds"`, upickle `"1500000000"` (nanos as a string), the #11 user's custom circe codec `"10s"`; circe
+  and play have no codec. A validator that asserts formats (networknt with `formatAssertionsEnabled(true)`; ajv with
+  ajv-formats on 2019-09+) rejects every one of them under `format: duration`. Plain `string` accepts them all and
+  states nothing false. LOST to consistency only: `Duration` (the supertype, existing output) has `format: duration`
+  and the same problem, so `FiniteDuration` follows it; changing `Duration` is an output change for the lead/owner
+  (reported as a neighbour). If `Duration` changes, `FiniteDuration` changes with it (one line).
 - `Year` as `integer` (Jackson's `JavaTimeModule` writes a number) instead of a string: no bridged library writes
   that, circe writes a string. A user who needs it declares their own `implicit val y: Predef[Year]`, which wins
   over the built-in one (see Compatibility).
@@ -125,6 +137,20 @@ standard text. One more `implicit val` is simpler.
 ## Decision
 A: nine new core Predefs (two `date-time`/`time` formats, `FiniteDuration` = `Duration`, five written-form patterns,
 `ZoneId` plain) and five String Magnets. Additive only; `LocalDateTime`/`LocalTime` stay as they are (item D1).
+
+Trade-offs the owner should see:
+- `FiniteDuration` = `Duration` (`format: duration` from 2019-09) is chosen for consistency, although no codec writes
+  ISO 8601 for either, so a format-asserting validator rejects real values. The alternative (plain `string`) is one
+  line; it belongs with a decision on `Duration` itself.
+- Field **defaults** of these types are not covered (out of scope, below).
+
+### Out of scope: default values
+`case class Timeouts(connect: FiniteDuration = 5.seconds)` still doesn't compile after this change: the macro needs a
+`ToValue[FiniteDuration]` to render the default (`Can't infer json value for default value of ... Please provide
+ToValue[...]`). Core has no `ToValue` for any Predef'd non-primitive type today (`UUID`, `URI`, `LocalDate`, `Instant`,
+`Duration` fail the same way), so adding them for these nine types only would be inconsistent; it is one decision for
+all Predef'd types (left to the lead as a separate item). Workarounds today: a bridge import (`AsCirce._`, `AsPlay._`,
+...) derives `ToValue` from the library's encoder, or declare an `implicit ToValue[T]`.
 
 ## Implementation plan
 1. `core/src/main/scala/json/schema/validation/Magnet.scala`: `periodMagnet`, `yearMagnet`, `yearMonthMagnet`,
@@ -160,3 +186,12 @@ Additive: new implicit vals in `object Predef` and `object Magnet`.
 - PVP: additive, so a patch-level release (0.9.x) is enough. Legacy: no impact (0.7 had none of these types).
 
 ## Review log
+E3-R1 (must) FiniteDuration: list plain `string` as the alternative with the codec evidence → accepted: added under
+Per-type alternatives (toString / upickle / #11 texts, format-asserting validators reject them all); verdict kept
+(consistency with `Duration`), trade-off stated in Decision.
+E3-R2 (must) field defaults need `ToValue` → accepted (b): "Out of scope: default values" under Decision, with the
+error, why (no Predef'd non-primitive type has a core `ToValue`), and the workarounds (bridge import, own `ToValue`).
+Left to the lead as a separate item.
+E3-R3 (nit) lookahead in the Period pattern → accepted: lookaround-free three-branch pattern (yours); spec updated.
+E3-R4 (nit) OffsetTime beyond the ITEMS row → accepted: lead OK'd it (2026-11-23); the PR summary will say so.
+E3-R5 (nit) `date-time` rejects years > 9999 → accepted: one bullet under A ("don't fix it with a pattern").
