@@ -130,10 +130,16 @@ correct.
 
 1. `modules/circe-json/src/main/scala/com/github/andyglow/jsonschema/CirceProfile.scala`:
    - add `private[jsonschema] val Same: String => String = identity` (shared with D4: if #493's implementation landed,
-     reuse its value; `private[jsonschema]` so `CirceProfilePlatform` on Scala 3 can reach it);
+     reuse its value; `private[jsonschema]` so `CirceProfilePlatform` on Scala 3 can reach it). Declare it **above**
+     `val default = configured()`: object vals initialize in order, so below it `configured()` would run with
+     `Same == null` as the default argument, and the `renamed(transformMemberNames)` throw kept until D4 would call
+     `null("name")`, an NPE in `CirceProfile.<clinit>` (Scala 2 accepts the forward reference silently). Comment it so;
+     the "render with the import's own asCirce" test and every `profiles.circe._` test touch `CirceProfile.default` and
+     would catch it;
    - `configured(..., transformConstructorNames: String => String = Same, ...)`;
    - `val memberName = if (transformConstructorNames eq Same) MemberName.SimpleName else MemberName.Custom(m => transformConstructorNames(m.name))`;
    - keep `renamed` only for the `transformMemberNames` throw until D4 removes it (if D4 already landed, delete `renamed`);
+     reword its comment: it only gates the field-renaming throw now;
    - scaladoc of `configured`: "names are `transformConstructorNames(<simple name>)`, for any function (it isn't compared with identity)".
 2. `modules/circe-json/src/main/scala-3/com/github/andyglow/jsonschema/CirceProfilePlatform.scala`: pass
    `if (c.transformConstructorNames eq Configuration.default.transformConstructorNames) CirceProfile.Same else c.transformConstructorNames`.
@@ -142,7 +148,9 @@ correct.
 3. `modules/u-json/src/main/scala/com/github/andyglow/jsonschema/UPickleProfile.scala`:
    `val memberName = if (api eq _root_.upickle.default) name else MemberName.Custom(...)` (the existing `Custom` body,
    unchanged: case objects not mapped). Drop `"petshop.Dog"` from the sample list (it was only for the tag map);
-   `renamed` stays for the `objectAttributeKeyWriteMap` throw until D4 removes it.
+   `renamed` stays for the `objectAttributeKeyWriteMap` throw until D4 removes it, its comment reworded as in step 1.
+   Scaladoc of the object and of `fromApi`: the tag is `objectTypeKeyWriteMap(<name>)` for any function (it isn't
+   compared with identity); case objects not mapped.
 4. Tests (shared `src/test/scala`, so 2.12/2.13/3, JVM and JS; on JS the validating asserts are canceled as usual,
    the `memberName(...)` asserts still run):
    - `modules/circe-json/src/test/scala/petshop/CirceAcceptanceSpec.scala`, under "CirceProfile.configured":
@@ -158,9 +166,18 @@ correct.
      `Configuration.default.withDiscriminator("type").copy(transformConstructorNames = { case "Dog" => "dog"; case n => n })`,
      `deriveConfiguredEncoder`, `configured(cfg.discriminator, cfg.transformConstructorNames)`, assertValid on the real output.
    - `modules/u-json/src/test/scala/petshop/UPickleAcceptanceSpec.scala`: the `DogOnlyTags` API object + codecs from
-     the repro, assertValid on `DogOnlyTags.write` output and `memberName(Dog) shouldBe "doggo"`;
+     the repro, its map extended to `Fish -> fishy` too (and the read map back), assertValid on `DogOnlyTags.write`
+     output, `memberName(Dog) shouldBe "doggo"`, and the schema still has `"Fish"` (upickle writes the case object
+     unmapped: `"Fish"`; this pins the singleton branch with a selective map);
      `UPickleProfile.default.memberName shouldBe MemberName.SimpleName`. The existing `FullNames`, `LowerTags` and
      `MyPickler` cases stay green (now through `Custom`).
+   - "`Custom` over identity = the old output", one direct check per bridge (`Schemas.pet` rendered under each, compared
+     byte for byte on every draft): circe shared `configured(Some("type"), identity)` vs `configured(Some("type"))` and
+     `configured(None, identity)` vs `CirceProfile.default`; Scala 3
+     `fromConfig(Configuration(identity, identity, false, Some("type")))` vs
+     `fromConfig(Configuration.default.withDiscriminator("type"))`; upickle `fromApi(MyPickler)` (only `tagName` set)
+     vs `UPickleProfile.default.withSum(SumStyle.Discriminator("kind"))`, and an `object Plain extends AttributeTagged`
+     vs `UPickleProfile.default`.
    - No golden files change (goldens are rendered under `Neutral` / `Legacy`, not under the bridge profiles); a golden
      diff is a bug. `golden-legacy/` untouched.
 5. Docs: README "Library profiles" table (circe and upickle rows: "read from" stays; add "any function, applied per
@@ -182,3 +199,12 @@ correct.
 - PVP: patch (0.9.x). Legacy profile: not involved (bridge profiles only); golden-legacy untouched.
 
 ## Review log
+- B25-R1 (must) init order: `Same` declared after `default` is `null` during `CirceProfile`'s init, and the kept
+  field-renaming throw NPEs in `<clinit>` → accepted: step 1 says to declare `Same` above `default`, why, and which
+  tests would catch it (D4's implementation has the same constraint; noted where `Same` is shared).
+- B25-R2 (nit) pin "`Custom` over identity renders the same" → accepted: step 4 adds one byte-equal check per bridge
+  (circe shared, Scala 3 `Configuration(...)` constructor, upickle `MyPickler` / a plain `AttributeTagged`).
+- B25-R3 (nit) singleton branch with a selective map → accepted: `DogOnlyTags` also maps `Fish`; the test asserts the
+  schema keeps `"Fish"` and validates upickle's `"Fish"`.
+- B25-R4 (nit) scaladocs → accepted: step 3 updates the object's and `fromApi`'s scaladoc; steps 1 and 3 reword the
+  `renamed` comments (field-renaming throw only).
