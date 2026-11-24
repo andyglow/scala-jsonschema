@@ -54,13 +54,13 @@ class GenericImplicitDefsSpec extends AnyFunSuite {
 
   // every $ref and definition name that names a type parameter of this spec's models (`...Plain.A`, `...Members.T`, Scala 3's `...jsonSchemaFoo.A`)
   private def placeholders(v: Value): List[String] = {
-    val param = """\.[ABTF](_|,|$)""".r
+    val param                         = """\.[ABTF](_|,|$)""".r
     def names(v: Value): List[String] = v match {
       case o: obj =>
         o.fields.toList.flatMap {
-          case ("$ref", str(s))   => List(s)
+          case ("$ref", str(s))        => List(s)
           case ("definitions", d: obj) => d.keys.toList ++ names(d)
-          case (_, x)             => names(x)
+          case (_, x)                  => names(x)
         }
       case a: arr => a.value.toList.flatMap(names)
       case _      => Nil
@@ -203,8 +203,8 @@ object GenericImplicitDefsSpec {
 
   object HigherKinded {
     implicit def jsonSchemaFooF[F[_]](implicit s: Schema[F[Bar]]): Schema[Foo[F[Bar]]] = Json.schema[Foo[F[Bar]]]
-    implicit val jsonSchemaBars: Schema[List[Bar]]                                   = Json.schema[List[Bar]]
-    implicit val jsonSchemaBarSet: Schema[Set[Bar]]                                  = Json.schema[Set[Bar]]
+    implicit val jsonSchemaBars: Schema[List[Bar]]                                     = Json.schema[List[Bar]]
+    implicit val jsonSchemaBarSet: Schema[Set[Bar]]                                    = Json.schema[Set[Bar]]
   }
 
   class FooWrap[T: Schema] {

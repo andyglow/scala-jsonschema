@@ -195,6 +195,50 @@ implicit `Schema` itself (e.g. `X` derives too):
 - `Box[Int]` has none (built-in types are `Predef`s), so it is derived inline where it is used.
   `summon[json.Schema[Box[Int]]]` doesn't compile; `Json.schema[Box[Int]]` always works.
 
+One implicit for every instantiation of a generic class works too:
+
+```scala
+import json._
+
+case class Company(name: String)
+case class Team(name: String)
+case class Box[A](value: A)
+case class Org(company: Box[Company], team: Box[Team])
+
+implicit def boxSchema[A: json.Schema]: json.Schema[Box[A]] = Json.schema[Box[A]]
+implicit val companySchema: json.Schema[Company]             = Json.schema[Company]
+implicit val teamSchema: json.Schema[Team]                   = Json.schema[Team]
+
+val orgSchema: json.Schema[Org] = Json.schema[Org]
+```
+
+`Box[Company]` and `Box[Team]` are two definitions, named after the concrete types. Inside `boxSchema`, though, `A`
+is a type parameter, so no name for it is known at compile time: the `json.Schema[A]` it receives is used as it is.
+So **`Company` is inlined inside `Box[Company]`**, although it has an implicit `Schema` (a plain
+`case class X(c: Company)` gives `"$ref": "#com.example.Company"`). To keep it a definition there, give the instance
+a name: `Json.schema[Company].toDefinition("com.example.Company")` (on Scala 3, `derives json.Schema` does that).
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "company": { "$ref": "#com.example.Box_com.example.Company_" },
+    "team": { "$ref": "#com.example.Box_com.example.Team_" }
+  },
+  "definitions": {
+    "com.example.Box_com.example.Company_": {
+      "$id": "#com.example.Box_com.example.Company_",
+      "type": "object",
+      "properties": { "value": { "type": "object", "properties": { "name": { "type": "string" } }, ... } },
+      ...
+    },
+    "com.example.Box_com.example.Team_": { "$id": "#com.example.Box_com.example.Team_", ... }
+  }
+}
+```
+
+A recursive generic class has a known limitation, see [Known issues](#known-issues).
+
 A `Predef` provides a schema for a type without making it a definition, e.g. for a type the macro can't derive:
 
 ```scala
@@ -940,8 +984,8 @@ with Scala 2 and gives the same schemas. The deliberate differences:
   `= { None }` need the `ToValue` too.
 - **A generic `derives` class** has a `Schema[Box[X]]` only when `X` has an implicit `Schema`: then `Box[X]` is a
   definition, otherwise it is derived inline (see [Definitions](#definitions-and-refs)). Inside the derived
-  schema, an implicit `Schema` for an abstract type parameter is used as it is at runtime: an existing definition
-  keeps its name, anything else is inlined.
+  schema, an implicit `Schema` for an abstract type parameter is used as it is, as for a generic implicit `def` on
+  both versions.
 - **refined:** `refined[T]` has no `T <: Refined[_, _]` bound (Refined is an opaque type on Scala 3; a non-refined
   `T` is a compile error), and an unsupported predicate found while deriving fails with the derivation's
   `is not supported` error followed by refined's own message.
@@ -954,11 +998,16 @@ Not supported (yet): union types, literal types, opaque types (beyond refined) a
 
 ## Known issues
 
-- **Scala 3: recursive generic `derives`.** For `case class Tree[A](value: A, children: List[Tree[A]]) derives json.Schema`,
-  `Tree[Int]` used as a field or as the root of `Json.schema` is a definition named `pkg.Tree[scala.Int]`, but a
-  summoned `Schema[Tree[X]]` (e.g. `summon[json.Schema[Tree[Company]]]`, `Company derives json.Schema`) and a
-  `Tree[A]` inside another generic `derives` class keep the type parameter's name (`pkg.Tree[pkg.Tree.A]`), so two
-  instantiations in one schema share it.
+- **Recursive generic definitions.** For `case class Tree[A](value: A, children: List[Tree[A]])` with a generic
+  implicit (`implicit def treeSchema[A: json.Schema]: json.Schema[Tree[A]] = Json.schema[Tree[A]]`, or on Scala 3
+  `derives json.Schema`), `Tree[Company]` used as a field or as the root of `Json.schema` is a definition named
+  `pkg.Tree[pkg.Company]`. But the definition keeps the type parameter's name (e.g. `pkg.Tree[pkg.Tree.A]`)
+  when it is a `Tree[A]` inside another generic implicit (`case class Outer[A](tree: Tree[A])` with its own
+  `implicit def`), or comes from a generic class's member
+  (`class Wrap[T: json.Schema] { implicit val s: json.Schema[Tree[T]] = Json.schema[Tree[T]] }`).
+  Two instantiations in one schema then get **one definition with one body: the schema is invalid**. A summoned
+  `Schema[Tree[X]]` (`implicitly`, `summon`) keeps that name too (valid on its own). Workaround: one `implicit val`
+  per instantiation (`implicit val companyTree: json.Schema[Tree[Company]] = Json.schema[Tree[Company]]`).
 - **Scala 2: an implicit declared on the line just before a `Json.schema` call may be ignored.** The Scala 2 macro
   recognizes `implicit val x: Schema[X] = Json.schema[X]` (so that it doesn't refer to itself) by reading the
   source text around the call, and a name on the previous line can match. Keep a blank line between such

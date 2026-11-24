@@ -1,5 +1,5 @@
 # Generic implicit `def`s: one shared definition for the type parameter on Scala 2  (issue #297, item B8)
-Status: draft
+Status: approved (r-b8, 2026-11-23)
 
 ## Problem
 A generic implicit that derives a schema for a generic class:
