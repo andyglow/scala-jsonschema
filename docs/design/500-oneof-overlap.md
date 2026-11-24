@@ -141,10 +141,14 @@ E7's `either` node (`eitherAt`).
    `not` side.
 3. **`Option[X]` where X admits `null` (R1) → X itself.** `optionAt` (`Nullable`) builds `oneof{X, null}` only when the
    lowered X doesn't already admit `null`; otherwise `Option[X]` adds nothing, and it lowers to X (its extras kept by
-   `apply`'s `withExtraFrom`, as today). One predicate `admitsNull(s)`: `null`; an `enum` with a `null` value; a
-   `const(null)`; a `oneof`/`anyof` with a member that admits `null`; an `allof` whose members all do; a `def` or
+   `apply`'s `withExtraFrom`, as today). One predicate `admitsNull(s)`, true only when the *rendered* `s` accepts `null`:
+   `null`; a `const(null)` (renders `{"const": null}`, no `type`); an `enum` with a `null` value **whose `tpe` admits
+   `null`** (an `enum` renders `"type"` from its `tpe`, so `{"type":"string","enum":["a",null]}` rejects `null`; only an
+   `enum` over E2's `any`, rendered without a type, qualifies); a `oneof` with **exactly one** member that admits `null`
+   (two would make `null` match twice); an `anyof` with at least one; an `allof` whose members all do; a `def` or
    `value-class` of one; E2's `any` (it generalises E2's "an `Option` of an `any` is the `any`"). A `ref`, `not` or
-   anything else: no (today's output). `Option[VOpt]`:
+   anything else: no (today's output, which is correct for them: `null` then matches only the `null` member).
+   `Option[VOpt]`:
    ```json
    "v": {"type": ["integer", "null"]}
    ```
@@ -264,8 +268,12 @@ If the owner picks B3's option F (an `Inclusive` marker on `oneof` instead of a 
    `optionAt` becomes one case of `admitsNull` (merge, don't duplicate); if B14 lands first, E2 adds `any` to
    `admitsNull`. The renderer's `mkNullable` is unchanged (E2's `anyOrNull` there handles hand-built trees).
    - Tests: `FamilyLoweringSpec` (or a new `OptionLoweringSpec`): `option(value-class(option(integer)))` lowers to the
-     value class unchanged; `option(def(sig, oneof{string, null}))` → the `def`; `option(enum(string, {"a", null}))` →
-     the enum; `option(integer)` and `option(ref(sig))` → `oneof{X, null}` as today. api (validation cancels on JS):
+     value class unchanged; `option(def(sig, oneof{string, null}))` → the `def`; `option(const(null))` → the `const`;
+     `option(anyof{string, null})` → the `anyof`; stays `oneof{X, null}` as today (negative cases):
+     `option(integer)`, `option(ref(sig))`, `option(enum(string, {"a", null}))` (renders with `"type":"string"`, so it
+     rejects `null`; api: `null` and `"a"` valid), `option(oneof{oneof{string, null}, oneof{integer, null}})` (two
+     null-admitting members of an exclusive `oneof`). With E2: `option(enum(any, {"a", null}))` → the enum.
+     api (validation cancels on JS):
      `HasVOpt(v: Option[VOpt])`, `VOpt(x: Option[Int]) extends AnyVal`: `{"v": null}`, `{"v": 1}`, `{}` valid,
      `{"v": "s"}` invalid; `Option[D]` with an implicit `Schema[D]` of a nullable body: `null` valid. Under Legacy:
      unchanged (`Option` fields drop a layer; elsewhere `enum["None"]` vs `{value}`), asserted on `HasVOpt`.
@@ -336,3 +344,12 @@ Round 1 (r-b14, design at a4981cb):
 - B14-R4 (nit) compatibility relative to 0.9.0; grep B3's specs for pinned cases → accepted: Compatibility states
   "no change vs 0.9.0, some anyOf → oneOf vs B3's branch"; plan step 2 has the grep.
 - B14-R5 (nit) docs: `format` is annotation-only from 2019-09 → accepted: plan step 6, refined section.
+
+Round 2 (r-b14, design at b231ed6; R1-R5 OK):
+- B14-R6 (must) `admitsNull`'s `enum` rule is wrong: `mkEnum` renders `"type"` from the enum's `tpe`, so
+  `{"type":"string","enum":["a",null]}` rejects `null`, and `Option[enum-with-null]` → enum would regress → accepted:
+  an `enum` admits `null` only when it has a `null` value **and** its `tpe` admits `null` (in practice E2's `any`). The
+  planned test is now a negative case (stays `oneof{enum, null}`, `null` valid); the `any` variant is the positive one.
+  `const(null)` stays (rendered without a type).
+- B14-R7 (nit) an exclusive `oneof` admits `null` only when exactly one member does (`anyof`: at least one) →
+  accepted: rule and a negative test (two null-admitting members).
