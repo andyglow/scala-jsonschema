@@ -71,7 +71,7 @@ class AnyValueSpec extends AnyFunSuite {
     prop(body(render(s, Draft07("id"))(JsonSchemaProfile.Legacy)), "opt") shouldBe obj()
   }
 
-  test("Option of a definition of an any: the $ref alone") {
+  test("Option of a definition of an any: the reference alone") {
     import WithDefinition._
     val s = Json.schema[UsesDef]
     s.withProfile(neutral).asInstanceOf[`object`[_]].fields.find(_.name == "opt").get.tpe match {
@@ -79,7 +79,7 @@ class AnyValueSpec extends AnyFunSuite {
       case other       => fail(s"not a definition: $other")
     }
     val o = render(s, Draft07("id"))(neutral)
-    prop(body(o), "opt").asInstanceOf[obj].value.keySet shouldBe Set("$ref")
+    prop(body(o), "opt").asInstanceOf[obj].value.keySet shouldBe Set(f"$$ref")
   }
 
   test("a hand-built oneof{any, null} renders the any alone") {
