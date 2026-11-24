@@ -4,7 +4,6 @@ import com.github.andyglow.json._
 import com.github.andyglow.json.Value._
 import json.Schema
 import play.api.libs.json._
-import com.github.andyglow.scalamigration._
 import json.schema.Version
 
 object AsPlay {
@@ -73,8 +72,8 @@ object AsPlay {
     implicit val arrAdapter: Aux[arr, JsArray]              =
       make(x => JsArray { x.value.toSeq map { adapt(_) } }, x => arr { x.value map { unadapt(_) } })
     implicit val objAdapter: Aux[obj, JsObject] = make(
-      x => JsObject { x.value.toMap mapV { adapt(_) } },
-      x => obj { x.value.toMap mapV { unadapt(_) } }
+      x => JsObject(x.fields map { case (k, v) => (k, adapt(v)) }),
+      x => obj.ordered(x.fields map { case (k, v) => (k, unadapt(v)) })
     )
   }
 

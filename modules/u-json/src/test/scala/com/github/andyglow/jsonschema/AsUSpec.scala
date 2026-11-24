@@ -33,6 +33,11 @@ class AsUSpec extends AnyPropSpec {
     AsU(obj("k1" -> 1, "k2" -> 2, "k3" -> 3, "k4" -> 4, "k5" -> 5, "k6" -> 6)).render() shouldBe """{"k1":1,"k2":2,"k3":3,"k4":4,"k5":5,"k6":6}"""
   }
 
+  property("AsU.toValue keeps key order (a case-class default)") {
+    val props = AsValue.schema(withObjDefault, Draft04()).value("properties").asInstanceOf[obj]
+    props.value("s").asInstanceOf[obj].value("default").asInstanceOf[obj].fields.map(_._1).toList shouldBe List("a1", "a2", "a3", "a4", "a5", "a6")
+  }
+
   property("AsU escapes") {
     val jobj = AsU(obj(""""quoted-key"""" -> "\n\t'val\""))
     jobj.render() shouldBe """{"\"quoted-key\"":"\n\t'val\""}"""
@@ -228,6 +233,17 @@ class AsUSpec extends AnyPropSpec {
 }
 
 object AsUSpec {
+
+  // key order through `toValue`: a case-class default, encoded by upickle
+  final case class Six(a1: Int, a2: Int, a3: Int, a4: Int, a5: Int, a6: Int)
+  final case class WithObjDefault(s: Six = Six(1, 2, 3, 4, 5, 6))
+  implicit val sixWriter: upickle.default.Writer[Six] = upickle.default.writer[ujson.Value].comap[Six] { s =>
+    ujson.Obj("a1" -> s.a1, "a2" -> s.a2, "a3" -> s.a3, "a4" -> s.a4, "a5" -> s.a5, "a6" -> s.a6)
+  }
+  lazy val withObjDefault: _root_.json.Schema[WithObjDefault] = {
+    import AsU.toValue
+    _root_.json.Json.schema[WithObjDefault]
+  }
 
   case class Name(first: String, middle: Option[String], last: String)
 

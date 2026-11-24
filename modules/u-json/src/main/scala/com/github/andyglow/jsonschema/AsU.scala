@@ -3,7 +3,6 @@ package com.github.andyglow.jsonschema
 import com.github.andyglow.json._
 import com.github.andyglow.json.Value._
 import json.Schema
-import com.github.andyglow.scalamigration._
 import json.schema.Version
 import upickle.default._
 
@@ -73,7 +72,7 @@ object AsU {
     implicit val arrAdapter: Aux[arr, ujson.Arr] =
       make(x => x.value map { adapt(_) }, x => arr { x.value map { unadapt(_) } })
     implicit val objAdapter: Aux[obj, ujson.Obj] =
-      make(x => x.value.toMap mapV { adapt(_) }, x => obj { x.value.toMap mapV { unadapt(_) } })
+      make(x => ujson.Obj.from(x.fields map { case (k, v) => (k, adapt(v)) }), x => obj.ordered(x.value.toSeq map { case (k, v) => (k, unadapt(v)) }))
   }
 
   implicit def toValue[T](implicit w: Writer[T]): ToValue[T] = new ToValue[T] {

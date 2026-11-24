@@ -1,6 +1,6 @@
 package com.github.andyglow.jsonschema
 
-import com.github.andyglow.json.Value
+import com.github.andyglow.json.{JsonFormatter, Value}
 import com.github.andyglow.json.Value._
 import json._
 import json.schema.discriminator
@@ -22,6 +22,12 @@ object PropertyOrderSpec {
   object Root {
     final case class Member(a1: Int, a2: Int, a3: Int, a4: Int, a5: Int) extends Root
     final case class Other(b: String)                                    extends Root
+  }
+
+  @discriminator(field = "type", phantom = false) sealed trait Declared
+  object Declared {
+    final case class Member(a1: Int, a2: Int, `type`: String, a3: Int, a4: Int) extends Declared
+    final case class Other(`type`: String, b: String)                          extends Declared
   }
 
   final case class D1(x: Int)
@@ -102,6 +108,52 @@ class PropertyOrderSpec extends AnyFunSuite {
     val member = field(v, "oneOf").asInstanceOf[arr].value.collect { case o: obj if keys(field(o, "properties")).contains("a1") => o }.head
     keys(field(member, "properties")) shouldBe List("a1", "a2", "a3", "a4", "a5", "type")
     strings(field(member, "required")) shouldBe List("a1", "a2", "a3", "a4", "a5", "type")
+  }
+
+  test("a declared discriminator field (phantom = false) keeps its declared position") {
+    val v      = AsValue.schema(Json.schema[Declared], Draft07(Id))
+    val member = field(v, "oneOf").asInstanceOf[arr].value.collect { case o: obj if keys(field(o, "properties")).contains("a1") => o }.head
+    keys(field(member, "properties")) shouldBe List("a1", "a2", "type", "a3", "a4")
+    field(member, "properties", "type") shouldBe obj("enum" -> arr("com.github.andyglow.jsonschema.PropertyOrderSpec.Declared.Member"))
+    strings(field(member, "required")) shouldBe List("a1", "a2", "type", "a3", "a4")
+  }
+
+  test("the whole Draft 07 document of a 6-field case class, as text") {
+    JsonFormatter.format(AsValue.schema(Json.schema[Six], Draft07(Id))) shouldBe
+      """{
+        |  "$schema": "http://json-schema.org/draft-07/schema#",
+        |  "$id": "order",
+        |  "type": "object",
+        |  "additionalProperties": false,
+        |  "properties": {
+        |    "a1": {
+        |      "type": "integer"
+        |    },
+        |    "a2": {
+        |      "type": "integer"
+        |    },
+        |    "a3": {
+        |      "type": "integer"
+        |    },
+        |    "a4": {
+        |      "type": "integer"
+        |    },
+        |    "a5": {
+        |      "type": "integer"
+        |    },
+        |    "a6": {
+        |      "type": "integer"
+        |    }
+        |  },
+        |  "required": [
+        |    "a1",
+        |    "a2",
+        |    "a3",
+        |    "a4",
+        |    "a5",
+        |    "a6"
+        |  ]
+        |}""".stripMargin
   }
 
   test("definitions are in the order they are met") {

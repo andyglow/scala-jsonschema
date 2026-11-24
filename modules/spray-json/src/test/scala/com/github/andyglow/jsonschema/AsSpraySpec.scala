@@ -34,6 +34,11 @@ class AsSpraySpec extends AnyPropSpec {
     AsSpray(obj("k1" -> 1, "k2" -> 2, "k3" -> 3, "k4" -> 4, "k5" -> 5, "k6" -> 6)).compactPrint shouldBe """{"k1":1,"k2":2,"k3":3,"k4":4,"k5":5,"k6":6}"""
   }
 
+  property("AsSpray.toValue keeps key order (a case-class default)") {
+    val props = AsValue.schema(withObjDefault, Draft04()).value("properties").asInstanceOf[obj]
+    props.value("s").asInstanceOf[obj].value("default").asInstanceOf[obj].fields.map(_._1).toList shouldBe List("a1", "a2", "a3", "a4", "a5", "a6")
+  }
+
   property("AsSpray escapes") {
     val jobj = AsSpray(obj(""""quoted-key"""" -> "\n\t'val\""))
     jobj.compactPrint shouldBe """{"\"quoted-key\"":"\n\t'val\""}"""
@@ -105,6 +110,19 @@ class AsSpraySpec extends AnyPropSpec {
 }
 
 object AsSpraySpec {
+
+  // key order through `toValue`: a case-class default, encoded by spray (a ListMap: spray's own `JsObject(k -> v, ...)` is a HashMap)
+  final case class Six(a1: Int, a2: Int, a3: Int, a4: Int, a5: Int, a6: Int)
+  final case class WithObjDefault(s: Six = Six(1, 2, 3, 4, 5, 6))
+  implicit val sixWriter: JsonWriter[Six] = new JsonWriter[Six] {
+    def write(s: Six): JsValue = JsObject(
+      scala.collection.immutable.ListMap[String, JsValue]("a1" -> JsNumber(s.a1), "a2" -> JsNumber(s.a2), "a3" -> JsNumber(s.a3), "a4" -> JsNumber(s.a4), "a5" -> JsNumber(s.a5), "a6" -> JsNumber(s.a6))
+    )
+  }
+  lazy val withObjDefault: _root_.json.Schema[WithObjDefault] = {
+    import AsSpray.toValue
+    _root_.json.Json.schema[WithObjDefault]
+  }
 
   implicit val jsValEq: Equality[JsValue] = new Equality[JsValue] {
     override def areEqual(a: JsValue, b: Any): Boolean = a match {

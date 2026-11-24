@@ -165,8 +165,10 @@ object Value {
 
     override def tpe = "object"
 
+    /** The fields in insertion order. Every `obj` the library builds, combines (`++`, `+`, `-`, `deepMerge`) or converts keeps it. */
     lazy val fields: Seq[(String, Value)] = underlying.toSeq
 
+    /** The fields as an immutable map, for lookups. It has no order beyond 4 entries: iterate [[fields]] for that. */
     lazy val value: Map[String, Value] = underlying match {
       case m: immutable.Map[String, value] => m
       case m                               => m.toMap
@@ -178,13 +180,13 @@ object Value {
 
     def values: Iterable[Value] = underlying.values
 
-    def ++(other: obj): obj = obj(underlying ++ other.underlying)
+    def ++(other: obj): obj = obj.ordered(fields ++ other.fields)
 
-    def ++(other: Option[obj]): obj = other.fold(this)(x => obj(underlying ++ x.underlying))
+    def ++(other: Option[obj]): obj = other.fold(this)(this ++ _)
 
-    def -(otherField: String): obj = obj(underlying.toMap - otherField)
+    def -(otherField: String): obj = obj.ordered(fields.filterNot(_._1 == otherField))
 
-    def +(otherField: (String, Value)): obj = obj(underlying.toMap + otherField)
+    def +(otherField: (String, Value)): obj = obj.ordered(fields :+ otherField)
 
     def canEqual(other: Any): Boolean = other.isInstanceOf[obj]
 
@@ -193,7 +195,7 @@ object Value {
     def deepMerge(other: obj): obj = {
 
       def merge(existingObject: obj, otherObject: obj): obj = {
-        val result = existingObject.underlying ++ otherObject.underlying.map { case (otherKey, otherValue) =>
+        val merged = otherObject.fields.map { case (otherKey, otherValue) =>
           val maybeExistingValue = existingObject.underlying.get(otherKey)
           val newValue           = (maybeExistingValue, otherValue) match {
             case (Some(e: obj), o: obj) => merge(e, o)
@@ -203,7 +205,7 @@ object Value {
           (otherKey, newValue)
         }
 
-        obj(result)
+        obj.ordered(existingObject.fields ++ merged)
       }
 
       merge(this, other)
@@ -248,7 +250,7 @@ object Value {
       case _             => false
     }
 
-    override def toString = value map { case (k, v) =>
+    override def toString = fields map { case (k, v) =>
       s""""$k": ${v.toString}"""
     } mkString ("{", ", ", "}")
   }
@@ -267,6 +269,9 @@ object Value {
     def apply(fields: field*): obj = new obj(mutable.LinkedHashMap(fields collect { case field.some(k, v) =>
       (k, v)
     }: _*))
+
+    /** An object with these fields in this order (a repeated key keeps its first position and its last value). */
+    private[andyglow] def ordered(fields: Iterable[(String, Value)]): obj = new obj(mutable.LinkedHashMap(fields.toSeq: _*))
 
     val empty: obj = obj()
   }

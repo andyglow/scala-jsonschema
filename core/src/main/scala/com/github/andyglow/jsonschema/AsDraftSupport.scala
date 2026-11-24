@@ -85,8 +85,8 @@ trait AsDraftSupport {
         tpe ++
         rw ++
         description)
-    }.toMap ++ {
-      // discrimination logic
+    } ++ {
+      // discrimination logic: the discriminator comes last, or replaces a field of its name (`phantom = false`) in place
       discriminatorField.flatMap { df =>
         for { dk <- x.discriminationKey } yield {
           df -> obj("enum" -> arr(dk))
@@ -104,7 +104,7 @@ trait AsDraftSupport {
       ("description", x.description),
       ("title", x.title),
       ("additionalProperties", canHaveAdditionalProperties),
-      ("properties", if (props.isEmpty) None else Some(obj(props))),
+      ("properties", if (props.isEmpty) None else Some(obj.ordered(props))),
       ("required", if (required.isEmpty) None else Some(arr(required.distinct)))
     )
   }
@@ -280,9 +280,7 @@ trait AsDraftSupport {
       res
     }
 
-    def json: obj = obj {
-      elements.map { d => d.validation.name -> d.json }.toMap
-    }
+    def json: obj = obj.ordered(elements.map { d => d.validation.name -> d.json })
   }
 
   def inferValidations(x: json.Schema[_]): ValidationList = {
@@ -317,8 +315,6 @@ trait AsDraftSupport {
       case _                     => Seq.empty
     }
 
-    obj {
-      extractDefs(x, None).toMap
-    }
+    obj.ordered(extractDefs(x, None))
   }
 }

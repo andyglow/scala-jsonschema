@@ -283,7 +283,7 @@ Recursive types (`case class Node(children: List[Node])`) become a definition au
 | `Option[T]`                                                                 | `T` or `null`; a field is not required ([more](#option)) |
 | `Iterable[T]` (`List`, `Seq`, `Vector`, `Set`, `Array`, ...)                | `array` (`Set`: `uniqueItems`)                  |
 | `Map[String, V]`, `Map[Int, V]`, ...                                        | `object` with `patternProperties`               |
-| case class                                                                  | `object`                                        |
+| case class, tuple                                                           | `object`, `properties` in declaration order     |
 | value class                                                                 | its underlying type                             |
 | sealed family, `enum`, `Enumeration`, Java enum                             | see [below](#sum-types-and-enums)               |
 
