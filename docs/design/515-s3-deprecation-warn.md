@@ -244,6 +244,11 @@ at the user's call site, shown there too, and `@nowarn` / `-Wconf:src=...` there
      (`siteIsSyntheticCaseClassMember`). That isn't our contract. Our contract is "suppressible at the call site", and a
      test of the unsuppressed case would break on a compiler change that is out of our hands. The doc and the PR record
      the observation; no test asserts it.
+   - **Guard test** (Scala 3 only, same spec; review B21-R8): a model whose field type has an `inline given Schema` /
+     `Predef` that implicit search finds during derivation. This puts a method-call `Inlined` into the expansion, so
+     the "leave it alone" branch of `CallSitePositions` runs. Assert the schema, so the inline given's output is
+     unchanged. Confirm once, with a temporary `report.info`, that the branch is hit, and note in the PR what the
+     rewrite saw.
    - `modules/derived` Scala 3 test: one `DerivedSchema[Old]` under `@nowarn`. `modules/refined`: one refined field
      inside a model with a deprecated sibling field type, under `@nowarn`.
    - **Make a regression fail the build** (scoped per review B21-R3): add `-Wconf:cat=deprecation:e` to the Scala 3
@@ -284,10 +289,9 @@ Risks:
   Positions are per tree (each tree keeps its source file); the 3.3 and 3.10 backends compute line numbers from the
   tree's own source; `-Xcheck-macros` passed on the whole suite; and 3.10.1 as a consumer gives the same diagnostics.
   What changes is the inline trace of a diagnostic on a term of our generated code (see Cons);
-- the method-call `Inlined` guard is untested, because the suite has no such node. Add a test model whose field type
-  has an `inline given Schema` / `Predef` that implicit search finds during derivation, so the guard is exercised,
-  and record what the rewrite sees for it. If that expansion carries type trees from our own quotes (it would be our
-  macro nested in theirs), its own entry point has already rewritten them;
+- the method-call `Inlined` guard: the current suite has no such node. Plan step 3 adds a test that exercises it. If
+  such an expansion carries type trees from our own quotes (it would be our macro nested in theirs), its own entry
+  point has already rewritten them;
 - not ours, unchanged: `@deprecated sealed trait F derives json.Schema` with a deprecated member `F1` gets one more
   warning from the compiler at the `derives` clause ("class F1 is deprecated", no inline trace). 0.9.0 has it too, and
   the fix keeps it. It most likely comes from the compiler's `Mirror` synthesis for `derives`.
@@ -326,3 +330,7 @@ Round 1 (r-b21, on 57a681f):
   likely what it flags; its type arguments don't warn (`s2`).
 - B21-R7 (nit) upstream toy → **accepted**: `notes/scratch/c-b21/upstream/` (warns on 3.3.7 and 3.10.1), pointer in
   Option D.
+
+Round 2 (r-b21, on cb61edd):
+- B21-R8 (nit) move the inline-given guard test into the test plan → **accepted**: plan step 3 "Guard test"; the Risks
+  bullet points there.
