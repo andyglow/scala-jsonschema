@@ -150,6 +150,13 @@ class GenericImplicitDefsSpec extends AnyFunSuite {
   }
 
   // Shapes the fix leaves invalid, on both versions (README "Known issues"): one definition name, two bodies. Pinned so a later fix shows up here.
+  test("#297: a type parameter next to a wildcard (Two[A, _]) counts as abstract") {
+    import Wildcard._
+    val s = Json.schema[Holders]
+    field(field(s, "x"), "t") shouldEqual `object`[Any](Field("a", bar))
+    field(field(s, "y"), "t") shouldEqual `object`[Any](Field("a", baz))
+  }
+
   test("#297 known issue: a recursive generic nested in another generic implicit def keeps the type parameter's name", Untriaged) {
     import Plain._
     val s  = Json.schema[Nested]
@@ -199,6 +206,16 @@ object GenericImplicitDefsSpec {
     implicit def jsonSchemaOuter[A: Schema]: Schema[Outer[A]]             = Json.schema[Outer[A]]
     implicit val jsonSchemaBar: Schema[Bar]                               = Json.schema[Bar]
     implicit val jsonSchemaBaz: Schema[Baz]                               = Json.schema[Baz]
+  }
+
+  case class Two[A, B](a: A)
+  case class Holder[A](t: Two[A, _])
+  case class Holders(x: Holder[Bar], y: Holder[Baz])
+  object Wildcard {
+    implicit def jsonSchemaTwo[A: Schema]: Schema[Two[A, _]]    = Json.schema[Two[A, Any]].asInstanceOf[Schema[Two[A, _]]]
+    implicit def jsonSchemaHolder[A: Schema]: Schema[Holder[A]] = Json.schema[Holder[A]]
+    implicit val jsonSchemaBar: Schema[Bar]                     = Json.schema[Bar]
+    implicit val jsonSchemaBaz: Schema[Baz]                     = Json.schema[Baz]
   }
 
   object HigherKinded {

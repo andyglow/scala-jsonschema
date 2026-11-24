@@ -107,7 +107,8 @@ arg that mentions one; `RefinedType` parents, `AnnotatedType` underlying; everyt
 - `isAbstract` is true for a type parameter (method or class) and an abstract type member (both DEFERRED), but also for
   traits and abstract classes, hence `!isClass` (without it `Option[Bar]` or a sealed trait counts: a prototype broke 4
   existing tests). Aliases are gone after `dealias`; a concrete alias `type T = Bar` isn't abstract.
-- `!isExistential`: `Schema[Foo[_]]` keeps its definition (the existential's `_$1` is abstract too).
+- `!isExistential`: `Schema[Foo[_]]` keeps its definition (the existential's `_$1` is abstract too). An outer
+  `ExistentialType` is looked into, so `Two[A, _]` counts through `A` (as Scala 3's `Two[A, ?]`), and the guard skips `_$1`.
 - A higher-kinded parameter in constructor position (`F[Bar]`, `TypeRef(_, F, List(Bar))`) counts: `F` is a type
   parameter, as Scala 3's `mentionsAbstractType(tc)`. Pinned by the `HigherKinded` test.
 
@@ -233,3 +234,8 @@ Round 1 (r-b8, on 5e08d2d):
   (`!isClass`, `!isExistential`), and that a higher-kinded `F[Bar]` counts; `HigherKinded` test pins it.
 - B8-R5 (nit) docs say `Bar` is inlined → accepted: the "Generic implicits" paragraph states it with the
   `toDefinition("Bar")` workaround.
+
+Code review (r-b8, approved at 6d5f391):
+- B8-R6 (nit) an outer `ExistentialType` never reached the `TypeRef` case, so `!isExistential` was dead and `Two[A, _]`
+  was still named after `A` → accepted: `mentionsAbstractType` looks inside `ExistentialType`; new test
+  "a type parameter next to a wildcard (Two[A, _])" fails on 2.13 without it, passes on 2.13 and 3.3.9 with it.
