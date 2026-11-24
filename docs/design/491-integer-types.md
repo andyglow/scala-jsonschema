@@ -104,9 +104,11 @@ final def withIntegral(x: IntegralStyle): JsonSchemaProfile = ...  // builder, l
   (`Either[Int, Double]`, B14), now extended to `Long`/`Short`/`Byte`/`BigInt`:
   - sealed families (`FA(x: Long)`, `FB(x: Double)`): B3 (#470) runs its disjointness check on the lowered members and
     treats `integer ⊂ number` as an overlap, so the family renders `anyOf`, which is valid. **D2 lands after B3.**
-  - `Either[Long, Double]` and plain `oneof`s: B14's scope (exclusive `oneOf` with overlapping members). **D2 lands after
-    B14**, or, if B14 isn't ready, together with a test that pins `Either[Long, Double]` as a known B14 case (tag `TRIAGE-*`,
-    the same as `Either[Int, Double]`).
+  - `Either[Long, Double]` and plain `oneof`s: B14's scope (exclusive `oneOf` with overlapping members). Without B14, D2
+    makes a schema that accepts every valid document today invalid. **`Either[Long, Double]` would reject `{"value": 1}`**
+    (a valid `Left(1L)`), where today's one-member `oneOf[{value: number}]` accepts everything (D2-R10). So **D2 lands after
+    B14**, or, if the owner accepts it, with a test that pins `Either[Long, Double]` as a known B14 case (tag `TRIAGE-*`,
+    next to `Either[Int, Double]`). This is an open question for the owner in the PR.
   - `Either[Int, Long]` improves: both branches lower to `{value: integer}` and dedupe into one valid member.
 - **Draft 04 and play's `BigInt`** (D2-R2). play writes a `BigInt` ≥ 1E20 in exponent form (`1.2345678901234567890123456789E+29`).
   Draft 04 defines `integer` as a number "without a fraction or exponent part", and networknt applies that (it rejects the
@@ -232,11 +234,24 @@ exposes are handled by B3 (families → `anyOf`) and B14 (`Either`), so D2 lands
      (comment: the resolved form, so the renderers' second, Neutral lowering leaves it alone), and
      `whole(v) = v match { case Value.num(x) => x.isWhole; case _ => false }`. Check `BigDecimal.isWhole` on 2.12 (else
      `x.remainder(1) == 0`). Leave the `case other` comment accurate (enum handled above). Factor the `enum` case into
-     `integralEnum(vs: Schema[_], values: Set[Value]): Schema[_]` (lowers `vs` only when the guard holds, otherwise `apply(vs)`).
-   - `familyAt` (D2-R4): singletons merge on their value schema. Compute it without the integral step: `singletonSchema(m)`
-     returns `m.schema` unchanged when it is a `number` (a leaf; nothing else in it to lower), else `apply(m.schema)`. Then
-     build `Merged(vs, values)` → `integralEnum(vs, values.toSet)` in place of `` `enum`[Any](vs, values.toSet) ``. The
-     guard then sees the values on both paths. A singleton's `const` path is unchanged (a `const` has no value schema).
+     `integralEnum(vs: Schema[_], values: Set[Value]): Schema[_]`: when `vs` is an integral `number` and the guard holds,
+     `` `enum`(integral(vs), values) ``; when `vs` is an integral `number` and the guard fails, `` `enum`(vs, values) `` with
+     `vs` left as it is. It must **not** be `apply(vs)`, which would turn it into `integer` anyway. A later lowering hits
+     the same guard and leaves it, so it renders `number`. Any other `vs`: `` `enum`(apply(vs), values) ``.
+   - `familyAt` (D2-R4, D2-R9): singletons merge on their value schema, and the merge key depends on the style, so that
+     Legacy merges exactly as 0.7 did:
+     - `AsNumber`: `singletonSchema(m) = apply(m.schema)`, as today. An integral `number` becomes `` `number`[BigDecimal] ``,
+       which equals every other non-integral `number`. So a `@typeHint[Long]` singleton (1) and a `@typeHint[Double]`
+       singleton (2.5) merge into one `enum(number, [1, 2.5])`, the 0.7 output. Then `integralEnum` has nothing left to do;
+     - `AsInteger`: `singletonSchema(m)` returns `m.schema` unchanged when it is a `number` (a leaf, nothing else in it to
+       lower), else `apply(m.schema)`. Merging uses the integrality-aware `equals`, so the example gives two entries.
+       `Merged(vs, values)` → `integralEnum(vs, values.toSet)` gives `{"type":"integer","enum":[1]}` and
+       `{"type":"number","enum":[2.5]}`. Both are valid, and their values are disjoint.
+     In both cases `` `enum`[Any](vs, values.toSet) `` is replaced by `integralEnum(vs, values.toSet)`, so the guard sees the
+     values on this path too. A singleton's `const` path is unchanged (a `const` has no value schema).
+     Probe (2.13.18 and 3.3.9, both macros accept per-member hints in a mixed family): `sealed trait M`,
+     `@typeHint[Long] case object A` (ToValue `1`), `@typeHint[Double] case object B` (`2.5`), `case class C(x: String)`.
+     Today it renders `oneOf[{"type":"number","enum":[1,2.5]}, {object C}]` under Neutral and Legacy.
    - `oneof`: `oneof(xs map apply)` already re-dedupes lowered members. Under `AsNumber`, that's what keeps Legacy's
      `Either[Long, Double]` at one member, the 0.7 output (verify with a test, step 4).
    - Update the scaladoc that says lowering touches only `option`/`family` (trait header "Everything else ... passes
@@ -254,6 +269,8 @@ exposes are handled by B3 (families → `anyOf`) and B14 (`Either`), so D2 lands
    - enums: `@typeHint[Long]` family → `integer` enum; `Schema.enum.of(BigInt(1), BigInt(2))` → `integer`;
      `Schema.enum.of(Value.num(1.5), Value.num(2))` stays `number` (the guard, `Lowering.apply` path); a `@typeHint[Long]`
      family whose `ToValue` gives `1.5` stays `number` (the guard, `familyAt` path, D2-R4), on Scala 2 and 3;
+   - the mixed family `M` above (D2-R9), on Scala 2 and 3: Legacy renders the one merged `{"type":"number","enum":[1,2.5]}`
+     (byte-exact with today); Neutral renders `{"type":"integer","enum":[1]}` and `{"type":"number","enum":[2.5]}` next to `C`;
    - equality and members (D2-R1): `` `number`[Long] == `number`[Short] ``, `` != `number`[Double] ``;
      `Json.schema[Either[Long, Double]]` keeps two members in the tree; Legacy renders it with one member (the 0.7 output);
      Neutral `Either[Int, Long]` renders one `{value: integer}` member; family `FA(x: Long) | FB(x: Double)` renders `anyOf`
@@ -322,8 +339,10 @@ exposes are handled by B3 (families → `anyOf`) and B14 (`Either`), so D2 lands
   Trees (`Json.schema[...]`) don't change.
 - Legacy: byte-exact, no change.
   Listed output changes beyond the type itself: `Either[Int, Long]` goes from two members to one; `Either[Long, Double]` goes
-  from one member to two (`integer`, `number`: the B14 overlap until B14 lands); families mixing a `Long` and a `Double`
-  member get `anyOf` (through B3); Draft 04 + play + `BigInt` ≥ 1E20 now fails validation.
+  from one member to two (`integer`, `number`). Until B14 lands, that is **a new invalid case**: it rejects `{"value": 1}`,
+  where today it accepts every valid document. Families mixing a `Long` and a `Double` member get `anyOf` (through B3).
+  A mixed family's `Long`- and `Double`-hinted singletons render two enums instead of one (Neutral only). Draft 04 + play +
+  `BigInt` ≥ 1E20 now fails validation.
 - PVP: B3 (#470) treats a change of the default output as breaking (a minor bump, 0.10.0). D2 follows the same rule: 0.10.0,
   in the same release as B3. A 0.9.x patch is possible only if the owner treats it as a pure bug fix (there's no API break).
 
@@ -372,3 +391,14 @@ Round 1 (r-d2, on 1b6a40a):
   calls it a bug fix.
 - D2-R8 (nit) missed option, a subclass of the sealed `integer` → **accepted**, added as Option D (LOST, with why). The old
   "keep `number`" option is now E.
+
+Round 2 (r-d2, on c15a7ef):
+
+- D2-R9 (must) the integrality-aware `equals` splits `familyAt`'s singleton merge, so Legacy isn't byte-exact →
+  **accepted**. The merge key now depends on the style (step 2). Under `AsNumber` it is the lowered value schema
+  (`number[BigDecimal]`, so a Long-hinted and a Double-hinted singleton merge as in 0.7); under `AsInteger` it is the raw
+  one (two enums, `integer` [1] and `number` [2.5]). Probed on 2.13.18 and 3.3.9: both macros accept per-member hints in a
+  mixed family, and today's output is one `number` enum [1, 2.5]. Test added (step 4). While fixing it, I also corrected
+  `integralEnum`'s guard-fails branch: it keeps `vs` as it is, not `apply(vs)`, which would have made it `integer` anyway.
+- D2-R10 (nit) say plainly that `Either[Long, Double]` becomes invalid without B14 → **accepted**: Option A and
+  Compatibility say "a new invalid case"; it goes in the PR's open questions.
