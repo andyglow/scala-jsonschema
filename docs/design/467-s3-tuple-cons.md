@@ -43,12 +43,21 @@ Scala 2 has no `*:` tuples, so Scala 2 isn't affected and doesn't change.
 
 ### A. Normalize known-arity `*:` chains to `TupleN` at the top of `resolve`; build the object directly above 22; reject unknown arity — WON
 New cake trait `Tuples.scala` (Scala 3 derivation), with:
-- `tupleElements(tpe): TupleShape`, walking the dealiased type: `H *: T` (an `AppliedType` of the class `scala.*:`)
-  adds `H` and continues with `T` dealiased; `EmptyTuple` ends the chain; a `TupleN[A1..An]` tail (`Int *: (String, Boolean)`
-  is legal) ends it with its arguments. Result: `Known(elems)`, `Empty` (`EmptyTuple` itself), `Unknown` (the chain ends in
-  `Tuple`, `NonEmptyTuple`, a type parameter or anything else), or `NotATuple`.
-- `normalizeTuple(tpe)`: `Known(elems)` with `1 <= n <= 22` → `defn.TupleClass(n).typeRef.appliedTo(elems)`; anything else is
-  returned unchanged.
+- `tupleElements(tpe): TupleShape`, walking the type: `H *: T` (an `AppliedType` of the class `scala.*:`)
+  adds `H` and continues with `T.dealias.simplified` (`simplified` reduces a match-type tail such as
+  `Int *: Tuple.Concat[A, B]` after `memberType` substitution, B10-R2); `EmptyTuple` ends the chain; a `TupleN[A1..An]` tail
+  (`Int *: (String, Boolean)` is legal) ends it with its arguments. Result: `Known(elems)`, `Empty` (`EmptyTuple` itself),
+  `Unknown` (the chain ends in `Tuple`, `NonEmptyTuple`, a type parameter or anything else), or `NotATuple`.
+- `normalizeTuple(tpe)`: looks at `tpe`, and if that is `NotATuple`, at `tpe.simplified` (a field typed `Tuple.Concat[A, B]`
+  directly; the simplified type is used **only** when it is a tuple shape, so no other type is touched).
+  `Known(elems)` with `1 <= n <= 22` → `defn.TupleClass(n).typeRef.appliedTo(elems)`; a tuple shape otherwise (`>22`, `Empty`,
+  `Unknown`) → the simplified type, for `deriveTuple`; `NotATuple` → `tpe` unchanged.
+- `isStdTuple(tpe)`: the class is `scala.Tuple`, `scala.NonEmptyTuple` or `scala.*:`. `Sums.isSealed` returns `false` for these,
+  so neither the enum family nor the sum family can claim a tuple type again, whichever path reaches them (B10-R1: Map keys go
+  `Collections.dictKey → enumKeyNames → deriveEnum` without `resolve`, and `Map[Tuple, String]` compiles today to
+  `patternProperties {"^(?:EmptyTuple)$": ...}`). With that, a tuple key of any spelling gets the existing Map-key error
+  ("a Map key must be a String, ... is none of these"), like `Map[(Int, String), V]` today; tuple keys stay unsupported
+  (out of scope). The `deriveTuple`-first order in `resolve` is then for the messages, not the only guard.
 
 `resolve` becomes `val tpe = normalizeTuple(tpe0.dealias)`. Everything after it (the cycle check, the implicit search,
 definition names, `deriveProduct`) sees `Tuple2[Int, String]`, so the cons spelling and `(Int, String)` give the same
@@ -62,9 +71,13 @@ A new family `deriveTuple`, placed **before** `deriveEnum` in `families`, takes 
   no defaults, no descriptions, read-write). `Obj.emitRaw` already emits `Schema.object.fromList[T]` for any `T`, so the
   cons type works as is. A helper shared with `product` keeps the element → field step in one place.
 - `Unknown` (`Tuple`, `NonEmptyTuple`, `Int *: Tuple`, `Int *: T` with `T` abstract): `report.errorAndAbort(s"schema for
-  ${tpe.show} is not supported: a tuple type needs a known arity (a TupleN, or a *: chain ending in EmptyTuple), ${ctx.show}")`.
-- `Empty` (`EmptyTuple`): `errorAndAbort("schema for EmptyTuple is not supported: an empty tuple has no fields, ...")`
+  ${tpe.show} is not supported: a tuple type needs a known arity (a TupleN, or a *: chain ending in EmptyTuple)" + where)`.
+- `Empty` (`EmptyTuple`): `errorAndAbort("schema for EmptyTuple is not supported: an empty tuple has no fields" + where)`
   (see option D for the alternative).
+- `where` is `s", ${ctx.show}"` only when `!ctx.isRoot`, so no new message ends in a dangling `, ` (B10-R3; B11 cleans up
+  the existing ones; if B11 lands first with a helper, use it).
+- A `>22` chain under an implicit or in a recursion becomes a definition named by its signature, the nested
+  `scala.*:[scala.Int,scala.*:[...]]` (there is no `Tuple23` to name it after). Accepted and pinned in a test (B10-R4).
 
 Sample (cons, field, list, `Tuple.Concat`): exactly today's `(Int, String)` output, e.g. Draft 07
 `{"type":"object","additionalProperties":false,"properties":{"_1":{"type":"integer"},"_2":{"type":"string"}},"required":["_1","_2"]}`.
@@ -105,7 +118,7 @@ tuple types of unknown arity (`Tuple`, `NonEmptyTuple`, `H *: Tuple`) and `Empty
    `=:= TypeRepr.of[EmptyTuple]`, `TupleN` via `defn.isTupleClass` (the arguments of the applied type).
 2. `Derivation.scala`: mix in `Tuples`. `Resolve.scala`: `val tpe = normalizeTuple(tpe0.dealias)`; `deriveTuple` first in
    `families` (before `deriveOption`; none of the families before `deriveEnum` match tuple types, so the position is only for
-   clarity), with a comment.
+   clarity), with a comment. `Sums.isSealed`: `false` for `isStdTuple` (B10-R1).
 3. `Products.scala`: factor the element → `Field` step of `product` (the `optionElement` / `Opt` part) into a helper that
    `deriveTuple` uses for `>22`.
 4. Root type texts: `Derivation.build` reads the root's title/description with `typeAnnotations(tpe)` on the **original**
@@ -120,8 +133,14 @@ tuple types of unknown arity (`Tuple`, `NonEmptyTuple`, `H *: Tuple`) and `Empty
    - rendered Draft 07 JSON of the cons form equals the `(Int, String)` golden output (`groupC/Tuple2[Int,String]`);
    - a `given Schema[(Int, String)]` in scope: the cons-typed field is a `def` named `scala.Tuple2[scala.Int,scala.Predef.String]`;
    - 23 elements: `object` with `_1 .. _23`, all required, in order, no description;
+   - match-type tail in a field (B10-R2): `case class F[A <: Tuple, B <: Tuple](t: Int *: Tuple.Concat[A, B])`,
+     `F[String *: EmptyTuple, Boolean *: EmptyTuple]` → `t` is the 3-tuple object; and a field typed `Tuple.Concat[A, B]` directly;
+   - 23 elements under a `given Schema[...]` (or as the element of a definition): pin the definition name (B10-R4);
    - `typeCheckErrors` for `Tuple`, `NonEmptyTuple`, `Int *: Tuple`, a generic `def f[T <: Tuple] = Json.schema[Int *: T]`, and
-     `EmptyTuple`: each message contains "known arity" / "empty tuple" and not "enum".
+     `EmptyTuple`: each message contains "known arity" / "empty tuple" and not "enum"; root messages don't end in `, ` (B10-R3);
+   - Map keys (B10-R1): `Map[Tuple, String]`, `Map[Int *: EmptyTuple, String]`, `Map[NonEmptyTuple, String]` don't compile,
+     with the Map-key error ("is none of these"), not "enum";
+   - root texts: no description for the 2- and 23-element cons roots (B10-R5).
    No golden-file changes (no existing output changes; the only change in what compiles is `Json.schema[Tuple]`, see below).
 6. Docs: one bullet in README's Scala 3 notes (the list that ends "Compile errors quote Scala 3 code", ~L950) and the same
    bullet in `docs/src/main/paradox/scala3.md`: "**`*:` tuples** (`Int *: String *: EmptyTuple`, what `Tuple.Concat`/`Tuple.Map`
@@ -134,11 +153,21 @@ tuple types of unknown arity (`Tuple`, `NonEmptyTuple`, `H *: Tuple`) and `Empty
 Definition names do change for the cons spelling (it had none: it never compiled).
 
 ## Compatibility
-- Output: nothing that compiled before changes, except `Json.schema[Tuple]` (and a `Tuple`-typed field), which compiled to
-  `enum ["EmptyTuple"]` and becomes a compile error. That schema was wrong (it rejects every non-empty tuple); the lead's
+- Output: nothing that compiled before changes, except `Json.schema[Tuple]` (and a `Tuple`-typed field) and
+  `Map[Tuple, V]`, which compiled to `enum ["EmptyTuple"]` / `patternProperties {"^(?:EmptyTuple)$": ...}` and become compile errors. That schema was wrong (it rejects every non-empty tuple); the lead's
   Legacy policy treats it as a bug, not a style. Legacy profile: no golden-legacy change.
 - Source: the cons forms that failed now compile; `Tuple` stops compiling (above). No public signature changes (the new
   trait is internal to the derivation).
 - Binary: none (macro-internal). Scala 2: untouched. PVP: patch (0.9.1), unless the owner counts the `Tuple` error as breaking.
 
 ## Review log
+Round 1 (r-b10, doc 696f4a1):
+- B10-R1 (must) Map keys bypass `resolve` (`enumKeyNames → deriveEnum`): `Map[Tuple, String]` renders `^(?:EmptyTuple)$`, a cons
+  key keeps the enum error → accepted: `Sums.isSealed` is `false` for `Tuple`/`NonEmptyTuple`/`*:` (`isStdTuple`), which keeps
+  both the enum and the sum family off them on every path; tuple keys get the existing Map-key error. Tests added to step 5;
+  `Map[Tuple, V]` added to Compatibility.
+- B10-R2 (must) match-type tails aren't reduced by `.dealias` → accepted: the chain walk uses `tail.dealias.simplified`, and
+  `normalizeTuple` tries `tpe.simplified` when `tpe` itself isn't a tuple shape (used only if the result is one). Field tests added.
+- B10-R3 (nit) no new dangling `, ` → accepted: `, ${ctx.show}` only off the root.
+- B10-R4 (nit) >22 definition names → accepted: documented under option A, one name pinned in a test.
+- B10-R5 (nit) 3.8 stdlib docs → no change needed; the no-description assertions stay in step 5.
