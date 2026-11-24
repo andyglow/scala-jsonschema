@@ -1,5 +1,5 @@
 # Field defaults of built-in types  (issue #510, item B18)
-Status: draft
+Status: approved (r-b18, 2026-11-23); design only, Phase 1 (core) and Phase 2 (modules) not implemented
 
 ## Problem
 A case class field with a default fails to compile when the field's type is a built-in type that core gives a schema
@@ -271,7 +271,7 @@ objects, because the module objects users import already share lexical scope wit
        vals' accessors and the generic `def`s (`listS(json.Schema<T>)`). Check the resulting set on 2.12, 2.13 and 3.3:
        print it once and compare it with `Predef.scala`. Assert that this set equals the map's key set. A new Predef
        then fails the test until its `ToValue` and its line are added. Use method names, not generic return types:
-       Scala emits `Predef<Object>` for `Predef[Int]`/`Predef[Byte]`, so the type argument doesn't identify a primitive.
+       Scala emits `Schema<Object>` for `Predef[Int]`/`Predef[Byte]` accessors, so the type argument doesn't identify a primitive.
        Explicitly exempt, with the reason in a comment, any Predef that intentionally has no `ToValue` (none in Phase 1).
      - one comment in `Predef.scala` above the instances: "a new Predef needs a ToValue (PredefToValuePairingSpec)".
    - **Self-validation** (JVM, uses `petshop.JsonValidator`, canceled on JS): for each type, the rendered field
