@@ -1,5 +1,5 @@
 # Misc types: java.util collections and Optional, Array[Byte], @deprecated, cats NonEmptySeq, joda Period/DateTimeZone/Interval, a null schema  (issues #481, #288, item E8)
-Status: approved (r-e8, 2026-11-23)
+Status: approved (r-e8, 2026-11-23); implemented (PR pending)
 
 ## Problem
 All on 0.9.0, the same on 2.12.21, 2.13.18 and 3.3.9 (JVM; JS derives the same trees) unless noted. Repro specs on the branch:
