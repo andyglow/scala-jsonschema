@@ -108,10 +108,11 @@ tuple types of unknown arity (`Tuple`, `NonEmptyTuple`, `H *: Tuple`) and `Empty
    clarity), with a comment.
 3. `Products.scala`: factor the element → `Field` step of `product` (the `optionElement` / `Opt` part) into a helper that
    `deriveTuple` uses for `>22`.
-4. Root type texts for `>22`: `Derivation.build` reads the root's scaladoc/annotations; the root type there is `*:[...]`,
-   whose stdlib scaladoc (read from TASTy with `-Yread-docs`) would become the description, as it does for `Tuple` today.
-   Check, and if so skip type texts for an `Obj` of `ProductKind.Tuple` whose type isn't a `TupleN` (a `TupleN` from the Scala 2
-   library has no TASTy docs, so today's tuples are unaffected; pin that in the test).
+4. Root type texts: `Derivation.build` reads the root's title/description with `typeAnnotations(tpe)` on the **original**
+   `TypeRepr.of[T]`, not on the type `resolve` normalized. For a cons root that is `*:[...]`, whose stdlib scaladoc (read from
+   TASTy with `-Yread-docs`) would become the description, as `Tuple`'s does today. Fix: `build` reads the texts of
+   `normalizeTuple(tpe.dealias)` when that is a `TupleN` (`Tuple2` comes from the Scala 2 library, no TASTy docs: the same empty
+   texts as `(Int, String)` today), and none for a `>22` chain. Pinned in the tests (root cons, 2 and 23 elements: no description).
 5. Tests: `api/src/test/scala-3/com/github/andyglow/jsonschema/TupleConsSpec.scala` (Scala 3 only, runs on JVM and JS):
    - `Json.schema[Int *: String *: EmptyTuple] shouldEqual Json.schema[(Int, String)]`; the same for a field
      (`HasCons` vs a `HasTuple` case class), a `List` element, an `Option` element (`Int *: Option[String] *: EmptyTuple`:
