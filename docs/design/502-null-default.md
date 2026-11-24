@@ -163,9 +163,14 @@ compile time. B is the same helper with `Some(Value.null)` if the owner prefers 
      (so `null` and `(null)` both count), `isNone = true` **without** any `c.eval` (B17-R1: a `null` literal in
      `{ val d = null; d.isEmpty }` types `d` as `Null` and doesn't typecheck). Wrap the `c.parse` in `try`: on a parse
      error fall through to today's `parseFCQN` path.
-   - Option, `!hasSource` branch (the compiled getter): evaluate
-     `q"{ val d: $fieldTpe = $effectiveDefaultGetterTree; d == null || d.isEmpty }"` (typed, so `d.isEmpty` resolves)
-     instead of `q"$effectiveDefaultGetterTree.isEmpty"`. `isNone == true` then gives no default, as for `None`.
+   - Option, every other default (both branches: the parsed source of a non-literal default, and the compiled getter
+     when `!hasSource`): evaluate `q"{ val d = $effectiveDefaultGetterTree; d == null || d.isEmpty }"` instead of
+     `q"$effectiveDefaultGetterTree.isEmpty"`. No type ascription (B17-R6): `d`'s type is inferred from the default
+     expression or the getter (a literal `null`, the only case that would infer `Null`, is short-circuited above), and an
+     ascribed declared type would put a generic class's unbound `T` into the eval'd tree (`Box[T](o: Option[T] = None)`
+     → "not found: type T", only in incremental builds). A module `val` that is `null` (`= Defs.nullOpt`, already
+     compiled) then gives no default instead of today's "Can't evaluate" abort. `isNone == true` gives no default, as
+     for `None`.
 4. **Scala 3 macro** `core/src/main/scala-3/com/github/andyglow/jsonschema/derivation/Products.scala`:
    - `defaultValue`: `'{ Some($toV($v)) }` → `'{ ToValue.ofDefault[f]($v)($toV) }`.
    - `optionDefault`, with a `ToValue[Option[e]]`: `if (d.isEmpty)` → `if (d == null || d.isEmpty)`.
@@ -245,3 +250,8 @@ Round 1 (r-b17, on ebc06f8):
   "known limitation" paragraph in option A. Also added r-b17's bridge findings (`asPlay` `"default": null`, `asCirce`
   NPE) to the problem table and plan 5.
 - B17-R5 (nit) E4 decided the opposite; one owner decision → accepted: "Open questions for the owner" section.
+
+Round 2 (r-b17, on 32d300c): R2 withdrawn (F's verdict holds).
+- B17-R6 (nit) the `: $fieldTpe` ascription puts a generic class's unbound `T` into the `c.eval` tree, on an
+  incremental-only path → accepted: plan 3 drops the ascription and uses the null-safe
+  `{ val d = <default>; d == null || d.isEmpty }` for every non-literal Option default, in both branches.
