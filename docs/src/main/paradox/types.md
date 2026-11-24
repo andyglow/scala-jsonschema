@@ -8,10 +8,12 @@
 | `Boolean`                                                                   | `boolean`                                       |
 | `Int`                                                                       | `integer`                                       |
 | `Byte`, `Short`, `Long`, `BigInt`, `Float`, `Double`, `BigDecimal`          | `number`                                        |
-| `java.time.Instant`, `LocalDateTime`, `ZonedDateTime`, `java.util.Date`, `java.sql.Timestamp` | `string`, format `date-time`  |
+| `java.time.Instant`, `LocalDateTime`, `ZonedDateTime`, `OffsetDateTime`, `java.util.Date`, `java.sql.Timestamp` | `string`, format `date-time` |
 | `java.time.LocalDate`, `java.sql.Date`                                      | `string`, format `date`                         |
-| `java.time.LocalTime`, `java.sql.Time`                                      | `string`, format `time`                         |
-| `java.time.Duration`, `scala.concurrent.duration.Duration`                  | `string`, format `duration`                     |
+| `java.time.LocalTime`, `OffsetTime`, `java.sql.Time`                        | `string`, format `time`                         |
+| `java.time.Duration`, `scala.concurrent.duration.Duration`, `FiniteDuration` | `string`, format `duration`                    |
+| `java.time.Period`, `Year`, `YearMonth`, `MonthDay`, `ZoneOffset`           | `string` with a pattern of the text java.time writes (`P1Y-2M3D`, `2024`, `2024-03`, `--12-03`, `+01:00`) |
+| `java.time.ZoneId`                                                          | `string`                                        |
 | `java.util.UUID`                                                            | `string`, format `uuid`                         |
 | `java.net.URI`, `java.net.URL`                                              | `string`, format `uri`                          |
 | `Option[T]`                                                                 | `T` or `null`; a field is not required (@ref:[more](rendering.md#option)) |

@@ -7,7 +7,7 @@ import com.github.andyglow.json.Value._
 import json._
 import json.Schema._
 import json.Schema.`string`.Format
-import json.schema.{JsonSchemaProfile, Version}
+import json.schema.{JsonSchemaProfile, Predef, Version}
 import json.schema.validation.Instance._
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers._
@@ -16,8 +16,8 @@ import petshop.Acceptance
 import scala.concurrent.duration.{Duration => SDuration, FiniteDuration}
 
 /** The java.time Predefs added by #474 (design doc `docs/design/474-java-time.md`): `OffsetDateTime`, `OffsetTime`, `Period`, `Year`, `YearMonth`, `MonthDay`, `ZoneOffset`, `ZoneId`, and
-  * `scala.concurrent.duration.FiniteDuration`. Each is a core Predef, so it is inlined (never a definition), also as a field. The tree and rendering tests run on both platforms; the validating ones use
-  * the acceptance harness' JSON Schema validator (JVM; canceled on Scala.js) on the text java.time and the codecs write.
+  * `scala.concurrent.duration.FiniteDuration`. Each is a core Predef, so it is inlined (never a definition), also as a field. The tree and rendering tests run on both platforms; the validating ones
+  * use the acceptance harness' JSON Schema validator (JVM; canceled on Scala.js) on the text java.time and the codecs write.
   */
 class JavaTimeSchemaSpec extends AnyFunSuite {
   import JavaTimeSchemaSpec._
@@ -58,6 +58,18 @@ class JavaTimeSchemaSpec extends AnyFunSuite {
       `object`.Field("zid", `string`[ZoneId]),
       `object`.Field("fd", `string`[FiniteDuration](Format.`duration`))
     )
+  }
+
+  test("a user's own implicit Predef or Schema still wins over the built-in one") {
+    locally {
+      implicit val anyYear: Predef[Year] = Predef(`string`[Year])
+      Json.schema[Year] shouldBe `string`[Year]
+      Json.schema[HasYear] shouldBe `object`(`object`.Field("y", `string`[Year]))
+    }
+    locally {
+      implicit val odtDefinition: Schema[OffsetDateTime] = `string`[OffsetDateTime].toDefinition("my-odt")
+      Json.schema[HasOdt] shouldBe `object`(`object`.Field("t", `string`[OffsetDateTime].toDefinition("my-odt")))
+    }
   }
 
   for (p <- profiles) {
@@ -101,7 +113,7 @@ class JavaTimeSchemaSpec extends AnyFunSuite {
       test(s"${p.name}: $name rejects text without an offset (where the format is asserted)") {
         val render = Acceptance.rendered(schema)
         Acceptance.drafts.filterNot(_.isInstanceOf[Version.Draft12]) foreach { d =>
-          invalid.map(quoted) foreach { doc => Acceptance.errors(d, render(d), doc) should not be empty }
+          invalid.map(quoted) foreach { doc => withClue(s"${Acceptance.name(d)}: $doc") { Acceptance.errors(d, render(d), doc).nonEmpty shouldBe true } }
         }
       }
     }
@@ -118,7 +130,9 @@ class JavaTimeSchemaSpec extends AnyFunSuite {
     Year.of(12345).toString shouldBe "12345"
     YearMonth.of(2024, 3).toString shouldBe "2024-03"
     YearMonth.of(-5, 1).toString shouldBe "-0005-01"
-    YearMonth.of(12345, 12).toString shouldBe "+12345-12"
+    YearMonth.of(12345, 12).toString shouldBe "12345-12"
+    YearMonth.of(12345, 12).format(DateTimeFormatter.ofPattern("uuuu-MM")) shouldBe "+12345-12"
+    Year.of(12345).format(DateTimeFormatter.ofPattern("uuuu")) shouldBe "+12345"
     MonthDay.of(12, 3).toString shouldBe "--12-03"
     ZoneOffset.UTC.toString shouldBe "Z"
     ZoneOffset.ofHoursMinutes(-5, -30).toString shouldBe "-05:30"
@@ -128,6 +142,10 @@ class JavaTimeSchemaSpec extends AnyFunSuite {
 
 object JavaTimeSchemaSpec {
   case class Timeouts(connect: FiniteDuration, idle: SDuration)
+
+  case class HasYear(y: Year)
+
+  case class HasOdt(t: OffsetDateTime)
 
   case class Times(odt: OffsetDateTime, ot: OffsetTime, p: Period, y: Year, ym: YearMonth, md: MonthDay, zo: ZoneOffset, zid: ZoneId, fd: FiniteDuration)
 
@@ -143,7 +161,7 @@ object JavaTimeSchemaSpec {
   val patterned: List[(String, Schema[_], List[String], List[String])] = List(
     ("Period", Json.schema[Period], List("P0D", "P1Y2M3D", "P1Y-2M3D", "P-1Y", "P14D", "P10M"), List("P", "PT1S", "1Y", "P1D2M", "")),
     ("Year", Json.schema[Year], List("5", "0005", "-5", "-0005", "2024", "12345", "+12345"), List("", "20a", "2024-01", "+")),
-    ("YearMonth", Json.schema[YearMonth], List("2024-03", "-0005-01", "+12345-12", "0001-01"), List("2024-3", "2024-13", "24-03", "2024-00", "2024-03-01")),
+    ("YearMonth", Json.schema[YearMonth], List("2024-03", "-0005-01", "12345-12", "+12345-12", "0001-01"), List("2024-3", "2024-13", "24-03", "2024-00", "2024-03-01")),
     ("MonthDay", Json.schema[MonthDay], List("--12-03", "--02-29", "--01-31"), List("12-03", "--13-01", "--12-32", "--1-1", "--00-10")),
     ("ZoneOffset", Json.schema[ZoneOffset], List("Z", "+01:00", "-05:30", "+01:00:30", "+18:00"), List("+1", "UTC", "+0100", "z", "+01:00:3")),
     ("ZoneId", Json.schema[ZoneId], List("Europe/Paris", "Z", "+01:00", "UTC+01:00", "America/Argentina/Buenos_Aires"), Nil)

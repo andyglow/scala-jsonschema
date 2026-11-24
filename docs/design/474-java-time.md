@@ -43,7 +43,7 @@ upickle 4.4.3; `toString` is what a hand-written codec usually uses):
 | OffsetTime | `10:15Z` | `"10:15:00Z"` | no codec | no codec |
 | Period | `P1Y-2M3D` (`P0D`, weeks as days) | `"P1Y-2M3D"` | `"P1Y-2M3D"` | no codec |
 | Year | `5`, `12345` | `"0005"`, `"+12345"` | no codec | no codec |
-| YearMonth | `2024-03`, `-0005-01`, `+12345-12` | same | no codec | no codec |
+| YearMonth | `2024-03`, `-0005-01`, `12345-12` | `"2024-03"`, `"-0005-01"`, `"+12345-12"` | no codec | no codec |
 | MonthDay | `--12-03` | same | no codec | no codec |
 | ZoneOffset | `Z`, `+01:00`, `+01:00:30` | same | (ZoneId writes) | no codec |
 | ZoneId | `Europe/Paris`, `UTC+01:00`, `Z` | same | same | no codec |

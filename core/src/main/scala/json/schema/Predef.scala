@@ -9,7 +9,7 @@ import json.Schema.`dictionary`.KeyPattern
 import json.Schema.`string`.Format
 import json.schema.validation.Instance._
 
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration.{Duration, FiniteDuration}
 
 /** The idea behind Predef is a continuation of the idea about exposing schemas that was found in implicit scope as `ref`. Namely, if schema is derived - it will be defined in-place inside of a
   * json-schema, but if it's implicitly available - going to be a `ref`.
@@ -71,6 +71,29 @@ object Predef extends LowPriorityPredefs {
     `string`[java.time.Duration](Format.`duration`)
   )
   implicit val durationS: Predef[Duration] = Predef(`string`[Duration](Format.`duration`))
+
+  // #474. A format where it matches the text the codecs write; else a pattern of that written form (`toString` and the ISO formatters), see docs/design/474-java-time.md
+  implicit val offsetDateTimeS: Predef[java.time.OffsetDateTime] = Predef(
+    `string`[java.time.OffsetDateTime](Format.`date-time`)
+  )
+  implicit val offsetTimeS: Predef[java.time.OffsetTime] = Predef(`string`[java.time.OffsetTime](Format.`time`))
+  // the same as `Duration` (a Predef is invariant, so `durationS` doesn't apply to the subtype)
+  implicit val finiteDurationS: Predef[FiniteDuration] = Predef(`string`[FiniteDuration](Format.`duration`))
+  implicit val periodS: Predef[java.time.Period]       = Predef(
+    `string`[java.time.Period].withValidation(`pattern` := "^P(?:-?[0-9]+Y(?:-?[0-9]+M)?(?:-?[0-9]+D)?|-?[0-9]+M(?:-?[0-9]+D)?|-?[0-9]+D)$")
+  )
+  implicit val yearS: Predef[java.time.Year]           = Predef(`string`[java.time.Year].withValidation(`pattern` := "^[-+]?[0-9]+$"))
+  implicit val yearMonthS: Predef[java.time.YearMonth] = Predef(
+    `string`[java.time.YearMonth].withValidation(`pattern` := "^[-+]?[0-9]{4,}-(?:0[1-9]|1[0-2])$")
+  )
+  implicit val monthDayS: Predef[java.time.MonthDay] = Predef(
+    `string`[java.time.MonthDay].withValidation(`pattern` := "^--(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])$")
+  )
+  implicit val zoneOffsetS: Predef[java.time.ZoneOffset] = Predef(
+    `string`[java.time.ZoneOffset].withValidation(`pattern` := "^(?:Z|[-+][0-9]{2}:[0-9]{2}(?::[0-9]{2})?)$")
+  )
+  // a region id is any `Area/City` name, so no pattern; as a Predef it also keeps the macros from deriving the abstract class as a family
+  implicit val zoneIdS: Predef[java.time.ZoneId] = Predef(`string`[java.time.ZoneId])
 
   implicit def arrayS[T](implicit p: Predef[T]): Predef[Array[T]] = Predef(
     `array`[T, Array](p.schema, unique = false)
