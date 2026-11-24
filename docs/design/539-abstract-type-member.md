@@ -161,28 +161,41 @@ class, so no tag changes, now or after B29.
      parameters to it, then unifies as today).
    - Singleton children (`c.termRef`, `m.termRef`) stay as they are: case objects in a trait already work (probe 4, 15),
      and their values are emitted by name.
-4. **Member names from the declaring class** (keeps tags stable; a no-op on master, where signatures drop the prefix,
-   but needed once B29 / #529 names classes "reached through an inheriting object" after that object):
-   - Scala 2: `USumTypes.scala:47` (`sig = signature(subTpe)`) and `UEnums.scala:176` (`signature(item.tpe)`): compute
-     the signature of the declared spelling, `declaredSpelling(t) = internal.typeRef(internal.thisType(t.typeSymbol.owner), t.typeSymbol, t.typeArgs)`
-     (for a class owner; module and package owners as they are today).
-   - Scala 3: `Sums.scala:122` (`signature(c.tpe, dealiased = true)`): the same idea, `c.sym.typeRef` with `c.tpe`'s type
-     arguments re-applied.
-   - Only the member `sig` (default discriminator tag, `@definition` name, `Json.sig`-style member id) uses it; the
-     member's schema is derived from the rebased type.
+4. **Member names from today's member type** (keeps tags stable; a no-op on master, where signatures drop the prefix,
+   but needed once B29 / #529 names classes "reached through an inheriting object" after that object). Keep the member
+   type as it is built today (before rebasing) next to the rebased one, and name the member from it:
+   - Scala 2: `resolveSumTypeRecursively` returns both types per member (e.g. a small `(rebased, declared)` pair or case
+     class; `declared` = today's `cs.toType` / `subclassType(cs, tpe)`, so `Pet.this.Fish` for a child of `object Pet`
+     needs no special case). `USumTypes.scala:47` (`sig = signature(subTpe)`) and `UEnums.scala:176`
+     (`signature(item.tpe)`) sign the declared type. `UEnums` needs it on Scala 2 because `asSeenFrom` rebases singletons
+     too (`Zoo.this.Cat.type` → `Z1.Cat.type`).
+   - Scala 3: `SealedChild` gets a `declaredTpe` (today's `cs.typeRef`, type arguments applied as today);
+     `Sums.scala:122` (`signature(c.tpe, dealiased = true)`) signs it. Singleton children aren't rebased on Scala 3
+     (`c.termRef` unchanged, step 3), so `Enums` needs nothing.
+   - Only the member `sig` (default discriminator tag, `@definition` name, member id) uses the declared type; the
+     member's schema is derived from the rebased type. `resolveSumTypeRecursively`'s other callers take the rebased type.
 5. **Tests** — new shared spec `api/src/test/scala/com/github/andyglow/jsonschema/TypeMemberPrefixSpec.scala`, models
    in its companion object (static paths), tree comparisons (`shouldEqual`) plus Draft 07 JSON where a `$ref` shows:
    - fields: `M1.Item` (integer) and `M2.Item` (string); `W` with `Option`/`List`/`Map` of `T`; `MR1.B` (member class
      field and `List` of it); `MG1.G[Int]`; `type T = Leaf`; `MD1.D` default `5`;
+   - more prefixes: an alias root (`type IA = M1.Item`); an anonymous prefix (`val anon = new Module { type T = Long }`,
+     `Json.schema[anon.Item]` → number); a higher-kinded member (`type F[_]`, fixed to `List`: array of integer);
+     a bounded member (`type T <: AnyVal`, fixed to `Double`);
    - families: `Z1.Animal` (`Dog` number, `Cat`), `Z1.Dog` alone; `Z2.Pet` (children in the companion inside the trait,
-     discriminator `kind`); a generic family `Z2.Box[String]` (`Full[A](a: A, t: T)`);
+     discriminator `kind`); a child in *another* object of the trait (`trait Split { type T; sealed trait P;
+     object Sub { case class Q(x: T) extends P } }`); a generic family `Z2.Box[String]` (`Full[A](a: A, t: T)`);
+     a family as a field and an `Option` of it (`Wrap(f: Z1.Animal, fs: Option[Z1.Animal])`);
    - case 14 (family member with a default, no type member): `ZD1.A` derives with `"default": 1`;
    - names unchanged (pins, must hold with and without B29): family in a trait with `@discriminator("kind")` and a
      `@definition` member (`Zoo3`/`Z3`): tags `"<pkg>.Zoo3.Dog"`, definition `<pkg>.Zoo3.Cat`; `Json.sig[Z3.Dog]`
-     as today;
-   - the two side-effect changes (see Compatibility), pinned so they are deliberate: `T1.Node` (`trait Tree { case class
-     Node(v: Int, kids: List[Node]) }`) → `$ref` to the definition `<pkg>.Tree.Node`, same on both versions; a recursive
-     family in a trait (`ZR1.Expr`) → `$ref` + one definition, the same shape as a top-level recursive family;
+     as today; a case-object member's id (`Z1.Cat`) as today. If B29 lands first, these pins are the regression test
+     for B29's "family tags don't change" claim;
+   - the two side-effect changes (see Compatibility), pinned so they are deliberate, each through an object **and**
+     through a val: `T1.Node` (`trait Tree { case class Node(v: Int, kids: List[Node]) }`) and `h.Node`
+     (`class HolderR { case class Node(v: Int, kids: List[Node]) }`, `val h = new HolderR`) → `$ref` to the definition
+     `<pkg>.Tree.Node` / `<pkg>.HolderR.Node`, same on both versions; a recursive family `ZR1.Expr` (in a trait) and
+     `hf.Ex` (`class HolderF { sealed trait Ex; case class L(v: Int) extends Ex; case class N(a: Ex) extends Ex }`,
+     `val hf = new HolderF`) → `$ref` + one definition, the shape of a top-level recursive family;
    - a case-object enum in a trait (`ZE1.Color` → `"enum": ["Red","Green"]`): unchanged;
    - a type projection with a class-typed field (`class Outer { class C...; case class In(c: C) }`, `Json.schema[Outer#In]`):
      output unchanged (asSeenFrom turns `Outer.this.C` into `Outer#C`, same signature) — if it changes, stop and report;
@@ -209,6 +222,9 @@ class, so no tag changes, now or after B29.
      Whichever PR merges second moves that pin into the shared spec with Scala 3's expected names (with B29:
      `<pkg>.T1.Node` / `<pkg>.T2.Node`). Without B29, two prefixes with different `T` in one model (`ForestT(a: TT1.Node,
      b: TT2.Node)`, recursive) now share one definition on Scala 2 as they already do on Scala 3 (B29-R1): B29 fixes it.
+     B29's doc (#535, "What does not change: sealed-family members") says tags stay because the members' prefix is
+     `Zoo.this`; after B33 the reason is step 4 instead (the lead is asked to add a pointer to #535). If B29 lands
+     first, step 5's name pins are the regression test for its tags.
    - **B8 (#297)**: its `mentionsAbstractType` treats an abstract type member with an implicit `Schema` inside the trait.
      Through an object the member is concrete after this change, so B8's rule doesn't apply there; inside the trait it
      does. Different files, no textual conflict.
@@ -219,15 +235,24 @@ Risks: `asSeenFrom` with a prefix that isn't stable (a type projection) yields `
 same symbol, same signature, covered by the projection test. `stablePrefix` must keep the `m.owner.isClass` guard.
 On Scala 3, `-Xcheck-macros` checks every new tree; the prototype passed it on the whole api suite.
 
+Out of scope: the text of the errors that remain (`Module#Item`, `val m: Module`: `schema for <pkg>.Module#T is not
+supported, ...`). A hint such as "an abstract type member: derive it through a path that fixes it (an object that
+defines `T`)" when the unsupported type is an abstract type member is cheap on both versions, but compile-error text is
+B11's (#471) area; noted for the lead as a follow-up.
+
 ## Compatibility
 - **Source / binary:** no public API change. Models that failed to compile now compile. PVP: a patch (0.9.1).
-- **Output, for models that compile today** (both side effects, verified with the prototype; no golden model has either):
-  1. Scala 2 only: a recursive case class declared in a trait, reached through an object (`T1.Node`, `trait Tree
-     { case class Node(v: Int, kids: List[Node]) }`). Before: the definition is the list,
+- **Output, for models that compile today** (both side effects, verified with the prototype by c-b33 and r-b33; no golden
+  model has either). Both hit any class declared in a **trait or class** and reached through a stable path other than
+  the declaring class's `this`: an **object** (`T1.Node`) or a **val** (`val h = new HolderR; h.Node`). Path-dependent
+  classes in classes are a documented use (`PathDependentDefaultsSpec`), so this is not only the module pattern.
+  1. Scala 2 only: a recursive case class declared in a trait or class, reached through an object or val (`T1.Node`,
+     `trait Tree { case class Node(v: Int, kids: List[Node]) }`; `h.Node`, `class HolderR { ... }`). Before: the definition is the list,
      `{"type":"object",...,"kids":{"$ref":"#scala.collection.immutable.List_<pkg>.Tree.Node_"}}` with definition
      `scala.collection.immutable.List_<pkg>.Tree.Node_` (an array). After: `{"$ref":"#<pkg>.Tree.Node"}` with definition
      `<pkg>.Tree.Node`, `kids` an array of `$ref`s: what Scala 3 and a top-level recursive class give. Both are valid.
-  2. Both versions: a recursive sealed family declared in a trait, reached through an object (`ZR1.Expr`). Before: the
+  2. Both versions: a recursive sealed family declared in a trait or class, reached through an object or val
+     (`ZR1.Expr`; `hf.Ex`, `class HolderF { sealed trait Ex; ... }`). Before: the
      root is the inlined `oneOf` **and** the same `oneOf` is repeated as the definition `<pkg>.ZooR.Expr` (the root
      `ZR1.Expr` and the inner `ZooR.this.Expr` were different types to the recursion pass). After:
      `{"$ref":"#<pkg>.ZooR.Expr","definitions":{"<pkg>.ZooR.Expr":{"type":"object","oneOf":[...]}}}`, the shape of a
@@ -237,7 +262,25 @@ On Scala 3, `-Xcheck-macros` checks every new tree; the prototype passed it on t
   the derived tree, not the profile). Under the lead's Legacy policy they are not style: (1) is Scala 2 catching up with
   Scala 3, (2) removes a duplicated definition. Alternative if the owner wants 0.7's Scala 2 spelling kept for (1):
   not practical, since it means reading `T1.Node`'s fields without the prefix again, which is the bug.
+- **Open question for the owner** (also in the PR body; the lead has been told): accept the two recursion reshapes
+  (Scala 2 nested recursive classes; nested recursive families on both versions), also under Legacy? They are side
+  effects, not the point of B33, but they can't be avoided without bringing the bug back, and both make the output
+  match Scala 3 / top-level types.
 - **Core rule:** unchanged (implicit `Schema` → definition, implicit `Predef` → inlined, else derive). An implicit for
   `M1.T` is now searched as `M1.T` / its dealias (`Int`), which users can provide; before, `Module.this.T` couldn't be.
 
 ## Review log
+Round 1 (r-b33, on 51a824a):
+- B33-R1 (must) side effects also hit classes declared in a class and reached through a val (`h.Node` Scala 2, `hf.Ex`
+  both) → accepted: Compatibility 1 and 2 reworded ("trait or class", "object or val"), both cases added to step 5's pins.
+- B33-R2 (must) side-effect output changes need the lead/owner → accepted: mailed the lead (one line each, incl. the
+  class+val reach), added the open question under Compatibility; it goes into the PR body's open questions.
+- B33-R3 (nit) name members from today's member type, not a rebuilt `declaredSpelling` → accepted: step 4 keeps the
+  pre-rebase type next to the rebased one (Scala 2 pair from `resolveSumTypeRecursively`, Scala 3 `SealedChild.declaredTpe`);
+  says why `UEnums` needs it on Scala 2 only (asSeenFrom rebases singletons there, Scala 3 keeps `c.termRef`).
+- B33-R4 (nit) B29's tag argument now rests on step 4 → accepted: step 8 says so; lead asked to add a pointer in #535;
+  step 5's name pins are B29's tag regression test if B29 lands first.
+- B33-R5 (nit) more test shapes → accepted: `Split`/`Sub.Q`, family as a field + `Option`, alias root, anonymous prefix,
+  higher-kinded member, bounded member, and the class+val cases (R1) are in step 5.
+- B33-R6 (nit) hint in the remaining errors → pushed back on scope only: compile-error text is B11's (#471) area; stated
+  as out of scope under Risks with the suggested wording, and passed to the lead as a follow-up.
