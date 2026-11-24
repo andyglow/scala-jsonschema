@@ -216,7 +216,7 @@ A: build every family's members as an insertion-ordered set (declaration order, 
      `Option[OvEv]` as a field: `null`, `{"id":"x"}` valid, `5` invalid; root and nested `DocEv`/`OvEv` reject `5`,
      `"s"`, `[]` and (not an Option) `null`.
    - order-sensitive Legacy assert on one of the 5-member golden-legacy models (`MultiLevelSealedTraitRoot`), whose
-     expected order follows the lead's answer (R4).
+     expected order is declaration order (the lead's answer to R4).
    - guard tests that ordinary families stay `oneOf`: a WrapperObject family, an untagged json4s-like
      (`honorsSchemaAnnotations = false`) family of distinct shapes, a recursive family (`Leaf(v)`, `Node(l, r)` with
      `ref` fields).
@@ -246,10 +246,9 @@ A: build every family's members as an insertion-ordered set (declaration order, 
 - Binary: additions only (a new class, a new default method on a trait, a new `Knobs` field in a private class).
 - Output:
   - all profiles, Legacy included: families of 5+ members in declaration order (today: hash order); also hand-built
-    `oneof.of`/`allof.of` of 5+ members. Proposed, as in B7: Legacy gets declaration order too, because 0.7's
-    order was hash order that differed between 2.12 and 2.13 (no bytes a user could rely on across versions). The
-    alternative (Legacy keeps hash order: build a `HashSet` under Legacy) is a one-line change. **Pending the lead's
-    answer (asked 2026-11-23, R4).**
+    `oneof.of`/`allof.of` of 5+ members. Legacy gets declaration order too, as in B7/B2 (**the lead's decision,
+    2026-11-23**): 0.7's order was hash order that differed between 2.12 and 2.13 (no bytes a user could rely on
+    across versions). The PR's output-change section calls it out.
   - Neutral and the bridge profiles: an untagged family whose members may overlap renders `anyOf` instead of `oneOf`
     (today such a schema rejects valid documents). Tagged families: unchanged except for order.
   - Legacy: byte-identical to today except the order above (it keeps `oneOf`, collapse included).
@@ -266,8 +265,8 @@ Round 1 (r-b3, design at eb0306e):
 - B3-R3 (must) `anyOf` must state its type at the root → accepted: `anyOf` always states its type (hoisted at the root
   too, or on each member); plan step 3 and tests (root/nested reject `5`, `"s"`, `[]`, `null`) updated. The root
   `oneOf` hole is listed under "Not in scope".
-- B3-R4 (must) Legacy order needs the lead's OK → accepted: asked the lead (two choices); Compatibility marks it pending;
-  an order-sensitive Legacy test is in the plan.
+- B3-R4 (must) Legacy order needs the lead's OK → accepted: asked the lead; answer (2026-11-23): Legacy gets declaration
+  order, called out in the PR. An order-sensitive Legacy test (declaration order) is in the plan.
 - B3-R5 (nit) rule wording + guard tests → accepted: (key) and (type) reworded; guard tests (WrapperObject, json4s-like,
   recursive) and the enum-of-numbers case added.
 - B3-R6 (nit) docs on what still collapses → accepted (plan step 6).
