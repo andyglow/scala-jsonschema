@@ -290,7 +290,9 @@ number exactly as the library writes it (P4-A, P5-A). play, spray and json4s alr
 5. **`modules/circe-json/src/main/scala/com/github/andyglow/jsonschema/AsCirce.scala`**: P4-A in `toValue`
    (`Decimals` is `private[andyglow]`, reachable from `com.github.andyglow.jsonschema`).
 6. **`modules/u-json/src/main/scala/com/github/andyglow/jsonschema/AsU.scala`**: P5-A in `numAdapter`'s `unadapt`.
-7. **refined, both macros** (needed by P1-D: today Scala 2 emits `:= <Double literal>` and Scala 3 emits
+7. Superseded by B31 (#532): implement B31 as this step.
+
+   **refined, both macros** (needed by P1-D: today Scala 2 emits `:= <Double literal>` and Scala 3 emits
    `:= java.lang.Double.valueOf(..)`, which would now pick the `Double` and the `Number` overloads and render `16.0` vs
    `16`). Emit every bound at the refined base type: integral bases (`Int`, `Long`, `Short`, `Byte` and boxed: the
    `isInt`/`integer` cases) as a `Long` literal, `Float` as a `Float` literal, everything else as a `Double` literal,
