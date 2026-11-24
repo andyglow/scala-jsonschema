@@ -1,5 +1,5 @@
 # Numbers keep their exact value on the way to JSON  (issue #512, item B19)
-Status: draft
+Status: approved (r-b19, 2026-11-23)
 
 ## Problem
 
@@ -380,7 +380,8 @@ Risks: snapshot tests on users' side that compare schema text see `20.0` → `20
 
 - Source: additions only. The numeric keywords gain typed `:=` overloads; `:= 'c'` now compiles (`Char` widens to
   `Int`, renders `99`); no call that compiled before resolves differently except through the new, more specific
-  overloads (probe: 2.12/2.13/3).
+  overloads (probe: 2.12/2.13/3). An unapplied `maximum.:= _` with no expected type becomes ambiguous (with an expected
+  type, or as `xs.map(maximum := _)`, it still resolves; r-b19's N1): rare, list it in the implementation PR.
 - Binary: the five numeric case objects get a new superclass `NumericInstance` (between them and `Instance`) and six
   methods; nothing is removed. Binary-compatible (no MiMa in the build). refined's macros emit different code at user call
   sites; they need the new core (same release).
@@ -414,3 +415,6 @@ Round 1 (r-b19, on bd7b4f6):
 - B19-R4 (nit) `AtomicLong`/`LongAdder` → accepted: stated out of scope (they keep `doubleValue`, as today).
 - B19-R5 (nit) E4 overlap → accepted: step 8 says the second PR to merge updates E4's AsCirceSpec comment/test and adds a
   boxed `java.lang.Long.MAX_VALUE` default.
+
+Round 2 (r-b19, on 504a04b): approved. Non-blocking: N1 (eta-expansion ambiguity) added to Compatibility; N2 (API
+additions are a minor bump under PVP, 0.9.x → 0.9.(x+1)) matches "patch/minor" in Compatibility.
