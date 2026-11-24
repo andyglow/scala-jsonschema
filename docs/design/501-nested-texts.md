@@ -103,7 +103,9 @@ When `resolve` derives a node from the type's structure (step 3 of the core rule
 title/description, its existing texts first. Not when the node comes from an implicit `Schema`/`Predef` (the implicit's
 schema is the user's whole answer, core rule) and not for `Option`/collection/map nodes (library types: nothing to read).
 
-- Scala 3, `derivation/Resolve.scala`: `searched getOrElse withTypeTexts(tpe, structural(tpe, ctx))`, with
+- Scala 3, `derivation/Resolve.scala`: `searched getOrElse withTypeTexts(tpe, structural(tpe, ctx))`, reading with
+  `typeAnnotations(tpe)`'s default `docsFromClasspath = true`, as for a structural root today (only a `FromImplicit`
+  root uses `false`), with
   ```scala
   private def withTypeTexts(tpe: TypeRepr, n: Node): Node = n match {
     case _: Opt | _: Arr | _: Dict => n
@@ -115,16 +117,25 @@ schema is the user's whole answer, core rule) and not for `Option`/collection/ma
   ```
 - Scala 2, `Macroses.resolve.genTree`: `Enum`/`SumType`/`CaseClass`/`ValueClass` results go through the same helper,
   built on `Texts(tpe)` (not `withTypeAnnotations`, which would also copy `@discriminatorKey` onto a non-member).
-- The root steps (`deriveInternal`, `Derivation.build`) stay as they are, because an implicit root still takes its type's
-  texts there (parity decision 2026-11-20). They skip a root that is a `def` (a recursive root), so its texts stay on the
-  definition body that `resolve` put them on and don't move onto the `def` node, where B1 would render them as `$ref`
-  siblings at the root.
+  `withTypeTexts` reads only a type that names a class (a `TypeRef`/`AppliedType` after `dealias`): an ad-hoc
+  `A | B` / `A & B` (E6, once it derives them through `structural`) would otherwise pick up whatever symbol
+  `classSymbol` widens it to.
+- The root steps (`deriveInternal`, `Derivation.build`) stay **unchanged**: an implicit root still takes its type's texts
+  there (parity decision 2026-11-20), and for a structural root they repeat the same values. A recursive root is a `def`
+  node: the root step keeps putting the texts on it (so they stay at the document's root: next to the root `$ref` in
+  every draft (B1), and first at the root in `AsRaw`, as since 0.7), and `resolve` has put them on its body as well, so
+  `definitions.X` has them too. Both, same values (B12-R1). The alternative (skip the `def` in the root step: texts only
+  in `definitions`) loses the document's title at the root, which doc tools read; written out under "Alternatives kept".
 - Sealed-family members are built directly (`CaseClass(st)` / `product(c.tpe, ..)`, not through `resolve`), so their
   schemas and the member texts are unchanged. The types of their fields go through `resolve` and gain texts like any field's.
 - A recursive type: `substituteRecursive` wraps the already-texted node in a `def`. Every use is a `$ref` without texts,
   and `definitions.X` has them once.
-- At a field: a field's `@description` / scaladoc `@param` (on `Field.description`) and a field's `@title` (B1: on the
-  field's schema, `fold` over the type's) still win, so only fields without their own texts change.
+- At a field, precedence is **per keyword**: a field's description (`@description`, scaladoc `@param`, decoration; on
+  `Field.description`, rendered last) wins over the type's description, and a field's `@title` (B1: on the field's
+  schema, `fold` over the type's) wins over the type's title, each on its own. So `@description("FD") i: Inner` renders
+  `{"description": "FD", "title": "Inner T", ...}` and `@title("FT") c: Color` renders `{"title": "FT", "description":
+  "Color D", ...}` (r-b12, prototype). For a definition-typed field the field's texts sit beside the `$ref` and the
+  type's are in `definitions` (unchanged by this item).
 
 Prototype (`notes/scratch/c-b12/proto-nested.patch`, on B1's branch at 33987cf): all probe cases pass, and every JVM
 test passes after regenerating exactly 6 golden files (3 neutral + the same 3 legacy, see "Output changes"):
@@ -184,7 +195,8 @@ undone at render time at all (the scaladoc text isn't in the tree).
 
 ## Decision
 A: every structurally derived node takes its type's own title/description at resolve time, on both macros (implicits,
-collections and `Option` excluded; a recursive type's texts go on the definition body). P1: `@description` wins over
+collections and `Option` excluded; a recursive type's texts go on the definition body, and a recursive root keeps them
+at the document root too). P1: `@description` wins over
 scaladoc, for type and field descriptions, as the docs say. L1: under every profile, Legacy included (lead to confirm).
 
 ## Implementation plan
@@ -193,8 +205,10 @@ scaladoc, for type and field descriptions, as the docs say. L1: under every prof
 1. Scala 3, `core/src/main/scala-3/com/github/andyglow/jsonschema/derivation/`:
    - `Resolve.scala`: `withTypeTexts` as in option A; `resolve` applies it to `structural(...)` results only (not to
      `lookupImplicit` results, not to `onCycle` refs). Update the trait's scaladoc (step 4 now also "plus the type's texts").
-   - `Derivation.build`: skip `Def` in the root step (`case _: Def => node`); rewrite the "R8" comment: the root step is
-     for an implicit root (parity) and, for a structural root, a no-op repeat.
+   - `Derivation.build`: root step code unchanged (no `Def` skip, B12-R1); rewrite the "R8" comment: the root step is for
+     an implicit root (parity), keeps a recursive root's texts on its `def` node (document root), and is a same-value
+     repeat for a structural root.
+   - `withTypeTexts` only for a class-naming type (skip `OrType`/`AndType`), see option A.
    - `Annotations.scala`: `symbolAnnotations` → `description = fromAnnotation orElse fromScaladoc`; fix the doc line on
      `TypeAnnotations` ("nothing here is applied automatically except the root's texts").
    - `Products.scala`: `fieldDescriptions` → `fromScaladoc ++ fromAnnotations ++ fromSpec`, and its scaladoc
@@ -202,7 +216,7 @@ scaladoc, for type and field descriptions, as the docs say. L1: under every prof
 2. Scala 2, `macros/src/main/scala-2/com/github/andyglow/jsonschema/`:
    - `Macroses.scala`: in `resolve`, a local `withTypeTexts(x: SchemaType)` from `Texts(tpe)` (existing extra first),
      applied to the `Enum`, `SumType`, `CaseClass`, `ValueClass` cases of `genTree` (not `Opt`, `Dict`, `Arr`, not the
-     implicit). `deriveInternal`: skip `U.Def` in the root step.
+     implicit). `deriveInternal` unchanged (no `U.Def` skip, B12-R1).
    - `UTypeAnnotations.scala`: `Texts.apply` → `fromSD.fold(fromAN)(fromAN orElse _)`.
    - `UProductTypes.scala`: `val fd = scaladocFD ++ FieldDecorations.fromFieldAnnotations(resolvedFields) ++ specFD`.
      `UFieldDecorations.scala`: the order in its scaladoc.
@@ -213,12 +227,18 @@ scaladoc, for type and field descriptions, as the docs say. L1: under every prof
      generic `Gen[Int]`, an `Either[Inner, Int]` side, a tuple element, a member's field type (`Fam.A(i: Inner)`), the
      same type in two fields (inlined twice, both with texts), `import Json.auto._`. Tree assertions plus rendered
      draft-04/07/2020-12 for a few.
-   - Precedence at a field: `@description` on the field beats the type's description; field `@title` (B1) beats the
-     type's title; a field scaladoc `@param` beats the type's description.
+   - Precedence at a field, per keyword (B12-R2): field `@description` only → field description + the type's title;
+     field `@title` only → field title + the type's description; both → the field's two; a field scaladoc `@param`
+     beats the type's description; a definition-typed field with its own texts → beside the `$ref`, the type's in
+     `definitions`.
    - Recursion: `case class Forest(t: Tree)` → `definitions.Tree` has the texts, the `$ref` has none; a titled recursive
-     **root** `Json.schema[Tree]` → texts in the definition body, not as `$ref` siblings at the root.
-   - Implicits untouched: a nested type with an implicit `Schema` built by hand without texts stays without; with an
-     implicit `Predef` likewise; an implicit-provided sealed member still gets none (Scala 2 quirk, kept).
+     **root** `Json.schema[Tree]` → texts at the document root (next to the root `$ref`, one draft) **and** in
+     `definitions.Tree`; `AsRaw.schema(Json.schema[Tree])` keeps them first at the root (B12-R1). A recursive type in an
+     `Option` field (Neutral `oneOf[$ref, null]`, no texts at the site); mutual recursion `MutA(b: Option[MutB])`,
+     `MutB(a: List[MutA])` (root def body + inline nested texts) (B12-R4).
+   - Implicits untouched (core rule, B12-R4): an annotated type with an implicit `Schema` as the root (texts on the def
+     node, as today) and nested (none added); a nested type with a hand-built implicit `Schema` or `Predef` without
+     texts stays without; an implicit-provided sealed member still gets none (Scala 2 quirk, kept).
    - `Option` field under Neutral (texts on the nullable `oneOf`/type array) and under Legacy (unwrapped, texts kept).
    - Scala 3 only (`api/src/test/scala-3/...`): a nested Scala 3 `enum`; `derives json.Schema` unchanged.
    - Cross-module: in `CrossModuleScaladocSpec`, `case class HoldsOther(f: FromOtherModule)` → `f` has "A model from
@@ -236,7 +256,8 @@ scaladoc, for type and field descriptions, as the docs say. L1: under every prof
    - Replace B1's sentence "A type's own annotations and scaladoc apply where it is the root, ... a type derived inline as
      a field's (or an element's) type doesn't get them" with: a type's own `@title`/`@description`/scaladoc apply
      wherever it's derived (root, field, element, member, definition); not where an implicit `Schema`/`Predef` is used
-     (the implicit's own texts count); a field's own texts win over its type's.
+     (the implicit's own texts count), and not on a sealed sub-trait inside a family (it's flattened, its texts are
+     dropped); a field's own title/description win over its type's, each on its own.
    - Below the annotation table: drop B1's "A type's `@title`/`@description` apply where it is the root, ...".
    - The precedence sentence (L447) stays, now true; add the field rule ("a field's description: decorations, then
      `@description`, then the scaladoc `@param`; then the field type's own").
@@ -262,8 +283,20 @@ Risks / notes for the implementer:
 - `char/scaladoc/Precedence.json`: root `"description": "Type scaladoc"` → `"type annotation"`; `a`: `"from scaladoc"` →
   `"from annotation"`. `Precedence.objectSchema.json`: root description likewise (field `a` keeps the decoration).
 - In user code: new `title`/`description` keys on every annotated/documented nested derived type; a different
-  description where a type or field has both a scaladoc and an `@description`; a titled recursive root's texts move from
-  next to the root `$ref` (B1) into `definitions`.
+  description where a type or field has both a scaladoc and an `@description`; a titled recursive root keeps its texts
+  at the document root (B1: next to the root `$ref`; `AsRaw`: first keys, as since 0.7) and gains them in
+  `definitions.X` as well (B12-R1).
+
+## Alternatives kept
+- Recursive root, texts only in `definitions` (B12-R1's other side): add `case _: Def => node` / `case _: U.Def => st`
+  to the root steps. Then the root `$ref` has no title/description in any draft and `AsRaw`'s root loses the keys it has
+  had since 0.7. Lost because doc tools take the document's title from the root.
+
+## Out of scope
+- A titled sealed **sub-trait** inside a family (`@title sealed trait Sub extends Fam`): flattened into the family's
+  members, its texts dropped (both versions, before and after; Scala 3 keeps them on the `NestedFamily` member and the
+  lowering drops them). Members/lowering, not resolve: reported to the lead (B12-R3); the docs say so.
+- `value-class.toDefinition` / `withValidationsAddedFrom` dropping texts: B13 (#498).
 
 ## Compatibility
 - Source/binary: no public signature changes (macro internals only). Patch under PVP (0.9.x), like B1: output-only fixes.
@@ -276,3 +309,14 @@ Risks / notes for the implementer:
 2. Want flag D as an escape hatch anyway?
 
 ## Review log
+Round 1 (r-b12, on b4b5993; A, P1, L1 agreed):
+- B12-R1 (must) recursive root loses its root texts (drafts and `AsRaw`) → accepted: no `Def` skip in either root step;
+  texts at the root `def` node and in the body; tests (`AsRaw` + a draft); the skip written out under "Alternatives kept";
+  Output changes updated.
+- B12-R2 (must) field vs type precedence is per keyword → accepted: option A bullet, README wording ("each on its own"),
+  tests for both mixed cases and a definition-typed field.
+- B12-R3 (nit) titled sealed sub-trait flattened → accepted: "Out of scope" + docs caveat; mailed the lead.
+- B12-R4 (nit) more tests → accepted: mutual recursion, recursive type in an `Option` field, annotated type with an
+  implicit `Schema` as root and nested.
+- B12-R5 (nit) unions/intersections in `withTypeTexts` → accepted: class-naming types only (skip `OrType`/`AndType`).
+- B12-R6 (nit) `docsFromClasspath` → accepted: stated in option A.
