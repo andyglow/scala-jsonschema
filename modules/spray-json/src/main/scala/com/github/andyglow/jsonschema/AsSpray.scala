@@ -75,7 +75,7 @@ object AsSpray {
     implicit val objAdapter: Aux[obj, JsObject] = make(
       // spray's JsObject is a Map; a ListMap keeps the order (its varargs constructor builds a HashMap)
       x => JsObject(ListMap(x.fields.toList map { case (k, v) => (k, adapt(v)) }: _*)),
-      x => obj.ordered(x.fields map { case (k, v) => (k, unadapt(v)) })
+      x => obj.ordered(x.fields.toList map { case (k, v) => (k, unadapt(v)) }) // toList: on 2.12, `Map.map` builds a HashMap even from a ListMap
     )
   }
 

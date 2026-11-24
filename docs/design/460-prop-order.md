@@ -1,5 +1,5 @@
 # Object keys keep their order  (issue #460, item B2)
-Status: draft
+Status: approved (r-b2, 2026-11-23)
 
 ## Problem
 
