@@ -73,7 +73,7 @@ trimmed of the local suffix (`a ` → `a`), which the code already trims.
 - Pros: one-line change in the pattern; no `accessed` call at all. It reads exactly the data `accessed` returned for
   public vals (`accessed` is `owner.info.decl(name.localName)`), so public fields are unchanged by construction.
   Non-public fields get their `@field` annotations, as on Scala 3. Works for classes from classfiles (the local fields
-  and their flags are pickled; covered by a cross-module test).
+  and their flags are pickled; covered by a cross-module test with `@(x @field)` on public and non-public vals).
 - Cons: relies on the field carrying the `CASEACCESSOR` flag. It does on 2.12 and 2.13 for every first-list val,
   public or not (table above; and the cross-module test checks it for unpickled classes).
 
@@ -114,8 +114,14 @@ play's `JsObject` gets the Scala 3 error text instead of the crash.
    - New goldens `golden/char/products/{PrivateVal,PrivatePkgVal,ProtectedVal,PrivateValAnnotated}.json` and their
      `golden-legacy/` counterparts (new names, so update mode adds them; their content is identical to the base ones),
      generated on Scala 3 (the target) and checked byte-identical on 2.12/2.13 with the fix.
+   - `PrivateValDefaults(private val d: Int = 5, protected val o: Option[Int] = None)` (the `apply$default$N` path): goldens
+     `PrivateValDefaults.json` (base + legacy). `d` gets `"default": 5`, neither is required, as on Scala 3.
    - `modules/test-models`: `NonPublicValsInOtherModule(private val a: Int, protected val b: String, c: Int)` with scaladoc
-     `@param`s; `CrossModuleScaladocSpec` checks its field names and descriptions (the classfile path on Scala 2, TASTy on 3).
+     `@param`s (field names and scaladoc descriptions), and `FieldAnnotatedInOtherModule` with `@(x @field)` annotations on a
+     public val (`description`, `writeOnly`) and on non-public ones (`private val` `description`, `protected val` `readOnly`):
+     the unpickled-field path of `annotations0` on Scala 2 (TASTy on 3). `CrossModuleScaladocSpec` asserts both.
+   - `build.sbt`: `test-models` `.dependsOn(core)`, for the `json.schema` annotations. The module is unpublished and only
+     reaches api's test classpath (where core already is), so no POM or artifact changes.
 3. JS: no platform code; `rootJS/test` covers the same specs (the crash is at compile time on both platforms).
 4. Docs: none. README/paradox say nothing about field visibility; a crash fix needs no docs. (CHANGELOG by the lead.)
 5. Not in scope: `private[this] val` (the compiler rejects it for case class params), second-parameter-list vals (not
@@ -130,3 +136,14 @@ play's `JsObject` gets the Scala 3 error text instead of the crash.
   `golden-legacy` files only pin today's Legacy rendering of the new models).
 
 ## Review log
+B4-R1 (must) the cross-module test reached field descriptions through scaladoc, not `annotations0`; nothing in test-models
+had a field-targeted annotation → accepted: `test-models` now depends on core and has `FieldAnnotatedInOtherModule`
+(`@(description @field)` on a public and a `private val`, `@(readOnly @field)` on a `protected val`, `@(writeOnly @field)` on
+a public one); `CrossModuleScaladocSpec` asserts the descriptions and rw modes. Green on 3.3.9 (without the fix) and on clean
+2.12.21 / 2.13.18 with the fix. Plan step 2 updated (incl. the `build.sbt` change).
+
+B4-R2 (nit) pin defaults on a non-public val → accepted: `PrivateValDefaults(private val d: Int = 5, protected val o: Option[Int] = None)`
++ goldens (`d` default 5, nothing required), identical on 2.12/2.13 (with the fix) and 3.
+
+B4-R3 (nit) `JsObject` before/after in the PR body, no test here → accepted: the PR body will show the crash →
+`schema for scala.collection.Map[String,play.api.libs.json.JsValue] is not supported: only immutable Maps (scala.collection.immutable.Map)` (2.13, same as 3).

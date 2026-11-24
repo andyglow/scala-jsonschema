@@ -27,6 +27,7 @@ object ProductsCharSpec {
   case class PrivateVal(private val a: Int, b: String)
   case class PrivatePkgVal(private[characterization] val a: Int, b: String)
   case class ProtectedVal(protected val a: Int, b: String)
+  case class PrivateValDefaults(private val d: Int = 5, protected val o: Option[Int] = None)
   case class PrivateValAnnotated(@(description @field)("from the field") private val a: Int, @description("from the param") private val b: Int, @(readOnly @field) protected val c: Int)
 }
 
@@ -48,6 +49,10 @@ class ProductsCharSpec extends AnyFunSuite {
     check("char/products/PrivateVal", Json.schema[PrivateVal])
     check("char/products/PrivatePkgVal", Json.schema[PrivatePkgVal])
     check("char/products/ProtectedVal", Json.schema[ProtectedVal])
+  }
+
+  test("B4: defaults of non-public constructor vals") {
+    check("char/products/PrivateValDefaults", Json.schema[PrivateValDefaults])
   }
 
   test("B4: annotations on non-public constructor vals") {

@@ -30,6 +30,17 @@ class CrossModuleScaladocSpec extends AnyFunSuite {
     fieldDescriptions(s) should contain.only("a" -> "a private val", "b" -> "a protected val")
   }
 
+  test("field-targeted annotations of public and non-public vals of a class from another module (B4)") {
+    val s = Json.objectSchema[FieldAnnotatedInOtherModule]()
+    fieldDescriptions(s) should contain.only("a" -> "public, on the field", "b" -> "private, on the field")
+    s.fields.toList.map(f => f.name -> f.rwMode) should contain.only(
+      "a" -> Schema.`object`.Field.RWMode.ReadWrite,
+      "b" -> Schema.`object`.Field.RWMode.ReadWrite,
+      "c" -> Schema.`object`.Field.RWMode.ReadOnly,
+      "d" -> Schema.`object`.Field.RWMode.WriteOnly
+    )
+  }
+
   test("a class nested in an object of another module") {
     val s = Json.objectSchema[Container.InObject]()
     s.description shouldBe Some("Nested in an object")
