@@ -38,6 +38,7 @@ trait Resolve { this: Derivation =>
     * value class is a value class. Each family lives in its own file; to add one, add its method here at the right position.
     */
   protected def families: List[Family] = List(
+    deriveTuple,      // Tuples.scala       *: chains longer than 22, and the tuple types of unknown arity (errors); first for the messages
     deriveOption,     // Options.scala      skeleton
     deriveDictionary, // Collections.scala  stream 3
     deriveArray,      // Collections.scala  stream 3
@@ -48,7 +49,7 @@ trait Resolve { this: Derivation =>
   )
 
   def resolve(tpe0: TypeRepr, ctx: Ctx): Node = {
-    val tpe = tpe0.dealias
+    val tpe = normalizeTuple(tpe0.dealias) // `Int *: String *: EmptyTuple` is `(Int, String)` from here on (Tuples.scala)
     ctx.onStack(tpe) match {
       case Some(entry) => onCycle(tpe, entry)
       case None        =>

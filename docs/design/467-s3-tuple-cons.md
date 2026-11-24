@@ -1,5 +1,5 @@
 # Scala 3: tuple types written with `*:`  (issue #467, item B10)
-Status: draft
+Status: approved (r-b10, 2026-11-23)
 
 ## Problem
 On Scala 3 a tuple type can be spelled as a `*:` chain. `Int *: String *: EmptyTuple` is the same type as `(Int, String)`

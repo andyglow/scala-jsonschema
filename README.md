@@ -945,6 +945,9 @@ with Scala 2 and gives the same schemas. The deliberate differences:
 - **refined:** `refined[T]` has no `T <: Refined[_, _]` bound (Refined is an opaque type on Scala 3; a non-refined
   `T` is a compile error), and an unsupported predicate found while deriving fails with the derivation's
   `is not supported` error followed by refined's own message.
+- **`*:` tuples** (`Int *: String *: EmptyTuple`, what `Tuple.Concat`/`Tuple.Map` produce) are the same object as
+  `(Int, String)`, also beyond 22 elements (`_1` .. `_23` ...). `Tuple`, `NonEmptyTuple`, `Int *: Tuple` (no known
+  arity) and `EmptyTuple` are compile errors.
 - Compile errors quote Scala 3 code, so their text differs from Scala 2's.
 
 To see the code the macro generates, compile with `-Djsonschema.print-code=true` (e.g.
