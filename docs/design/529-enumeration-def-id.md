@@ -1,5 +1,5 @@
 # Definition names of path-dependent classes: `scala.Enumeration.Value` for every Enumeration  (issue #529, item B29)
-Status: draft
+Status: approved (r-b29, 2026-11-23)
 
 ## Problem
 A definition (and `Json.sig`) is named after the **full name of the type's symbol**. For a class that is declared in one
