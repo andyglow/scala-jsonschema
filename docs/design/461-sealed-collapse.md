@@ -304,3 +304,13 @@ Round 2 (changes found during implementation; need r-b3's OK):
   `ToValue` writes `{"_type": "V"}`) turning into an `anyOf` needlessly; an object value that lacks a required field
   or has a key the closed object doesn't have is not a document of it.
 - `enum` types come from its values (more precise than its value schema; never `"enum"`).
+
+Approved by r-b3 at 822dd1d.
+
+Round 3 (a bug found by c-e6 after approval, reported by the lead; needs r-b3's re-review):
+- A `$ref` member didn't count when deciding whether every member shares one type, so `anyOf` (and a non-root `oneOf`;
+  that part is older than this PR) of `[$ref X, integer]` rendered `{"type": "integer", "anyOf": [{"$ref": X}, {}]}`
+  and rejected every X. Now a `$ref` member means no shared type: nothing is stated next to the keyword, each member
+  states its own. A definition (`def`) member still counts with its body's type. Regression test in
+  `SameShapeFamilySpec` (hand-built trees: the recursive families I tried put the family itself in a definition, so
+  none had a bare `$ref` member; `Node | Int` in E6 has one; `Either` wraps each side in `{"value": ...}`).

@@ -196,6 +196,21 @@ class SameShapeFamilySpec extends AnyFunSuite {
     Acceptance.assertValid(Acceptance.rendered(Json.schema[RefEv]), List("""{"id":"x"}"""))
   }
 
+  test("a $ref member next to a member of another type: no type is stated for all of them, every member's documents are valid") {
+    // `{"type": "integer", "anyOf": [{"$ref": X}, {}]}` rejected every X (a `$ref` member's type isn't known where it's rendered)
+    import Schema._
+    val x                          = `def`[Any]("X", `object`[Any](`object`.Field("a", `string`[String])))
+    def f(n: String, s: Schema[_]) = `object`.Field[Any](n, s.asInstanceOf[Schema[Any]])
+    val tree                       = `object`[Any](f("x", x), f("o", `oneof`.of[Any](`ref`[Any]("X"), `integer`)), f("y", `anyof`.of[Any](`ref`[Any]("X"), `integer`)))
+    (JsonSchemaProfile.Legacy :: untagged) foreach { implicit p =>
+      withClue(p.name) {
+        val rendered = Acceptance.rendered(tree)
+        Acceptance.assertValid(rendered, List("""{"x":{"a":"s"},"o":{"a":"s"},"y":{"a":"s"}}""", """{"x":{"a":"s"},"o":1,"y":1}"""))
+        Acceptance.assertInvalid(rendered, List("""{"x":{"a":"s"},"o":"s","y":1}""", """{"x":{"a":"s"},"o":1,"y":"s"}""", """{"x":{"a":"s"},"o":{"b":1},"y":1}"""))
+      }
+    }
+  }
+
   test("Legacy: a 5-member family (golden-legacy MultiLevelSealedTraitRoot) in declaration order") {
     implicit val p: JsonSchemaProfile = JsonSchemaProfile.Legacy
     memberKeys(render(Json.schema[MultiLevelSealedTraitRoot])) shouldBe List(List("a"), List("b"), List("c"), List("d"), List("e"))

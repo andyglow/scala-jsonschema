@@ -174,17 +174,19 @@ trait AsDraftSupport {
 
   // the members under `keyword`: a type all of them share is stated once, next to it (unless `omitRootType`), otherwise each member states its own
   private def mkAlternatives(keyword: String, x: json.Schema[_], subTypesSeq: Seq[json.Schema[_]], omitRootType: Boolean): obj = {
-    // each member's JSON type: a definition has its body's; a `$ref` to a definition elsewhere has none known here, so it doesn't count (asking either for `jsonType` threw before)
-    val known = subTypesSeq collect {
-      case d: `def`[_]                    => bodyType(d)
-      case t if !t.isInstanceOf[`ref`[_]] => memberType(t)
+    // each member's JSON type: a definition has its body's; a `$ref` to a definition elsewhere has none known here (None), so the members share no type: stating
+    // one would reject every document of the `$ref` (asking either for `jsonType` threw before)
+    val known = subTypesSeq map {
+      case d: `def`[_] => Some(bodyType(d))
+      case `ref`(_)    => None
+      case t           => Some(memberType(t))
     }
     // the type a same-typed oneOf states: the first member's that isn't a definition or a $ref, as in 0.7 (only definitions: none)
     val tpe = subTypesSeq.find {
       case `def`(_, _) | `ref`(_) => false
       case _                      => true
     }.map(memberType)
-    val sameType = tpe.isDefined && known.forall(_ == tpe.get)
+    val sameType = tpe.isDefined && known.forall(_ == tpe)
     def rootType = tpe filter { _ => !omitRootType } map { t => obj("type" -> `str`(t)) } getOrElse obj()
     if (sameType) {
       rootType ++ obj(
