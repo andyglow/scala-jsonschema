@@ -1,5 +1,5 @@
 # Compile-error texts: one format, no leaks, no crashes  (issues #471, #291, item B11)
-Status: draft
+Status: approved (r-b11, 2026-11-23)
 
 ## Problem
 The derivation's compile errors are wrong in some places, leak internal text in others, and three inputs crash the macro
@@ -210,3 +210,14 @@ Round 1 (r-b11 on 33c5eb6):
 - B11-R6 (nit) `x: Null = null`, `Option[Nothing]` field → accepted: spec rows, no crash on any version.
 - B11-R7 (nit) aliased path entry → accepted: pins `scala.collection.immutable.Map[scala.Predef.String, M.Plain]`.
 - B11-R8 (nit) keep the Null hint aligned with E8's `Schema.null` docs → accepted: noted for the PR body.
+
+Round 2: approved by r-b11 at 722e7c8.
+
+Implementation notes (small deviations from the plan, none changes the design):
+- Scala 3, a fourth wildcard point: an `Option[_]` *field* is peeled in `Products` (its Option isn't pushed on the
+  stack), so `resolve`'s check would name the case class as the owner. `Products` checks the element first and names the
+  field's `scala.Option[?]`. Same "where it fails today" rule.
+- Scala 2: `showType` and the error helpers live in `UCommons` (not `USignatures`): every extractor (UArrays,
+  UDictionaries, USumTypes) already sees `UCommons`. Anonymous members are detected by the `$anon` name or a term owner
+  (the public reflection API has no `isAnonymousClass`/`isLocalToBlock`).
+- Scala 3: the existing `Enums.showType` (warning texts) moved to the new `Errors` trait and became the general printer.
