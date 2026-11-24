@@ -333,10 +333,13 @@ If an implicit `ToValue` for the enum type is in scope (e.g. from a JSON-library
 values are the codec's output. Their schema is your `@typeHint[T]` if you give one; otherwise it comes from the
 values themselves when the schema is rendered: strings make a string enum, any other value is a `const` of it.
 
-These are the default shapes. The derived `family` lists the members in declaration order; a rendered `oneOf` or
-`enum` keeps that order up to 4 entries (with more, the order is fixed, but it is hash order). To match how a JSON library writes sealed families
-(play's `_type`, circe's wrapper object, ...), render with that library's profile: see
-[Library profiles](#library-profiles).
+These are the default shapes. The derived `family` lists the members in declaration order (on Scala 2, a family
+compiled in another module is in name order: its class files have no source positions). A rendered `enum` keeps that
+order whatever its size. A rendered `oneOf`, including the `oneOf` of `const`s that `Flag.EnumsAsOneOf` makes, keeps
+it up to 4 entries (with more, the order is fixed, but it is hash order). An `enum` you build yourself keeps your order
+when you use `Schema.enum.of(...)` or pass a `ListSet`; a plain `Set` of 5 or more values iterates in hash order.
+To match how a JSON library writes sealed families (play's `_type`, circe's wrapper object, ...), render with that
+library's profile: see [Library profiles](#library-profiles).
 
 ### Discriminators
 

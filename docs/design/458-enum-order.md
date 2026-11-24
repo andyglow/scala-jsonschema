@@ -1,5 +1,5 @@
 # Enum values in declaration order  (issue #458, item B7)
-Status: draft
+Status: approved (r-b7, 2026-11-23)
 
 ## Problem
 

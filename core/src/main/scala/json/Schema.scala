@@ -6,6 +6,8 @@ import com.github.andyglow.jsonschema.AsTree
 import json.Schema.`object`.Field.RWMode
 import json.schema.{validation => V}
 
+import scala.collection.immutable.ListSet
+
 sealed trait Schema[+T] {
   type Self <: Schema[T]
 
@@ -438,6 +440,9 @@ object Schema extends SchemaCompanionPlatform {
   // | Enum
   // +---------------
   //
+  /** A JSON `enum` of `values`, rendered in the order `values` iterates. `enum.of` and the derivation build an insertion-ordered `ListSet` (declaration order); build yours with `enum.of`, or
+    * pass a `ListSet`, to keep your order: a plain `Set` of 5 or more values iterates in hash order.
+    */
   final case class `enum`[T](tpe: Schema[_], values: Set[Value]) extends Schema[T] {
     type Self = `enum`[T]
     def mkCopy()                              = new `enum`[T](tpe, values)
@@ -460,9 +465,11 @@ object Schema extends SchemaCompanionPlatform {
     }
   }
   object `enum` {
-    def of[T](tpe: Schema[_], x: Value, xs: Value*): `enum`[T]                              = new `enum`[T](tpe, (x +: xs).toSet)
+
+    /** The values in the given order (an insertion-ordered `ListSet`; duplicates dropped). */
+    def of[T](tpe: Schema[_], x: Value, xs: Value*): `enum`[T]                              = new `enum`[T](tpe, ListSet((x +: xs): _*))
     def of[T](x: T, xs: T*)(implicit va: ValueAdapter[T], vs: ValueSchema[T]): `enum`[vs.S] = {
-      new `enum`[vs.S](vs.schema, (x +: xs).toSet.map { (x: T) => va.adapt(x) })
+      new `enum`[vs.S](vs.schema, ListSet((x +: xs).map { (x: T) => va.adapt(x) }: _*))
     }
   }
 

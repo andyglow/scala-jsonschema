@@ -36,3 +36,15 @@ trait Models {
 }
 
 object Models extends Models
+
+// EnumOrderSpec (#458): a case-object family loaded from class files. Scala 2 has no source positions for its members,
+// so it lists them by name; Scala 3 reads the declaration order from TASTy.
+sealed trait LibraryColor
+object LibraryColor {
+  case object Red    extends LibraryColor
+  case object Green  extends LibraryColor
+  case object Blue   extends LibraryColor
+  case object Cyan   extends LibraryColor
+  case object Yellow extends LibraryColor
+  case object Black  extends LibraryColor
+}

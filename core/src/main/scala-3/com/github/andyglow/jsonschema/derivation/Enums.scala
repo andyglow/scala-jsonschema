@@ -106,9 +106,11 @@ trait Enums { this: Derivation =>
 
   def emitEnum(tpe: TypeRepr, schema: Node, values: List[Expr[Value]]): Expr[Schema[?]] = tpe.asType match {
     case '[t] =>
-      val s  = emit(schema)
-      val vs = Expr.ofList(values)
-      '{ Schema.`enum`[t]($s, $vs.toSet) }
+      val s = emit(schema)
+      values match {
+        case first :: rest => '{ Schema.`enum`.of[t]($s, $first, ${ Varargs(rest) }*) } // `enum.of` keeps the values' order (an ordered Set)
+        case Nil           => '{ Schema.`enum`[t]($s, scala.collection.immutable.ListSet.empty) }
+      }
   }
 
   def emitOneOf(tpe: TypeRepr, members: List[Expr[Schema[?]]], discriminatorField: Option[String]): Expr[Schema[?]] = tpe.asType match {
