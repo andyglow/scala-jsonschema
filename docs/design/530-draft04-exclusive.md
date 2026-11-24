@@ -8,8 +8,8 @@ In draft-04 they are **booleans that modify `minimum` / `maximum`**: `"minimum":
 "greater than 0". The draft-04 meta-schema types them as `boolean` (default `false`) and has
 `"dependencies": {"exclusiveMaximum": ["maximum"], "exclusiveMinimum": ["minimum"]}`.
 
-The renderer has no draft-04 case for them. `AsDraftSupport.apply` (`AsDraftSupport.scala:54-66`) writes every
-validation as `name -> value` through `ValidationList.json` (`AsDraftSupport.scala:251-253`), on every draft.
+The renderer has no draft-04 case for them. `AsDraftSupport.apply` (`AsDraftSupport.scala:53-65`) writes every
+validation as `name -> value` through `ValidationList.json` (`AsDraftSupport.scala:283-285`), on every draft.
 
 ```scala
 import json._
@@ -95,8 +95,11 @@ mixed    → { "type": "integer", "maximum": 18, "exclusiveMaximum": true, "mini
 ```
 
 The hook sits where `apply` already writes validations, so it covers every place a schema with validations is
-rendered: the root, fields, collection items, map values, definitions, `not` bodies, `oneOf`/`allOf` members,
-value classes (`mkValueClass` goes through the same `apply`).
+rendered: the root, fields, collection items, map values, definitions, `not` bodies, `oneOf`/`allOf` members, and
+validations on a value-class node itself (`value-class(...).withValidation(...)`, written by that node's `apply`).
+It does not cover validations of the schema *inside* a value class: `mkValueClass` (`AsDraftSupport.scala:244-246`)
+renders the inner type's specifics with the outer node's list and never writes the inner node's validations, on any
+draft. That is a separate bug (found by r-b30, reported to the lead), not this item; see Risks.
 
 - Pro: valid draft-04; exactly the constraint the tree states; no API change; one place.
 - Pro: two bounds on one side (by hand; refined merges each side into one bound) stay exact without new keywords.
@@ -167,7 +170,10 @@ Option A. On draft-04 the renderer states each side as one `minimum`/`maximum`, 
      exclusive keyword, leave its fields alone. Otherwise pick by the table in option A, comparing `num.value`
      (`BigDecimal.compare`). Emit the chosen bound under `minimum` (`maximum`), then `exclusiveMinimum: true`
      (`exclusiveMaximum: true`) if the chosen one is exclusive, at the position of the side's first keyword in the
-     list; drop the other keyword(s) of that side. All other fields keep their place.
+     list; drop the other keyword(s) of that side. All other fields keep their place. The position only means
+     something once B2's `obj.ordered` is in: until then `ValidationList.json` builds its `obj` with `.toMap`
+     (hash order past 4 entries), and so does this step's output order. Tests compare `obj`s (Map equality), so
+     they don't depend on the order either way.
    - If a value is not a `num` (it always is: the four `Instance`s convert with `num.apply`), leave the side as is.
    - Build the result with an order-keeping constructor: `new obj(mutable.LinkedHashMap(...))` today, `obj.ordered`
      if B2 (#460) is merged first (B2 changes `ValidationList.json` to `obj.ordered`). Use only collection methods
@@ -181,15 +187,21 @@ Option A. On draft-04 the renderer states each side as one `minimum`/`maximum`, 
      (`minimum 3, exclusiveMinimum 15` → `minimum 15` + `true`); lower tie (`minimum 5, exclusiveMinimum 5` →
      exclusive); upper tie; mixed types (`minimum := 5`, `exclusiveMinimum := 5.5`); inclusive only (unchanged, no
      `false`). Placement: on a field of an object, as an array item, inside a definition (`.toDefinition`), inside
-     `Schema.not` (`not(integer.withValidation(exclusiveMinimum := 5))` → `"not": {"minimum": 5, "exclusiveMinimum": true}`,
-     whatever B22 does with the `type` around it), on a value class with validations.
+     `Schema.not` (`not(integer.withValidation(exclusiveMinimum := 5))` → `"not": {"minimum": 5, "exclusiveMinimum": true}`:
+     today's body has no `type` (B22's area); this expectation is B30's alone, and whoever of B22/B30 merges second
+     adds B22's `type` to it), and on a value-class node with validations of its own
+     (`` `value-class`[Pos, Int](`integer`).withValidation(`exclusiveMinimum` := 0) `` with an implicit
+     `Magnet[Pos, Number]`, as in the docs' `UserId` example, or `Json.schema[Pos].withValidation(...)`) → `{"type": "integer", "minimum": 0, "exclusiveMinimum": true}`. Validations on the value class's *inner*
+     schema are out of scope (they are dropped on every draft today, see Risks); no test for them here.
    - `AsDraft06Spec`/`07`/`09`/`12` "numCase" stay as they are (the numeric form); add one test there that a
      `minimum` + `exclusiveMinimum` pair is rendered as both keywords, unmerged (guards against the hook leaking).
 4. **Tests, validator** (shared `api/src/test/scala/com/github/andyglow/jsonschema/Draft04ExclusiveBoundsSpec.scala`)
    - Add `def metaErrors(draft: Version, schema: String): List[String]` to both `petshop.JsonValidator` shims: JVM
      validates `schema` against the draft's meta-schema (`JsonSchemaFactory.getInstance(flag).getSchema(SchemaLocation.of(<draft uri>))`,
      as in the repro); JS calls `cancel()` like `errors`.
-   - For `positive`, `open`, `mixed` and a `not` case: the draft-04 render has no meta errors; instances via
+   - For `positive`, `open`, `mixed` and the `not` case of step 3 (its `exclusiveMinimum` needs a `minimum` next to
+     it inside the `not` body: the meta-schema's `dependencies` rule, which the `not` body is checked against too):
+     the draft-04 render has no meta errors; instances via
      `JsonValidator.errors(Draft04(), ...)`: `positive` rejects `0`, accepts `1`; `open` rejects `2` and `7`, accepts
      `2.5`; `mixed` rejects `14`, `18`, `19`, accepts `15`, `17`. On JS these are canceled (the convention).
 5. **Tests, refined** (`modules/refined/src/test/scala/com.github.andyglow.jsonschema.refined/`, shared dir: the
@@ -215,6 +227,9 @@ Option A. On draft-04 the renderer states each side as one `minimum`/`maximum`, 
 
 ### Risks and neighbours
 
+- **Value-class inner validations** (neighbour, r-b30): `mkValueClass` never writes the inner schema's validations,
+  on any draft. Whoever fixes that must write them through `renderValidations` (or `apply`), not `ValidationList.json`
+  directly, or draft-04 exclusive bounds come back broken there.
 - **Textual conflicts:** D3 (#294) overrides `mkConst` in `AsDraft04.scala` (same file, a different method). B2 (#460)
   rewrites `ValidationList.json`; the hook reads its result, so it works with either version (see step 2). B22 (#509),
   B27, B32 tests that render a draft-04 `not`/bound will see the new form if they land after B30 (and vice versa):
@@ -238,3 +253,12 @@ Option A. On draft-04 the renderer states each side as one `minimum`/`maximum`, 
 - PVP: patch (0.9.x): a bug fix of invalid output, no API change.
 
 ## Review log
+B30-R1 (must) the hook doesn't cover a value class's inner validations (`mkValueClass` uses `inferSpecifics`, not
+`apply`) → accepted: option A now says it covers validations on the value-class node itself and names the inner-schema
+drop as a separate bug; step 3's value-class test is the outer form, the inner form is out of scope; Risks has a line
+that the fix for the inner drop must go through `renderValidations`.
+B30-R2 (nit) line refs → accepted: `apply` :53-65, `ValidationList.json` :283-285.
+B30-R3 (nit) keyword position is hash order before B2 → accepted: step 2 says the position only holds once B2's
+`obj.ordered` lands; tests compare `obj`s (order-insensitive).
+B30-R4 (nit) the `not` case → accepted: step 3 says the expectation is B30's alone (no `type`, B22's area) and who
+updates it; step 4's meta-schema check covers the `not` case (`dependencies` inside the body).
