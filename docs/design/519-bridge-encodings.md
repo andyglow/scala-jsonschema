@@ -1,5 +1,5 @@
 # Library profiles: built-in types the library writes differently  (issue #519, item B24)
-Status: draft
+Status: approved (r-b24, 2026-11-23)
 
 ## Problem
 
