@@ -1,5 +1,5 @@
 # Char schema: a pattern that rejects every non-whitespace character  (issue #463, item B5)
-Status: approved (r-b5, 2026-11-23); implemented on `gap/b5-char-pattern`
+Status: implemented (#468); design approved (r-b5, 2026-11-23)
 
 ## Problem
 The core Predefs for `Char` and `java.lang.Character` (`core/src/main/scala/json/schema/Predef.scala`, `chrS` / `jchrS`) are
@@ -143,3 +143,6 @@ Round 1 (r-b5, at 0da59d1): approved, 4 nits, no musts.
   source. Jackson parses a lone `"\\ud83d"` and networknt accepts it, so it's in `chars`. An escaped `é` and `"\r"` are in there too.
 - B5-R3 (nit) say why Legacy-only gating lost → accepted: added option E.
 - B5-R4 (nit, optional) a bridge check with real codec output → accepted: a circe `deriveEncoder` case in `CirceAcceptanceSpec`.
+
+Code review (r-b5, at aaebe57): approved.
+- B5-R5 (nit) Status line → accepted: "implemented (#468)".
