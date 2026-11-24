@@ -28,6 +28,7 @@ case class O(o: Option[String] = null)
 | `L`, `M` | `Json.schema` | `NullPointerException` in `ArrV` / `StrMapV` (`items.map`) |
 | `P` (play bridge) | `Json.schema` | `NullPointerException` in the `OWrites` |
 | `S` (play bridge) | rendering | as `S` above (`Writes[String]` → `JsString(null)` → `str(null)`) |
+| `S` rendered by a bridge (r-b17's probe) | rendering | `asPlay` renders `"default": null` (play writes `JsString(null)` as `null`); `asCirce` throws NPE (`String.isEmpty()`) |
 | `O`, Scala 2 | compile | "exception during macro expansion: TypecheckException: not found: value null" (`UProductTypes` re-parses the default's source text with `parseFCQN`, which makes `null` an identifier) |
 | `O`, Scala 3 | compile | "Can't infer json value for default value ... Please provide `ToValue[Option[String]]`" (`defaultIsNone` sees the word `null`, not `None`) |
 | `O`, Scala 3 + a bridge `ToValue[Option[_]]` | `Json.schema` | `NullPointerException` in the generated `d.isEmpty` |
@@ -80,13 +81,16 @@ Output: `S`, `SV`, `BD`, `BI`, `L`, `M`, `P`, `O` all render the field with no `
 `{"type":"object","properties":{"s":{"type":"string"}},"additionalProperties":false}`. Nothing throws.
 
 Pros: one place, every field type, every present and future `ToValue` (core, E4's boxed ones, B18's, the bridges',
-users' own): no `ToValue` has to be null-safe. The output is valid (no default that fails its own type). Matches what
-JSON libraries do with such a field (they treat the field as optional; most can't write `null` for a `String` field
-without a nullable type anyway). The generic `x == null` on an unconstrained `T` compiles without warnings on 2.12,
+users' own): no `ToValue` has to be null-safe. The output is valid (no default that fails its own type). The generic `x == null` on an unconstrained `T` compiles without warnings on 2.12,
 2.13 and 3 (a primitive `T` is boxed and never `null`), so the macros don't need to know whether the field is a
 reference type.
 Cons: a user who wanted `"default": null` (to say "null by default" to a tool) can't get it; they'd need the field to
 allow null (an `Option`) anyway for that default to be valid. A small public addition to `ToValue`'s companion.
+
+Known limitation (A and B alike, not B17's to fix): an *instance* that holds the `null` default is written by most
+libraries as `{"s": null}` (play's `Json.writes` does), which `"type": "string"` rejects, because a `String` that can be
+`null` isn't modelled as nullable. B17 only makes the schema derivable and its `default` valid; making `null`-able
+reference fields nullable in the schema is a separate (style) question.
 
 ### B. `null` → `Value.null` (render `"default": null`)  — LOST
 The same helper with `if (x == null) Some(Value.`null`)`, or (E4's approach for its boxed types) every `ToValue` maps
@@ -120,6 +124,27 @@ Pros: no runtime check.
 Cons: misses runtime nulls (`= Defs.s`, a Java constant), and a compile error breaks the Java-shaped models this is
 about. Compile-time detection is still used for `Option = null` in A, because that's where the macros decide `None`.
 
+### F. A + no `ToValue` needed for a literal `= null`  — LOST (B17-R2)
+On top of A: when the default is the literal `null`, emit no default at compile time and don't summon a `ToValue`, so
+`n: Inner = null` compiles without a bridge (today, and under A, it is "Can't infer json value ... ToValue[Inner]",
+like any case-class default without a bridge).
+Detection is the same as for `Option = null` (plan 3/4): Scala 2 parses the default's source (`hasSource`) or `c.eval`s
+the compiled getter (`!hasSource`), so it can always tell. Scala 3 can't evaluate: it needs the getter's tree
+(`-Yretain-trees`, which users don't set) or the source of a class compiled **in the same run**
+(`isDefinedInCurrentRun`). A model from another module, or one whose file an incremental build didn't recompile,
+can't be told apart, and then the macro must either
+- keep the `ToValue` error: the same model compiles in a clean build and fails after editing only the call site's
+  file, and always fails when the model lives in another module; or
+- assume "no default" without a `ToValue`: then a non-null default of a type with no `ToValue`, a compile error today,
+  silently loses its default in those builds.
+Either way the result depends on the build mode and on module layout (and Scala 2 and 3 would differ), which is worse
+than the consistent "provide a `ToValue`" error that every other default of such a type gets. For `Option = null` the
+same "can't tell" case is harmless: it already falls back to "no default" (`optionDefault`), which is A's answer for
+`null` too.
+Pros: Java-shaped models with `c: SomeCaseClass = null` compile without a bridge.
+Cons: the clean-vs-incremental and same-vs-other-module difference above on Scala 3. Lost; the workaround is a
+bridge import (which such models usually have, since something serialises them) or `Option[Inner] = None`.
+
 ## Decision
 A: a `null` default value gives no JSON `default` (the field stays optional), decided at runtime by one helper,
 `ToValue.ofDefault`, which both macros and the public `Field` factory call; `Option = null` is treated as `= None` at
@@ -134,15 +159,22 @@ compile time. B is the same helper with `Some(Value.null)` if the owner prefers 
    `default` block, ~L86–150):
    - non-Option: `q"Some($toV($defaultGetterTree))"` → `q"_root_.com.github.andyglow.json.ToValue.ofDefault($defaultGetterTree)($toV)"`
      (the field's `Option[Value]` slot gets the helper's result; `Field.tree` already adds `.withHasDefault(true)`).
-   - Option: in the `hasSource` branch, if `parseParameter(defaultGetterSym).default.get.trim == "null"` use
-     `Literal(Constant(null))` instead of `parseFCQN(...)`; change the evaluated expression to
-     `q"{ val d = $effectiveDefaultGetterTree; d == null || d.isEmpty }"`. The `isNone == true` result then gives no
-     default, as for `None`.
+   - Option, `hasSource` branch: if `c.parse(parseParameter(defaultGetterSym).default.get)` is `Literal(Constant(null))`
+     (so `null` and `(null)` both count), `isNone = true` **without** any `c.eval` (B17-R1: a `null` literal in
+     `{ val d = null; d.isEmpty }` types `d` as `Null` and doesn't typecheck). Wrap the `c.parse` in `try`: on a parse
+     error fall through to today's `parseFCQN` path.
+   - Option, `!hasSource` branch (the compiled getter): evaluate
+     `q"{ val d: $fieldTpe = $effectiveDefaultGetterTree; d == null || d.isEmpty }"` (typed, so `d.isEmpty` resolves)
+     instead of `q"$effectiveDefaultGetterTree.isEmpty"`. `isNone == true` then gives no default, as for `None`.
 4. **Scala 3 macro** `core/src/main/scala-3/com/github/andyglow/jsonschema/derivation/Products.scala`:
    - `defaultValue`: `'{ Some($toV($v)) }` → `'{ ToValue.ofDefault[f]($v)($toV) }`.
    - `optionDefault`, with a `ToValue[Option[e]]`: `if (d.isEmpty)` → `if (d == null || d.isEmpty)`.
-   - `isNoneTree`: add `case Literal(NullConstant()) => true`; `defaultIsNone` lexical path: the word `null` counts as
-     None (next to `None` / `scala.None` / `Option.empty`); update both scaladocs (they list what counts as None).
+   - `defaultIsNone` lexical path: the word `null` counts as None (next to `None` / `scala.None` / `Option.empty`).
+     This is the path that matters (a top-level class compiled in this run, without `-Yretain-trees`).
+   - `isNoneTree`: add an explicit `case Literal(NullConstant()) => true`. It is documentation only: the existing
+     `t.tpe <:< None.type` already holds for a `null` literal (`Null <: None.type` without explicit nulls; B17-R3).
+     Keep both, with a comment saying why, so neither gets "simplified" away. Update both scaladocs (they list what
+     counts as None).
    - `clean` before testing (CLAUDE.md).
 5. **Tests**, a new shared spec `api/src/test/scala/com/github/andyglow/jsonschema/NullDefaultSpec.scala` (runs on 2.12,
    2.13, 3 and on JS via `apiJS`); models at the top level of the file (Scala 2 can't take defaults of block-local classes):
@@ -153,7 +185,10 @@ compile time. B is the same helper with `Some(Value.null)` if the owner prefers 
    - the factory: `Field("s", string, false, null: String)` has `default == None`, `hasDefault == true`.
    - a bridge spec in `modules/play-json/src/test/.../NullDefaultPlaySpec.scala` (or added to `AsPlaySpec`): with
      `import AsPlay._`, `p: Inner = null` (an `OWrites[Inner]`) and `o: Option[String] = null` (play's `ToValue[Option]`
-     path on Scala 3, the compile-time path on Scala 2) give no default.
+     path on Scala 3, the compile-time path on Scala 2) give no default; and `S` rendered with `asPlay` has no
+     `default` (today `"default": null`). One circe check too (`modules/circe-json`): `S` with `asCirce` doesn't throw.
+   - pin option F's verdict: `n: Inner = null` with no bridge still fails to compile with the `ToValue[Inner]` message
+     (`assertDoesNotCompile` / the characterization harness's `errorOf`), on 2.12, 2.13 and 3.
    - If E4 (#478) has merged first: its `java.lang.Integer = null` test (plan 6 of `473-boxed-bigmath.md`, "renders
      `"default": null`") now expects no default; change it in this PR. If B17 merges first, E4's PR needs that change
      (mail the lead). E4's `ToValue`s mapping `null` to `Value.null` can stay (only reached through a direct `ToValue` call).
@@ -161,7 +196,8 @@ compile time. B is the same helper with `Some(Value.null)` if the owner prefers 
    `golden-legacy` unchanged.
 7. **Docs**: README ~L114 ("`Option` fields and fields with a default value are optional. ... A default is written
    into the schema when it can be turned into JSON: ..."): add "A `null` default (`s: String = null`) gives no
-   `default` keyword; the field is still optional." The same paragraph is in `docs/src/main/paradox/getting-started.md`
+   `default` keyword; the field is still optional. A type that needs a `ToValue` still needs one when its default is
+   `null`." The same paragraph is in `docs/src/main/paradox/getting-started.md`
    ~L75: same sentence. `makeDocs` after.
 8. **Gates**: as the protocol's step 8 (core and macros are touched: `clean test` on all three Scala versions, `rootJS/test`
    on all three, `scalafmtCheckAll` + `rootJS/scalafmtCheckAll`).
@@ -185,4 +221,27 @@ Risks:
   no golden-legacy file changes. Alternative kept: none needed, since Legacy never produced valid output for these.
 - PVP: patch-level (0.9.x): a bug fix plus an additive method.
 
+## Open questions for the owner
+- **Omit vs `"default": null`, one decision for B17 and E4 (#478).** E4 (approved, PR open) renders a boxed
+  `java.lang.Integer = null` as `"default": null`, with "omit" as the alternative; this doc picks omit for every type.
+  With A, `ToValue.ofDefault` is the single switch: `None` (A, omit) or `Some(Value.null)` (B) flips both items at once.
+  Whichever PR merges second aligns E4's `= null` test (plan 5).
+- Option F (a literal `= null` needing no `ToValue`): lost on Scala 3 build-mode consistency; say if the convenience
+  is worth it anyway.
+
 ## Review log
+Round 1 (r-b17, on ebc06f8):
+- B17-R1 (must) Scala 2 `{ val d = null; d.isEmpty }` doesn't typecheck → accepted: plan 3 short-circuits a literal
+  `null` (recognised with `c.parse`, so `(null)` counts) to `isNone = true` with no `c.eval`; the `!hasSource` getter
+  path evaluates a typed `val d: $fieldTpe`.
+- B17-R2 (must) literal `= null` without a `ToValue` is still a compile error; decide → pushed back, decided as new
+  option F (LOST): Scala 3 can only tell a literal `null` for a class compiled in the same run (or with
+  `-Yretain-trees`), so the model would compile clean and fail incrementally / from another module (or silently drop
+  non-null defaults if made lenient), and Scala 2/3 would differ. Kept the consistent `ToValue` error, pinned by a test
+  (plan 5), documented in the README sentence (plan 7), listed as an owner question.
+- B17-R3 (nit) `isNoneTree` already true for `null` via `Null <:< None.type` → accepted: plan 4 says the explicit case
+  is documentation and the lexical path is the one that matters; keep both with a comment.
+- B17-R4 (nit) "matches what JSON libraries do" is wrong (play writes `{"s": null}`) → accepted: sentence dropped; a
+  "known limitation" paragraph in option A. Also added r-b17's bridge findings (`asPlay` `"default": null`, `asCirce`
+  NPE) to the problem table and plan 5.
+- B17-R5 (nit) E4 decided the opposite; one owner decision → accepted: "Open questions for the owner" section.
