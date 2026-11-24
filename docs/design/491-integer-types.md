@@ -1,5 +1,5 @@
 # Byte, Short, Long and BigInt as `integer`  (issue #491, item D2)
-Status: draft
+Status: approved (r-d2, 2026-11-23)
 
 ## Problem
 
