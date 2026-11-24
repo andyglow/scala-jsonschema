@@ -1,5 +1,5 @@
 # Scala 3: deprecation warnings from the derivation can't be silenced  (issue #515, item B21)
-Status: draft
+Status: approved (r-b21, 2026-11-23)
 
 ## Problem
 
