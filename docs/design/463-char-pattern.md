@@ -1,5 +1,5 @@
 # Char schema: a pattern that rejects every non-whitespace character  (issue #463, item B5)
-Status: approved (r-b5, 2026-11-23)
+Status: approved (r-b5, 2026-11-23); implemented on `gap/b5-char-pattern`
 
 ## Problem
 The core Predefs for `Char` and `java.lang.Character` (`core/src/main/scala/json/schema/Predef.scala`, `chrS` / `jchrS`) are
