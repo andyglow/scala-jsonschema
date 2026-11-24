@@ -1,5 +1,5 @@
 # `-Xlint` warns "Implicit resolves to enclosing value" on `implicit val s: Schema[X] = Json.schema[X]`  (issue #320, item B9)
-Status: approved (r-b9, 2026-11-23)
+Status: implemented (#487); approved (r-b9, 2026-11-23)
 
 ## Problem
 
