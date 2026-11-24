@@ -225,8 +225,11 @@ Not in scope (neighbours, reported to the lead):
   that behaviour exactly (step 6).
 - B14 (#500): the generic `Or` fallback `oneOf` → `anyOf`, and `Or`s with non-numeric or `Divisible` operands (still
   overlapping `oneOf` until B14). `Ranges` uses whichever fallback is there.
-- B15 (#499): a root `oneOf` without `"type"`. B30: draft-04 exclusive bounds. B31: bounds emitted as `Double`; D
-  compares literal values with `math.compare`, never via `Double`, so B31 only changes the emission.
+- B15 (#499): a root `oneOf` without `"type"`. B30: draft-04 exclusive bounds. B31 (#532, design
+  `docs/design/532-refined-bounds-precision.md`): bounds emitted as `Double`. B31 builds on D. It replaces `Bound.v: Any`
+  with an exact literal (the value on the base type) and `math.compare` with that literal's ordering. It also changes
+  the empty-range message for integral bases (`[2.0 .. 7.0]` → `[2 .. 7]`). Whichever of #526/#532 lands second updates
+  `Scala3RefinedErrorsSpec` and the step-5 message accordingly.
 - B22 (#509): after D, refined emits no `not` for numeric bounds. B22's table row `Int Refined (Greater[7] Or Less[2])`
   no longer applies. Today `NonNegative`/`NonPositive` inside `And`/`Or` render a raw `{"type": "not", ...}`
   (`NonNegative And Less[3]`); after D they don't.
