@@ -59,11 +59,22 @@ implicit val jBigIntegerS: Predef[java.math.BigInteger] = Predef(bigIntS.schema.
 - **Follows the Scala type by construction**: D2 (integer types) will change `longS` / `bigIntS`; the boxed and
   `java.math` Predefs then change with them, with no second edit and no chance to drift.
 - `ToValue` (`com.github.andyglow.json.ToValue`, low-priority primitives): `JIntegerV`, ..., `JBooleanV`,
-  `JBigDecimalV`, `JBigIntegerV`, each converting to the same `Value` the Scala type gives (`num(x.intValue)`,
-  `num(x.doubleValue)`, `bool(x.booleanValue)`, `num(BigDecimal(x))`, `num(BigInt(x))`). A `null` reference (a legal
-  default for a boxed field, `i: java.lang.Integer = null`) maps to `Value.null` instead of throwing an NPE in the macro's
-  generated code. The bridges' `ToValue`s (from `Writes` / `Encoder` / ...) are imported, so they win over these, as
+  `JBigDecimalV`, `JBigIntegerV`, each converting **exactly** to the `Value` the Scala type gives, through the Scala
+  type's own `num` overload: `num(x.intValue)`, `num(x.longValue)`, `num(x.shortValue)`, `num(x.byteValue)`,
+  `num(x.doubleValue)`, `num(x.floatValue)`, `bool(x.booleanValue)`, `num(BigDecimal(x))`, `num(BigInt(x))`. Never the
+  generic `num(x: Number)`: it goes through `doubleValue`, which loses `Long.MaxValue` and every 20-digit `java.math`
+  value (E4-R2). The bridges' `ToValue`s (from `Writes` / `Encoder` / ...) are imported, so they win over these, as
   they already do over `IntV`.
+- `null` defaults (E4-R1). A boxed field can default to `null` (`i: java.lang.Integer = null`, common in Java-shaped
+  models). The plan: the `ToValue`s map `null` to `Value.null`, so the field renders `"default": null`. Drawback: that
+  default doesn't validate against the field's own `"type": "integer"` (JSON Schema says a default SHOULD), so a tool
+  that applies defaults would insert an invalid value. Still better than today's alternative for a naive `ToValue`
+  (an NPE in the macro's generated code at schema construction).
+  The other real choice is **omit `default` when the value is `null`**: the field then just isn't required (it has a
+  default) and has no `default` keyword. That needs a macro change in both macros (emit `Option(x).map(toV)` instead of
+  `Some(toV(x))`, or let `ToValue` say "absent"), i.e. a change to how every default is rendered, for an edge case; so
+  it's left as a follow-up the owner can pick. This choice is E4's own: it doesn't follow `String`, whose `= null`
+  default renders `"default": "null"` (a JSON string, a separate bug r-e4 reported to the lead).
 - `Magnet` (`json.schema.validation.Magnet`): one monomorphic `Magnet[X, Number]` per numeric type, like `chrMagnet`.
   Not a generic `[X <: java.lang.Number]` magnet: `scala.BigDecimal` / `BigInt` extend `java.lang.Number`, so it would be
   ambiguous with `numericMagnet` for them.
@@ -111,7 +122,7 @@ Scala counterpart's schema node (so the boxed and `java.math` types always rende
    `java.lang.Integer` → `integer`; `Long`/`Short`/`Byte`/`Double`/`Float` → `number`; `Boolean` → `boolean`;
    `java.math.BigDecimal`, `java.math.BigInteger` → `number`.
 2. `core/src/main/scala/com/github/andyglow/json/ToValue.scala` (`LowPriorityPrimitiveImplicits`): the nine `ToValue`s,
-   `null` → `Value.null`.
+   exact (per-type `num` overloads, never `num(x: Number)`), `null` → `Value.null`.
 3. `core/src/main/scala/json/schema/validation/Magnet.scala`: eight numeric magnets (`Boolean` has no validations).
 4. `core/src/main/scala/json/Schema.scala` (`KeyPattern`): `JIntegerKeyPattern`, `JLongKeyPattern`,
    `JShortKeyPattern`, `JByteKeyPattern` delegating to the Scala objects' `pattern`. If B6 has merged by then, also
@@ -119,15 +130,29 @@ Scala counterpart's schema node (so the boxed and `java.math` types always rende
 5. `core/src/main/scala-3/.../derivation/Collections.scala` `kindOf`: boxed integrals → `KeyKind.Integral`. `clean` before testing.
 6. Tests (shared, all three Scala versions, JVM + JS): turn `BoxedBigMathSpec` from the repro into the spec:
    - each type at the root equals its Scala counterpart's tree (`Json.schema[java.lang.Long] shouldEqual Json.schema[Long]`)
-     and the expected node (`integer` / `number` / `boolean`);
+     and the expected node (`integer` / `number` / `boolean`). These nine equalities are **the D2 guard** (E4-R6): D2
+     must change the Scala Predefs (or the nodes), not special-case the Scala types in the macros or renderers, and these
+     tests fail if the two ever drift;
    - golden `shared/boxed/Boxed`, `shared/boxed/BigMath` (case classes with all nine as fields, `Option[java.lang.Integer]`,
      `List[java.math.BigDecimal]`), all drafts, Neutral and Legacy (new files only);
    - defaults: `java.lang.Integer = 5`, `java.lang.Long = 5L`, `java.lang.Double = 1.5`, `java.lang.Boolean = true`,
      `java.math.BigDecimal = new java.math.BigDecimal("12.50")`, `java.math.BigInteger = java.math.BigInteger.TEN`,
      and `java.lang.Integer = null` (renders `"default": null`); compared with the Scala types' defaults;
-   - `Map[java.lang.Integer, String]` (and Long/Short/Byte) has the same key pattern as `Map[Int, String]`;
+   - exact defaults at values a `Double` can't hold (E4-R2), each compared with the Scala type's default rendering:
+     `java.lang.Long = Long.MaxValue` (`9223372036854775807`), `java.lang.Float = 0.1f` (as `Float` renders it),
+     `new java.math.BigDecimal("12345678901234567890.123")`, `new java.math.BigInteger("123456789012345678901234567890")`.
+     Shared spec, so it runs on JVM and JS (where `Decimals` is shimmed);
+   - Option defaults (E4-R4): `o: Option[java.lang.Integer] = Some(5)` and `= None` (Scala 2's `c.eval` path with
+     `int2Integer` in the tree). If `Some(5)` hits the known Scala 2 re-parse crash (TRIAGE-A, `FieldsCharSpec` F4), the
+     test pins that as for `Option[String]`, not as an E4 failure;
+   - Map keys through both routes (E4-R3), for all four boxed integrals: `Map[java.lang.Integer, String]` (core
+     `Predef.dictS`) and `Map[java.lang.Integer, SomeCaseClass]` (each macro's dictionary family: Scala 2
+     `UDictionaries`, Scala 3 `Collections`, where `kindOf` applies), each with the same key pattern as the `Int` /
+     `Long` / ... map;
    - `withValidation(minimum := 1, maximum := 10)` compiles and records the validations for each numeric type
-     (in `ValidationMagnetSpec`).
+     (in `ValidationMagnetSpec`), and that spec also covers `Int` / `Long` / `scala.BigDecimal` / `BigInt` numeric
+     validations, so new magnets making those ambiguous on Scala 3 would show (E4-R5). On Scala 3 boxed validations
+     already compiled through `identityMagnet[java.lang.Number]`; with the new magnets the output is unchanged.
    - a bridge check: `import AsCirce._` / `AsPlay._` defaults for a boxed field still compile (bridge `ToValue` wins, no
      ambiguity), in the circe and play modules' tests if the library has an encoder for the type (circe has
      `Encoder[java.lang.Integer]`, `Encoder[java.math.BigDecimal]`).
