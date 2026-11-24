@@ -93,9 +93,13 @@ Output of the repro after the fix (both versions): `foobar` = `def(pkg.Foo[pkg.B
 `foobaz` likewise; `Tree[Bar]` = `def(pkg.Tree[pkg.Bar], {v: Bar's object, kids: [ref(pkg.Tree[pkg.Bar])]})`.
 
 `mentionsAbstractType` on Scala 2: `TypeRef(_, sym, args)` with `sym` a type parameter or abstract type member
-(`sym.isType && sym.asType.isAbstract`) that is not existentially bound (`!sym.isExistential`, so `Schema[Foo[_]]`
-keeps its definition), or any arg that mentions one; `RefinedType` parents, `AnnotatedType` underlying; everything else
-`false`. Applied after `dealias`, like Scala 3.
+(`sym.isType && !sym.isClass && sym.asType.isAbstract`; `isAbstract` alone is also true for traits and abstract
+classes, so `Option[Bar]` or a sealed trait would count, which a prototype showed breaks 4 existing tests) that is not
+existentially bound (`!sym.isExistential`, so `Schema[Foo[_]]` keeps its definition), or any arg that mentions one;
+`RefinedType` parents, `AnnotatedType` underlying; everything else `false`. Applied after `dealias`, like Scala 3.
+
+Prototype (uncommitted, ~25 lines in the two files): `GenericImplicitDefsSpec` 6/6 and the full `clean test` on
+2.13.18 green (api 296, all modules), no golden or golden-legacy file changes.
 
 Pros: Scala 2 and 3 give the same schema for the same model (the cross-build's promise); the Scala 3 rule is already a
 decided, documented behaviour (README "Scala 3 notes"), so this is a parity fix, not a new design; small (one file plus
