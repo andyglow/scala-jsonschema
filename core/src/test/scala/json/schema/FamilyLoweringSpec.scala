@@ -97,7 +97,8 @@ class FamilyLoweringSpec extends AnyWordSpec {
       )
       val out = members(Legacy.lower(f))
       out.collect { case `def`(sig, _) => sig } shouldEqual List("petshop.Dog", "AA", "BB")
-      out.last.title shouldBe Some("t")
+      out.last.title shouldBe None // Legacy keeps texts only on objects and consts, as 0.7 rendered them
+      members(Neutral.lower(f)).last.title shouldBe Some("t")
     }
     "give a const per singleton with Flag.EnumsAsOneOf, with its texts and key" in {
       val f   = `family`[Any](List(dog, fish.copy(title = Some("F"), discriminatorKey = Some("f"))), enumsAsOneOf = true)
@@ -119,7 +120,8 @@ class FamilyLoweringSpec extends AnyWordSpec {
       Neutral.lower(`family`[Any](List(m))).toDebugString should include("null")
     }
     "carry the family's own texts" in {
-      Legacy.lower(animal.withTitle("Animal")).title shouldBe Some("Animal")
+      Neutral.lower(animal.withTitle("Animal")).title shouldBe Some("Animal")
+      Legacy.lower(animal.withTitle("Animal")).title shouldBe None // a oneOf: 0.7 didn't render its texts
     }
   }
 

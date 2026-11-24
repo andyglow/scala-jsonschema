@@ -61,8 +61,14 @@ trait AsDraftSupport {
       case _                                                         => obj.empty
     }
 
-    base ++ validationList.json ++ specifics
+    // the node's own texts go before the specifics (where objects and consts always had them, so their output keeps its key order) and win over texts the specifics bring from an inner node (a value
+    // class's underlying type, the X of a nullable X)
+    val own = texts(x)
+    base ++ validationList.json ++ own ++ specifics ++ own
   }
+
+  /** `description` and `title` of `x` itself; every kind of node has them. */
+  protected def texts(x: json.Schema[_]): obj = obj(("description", x.description), ("title", x.title))
 
   def mkStr(vl: ValidationList, x: `string`[_], par: ParentSchema): obj
 
@@ -101,8 +107,6 @@ trait AsDraftSupport {
     val canHaveAdditionalProperties = x.isInstanceOf[`object`.Free]
 
     obj(
-      ("description", x.description),
-      ("title", x.title),
       ("additionalProperties", canHaveAdditionalProperties),
       ("properties", if (props.isEmpty) None else Some(obj(props))),
       ("required", if (required.isEmpty) None else Some(arr(required.distinct)))
@@ -232,17 +236,13 @@ trait AsDraftSupport {
   }
 
   def mkConst(vl: ValidationList, x: `const`[_], par: ParentSchema): obj = {
-    obj(
-      ("description", x.description),
-      ("title", x.title),
-      ("const", x.value)
-    )
+    obj("const" -> x.value)
   }
 
   def buildRef(ref: String): String = s"#/definitions/$ref"
 
   def mkValueClass(vl: ValidationList, x: `value-class`[_, _], par: ParentSchema): obj = {
-    inferSpecifics.lift((vl, x.tpe, par, false)) getOrElse obj()
+    (inferSpecifics.lift((vl, x.tpe, par, false)) getOrElse obj()) ++ texts(x.tpe) // the value class's own texts (added by `apply`) win over its underlying type's
   }
 
   val inferSpecifics: PartialFunction[(ValidationList, json.Schema[_], ParentSchema, Boolean), obj] = {

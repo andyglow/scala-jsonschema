@@ -595,11 +595,16 @@ object Schema extends SchemaCompanionPlatform {
   }
 
   object `def` {
+
+    /** `tpe` as a definition (an implicit `Schema` the macros found). A definition keeps its own title and description (they render next to its `$ref`); a value class's become its definition's, over
+      * its underlying type's.
+      */
     def adapt[T](tpe: Schema[_], sig: => String): `def`[T] = {
       tpe match {
-        case `def`(originalSig, innerTpe) => `def`(originalSig, innerTpe)
-        case `value-class`(innerTpe)      => `def`(sig, innerTpe)
-        case _                            => `def`(sig, tpe)
+        case d @ `def`(originalSig, innerTpe) => `def`[T](originalSig, innerTpe).duplicate(title = d.title, description = d.description)
+        case vc @ `value-class`(innerTpe)     =>
+          `def`(sig, innerTpe.duplicate(title = vc.title orElse innerTpe.title, description = vc.description orElse innerTpe.description))
+        case _ => `def`(sig, tpe)
       }
     }
   }

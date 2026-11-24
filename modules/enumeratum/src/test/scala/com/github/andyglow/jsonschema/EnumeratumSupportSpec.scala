@@ -178,7 +178,7 @@ object EnumeratumSupportSpec {
   @json.schema.title("foo")
   @json.schema.description("bar")
   sealed trait Titled extends EnumEntry
-  object Titled extends Enum[Titled] {
+  object Titled       extends Enum[Titled] {
     case object A extends Titled
     case object B extends Titled
     override def values = findValues

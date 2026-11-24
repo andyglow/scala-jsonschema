@@ -116,6 +116,18 @@ trait UFieldDecorations { this: UContext with UCommons =>
       }.toMap
     }
 
+    /** Field titles by field name, from `@title` on the parameter or its field (`@(title @field)`). They go on the field's schema: `object.Field` has no title. */
+    def titlesFromFieldAnnotations(fields: Seq[Field]): Map[String, String] = {
+      fields.flatMap { f =>
+        val title = f.annotations
+          .map(_.tree)
+          .filter(_.tpe <:< T.annotation.title)
+          .collectFirst { case Apply(_, List(Literal(Constant(text: String)))) => text }
+
+        title map { (f.name.decodedName.toString, _) }
+      }.toMap
+    }
+
     implicit class FieldDescriptionsOps(val fd: FieldDecorations) {
 
       def warnUnknown(tpe: Type, fields: Seq[Field]): Unit = {

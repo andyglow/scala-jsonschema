@@ -33,14 +33,6 @@
         "description": "d2"
       },
       {
-        "kind": "value-class",
-        "schema": {
-          "kind": "string"
-        },
-        "title": "t3",
-        "description": "d3"
-      },
-      {
         "kind": "const",
         "value": "M4",
         "title": "t4",
@@ -51,6 +43,12 @@
         "value": "M5",
         "title": "t5",
         "description": "d5"
+      },
+      {
+        "kind": "value-class",
+        "schema": {
+          "kind": "string"
+        }
       }
     ]
   },

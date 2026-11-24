@@ -60,6 +60,9 @@ trait JsonSchemaProfile extends JsonSchemaProfileDefault {
   /** The name a member is tagged with ([[SumStyle.Discriminator]], [[SumStyle.WrapperObject]]), or written as ([[SingletonStyle.AsString]] when [[honorsSchemaAnnotations]] is false). */
   def memberName: MemberName = MemberName.FullName
 
+  /** [[JsonSchemaProfile.Legacy]] (and profiles built from it with the `with...` builders): lowering keeps `title`/`description` only on `object` and `const` nodes, where 0.7 rendered them. */
+  private[schema] def legacyTexts: Boolean = false
+
   // builders: a profile with one knob changed and every other knob kept
 
   final def withName(x: String): JsonSchemaProfile                     = Knobs(this).copy(name = x).profile
@@ -71,7 +74,10 @@ trait JsonSchemaProfile extends JsonSchemaProfileDefault {
   final def withHonorsSchemaAnnotations(x: Boolean): JsonSchemaProfile = Knobs(this).copy(honorsSchemaAnnotations = x).profile
 
   /** `schema` with every `option` and `family` node lowered to plain JSON Schema nodes. Idempotent: a schema without those nodes comes back equal. */
-  final def lower[T](schema: Schema[T]): Schema[T] = new Lowering(this)(schema).asInstanceOf[Schema[T]]
+  final def lower[T](schema: Schema[T]): Schema[T] = {
+    val lowered = new Lowering(this)(schema)
+    (if (legacyTexts) LegacyTexts(lowered) else lowered).asInstanceOf[Schema[T]]
+  }
 
   override def toString: String = s"JsonSchemaProfile($name)"
 }
@@ -143,8 +149,10 @@ object JsonSchemaProfile {
   /** The default: the 0.7 shapes, with every `Option[X]` as "X or null". */
   val Neutral: JsonSchemaProfile = Knobs("neutral", OptionStyle.Nullable).profile
 
-  /** The 0.7 output, byte for byte. */
-  val Legacy: JsonSchemaProfile = Knobs("legacy", OptionStyle.Legacy).profile
+  /** The 0.7 output, byte for byte. That includes 0.7's `title`/`description` only on objects and consts (a title on a string, an array, an enum, ... is dropped): lowering under Legacy removes the
+    * others from the tree, so a schema shaped by another profile (`withProfile(Neutral)`) and then rendered under Legacy loses them too.
+    */
+  val Legacy: JsonSchemaProfile = Knobs("legacy", OptionStyle.Legacy, legacyTexts = true).profile
 
   /** Every knob of a profile; `profile` builds one from them. */
   private final case class Knobs(
@@ -154,21 +162,44 @@ object JsonSchemaProfile {
     sumStyle: SumStyle = SumStyle.Untagged,
     singletonStyle: SingletonStyle = SingletonStyle.AsString,
     memberName: MemberName = MemberName.FullName,
-    honorsSchemaAnnotations: Boolean = true
+    honorsSchemaAnnotations: Boolean = true,
+    legacyTexts: Boolean = false
   ) { self =>
     def profile: JsonSchemaProfile = new JsonSchemaProfile {
-      val name: String                              = self.name
-      val optionStyle: OptionStyle                  = self.optionStyle
-      override val optionKeyRequired: Boolean       = self.optionKeyRequired
-      override val sumStyle: SumStyle               = self.sumStyle
-      override val singletonStyle: SingletonStyle   = self.singletonStyle
-      override val memberName: MemberName           = self.memberName
-      override val honorsSchemaAnnotations: Boolean = self.honorsSchemaAnnotations
+      val name: String                                  = self.name
+      val optionStyle: OptionStyle                      = self.optionStyle
+      override val optionKeyRequired: Boolean           = self.optionKeyRequired
+      override val sumStyle: SumStyle                   = self.sumStyle
+      override val singletonStyle: SingletonStyle       = self.singletonStyle
+      override val memberName: MemberName               = self.memberName
+      override val honorsSchemaAnnotations: Boolean     = self.honorsSchemaAnnotations
+      override private[schema] val legacyTexts: Boolean = self.legacyTexts
     }
   }
   private object Knobs {
     def apply(p: JsonSchemaProfile): Knobs =
-      Knobs(p.name, p.optionStyle, p.optionKeyRequired, p.sumStyle, p.singletonStyle, p.memberName, p.honorsSchemaAnnotations)
+      Knobs(p.name, p.optionStyle, p.optionKeyRequired, p.sumStyle, p.singletonStyle, p.memberName, p.honorsSchemaAnnotations, p.legacyTexts)
+  }
+
+  /** What [[Legacy]] makes of a lowered tree: `title`/`description` kept only on `object` and `const` nodes (field descriptions are the field's, so they stay). Idempotent. */
+  private object LegacyTexts {
+    def apply(s: Schema[_]): Schema[_] = {
+      val y = s match {
+        case o: `object`[_]   => o.withFieldsUpdated { case f => f.copy(tpe = apply(f.tpe)) }
+        case `array`(c, u)    => `array`[Any, List](apply(c).asInstanceOf[Schema[Any]], u).withExtraFrom(s)
+        case `dictionary`(v)  => `dictionary`[Any, Any, Map](apply(v).asInstanceOf[Schema[Any]]).withExtraFrom(s)
+        case `oneof`(xs, df)  => `oneof`[Any](xs map apply, df).withExtraFrom(s)
+        case `allof`(xs)      => `allof`[Any](xs map apply).withExtraFrom(s)
+        case `not`(t)         => `not`[Any](apply(t).asInstanceOf[Schema[Any]]).withExtraFrom(s)
+        case `def`(sig, t)    => `def`[Any](sig, apply(t)).withExtraFrom(s)
+        case `value-class`(t) => `value-class`[Any, Any](apply(t).asInstanceOf[Schema[Any]]).withExtraFrom(s)
+        case other            => other // leaves, enum, const, ref (and no `option`/`family` left after lowering)
+      }
+      y match {
+        case _: `object`[_] | _: `const`[_] => y
+        case _                              => y.duplicate(title = None, description = None)
+      }
+    }
   }
 
   private final class Lowering(p: JsonSchemaProfile) {

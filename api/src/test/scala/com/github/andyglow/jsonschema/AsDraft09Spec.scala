@@ -11,6 +11,21 @@ class AsDraft09Spec extends AnyWordSpec {
 
   "AsValue.schema" should {
 
+    "emit title and description on any schema (#268)" in {
+      val a = `array`[String, List](`string`[String](None).withTitle("Item").withDescription("an item")).withTitle("Items").withDescription("the items")
+
+      AsValue.schema(a, Draft09(id = "http://example.com/foobarbaz.json")) should beStructurallyEqualTo(
+        obj(
+          f"$$schema"   -> "https://json-schema.org/draft/2019-09/schema",
+          f"$$id"       -> "http://example.com/foobarbaz.json",
+          "type"        -> "array",
+          "title"       -> "Items",
+          "description" -> "the items",
+          "items"       -> obj("type" -> "string", "title" -> "Item", "description" -> "an item")
+        )
+      )
+    }
+
     "emit const" in {
 
       val a = `oneof`.of(

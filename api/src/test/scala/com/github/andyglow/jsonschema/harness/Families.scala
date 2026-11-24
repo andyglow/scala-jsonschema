@@ -14,8 +14,11 @@ object Families {
   // `option` nodes inside a family survive its lowering as this placeholder definition (a def's body is lowered, its node kept)
   private val Opt = "__as07.option__"
 
+  // Legacy's family shapes, without its removal of the texts 0.7 didn't render: the 0.7 *tree* had them
+  private val LegacyShapes = JsonSchemaProfile.Neutral.withOption(JsonSchemaProfile.OptionStyle.Legacy).withName("legacy-shapes")
+
   private def walk(s: Schema[_]): Schema[_] = s match {
-    case f: `family`[_]   => restore(JsonSchemaProfile.Legacy.lower(f.withMemberSchemas(m => hide(walk(m)))))
+    case f: `family`[_]   => restore(LegacyShapes.lower(f.withMemberSchemas(m => hide(walk(m)))))
     case o: `object`[_]   => o.withFieldsUpdated { case fl => fl.copy(tpe = walk(fl.tpe)) }
     case `array`(c, u)    => `array`[Any, List](walk(c).asInstanceOf[Schema[Any]], u).withExtraFrom(s)
     case `dictionary`(v)  => `dictionary`[Any, Any, Map](walk(v).asInstanceOf[Schema[Any]]).withExtraFrom(s)

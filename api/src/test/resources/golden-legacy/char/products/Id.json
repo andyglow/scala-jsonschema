@@ -3,9 +3,7 @@
     "kind": "value-class",
     "schema": {
       "kind": "string"
-    },
-    "title": "Id",
-    "description": "A wrapper"
+    }
   },
   "draft-04": {
     "$schema": "http://json-schema.org/draft-04/schema#",

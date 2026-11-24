@@ -121,11 +121,13 @@ trait Products { this: Derivation =>
     val ps     = params(tpe)
     val descrs = fieldDescriptions(tpe, ps, ctx)
     val fields = ps map { p =>
-      val inner = optionElement(p.tpe)
-      val node  = inner match {
+      val inner    = optionElement(p.tpe)
+      val typeNode = inner match {
         case Some(e) => Opt(optionOf(e), resolve(e, ctx.descend(tpe))) // `Option[e]`, also for a `Some[e]` field
         case None    => resolve(p.tpe, ctx.descend(tpe))
       }
+      // `@title` on a field goes on the field's schema (`object.Field` has no title), over its type's
+      val node       = fieldTitle(p).fold(typeNode)(t => typeNode.withExtra(typeNode.extra.copy(title = Some(t))))
       val hasDefault = p.sym.flags.is(Flags.HasDefault)
       Field(
         name = p.name,
@@ -153,6 +155,10 @@ trait Products { this: Derivation =>
     *
     * Checks (s2fix): an objectSchema decoration must name a field (compile error); a scaladoc `@param` that names no field is a warning, on the root and nested alike (TRIAGE-B).
     */
+  /** A field's `@title` (on the parameter or its field). */
+  def fieldTitle(p: Param): Option[String] =
+    p.annotations.filter(_.tpe <:< TypeRepr.of[json.schema.title]).map(stringArg(_, "text", 0)).collectFirst { case Arg.Given(t) => t }
+
   def fieldDescriptions(tpe: TypeRepr, ps: List[Param], ctx: Ctx): Map[String, String] = {
     val names           = ps.map(_.name)
     val fromAnnotations = ps.flatMap { p =>
