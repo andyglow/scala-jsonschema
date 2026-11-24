@@ -45,6 +45,13 @@ object AsTree {
           Apply("variants", subTypes.map(AsTree(_)).iterator)
         )
       )
+    case `anyof`(subTypes) =>
+      Apply(
+        "anyof",
+        Iterator(
+          Apply("variants", subTypes.map(AsTree(_)).iterator)
+        )
+      )
     case `not`(tpe)         => Apply("not", Iterator(AsTree(tpe)))
     case `def`(sig, tpe)    => Apply("def", Iterator("sig" -> sig, AsTree(tpe)))
     case `ref`(sig)         => Apply("ref", Iterator(sig))

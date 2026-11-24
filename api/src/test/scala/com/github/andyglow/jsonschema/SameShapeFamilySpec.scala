@@ -18,8 +18,10 @@ object SameShapeFamilySpec {
 
   // the same shape, different texts
   sealed trait DocEv
-  @json.schema.description("created") case class DCreated(id: String) extends DocEv
-  @json.schema.description("deleted") case class DDeleted(id: String) extends DocEv
+  @json.schema.description("created")
+  case class DCreated(id: String) extends DocEv
+  @json.schema.description("deleted")
+  case class DDeleted(id: String) extends DocEv
 
   // the same shape, each member a definition (an implicit Schema): two `$ref`s to equal bodies
   sealed trait RefEv
@@ -40,6 +42,18 @@ object SameShapeFamilySpec {
   case class C3(c: Int) extends Five
   case class B4(d: Int) extends Five
   case class A5(e: Int) extends Five
+
+  // the README's example
+  sealed trait Event
+  case class EvCreated(id: String)                         extends Event
+  case class EvDeleted(id: String, reason: Option[String]) extends Event
+
+  // recursive, disjoint
+  sealed trait Tree
+  case class Leaf(v: Int)           extends Tree
+  case class Node(l: Tree, r: Tree) extends Tree
+
+  case class HasOv(e: OvEv, o: Option[OvEv])
 }
 
 class SameShapeFamilySpec extends AnyFunSuite {
@@ -108,5 +122,77 @@ class SameShapeFamilySpec extends AnyFunSuite {
     val deleted = "com.github.andyglow.jsonschema.SameShapeFamilySpec.Deleted"
     Acceptance.assertValid(Acceptance.rendered(Json.schema[Ev])(tagged(0)), List(s"""{"$created":{"id":"x"}}""", s"""{"$deleted":{"id":"x"}}"""))
     Acceptance.assertValid(Acceptance.rendered(Json.schema[Ev])(tagged(1)), List(s"""{"id":"x","type":"$created"}""", s"""{"id":"x","type":"$deleted"}"""))
+  }
+
+  // the family's keyword, also in a definition (a recursive family)
+  def keyword(s: Schema[_])(implicit p: JsonSchemaProfile): String = {
+    val t = text(s)
+    (t.contains("\"anyOf\""), t.contains("\"oneOf\"")) match {
+      case (true, false) => "anyOf"
+      case (false, true) => "oneOf"
+      case _             => fail(s"not one of them: $t")
+    }
+  }
+
+  test("untagged: overlapping members are an anyOf, disjoint ones a oneOf") {
+    untagged foreach { implicit p =>
+      withClue(p.name) {
+        keyword(Json.schema[DocEv]) shouldBe "anyOf"
+        keyword(Json.schema[RefEv]) shouldBe "anyOf"
+        keyword(Json.schema[OvEv]) shouldBe "anyOf"
+        keyword(Json.schema[Event]) shouldBe "anyOf"
+        keyword(Json.schema[Ev]) shouldBe "oneOf" // one member left
+        keyword(Json.schema[Five]) shouldBe "oneOf"
+        keyword(Json.schema[Tree]) shouldBe "oneOf"
+        keyword(Json.schema[MultiLevelSealedTraitRoot]) shouldBe "oneOf"
+      }
+    }
+    tagged foreach { implicit p =>
+      withClue(p.name) {
+        keyword(Json.schema[Ev]) shouldBe "oneOf"
+        keyword(Json.schema[OvEv]) shouldBe "oneOf"
+        keyword(Json.schema[Five]) shouldBe "oneOf"
+      }
+    }
+  }
+
+  test("the README's Event example: every document of both members is valid") {
+    untagged foreach { implicit p =>
+      Acceptance.assertValid(Acceptance.rendered(Json.schema[Event]), List("""{"id":"x"}""", """{"id":"x","reason":"r"}"""))
+    }
+  }
+
+  test("an anyOf rejects documents of another type, at the root and in a field") {
+    implicit val p: JsonSchemaProfile = JsonSchemaProfile.Neutral
+    val others                        = List("5", "\"s\"", "[]", "null", "true")
+    Acceptance.assertInvalid(Acceptance.rendered(Json.schema[DocEv]), others)
+    Acceptance.assertInvalid(Acceptance.rendered(Json.schema[OvEv]), others)
+    val has = Acceptance.rendered(Json.schema[HasOv])
+    Acceptance.assertValid(has, List("""{"e":{"id":"x"},"o":null}""", """{"e":{"id":"x"},"o":{"id":"y","name":null}}""", """{"e":{"id":"x"}}"""))
+    Acceptance.assertInvalid(has, others.map(x => s"""{"e":$x}""") ++ others.filterNot(_ == "null").map(x => s"""{"e":{"id":"x"},"o":$x}"""))
+  }
+
+  test("OverlappingMembers.OneOf and Legacy keep the oneOf") {
+    val oneOf = JsonSchemaProfile.Neutral.withOverlappingMembers(JsonSchemaProfile.OverlappingMembers.OneOf)
+    List(oneOf, JsonSchemaProfile.Legacy) foreach { implicit p =>
+      withClue(p.name) {
+        keyword(Json.schema[DocEv]) shouldBe "oneOf"
+        keyword(Json.schema[OvEv]) shouldBe "oneOf"
+      }
+    }
+  }
+
+  test("Legacy: the 0.7 output of same-shaped members") {
+    implicit val p: JsonSchemaProfile        = JsonSchemaProfile.Legacy
+    val idObj                                = """"additionalProperties":false,"properties":{"id":{"type":"string"}},"required":["id"]"""
+    val head                                 = """"$schema":"http://json-schema.org/draft-07/schema#","$id":"https://b3.test/schema.json""""
+    def same(s: Schema[_], expected: String) = withClue(text(s)) { Acceptance.sameJson(text(s), expected) shouldBe true } // as JSON: object key order is B2's
+    same(Json.schema[Ev], s"""{$head,"oneOf":[{$idObj}]}""")
+    same(Json.schema[DocEv], s"""{$head,"oneOf":[{"description":"created",$idObj},{"description":"deleted",$idObj}]}""")
+  }
+
+  test("Legacy: a 5-member family (golden-legacy MultiLevelSealedTraitRoot) in declaration order") {
+    implicit val p: JsonSchemaProfile = JsonSchemaProfile.Legacy
+    memberKeys(render(Json.schema[MultiLevelSealedTraitRoot])) shouldBe List(List("a"), List("b"), List("c"), List("d"), List("e"))
   }
 }

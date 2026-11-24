@@ -115,7 +115,7 @@ trait Enums { this: Derivation =>
     case '[t] =>
       val ms = Expr.ofList(members)
       val df = Expr(discriminatorField)
-      '{ Schema.`oneof`[t]($ms.toSet, $df) }
+      '{ Schema.`oneof`[t](scala.collection.immutable.ListSet.from($ms), $df) } // in order
   }
 
   /** `const` of an item, with the item's own texts and `@discriminatorKey` (Scala 2's `Const(...).withTypeAnnotations(item)`). */

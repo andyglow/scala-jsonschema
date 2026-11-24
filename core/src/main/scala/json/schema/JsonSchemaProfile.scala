@@ -4,6 +4,8 @@ import com.github.andyglow.json.Value
 import json.Schema
 import json.Schema._
 
+import scala.collection.immutable.ListSet
+
 /** How the JSON a schema describes is shaped, for the facts the derivation records but doesn't decide.
   *
   * `Json.schema[T]` (and `derives json.Schema`) records facts that a JSON library decides how to encode:
@@ -60,15 +62,20 @@ trait JsonSchemaProfile extends JsonSchemaProfileDefault {
   /** The name a member is tagged with ([[SumStyle.Discriminator]], [[SumStyle.WrapperObject]]), or written as ([[SingletonStyle.AsString]] when [[honorsSchemaAnnotations]] is false). */
   def memberName: MemberName = MemberName.FullName
 
+  /** What a family becomes when a document could match more than one of its members: `oneOf` requires that exactly one matches, so its documents would be rejected. See [[OverlappingMembers]].
+    */
+  def overlappingMembers: OverlappingMembers = OverlappingMembers.AnyOf
+
   // builders: a profile with one knob changed and every other knob kept
 
-  final def withName(x: String): JsonSchemaProfile                     = Knobs(this).copy(name = x).profile
-  final def withOption(x: OptionStyle): JsonSchemaProfile              = Knobs(this).copy(optionStyle = x).profile
-  final def withOptionKeyRequired(x: Boolean): JsonSchemaProfile       = Knobs(this).copy(optionKeyRequired = x).profile
-  final def withSum(x: SumStyle): JsonSchemaProfile                    = Knobs(this).copy(sumStyle = x).profile
-  final def withSingleton(x: SingletonStyle): JsonSchemaProfile        = Knobs(this).copy(singletonStyle = x).profile
-  final def withMemberName(x: MemberName): JsonSchemaProfile           = Knobs(this).copy(memberName = x).profile
-  final def withHonorsSchemaAnnotations(x: Boolean): JsonSchemaProfile = Knobs(this).copy(honorsSchemaAnnotations = x).profile
+  final def withName(x: String): JsonSchemaProfile                           = Knobs(this).copy(name = x).profile
+  final def withOption(x: OptionStyle): JsonSchemaProfile                    = Knobs(this).copy(optionStyle = x).profile
+  final def withOptionKeyRequired(x: Boolean): JsonSchemaProfile             = Knobs(this).copy(optionKeyRequired = x).profile
+  final def withSum(x: SumStyle): JsonSchemaProfile                          = Knobs(this).copy(sumStyle = x).profile
+  final def withSingleton(x: SingletonStyle): JsonSchemaProfile              = Knobs(this).copy(singletonStyle = x).profile
+  final def withMemberName(x: MemberName): JsonSchemaProfile                 = Knobs(this).copy(memberName = x).profile
+  final def withHonorsSchemaAnnotations(x: Boolean): JsonSchemaProfile       = Knobs(this).copy(honorsSchemaAnnotations = x).profile
+  final def withOverlappingMembers(x: OverlappingMembers): JsonSchemaProfile = Knobs(this).copy(overlappingMembers = x).profile
 
   /** `schema` with every `option` and `family` node lowered to plain JSON Schema nodes. Idempotent: a schema without those nodes comes back equal. */
   final def lower[T](schema: Schema[T]): Schema[T] = new Lowering(this)(schema).asInstanceOf[Schema[T]]
@@ -125,6 +132,26 @@ object JsonSchemaProfile {
     case object AsTagged extends SingletonStyle
   }
 
+  /** An untagged sealed family ([[SumStyle.Untagged]]) is lowered to a `oneOf` of its members when no document can match two of them; a tagged one is always a `oneOf` (its tag tells the members
+    * apart). No document can match two members when, after looking through definitions and value classes, every two of them:
+    *   - have JSON types that can't meet (object, array, string, boolean, null, number; an integer is a number; an `enum` or `const` has its values' type; a `$ref` or a nested `oneOf`/`allOf`/`anyOf`
+    *     has any type), or
+    *   - are both objects and one requires a property that the other, a closed object (not a `Map`, not `additionalProperties`), doesn't have at all (distinct field names), or
+    *   - are both objects and a property both require has types that can't meet, or
+    *   - are both enums/consts without a value in common.
+    *
+    * Members with equal schemas appear once. The check is conservative: what it can't prove is treated as an overlap, which costs only the "exactly one" of `oneOf`.
+    */
+  sealed trait OverlappingMembers
+  object OverlappingMembers {
+
+    /** `anyOf` the members (at least one matches). The default. */
+    case object AnyOf extends OverlappingMembers
+
+    /** `oneOf` the members anyway, as 0.7 did ([[JsonSchemaProfile.Legacy]]): a document that matches two of them is rejected. */
+    case object OneOf extends OverlappingMembers
+  }
+
   sealed trait MemberName {
     def apply(m: `family`.Member): String
   }
@@ -144,7 +171,7 @@ object JsonSchemaProfile {
   val Neutral: JsonSchemaProfile = Knobs("neutral", OptionStyle.Nullable).profile
 
   /** The 0.7 output, byte for byte. */
-  val Legacy: JsonSchemaProfile = Knobs("legacy", OptionStyle.Legacy).profile
+  val Legacy: JsonSchemaProfile = Knobs("legacy", OptionStyle.Legacy, overlappingMembers = OverlappingMembers.OneOf).profile
 
   /** Every knob of a profile; `profile` builds one from them. */
   private final case class Knobs(
@@ -154,21 +181,23 @@ object JsonSchemaProfile {
     sumStyle: SumStyle = SumStyle.Untagged,
     singletonStyle: SingletonStyle = SingletonStyle.AsString,
     memberName: MemberName = MemberName.FullName,
-    honorsSchemaAnnotations: Boolean = true
+    honorsSchemaAnnotations: Boolean = true,
+    overlappingMembers: OverlappingMembers = OverlappingMembers.AnyOf
   ) { self =>
     def profile: JsonSchemaProfile = new JsonSchemaProfile {
-      val name: String                              = self.name
-      val optionStyle: OptionStyle                  = self.optionStyle
-      override val optionKeyRequired: Boolean       = self.optionKeyRequired
-      override val sumStyle: SumStyle               = self.sumStyle
-      override val singletonStyle: SingletonStyle   = self.singletonStyle
-      override val memberName: MemberName           = self.memberName
-      override val honorsSchemaAnnotations: Boolean = self.honorsSchemaAnnotations
+      val name: String                                    = self.name
+      val optionStyle: OptionStyle                        = self.optionStyle
+      override val optionKeyRequired: Boolean             = self.optionKeyRequired
+      override val sumStyle: SumStyle                     = self.sumStyle
+      override val singletonStyle: SingletonStyle         = self.singletonStyle
+      override val memberName: MemberName                 = self.memberName
+      override val honorsSchemaAnnotations: Boolean       = self.honorsSchemaAnnotations
+      override val overlappingMembers: OverlappingMembers = self.overlappingMembers
     }
   }
   private object Knobs {
     def apply(p: JsonSchemaProfile): Knobs =
-      Knobs(p.name, p.optionStyle, p.optionKeyRequired, p.sumStyle, p.singletonStyle, p.memberName, p.honorsSchemaAnnotations)
+      Knobs(p.name, p.optionStyle, p.optionKeyRequired, p.sumStyle, p.singletonStyle, p.memberName, p.honorsSchemaAnnotations, p.overlappingMembers)
   }
 
   private final class Lowering(p: JsonSchemaProfile) {
@@ -179,8 +208,9 @@ object JsonSchemaProfile {
       case o: `object`[_]   => o.withFieldsUpdated { case f => field(f) }
       case `array`(c, u)    => `array`[Any, List](apply(c).asInstanceOf[Schema[Any]], u).withExtraFrom(s)
       case `dictionary`(v)  => `dictionary`[Any, Any, Map](apply(v).asInstanceOf[Schema[Any]]).withExtraFrom(s)
-      case `oneof`(xs, df)  => `oneof`[Any](xs map apply, df).withExtraFrom(s)
-      case `allof`(xs)      => `allof`[Any](xs map apply).withExtraFrom(s)
+      case `oneof`(xs, df)  => `oneof`[Any](ordered(xs.toSeq map apply), df).withExtraFrom(s)
+      case `allof`(xs)      => `allof`[Any](ordered(xs.toSeq map apply)).withExtraFrom(s)
+      case `anyof`(xs)      => `anyof`[Any](ordered(xs.toSeq map apply)).withExtraFrom(s)
       case `not`(t)         => `not`[Any](apply(t).asInstanceOf[Schema[Any]]).withExtraFrom(s)
       case `def`(sig, t)    => `def`[Any](sig, apply(t)).withExtraFrom(s)
       case `value-class`(t) => `value-class`[Any, Any](apply(t).asInstanceOf[Schema[Any]]).withExtraFrom(s)
@@ -218,7 +248,8 @@ object JsonSchemaProfile {
 
     // ---- sealed families
     //
-    // Under Neutral and Legacy this reproduces what the 0.7 macro derived, in the same member order (`oneof` and `enum` hold Sets: built in the same insertion order, they iterate the same way):
+    // Under Legacy this reproduces what the 0.7 macro derived, except that the members are in declaration order (0.7: up to 4, then hash order) (`oneof` holds an insertion-ordered set).
+    // Neutral differs from it in one more way: an untagged family whose members a document could match two of is an `anyOf` (see OverlappingMembers). Both:
     //   - a case class / value class member gets the member's title, description and `@discriminatorKey` where it has none of its own; with `@discriminator`, its key is set to
     //     `@discriminatorKey`, else the signature; then `@definition` wraps it. A member from an implicit Schema/Predef is used as it is;
     //   - singletons with equal value schemas merge into one `enum` (moved to the end at every merge), their texts dropped; with `enumsAsOneOf`, a `const` each, with its texts and key;
@@ -343,11 +374,81 @@ object JsonSchemaProfile {
       }
 
       val singletonsOnly = asString && f.members.nonEmpty && f.members.forall(_.kind == `family`.Kind.Singleton)
+      // in declaration order; members with equal schemas appear once
+      val members = ordered(schemas)
+      // a tagged family is told apart by its tag (the renderer needs the oneOf's discriminator field to write it): only an untagged one can be an anyOf
+      def overlapping = tagField.isEmpty && p.overlappingMembers == OverlappingMembers.AnyOf && Disjoint.overlapping(members.toVector)
       schemas match {
         case List(e: `enum`[_]) if singletonsOnly => e
-        case _ if singletonsOnly                  => `oneof`[Any](schemas.toSet, None)
-        case _                                    => `oneof`[Any](schemas.toSet, tagField)
+        case _ if overlapping                     => `anyof`[Any](members)
+        case _ if singletonsOnly                  => `oneof`[Any](members, None)
+        case _                                    => `oneof`[Any](members, tagField)
       }
+    }
+  }
+
+  /** An insertion-ordered set: a family's members (and a `oneOf`'s, `allOf`'s, `anyOf`'s) keep their order when rendered. */
+  private def ordered(xs: Seq[Schema[_]]): Set[Schema[_]] = ListSet(xs: _*)
+
+  /** Whether a document can match two members of an untagged family, conservatively: see [[OverlappingMembers]]. */
+  private object Disjoint {
+
+    private val anyType: Set[String] = Set("object", "array", "string", "boolean", "null", "integer", "fraction")
+
+    /** True unless every two of `xs` are provably disjoint. */
+    def overlapping(xs: Vector[Schema[_]]): Boolean = xs.indices exists { i => (i + 1 until xs.size) exists { j => !disjoint(xs(i), xs(j)) } }
+
+    // what a member is, through definitions and value classes (both render as their body)
+    private def body(s: Schema[_]): Schema[_] = s match {
+      case `def`(_, t)      => body(t)
+      case `value-class`(t) => body(t)
+      case other            => other
+    }
+
+    private def valueTypes(v: Value): Set[String] = v match {
+      case Value.num(x) => if (x.isWhole) Set("integer") else Set("fraction")
+      case other        => Set(other.tpe)
+    }
+
+    // the JSON types a document of `s` can have; an integer is also a number
+    private def types(s: Schema[_]): Set[String] = body(s) match {
+      case _: `object`[_] | _: `dictionary`[_, _, _] => Set("object")
+      case _: `array`[_, _]                          => Set("array")
+      case _: `string`[_]                            => Set("string")
+      case _: `boolean`                              => Set("boolean")
+      case _: `integer`                              => Set("integer")
+      case _: `number`[_]                            => Set("integer", "fraction")
+      case _: `null`                                 => Set("null")
+      case `enum`(_, vs)                             => vs.flatMap(valueTypes)
+      case `const`(v)                                => valueTypes(v)
+      case _                                         => anyType // a $ref, a nested oneOf/allOf/anyOf, not: anything
+    }
+
+    private def values(s: Schema[_]): Option[Set[Value]] = body(s) match {
+      case `enum`(_, vs) => Some(vs)
+      case `const`(v)    => Some(Set(v))
+      case _             => None
+    }
+
+    private def leaves(a: Schema[_], b: Schema[_]): Boolean =
+      (types(a) intersect types(b)).isEmpty || (values(a) zip values(b)).exists { case (x, y) => (x intersect y).isEmpty }
+
+    // `x` requires a property that `y`, a closed object, doesn't have at all
+    private def requiresMissing(x: `object`[_], y: `object`[_]): Boolean =
+      !y.isInstanceOf[`object`.Free] && {
+        val names = y.fields.map(_.name).toSet
+        x.fields.exists(f => f.required && !names.contains(f.name))
+      }
+
+    // a property both require can't have the same value in both
+    private def requiredFieldsDisjoint(x: `object`[_], y: `object`[_]): Boolean = {
+      val ys = y.fields.filter(_.required).map(f => f.name -> f.tpe).toMap
+      x.fields.exists(f => f.required && ys.get(f.name).exists(leaves(f.tpe, _)))
+    }
+
+    def disjoint(a: Schema[_], b: Schema[_]): Boolean = (body(a), body(b)) match {
+      case (x: `object`[_], y: `object`[_]) => requiresMissing(x, y) || requiresMissing(y, x) || requiredFieldsDisjoint(x, y)
+      case (x, y)                           => leaves(x, y)
     }
   }
 }

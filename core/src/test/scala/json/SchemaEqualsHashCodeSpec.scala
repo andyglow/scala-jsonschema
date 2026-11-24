@@ -105,6 +105,9 @@ class SchemaEqualsHashCodeSpec extends AnyWordSpec {
       assertEqualAndSameHash(`enum`.of[String](`string`, str("a"), str("b")), `enum`.of[String](`string`, str("b"), str("a")))
       assertEqualAndSameHash(`oneof`.of[Any](`string`, `integer`), `oneof`.of[Any](new `integer`, `string`))
       assertEqualAndSameHash(`allof`.of[Any](`string`, `integer`), `allof`.of[Any](new `integer`, `string`))
+      assertEqualAndSameHash(`anyof`.of[Any](`string`, `integer`), `anyof`.of[Any](new `integer`, `string`))
+      (`anyof`.of[Any](`string`, `integer`): Schema[_]) == `oneof`.of[Any](`string`, `integer`) shouldBe false
+      (`anyof`.of[Any](`string`, `integer`): Schema[_]) == `allof`.of[Any](`string`, `integer`) shouldBe false
       assertEqualAndSameHash(Schema.`not`[Int](`integer`), Schema.`not`[Int](new `integer`))
       assertEqualAndSameHash(`def`[Any]("x", `integer`), `def`[Any]("x", new `integer`))
       assertEqualAndSameHash(`value-class`[Any, Int](`integer`), `value-class`[Any, Int](new `integer`))
