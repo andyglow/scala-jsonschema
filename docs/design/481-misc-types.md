@@ -102,7 +102,11 @@ It would need a new node or a marker, for one library we have no bridge for. 2A 
 - Rendering: `"deprecated": true` next to the schema's other keywords on Draft 2019-09 and 2020-12 (and Raw); not on Draft 04/06/07, where
   the keyword doesn't exist. A field whose schema is a `$ref` renders `{"$ref": ..., "deprecated": true}` (siblings of `$ref` are allowed from
   2019-09); the definition itself isn't marked.
-- Profiles: every profile keeps it (Legacy too: see Compatibility).
+- Profiles: every profile keeps it except **Legacy, which strips it** (lead, 2026-11-23: a new keyword is a style addition, and Legacy keeps
+  0.7's output for existing models). Mechanism: a profile knob `def deprecatedKeyword: Boolean = true` (+ `withDeprecatedKeyword(x)`, a
+  `Knobs` field), `false` for `Legacy` only; `Lowering`, which already visits every node, clears the flag (`withDeprecated(false)`) when it is
+  false. A knob rather than a test on the profile's name, so `Legacy.withName(..)` and other Legacy-derived profiles keep it. The lost
+  alternative "Legacy keeps it too" is `Legacy`'s knob set to `true`.
 
 #### 3B. A `deprecated` fact on `object.Field` (like `rwMode`) — LOST
 Closer to `readOnly`/`writeOnly`, but `Field` is a case class (a new field breaks its `apply`/`copy`/`unapply` binary signatures: PVP minor),
@@ -162,15 +166,16 @@ in four bridges (5A).
    unchanged (option, dictionary, array before the sum family; B11 checks `Null` before them).
 3. **core model/renderers**: `Schema` `deprecated` / `withDeprecated` (+ `duplicate`, `withExtraFrom`, `equals`, `ToString.writeExtra`);
    `AsDraftSupport.apply`: `"deprecated": true` when `isDraft09 || isDraft12`; `AsRaw` too. `SchemaEquality` if it compares extras.
-   `Predef.bytesAsBase64` (+ a private `Magnet[Array[Byte], String]`).
+   `Predef.bytesAsBase64` (+ a private `Magnet[Array[Byte], String]`). `JsonSchemaProfile`: the `deprecatedKeyword` knob (Legacy `false`),
+   applied in `Lowering`.
 4. **cats**: `NonEmptySeq` instances in `CatsSupport.scala`. **joda-time**: three `Schema`s + `predef` entries in `JodaTimeSupport.scala`.
    **bridges**: the four null-singleton Predefs.
 5. **Tests** (repro specs become these): `MiscTypesSpec` (shared, all versions, JVM + JS): trees and rendered JSON of java `List`/`Set`/
    `ArrayList`/`TreeSet`/`Map`/`HashMap`/`Map[Int, _]`/`Optional` (root, element, field: not required, nested `Optional[Optional[X]]`), a java
    collection of a derived case class and of a type with an implicit `Schema` (`$ref`), the `C[E]` error for `class Names extends ArrayList[String]`,
    the key error for `java.util.Map[UUID, _]`; `Array[Byte]` default unchanged and `bytesAsBase64` on 04/07/2020-12; `@deprecated` (scala and
-   java) on a field, an Option field, a `$ref` field and a type, rendered on 2019-09/2020-12, absent on 04/06/07, kept by Legacy and a bridge
-   profile. Test models with `@deprecated` get `@nowarn("cat=deprecation")` (2.13 warns at the case class itself). `CatsSupportSpec`,
+   java) on a field, an Option field, a `$ref` field and a type, rendered on 2019-09/2020-12, absent on 04/06/07, kept by a bridge profile,
+   stripped by Legacy (and `Legacy.withName(..)`). Test models with `@deprecated` get `@nowarn("cat=deprecation")` (2.13 warns at the case class itself). `CatsSupportSpec`,
    `JodaTimeSupportSpec` (+ the Period pattern against the probe's strings), the bridges' specs (`JsNull` field → `{"type":"null"}` on 2 and 3).
    One golden model (`MiscTypes`) for the full rendered output per draft.
 6. **Docs** (README + paradox, same words): java.util collections and Optional under Collections/Option; `Array[Byte]` and
@@ -182,9 +187,9 @@ in four bridges (5A).
 - Source/binary: additive only (new methods on the sealed `Schema`, new implicits in cats/joda/bridges, a new `Predef` val). `duplicate`'s
   signature is unchanged. PVP: minor-compatible, fits a patch/minor release.
 - Output: unchanged for every model that compiled before, except models with `@deprecated` rendered as 2019-09/2020-12 (and Raw), which gain
-  `"deprecated": true`. That includes the **Legacy** profile: 0.7 ignored the annotation, so a Legacy user with `@deprecated` fields sees the
-  new keyword. Alternative (easy to switch: one line in `Lowering`): Legacy strips the flag to stay byte-exact with 0.7. I picked "keep" because
-  it's an annotation that changes no validation and no 0.7 style, but it's a Legacy output change for annotated models: the lead decides.
+  `"deprecated": true`, under every profile except **Legacy**, which strips it and stays byte-exact with 0.7 (lead decision 2026-11-23).
+  Lost alternative: Legacy renders it too (0.7 ignored the annotation; the keyword changes no validation): Legacy's `deprecatedKeyword = true`.
+- `JsonSchemaProfile` gets a knob with a default (`deprecatedKeyword`), like `honorsSchemaAnnotations`: additive for user-implemented profiles.
 - New compile successes: java.util collections, Optional, NonEmptySeq, the joda types, null singletons with a bridge import (previously errors).
 - An implicit `Predef[JsNull.type]` in a bridge: Predef is invariant, so it can't stand in for `JsValue` (or anything else).
 
