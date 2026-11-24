@@ -146,7 +146,8 @@ from another module's class files (name order, unchanged by this fix). Patch-lev
    `Scala3EnumOrderSpec` (enum of singletons, Legacy, enum with a parameterized case), enumeratum (`E6`, `IntV6` in
    non-sorted order), parser. They compare the rendered `enum` array as an ordered list, which the golden harness
    (it sorts arrays) can't. New (B7-R1): a 6-object family `LibraryColor` (Red, Green, Blue, Cyan, Yellow, Black) in
-   `modules/test-models`, derived in `EnumOrderSpec`; the expected order comes from a per-version test object
+   `modules/test-models`, derived in `LibraryEnumOrderSpec` (api `scala-jvm`: on Scala.js the bridges' test runs link
+   api's test classes without test-models, and the derived code refers to the member objects); the expected order comes from a per-version test object
    (`api/src/test/scala-2/.../EnumOrderExpected.scala`: name order Black..Yellow; `scala-3/...`: declaration order),
    so a later Scala 2 fix shows up as a deliberate test change. Run on 2.12, 2.13, 3 and JS (`apiJS`,
    `enumeratumJS`, `parserJS`).

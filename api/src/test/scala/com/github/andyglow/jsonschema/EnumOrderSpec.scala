@@ -113,10 +113,6 @@ class EnumOrderSpec extends AnyWordSpec {
       enumOf(Schema.`enum`.of("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")) shouldBe weekdays
     }
 
-    "keep the derivation's order for a family compiled in another module (Scala 2: by name)" in {
-      enumOf(Json.schema[testmodels.LibraryColor]) shouldBe EnumOrderExpected.libraryColor.map(str(_))
-    }
-
     "match the order of the same enum as a Map key" in {
       val keyPattern = rendered(Json.schema[Map[Weekday, Int]]) match {
         case o: obj => o.value("patternProperties").asInstanceOf[obj].fields.head._1

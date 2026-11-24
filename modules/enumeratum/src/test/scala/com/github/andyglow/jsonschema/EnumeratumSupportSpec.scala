@@ -136,7 +136,7 @@ object EnumeratumSupportSpec {
   object EAlias       extends Enum[EAlias] {
     case object A extends EAlias
     case object B extends EAlias
-    override def values                                       = findValues
+    override def values                                     = findValues
     override def extraNamesToValuesMap: Map[String, EAlias] = Map("b3" -> B, "a2" -> A, "b1" -> B, "a1" -> A, "b2" -> B)
   }
 

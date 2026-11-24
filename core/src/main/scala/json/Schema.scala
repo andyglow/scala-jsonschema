@@ -440,8 +440,8 @@ object Schema extends SchemaCompanionPlatform {
   // | Enum
   // +---------------
   //
-  /** A JSON `enum` of `values`, rendered in the order `values` iterates. `enum.of` and the derivation build an insertion-ordered `ListSet` (declaration order); build yours with `enum.of`, or
-    * pass a `ListSet`, to keep your order: a plain `Set` of 5 or more values iterates in hash order.
+  /** A JSON `enum` of `values`, rendered in the order `values` iterates. `enum.of` and the derivation build an insertion-ordered `ListSet` (declaration order); build yours with `enum.of`, or pass a
+    * `ListSet`, to keep your order: a plain `Set` of 5 or more values iterates in hash order.
     */
   final case class `enum`[T](tpe: Schema[_], values: Set[Value]) extends Schema[T] {
     type Self = `enum`[T]
