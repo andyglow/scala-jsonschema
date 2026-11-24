@@ -17,13 +17,19 @@ private[jsonschema] trait USumTypes {
     /** A member that isn't a case class/object (the texts of Scala 3's `Sums`). `stack`: the path to the family, without the family itself. */
     private def unsupportedMember(root: Type, sym: Symbol, stack: List[Type]): Nothing = {
       val anonymousOrLocal = sym.name.decodedName.toString.startsWith("$anon") || isBlockLocal(sym)
-      if (anonymousOrLocal)
+      if (anonymousOrLocal) {
+        // the family the subclass extends (a nested sub-family's, not the root's), as Scala 3 names it
+        val parent = sym.asClass.baseClasses.drop(1).find(b => b.isClass && b.asClass.isSealed) match {
+          case Some(p) if p != root.typeSymbol => p.asClass.toTypeConstructor
+          case _                               => root
+        }
+        val p = showType(parent)
         c.abort(
           c.enclosingPosition,
-          s"schema for ${showType(root)} is not supported${pathOf(stack)}: it has a subclass that is local to a block or anonymous (e.g. `new ${root.typeSymbol.name.decodedName} {}`), " +
-            s"which can't be a member of a derived family. Declare the subclasses at the top level or in an object, or provide an implicit json.Schema for ${showType(root)}"
+          s"schema for $p is not supported${pathOf(stack)}: it has a subclass that is local to a block or anonymous (e.g. `new ${parent.typeSymbol.name.decodedName} {}`), " +
+            s"which can't be a member of a derived family. Declare the subclasses at the top level or in an object, or provide an implicit json.Schema for $p"
         )
-      else
+      } else
         c.abort(
           c.enclosingPosition,
           s"schema for ${showType(root)} is not supported${pathOf(stack)}: only case classes and case objects are supported as members of a sealed family, and ${showType(sym.asType.toTypeConstructor)} is neither. " +

@@ -27,6 +27,13 @@ object ErrorMessagesSpec {
   class Odd                 extends Shape
   sealed trait Fam
   object Fam { val anon: Fam = new Fam {} }
+  case class HasShape(s: Shape)
+  case class HasFam(f: Fam)
+  sealed trait Top2
+  case class T2(i: Int) extends Top2
+  sealed trait Sub2     extends Top2
+  object Sub2 { val anon: Sub2 = new Sub2 {} }
+  case class HasTop2(t: Top2)
   case class Box[A](a: A)
   sealed trait GFam[A]
   case class GI(i: Int)    extends GFam[Int]
@@ -85,6 +92,8 @@ class ErrorMessagesSpec extends AnyFunSuite {
       case other                 => fail(s"not an object: $other")
     }
     outcome(assertCompiles("Json.schema[Option[Null]]")) shouldBe None
+    // through the default-value machinery (`= null`): newly compiling on Scala 2
+    outcome(assertCompiles("Json.schema[HasNullDefault]")) shouldBe None
   }
 
   test("D3/D4: fully qualified names, the path only when there is one, the hint") {
@@ -100,6 +109,10 @@ class ErrorMessagesSpec extends AnyFunSuite {
   test("D5: a sealed family member that isn't a case class or object") {
     errorOf(assertCompiles("Json.schema[Shape]")) shouldBe
       s"schema for ${M}Shape is not supported: only case classes and case objects are supported as members of a sealed family, and ${M}Odd is neither. " +
+      s"Make it one, or provide a json.schema.Predef or json.Schema for ${M}Shape"
+    // the family as a field: the path stops at the family's owner
+    errorOf(assertCompiles("Json.schema[HasShape]")) shouldBe
+      s"schema for ${M}Shape is not supported (in ${M}HasShape): only case classes and case objects are supported as members of a sealed family, and ${M}Odd is neither. " +
       s"Make it one, or provide a json.schema.Predef or json.Schema for ${M}Shape"
   }
 
@@ -152,8 +165,12 @@ class ErrorMessagesSpec extends AnyFunSuite {
   }
 
   test("D10: an anonymous member of a sealed family") {
-    errorOf(assertCompiles("Json.schema[Fam]")) shouldBe
-      s"schema for ${M}Fam is not supported: it has a subclass that is local to a block or anonymous (e.g. `new Fam {}`), which can't be a member of a derived family. " +
-      s"Declare the subclasses at the top level or in an object, or provide an implicit json.Schema for ${M}Fam"
+    def anon(fam: String, name: String, path: String = "") =
+      s"schema for $M$fam is not supported$path: it has a subclass that is local to a block or anonymous (e.g. `new $name {}`), which can't be a member of a derived family. " +
+        s"Declare the subclasses at the top level or in an object, or provide an implicit json.Schema for $M$fam"
+    errorOf(assertCompiles("Json.schema[Fam]")) shouldBe anon("Fam", "Fam")
+    errorOf(assertCompiles("Json.schema[HasFam]")) shouldBe anon("Fam", "Fam", s" (in ${M}HasFam)")
+    // in a nested sub-family: the sub-family the anonymous class extends is named, not the root
+    errorOf(assertCompiles("Json.schema[HasTop2]")) shouldBe anon("Sub2", "Sub2", s" (in ${M}HasTop2)")
   }
 }
