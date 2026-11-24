@@ -159,6 +159,9 @@ Output (draft-07; `$schema`/`$id` left out):
 A body with no keyword besides its type (`not(string)`, user tree) renders `{"type":"string","not":{}}`, which accepts
 nothing: that is what `Schema[String]` "a string that is not a string" means. Nobody builds it on purpose (refined
 never does); someone wanting "anything but a string" has no `Schema[T]` to describe it with anyway.
+The same goes for `not[Any](`null`)` (B22-R2): `{"type":"null","not":{}}`, accepts nothing, not "anything but null".
+Dropping `null` from `baseType` would make it the plain complement `{"not":{"type":"null"}}` instead; refined never
+builds it, so either is defensible: kept for consistency (every leaf alike), and listed as an owner question.
 
 Pros: every `not` refined builds validates as refined means; the integer-vs-number distinction is kept; only the
 renderer changes (one file), no public API change; correct whether or not B15 lands first.
@@ -217,9 +220,11 @@ ADT change.
 
 1. Add the private helper `baseType(s: Schema[_]): Option[String]` (sketch in Option A), with `same(ms)` = the common
    `baseType` of every member when all are defined and equal. Put it next to `bodyType`/`memberType`.
-2. `apply`'s `base`:
-   - before the generic cases: `case n: `not`[_] => if (includeType) baseType(n.tpe).fold(obj.empty)(t => obj("type" -> t)) else obj.empty`;
-   - `case `value-class`(n: `not`[_]) if includeType` → the same as the line above (rule 3).
+2. `apply`'s `base` becomes a private recursive `statedType(x: Schema[_], includeType: Boolean): obj` (B22-R1):
+   - before the generic cases: `` case n: `not`[_] => if (includeType) baseType(n.tpe).fold(obj.empty)(t => obj("type" -> t)) else obj.empty ``;
+   - `` case `value-class`(inner) => statedType(inner, includeType) ``: a value class states what its inner node would
+     (rule 3 falls out of it, no second `not`-specific line). Today it states `inner.jsonType` unless a later
+     `mk*` overwrites the key; see Compatibility for the other inner nodes this touches.
 3. `mkNot`: `obj("not" -> apply(x.tpe, Some(x), includeType = baseType(x.tpe).isEmpty, isRoot = false))`.
 4. `mkAllOf` and `mkPlainOneOf` (or whatever B3 renamed it to, see Risks): `sameType` is false when a member is a `not`
    or a `value-class` of one (`isNot(s)`), so every member is rendered with `includeType = true`. In `mkPlainOneOf`
@@ -237,7 +242,9 @@ Tests:
    `AsDraft09Spec`, `AsDraft12Spec`: a test "emit not" each, full JSON per draft, of one `object` with fields covering
    the table in Option A: `not(string(ipv4))`, `not(integer{multipleOf 2})`, `allof(not, integer)`, `allof(not, not)`,
    `oneof(not, null)` (not required), `not(oneof(string, integer))`, `not(ref("A"))`, `not(not(..))`, a value class
-   of a `not`; and a root `not` and a root `allof(not, not)`. Use `multipleOf`/`format`, not `exclusiveMinimum`, so
+   of a `not`, and (B22-R3) `oneof(def("N", not(..)), integer{..})`, an all-`def(not)` `oneof`, and
+   `oneof(value-class(not(..)), null)` (`mkNullable.singleType` recurses into value classes: this pins that it still
+   takes the `oneOf` form); plus a root `not` and a root `allof(not, not)`. Step 8 validates the same three. Use `multipleOf`/`format`, not `exclusiveMinimum`, so
    draft-04's own exclusive* problem (see Risks) doesn't enter these expectations.
 8. New `api/src/test/scala/com/github/andyglow/jsonschema/NotValidationSpec.scala` (shared; `petshop.JsonValidator`,
    so it validates on the JVM and is canceled on Scala.js): the "expected" rows of the tables above on draft-06, 07,
@@ -298,8 +305,34 @@ Risks and neighbours:
 - Source/binary: no public signature changes (`AsDraftSupport` gets a private helper; `mkNot`'s signature stays).
 - Output: only schemas that contain a `not` node change, on every draft and profile (Legacy included, see above).
   Each changed schema rejected every document before, except an all-`not` `allOf`/`oneOf` at the root, which
-  validated loosely (accepted `2.5` and strings for an integer refinement) and now validates as refined means.
+  validated loosely (accepted `2.5` for an integer refinement) and now validates as refined means.
   Golden files: no change.
+- Side effect of step 2's recursion (B22-R1), outside `not`: a value class around a node that states no type of its
+  own changes too. A mixed `oneof`/`allof` inside a value class loses its `"type": "oneof"`/`"allof"`; a `const` loses
+  `"type": "const"`; a `def`/`ref` inside a value class (`jsonType` is `???`) renders its `$ref` instead of throwing
+  `NotImplementedError`. Every one of these was invalid or a crash. Value classes around leaves, `enum`s and same-typed
+  `oneOf`/`allOf` are unchanged (the `mk*` already overwrote the key with the same value). If the owner wants B22 to
+  stay strictly within `not`, step 2's value-class case becomes `` case `value-class`(n: `not`[_]) `` only.
+  No golden file states a pseudo type (`git grep -E '"type": ?"(oneof|allof|const|enum|not|anyof)"' -- '*.json'` is
+  empty), so this changes no golden file either.
 - PVP: a bug fix, patch (0.9.1).
 
+## Open questions for the owner
+
+1. After B15 (#499) is merged, fold in Option D (a `not` shares its base type in `allOf`/`oneOf`: shorter output)? (B22-R4)
+2. `not(null)`: "nothing" (as every other leaf, chosen) or "anything but null"? (B22-R2)
+3. Value class recursion (step 2) fixes the other pseudo types inside value classes too; or keep B22 to `not` only? (B22-R1)
+
 ## Review log
+
+Round 1 (r-b22, on ee3f995; 0 must, 4 nits):
+
+- B22-R1 (nit) make the value-class case a recursion → accepted: step 2 is now a recursive `statedType`; a value class
+  states what its inner node would. The side effect on other inner nodes (mixed `oneof`/`allof`, `const`, `def`/`ref`:
+  invalid pseudo types or a `???` crash today) is listed in Compatibility, with the `not`-only fallback, and as owner
+  question 3. No golden file changes either way.
+- B22-R2 (nit) `not(null)` → accepted: kept `null` in `baseType` (every leaf alike), documented next to the
+  `not(string)` edge case with the alternative, owner question 2.
+- B22-R3 (nit) tests for the passing claims → accepted: step 7 (and 8) add `oneof(def(not), integer)`, an all-`def(not)`
+  `oneof`, and `oneof(value-class(not), null)`.
+- B22-R4 (nit) Option D as a PR open question → accepted: owner question 1 (also goes into the PR body).
