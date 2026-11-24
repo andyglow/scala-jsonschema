@@ -48,4 +48,8 @@ object Magnet extends SeqMagnet {
   implicit def chrMagnet: Magnet[Char, String]            = mk[Char, String]
   implicit def characterMagnet: Magnet[Character, String] = mk[Character, String]
   implicit def uuidMagnet: Magnet[java.util.UUID, String] = mk[java.util.UUID, String]
+
+  // string-likes (#475): only where a core Predef attaches a validation
+  implicit def currencyMagnet: Magnet[java.util.Currency, String]      = mk[java.util.Currency, String]
+  implicit def charsetMagnet: Magnet[java.nio.charset.Charset, String] = mk[java.nio.charset.Charset, String]
 }

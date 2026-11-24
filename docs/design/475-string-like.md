@@ -1,5 +1,5 @@
 # String-like Predefs: Locale, Currency, Pattern/Regex, InetAddress, Path, File, Charset  (issue #475, item E5)
-Status: draft
+Status: approved (r-e5, 2026-11-23)
 
 ## Problem
 These types have no built-in schema, so a model that uses one of them doesn't compile:

@@ -58,6 +58,25 @@ class StringLikeSchemaSpec extends AnyFunSuite {
     )
   }
 
+  test("a user's own Predef or Schema in lexical scope wins over the built-in one") {
+    // typed implicits in a local object (see DefinitionsSpec)
+    object own {
+      implicit val localeP: json.schema.Predef[Locale] = json.schema.Predef(OwnLocale)
+      implicit val currencyS: Schema[Currency]         = `string`[Currency].toDefinition("money-currency")
+    }
+    import own._
+    Json.schema[Locale] shouldBe OwnLocale
+    Json.schema[Money] shouldBe `object`(
+      `object`.Field("currency", `def`[Currency]("money-currency", `string`[Currency])),
+      `object`.Field("locale", OwnLocale)
+    )
+  }
+
+  test("the patterned ones take more string validations (the Magnets)") {
+    Json.schema[Currency].withValidation(`maxLength` := 3) shouldBe `string`[Currency].withValidation(`pattern` := CurrencyPattern, `maxLength` := 3)
+    Json.schema[Charset].withValidation(`minLength` := 1) shouldBe `string`[Charset].withValidation(`pattern` := CharsetPattern, `minLength` := 1)
+  }
+
   for (p <- profiles) {
     implicit val profile: JsonSchemaProfile = p
 
@@ -96,7 +115,7 @@ class StringLikeSchemaSpec extends AnyFunSuite {
       test(s"${p.name}: $name rejects other text (where the format is asserted)") {
         val render = Acceptance.rendered(schema)
         Acceptance.drafts.filterNot(_.isInstanceOf[Version.Draft12]) foreach { d =>
-          invalid.map(quoted) foreach { doc => Acceptance.errors(d, render(d), doc) should not be empty }
+          invalid.map(quoted) foreach { doc => assert(Acceptance.errors(d, render(d), doc).nonEmpty, s"${Acceptance.name(d)}: $doc is valid, but it shouldn't be") }
         }
       }
     }
@@ -116,6 +135,11 @@ object StringLikeSchemaSpec {
     file: File,
     charset: Charset
   )
+
+  case class Money(currency: Currency, locale: Locale)
+
+  /** A user's own Locale schema (play's BCP 47 form): needs its own Magnet, core has none for Locale. */
+  val OwnLocale: Schema[Locale] = `string`[Locale].withValidation(`pattern` := "^[a-z]{2}-[A-Z]{2}$")(json.schema.validation.Magnet.mk[Locale, String])
 
   val CurrencyPattern = "^[A-Z]{3}$"
   val CharsetPattern  = "^[A-Za-z0-9][A-Za-z0-9+:_.-]*$"
