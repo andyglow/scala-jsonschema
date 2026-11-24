@@ -11,6 +11,11 @@ object Schemas {
   val badge: Schema[Badge]   = Json.schema[Badge]
   val box: Schema[Box]       = Json.schema[Box]
 
+  val intStock: Schema[IntStock]   = Json.schema[IntStock]
+  val uuidStock: Schema[UuidStock] = Json.schema[UuidStock]
+  val flagStock: Schema[FlagStock] = Json.schema[FlagStock]
+  val charStock: Schema[CharStock] = Json.schema[CharStock]
+
   /** `Card` derived where no implicit `Schema[Card]` is in scope. */
   val card: Schema[Card]       = Json.schema[Card]
   val payment: Schema[Payment] = WithCardSchema.payment

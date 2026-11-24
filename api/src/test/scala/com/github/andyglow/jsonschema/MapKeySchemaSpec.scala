@@ -1,15 +1,23 @@
 package com.github.andyglow.jsonschema
 
+import java.util.UUID
+
+import com.github.andyglow.json.Value._
 import json._
-import json.schema.JsonSchemaProfile
+import json.Schema._
+import json.Schema.`dictionary`.KeyPattern
+import json.schema.{JsonSchemaProfile, Predef, Version}
+import json.schema.validation.Instance._
 import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers._
 import petshop.Acceptance
 
-/** `Map[K, V]` keys (item B6): the key pattern must accept every key a JSON library writes for `K` (`toString`: negative numbers included) and reject the rest. The validating tests use the
-  * acceptance harness' JSON Schema validator on draft-04, draft-07 and 2020-12 (JVM; canceled on Scala.js), under Neutral and Legacy.
+/** `Map[K, V]` keys (item B6): the key pattern must accept every key a JSON library writes for `K` (`toString`: negative numbers included) and reject the rest. The validating tests use the acceptance
+  * harness' JSON Schema validator on draft-04, draft-07 and 2020-12 (JVM; canceled on Scala.js), under Neutral and Legacy.
   */
 class MapKeySchemaSpec extends AnyFunSuite {
   import MapKeySchemaSpec._
+  import ProfileSpec.{body, drafts, render}
 
   private val profiles = List(JsonSchemaProfile.Neutral, JsonSchemaProfile.Legacy)
 
@@ -61,14 +69,70 @@ class MapKeySchemaSpec extends AnyFunSuite {
       Acceptance.assertInvalid(Acceptance.rendered(Json.schema[Map[String, Int]]), List("""{"a\nb":"x"}"""))
       Acceptance.assertInvalid(Acceptance.rendered(Json.schema[Map[java.lang.String, Int]]), List("""{"a\nb":"x"}"""))
     }
+
+    test(s"${p.name}: UUID keys, either case") {
+      Acceptance.assertValid(Acceptance.rendered(Json.schema[Map[UUID, Int]]), List(s"""{"$uuid":1,"${uuid.toUpperCase}":2}"""))
+      Acceptance.assertValid(Acceptance.rendered(Json.schema[UuidIdKeys]), List(s"""{"m":{"$uuid":1}}"""))
+      Acceptance.assertInvalid(Acceptance.rendered(Json.schema[Map[UUID, Int]]), List("""{"abc":1}""", s"""{"${uuid.replace('-', 'x')}":1}""", s"""{"$uuid":"x"}"""))
+      Acceptance.assertInvalid(Acceptance.rendered(Json.schema[UuidIdKeys]), List("""{"m":{"abc":1}}"""))
+    }
+
+    test(s"${p.name}: Boolean keys") {
+      Acceptance.assertValid(Acceptance.rendered(Json.schema[Map[Boolean, Int]]), List("""{"true":1,"false":2}"""))
+      Acceptance.assertInvalid(Acceptance.rendered(Json.schema[Map[Boolean, Int]]), List("""{"yes":1}""", """{"True":1}""", """{"true":"x"}"""))
+    }
+
+    test(s"${p.name}: enum keys whose names are regex syntax match themselves only") {
+      Acceptance.assertValid(Acceptance.rendered(Json.schema[Map[Size, Int]]), List("""{"N/A":1,"1+":2,"(none)":3,"a.b":4}"""))
+      Acceptance.assertInvalid(Acceptance.rendered(Json.schema[Map[Size, Int]]), List("""{"1":1}""", """{"11":1}""", """{"axb":1}""", """{"none":1}"""))
+    }
   }
 
-  test("UUID keys have a built-in KeyPattern") {
-    assertCompiles("json.Json.schema[Map[java.util.UUID, String]]")
+  test("the built-in key patterns") {
+    Json.schema[Map[Int, String]] shouldBe `dictionary`[Int, String, Map](`string`).withValidation(`patternProperties` := "^-?[0-9]+$")
+    Json.schema[Map[Long, String]] shouldBe `dictionary`[Long, String, Map](`string`).withValidation(`patternProperties` := "^-?[0-9]+$")
+    Json.schema[Map[Char, String]] shouldBe `dictionary`[Char, String, Map](`string`).withValidation(`patternProperties` := "^[\\s\\S]$")
+    // the macro's java.lang.String key (quirk 13); `Predef.dictS` leaves StringKeyPattern out, so use a derived value
+    Json.schema[Map[java.lang.String, Color]].validations shouldBe Seq(`patternProperties` := "^[\\s\\S]*$")
+    Json.schema[Map[Boolean, String]] shouldBe `dictionary`[Boolean, String, Map](`string`).withValidation(`patternProperties` := "^(?:true|false)$")
+    Json.schema[Map[UUID, String]] shouldBe `dictionary`[UUID, String, Map](`string`).withValidation(
+      `patternProperties` := "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"
+    )
   }
 
-  test("Boolean keys have a built-in KeyPattern") {
-    assertCompiles("json.Json.schema[Map[Boolean, String]]")
+  test("enum key names are regex-escaped, in declaration order") {
+    Json.schema[Map[Size, Int]] shouldBe `dictionary`[Size, Int, Map](`integer`).withValidation(`patternProperties` := "^(?:N/A|1\\+|\\(none\\)|a\\.b)$")
+  }
+
+  test("KeyPattern.escape and forEnum") {
+    KeyPattern.escape("""a\b^c$d.e|f?g*h+i(j)k[l]m{n}o-p/q""") shouldBe """a\\b\^c\$d\.e\|f\?g\*h\+i\(j\)k\[l\]m\{n\}o-p/q"""
+    KeyPattern.escape("Red") shouldBe "Red"
+    KeyPattern.forEnum[Size](List("b+", "a.", "b+")).pattern shouldBe "^(?:a\\.|b\\+)$"
+  }
+
+  test("a KeyPattern in lexical scope takes priority over the built-in one") {
+    implicit val mine: KeyPattern[UUID] = KeyPattern.mk[UUID]("^[0-9a-f-]{36}$")
+    Json.schema[Map[UUID, String]] shouldBe `dictionary`[UUID, String, Map](`string`).withValidation(`patternProperties` := "^[0-9a-f-]{36}$")
+    implicitly[Predef[Map[UUID, Int]]].schema shouldBe `dictionary`[UUID, Int, Map](`integer`).withValidation(`patternProperties` := "^[0-9a-f-]{36}$")
+  }
+
+  test("Predef: a Map of a Predef'd value with a UUID or Boolean key is a Predef") {
+    implicitly[Predef[Map[UUID, Int]]].schema shouldBe Json.schema[Map[UUID, Int]]
+    implicitly[Predef[Map[Boolean, Int]]].schema shouldBe Json.schema[Map[Boolean, Int]]
+  }
+
+  test("rendered: draft 04 enforces keys with additionalProperties: false, later drafts with propertyNames; any-string keys aren't enforced") {
+    implicit val profile: JsonSchemaProfile = JsonSchemaProfile.Neutral
+    val value                               = obj("type" -> "string")
+    drafts foreach { v =>
+      val restriction = if (v.isInstanceOf[Version.Draft04]) obj("additionalProperties" -> false) else obj("propertyNames" -> obj("pattern" -> "^-?[0-9]+$"))
+      body(render(Json.schema[Map[Int, String]], v)) shouldBe obj("type" -> "object", "patternProperties" -> obj("^-?[0-9]+$" -> value)) ++ restriction
+      body(render(Json.schema[Map[String, String]], v)) shouldBe obj("type" -> "object", "patternProperties" -> obj("^[\\s\\S]*$" -> value))
+      body(render(Json.schema[Map[java.lang.String, String]], v)) shouldBe obj("type" -> "object", "patternProperties" -> obj("^[\\s\\S]*$" -> value))
+      // ^.*$ from before #466 (a parsed schema, a user KeyPattern) still means any key
+      val old = `dictionary`[String, String, Map](`string`).withValidation(`patternProperties` := "^.*$")
+      body(render(old, v)) shouldBe obj("type" -> "object", "patternProperties" -> obj("^.*$" -> value))
+    }
   }
 }
 
@@ -79,6 +143,19 @@ object MapKeySchemaSpec {
     case object Green extends Color
   }
 
+  sealed trait Size
+  object Size {
+    case object `N/A`    extends Size
+    case object `1+`     extends Size
+    case object `(none)` extends Size
+    case object `a.b`    extends Size
+  }
+
+  val uuid = "123e4567-e89b-12d3-a456-426614174000"
+
   case class IntId(value: Int) extends AnyVal
   case class IntIdKeys(m: Map[IntId, String])
+
+  case class UuidId(value: UUID) extends AnyVal
+  case class UuidIdKeys(m: Map[UuidId, Int])
 }

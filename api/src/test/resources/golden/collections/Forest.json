@@ -69,7 +69,7 @@
     "properties": {
       "trees": {
         "patternProperties": {
-          "^.*$": {
+          "^[\\s\\S]*$": {
             "$ref": "#/definitions/com.github.andyglow.jsonschema.collections.CollectionsSpec.Tree"
           }
         },
@@ -110,7 +110,7 @@
     "properties": {
       "trees": {
         "patternProperties": {
-          "^.*$": {
+          "^[\\s\\S]*$": {
             "$ref": "#com.github.andyglow.jsonschema.collections.CollectionsSpec.Tree"
           }
         },
@@ -151,7 +151,7 @@
     "properties": {
       "trees": {
         "patternProperties": {
-          "^.*$": {
+          "^[\\s\\S]*$": {
             "$ref": "#com.github.andyglow.jsonschema.collections.CollectionsSpec.Tree"
           }
         },

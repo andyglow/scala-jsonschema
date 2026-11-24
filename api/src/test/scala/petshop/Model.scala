@@ -52,7 +52,27 @@ object Toy {
 }
 final case class Box(toy: Toy)
 
+// Map keys (#466): one class per key type, since the libraries write different key types (each bridge spec uses the ones its library can write)
+final case class IntStock(byId: Map[Int, Int], byLong: Map[Long, Int])
+final case class UuidStock(byUuid: Map[java.util.UUID, Int])
+final case class FlagStock(byFlag: Map[Boolean, Int])
+final case class CharStock(byChar: Map[Char, Int])
+
 object Samples {
+  // Long keys beyond Int, but within 2^53: upickle 4.4.3 writes a larger one as an invalid key, ""-9223372036854775808""
+  val intStock: IntStock   = IntStock(Map(-1 -> 1, 0 -> 2, 42 -> 3), Map(-4294967296L -> 1))
+  val uuidStock: UuidStock = UuidStock(Map(java.util.UUID.fromString("123e4567-e89b-12d3-a456-426614174000") -> 1))
+  val flagStock: FlagStock = FlagStock(Map(true -> 1, false -> 0))
+  val charStock: CharStock = CharStock(Map('a' -> 1, '\n' -> 2, '.' -> 3))
+
+  // documents with a key the type can't have: rejected under every library's profile
+  val badStocks: List[(json.Schema[_], String)] = List(
+    Schemas.intStock  -> """{"byId":{"abc":1},"byLong":{}}""",
+    Schemas.uuidStock -> """{"byUuid":{"not-a-uuid":1}}""",
+    Schemas.flagStock -> """{"byFlag":{"yes":1}}""",
+    Schemas.charStock -> """{"byChar":{"ab":1}}"""
+  )
+
   val pets: List[Pet]         = List(Pet("Rex", Some(3), Dog("Rex")), Pet("Nemo", None, Fish))
   val garage: Garage          = Garage(List(Sedan(4), Coupe, Bike(21)))
   val paints: List[Paint]     = List(Paint(Red), Paint(Green))

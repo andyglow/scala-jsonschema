@@ -1,5 +1,5 @@
 # Map key schemas: patterns that reject real keys, keys not enforced, no UUID/Boolean key pattern  (issue #466, item B6)
-Status: draft
+Status: approved (r-b6, 2026-11-23)
 
 ## Problem
 
@@ -252,6 +252,8 @@ regex-escape enum key names (I-A). Enforce constrained keys with `propertyNames 
   `toString` (`"C++"`). Pre-existing, wrong for values too; with enforcement `{"C++":1}` becomes a rejection for keys
   (r-b6 B6-R6, mailed to the lead).
 - refined `EndsWith` renders `^.*<v>$`: a string with a line break before the suffix is rejected.
+- upickle 4.4.3 writes a `Long` key beyond 2^53 as `""-9223372036854775808""` (invalid JSON; it quotes large longs, then
+  quotes the key again). Upstream; the acceptance sample uses a `Long` key within 2^53.
 - JDK regex `$` also matches before a final `\n` (networknt accepts the key `"1\n"` for `^-?[0-9]+$`), ECMA-262 doesn't.
   A validator difference; no action.
 

@@ -33,6 +33,13 @@ class NeutralLegacyAcceptanceSpec extends AnyWordSpec {
     }
   }
 
+  "Neutral and Legacy" should {
+    "reject a Map key the key type can't have (#466)" in {
+      Acceptance.assertBadKeysRejected(render(_, JsonSchemaProfile.Neutral))
+      Acceptance.assertBadKeysRejected(render(_, JsonSchemaProfile.Legacy))
+    }
+  }
+
   "Legacy" should {
     "accept only json4s' untagged Dog (an Option field is its element's schema, so `null` is rejected)" in {
       Acceptance.crossCheckRow(render(Schemas.pet, JsonSchemaProfile.Legacy)) shouldBe List(

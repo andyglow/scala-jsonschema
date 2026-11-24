@@ -128,7 +128,7 @@
       },
       "scala.collection.immutable.Map_scala.Predef.String,scala.List_com.github.andyglow.jsonschema.collections.CollectionsSpec.User__": {
         "patternProperties": {
-          "^.*$": {
+          "^[\\s\\S]*$": {
             "items": {
               "additionalProperties": false,
               "properties": {
@@ -208,7 +208,7 @@
       "scala.collection.immutable.Map_scala.Predef.String_scala.List_com.github.andyglow.jsonschema.collections.CollectionsSpec.User__": {
         "$id": "#scala.collection.immutable.Map_scala.Predef.String_scala.List_com.github.andyglow.jsonschema.collections.CollectionsSpec.User__",
         "patternProperties": {
-          "^.*$": {
+          "^[\\s\\S]*$": {
             "items": {
               "additionalProperties": false,
               "properties": {
@@ -285,7 +285,7 @@
       "scala.collection.immutable.Map_scala.Predef.String_scala.List_com.github.andyglow.jsonschema.collections.CollectionsSpec.User__": {
         "$anchor": "scala.collection.immutable.Map_scala.Predef.String_scala.List_com.github.andyglow.jsonschema.collections.CollectionsSpec.User__",
         "patternProperties": {
-          "^.*$": {
+          "^[\\s\\S]*$": {
             "items": {
               "additionalProperties": false,
               "properties": {

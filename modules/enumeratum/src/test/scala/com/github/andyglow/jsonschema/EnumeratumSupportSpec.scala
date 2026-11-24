@@ -29,6 +29,12 @@ class EnumeratumSupportSpec extends AnyWordSpec {
       )
     }
 
+    "regex-escape entry names in a key pattern (#466)" in {
+      Json.schema[Map[E3, String]] shouldBe `dictionary`[E3, String, Map](`string`).withValidation(
+        `patternProperties` := "^(?:1\\+|N/A|a\\.b)$"
+      )
+    }
+
     "support EnumEntry based enums with *case mixed in" in {
       Json.schema[E2] shouldBe `enum`.of("aa-aa", "bb-bb", "cc-cc")
       Json.schema[Map[E2, String]] shouldBe `dictionary`[E2, String, Map](`string`).withValidation(
@@ -97,6 +103,14 @@ object EnumeratumSupportSpec {
     case object AaAa extends E1("a")
     case object BbBb extends E1("b")
     case object CcCc extends E1("c")
+    override def values = findValues
+  }
+
+  sealed abstract class E3(override val entryName: String) extends EnumEntry
+  object E3                                                extends Enum[E3] {
+    case object Plus extends E3("1+")
+    case object Dot  extends E3("a.b")
+    case object NA   extends E3("N/A")
     override def values = findValues
   }
 

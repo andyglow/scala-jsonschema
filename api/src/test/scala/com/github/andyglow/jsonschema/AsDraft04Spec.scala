@@ -259,7 +259,7 @@ class AsDraft04Spec extends AnyWordSpec {
     "emit Map[String, _]" in {
       asDraft04(`dictionary`(`string`[String])) shouldEqual obj(
         "type"              -> "object",
-        "patternProperties" -> obj("^.*$" -> obj("type" -> "string"))
+        "patternProperties" -> obj("^[\\s\\S]*$" -> obj("type" -> "string"))
       )
     }
 
@@ -372,7 +372,9 @@ class AsDraft04Spec extends AnyWordSpec {
           "type"              -> "object",
           "maxProperties"     -> 10,
           "minProperties"     -> 4,
-          "patternProperties" -> obj("^[a-z]*$" -> obj("type" -> "string"))
+          "patternProperties" -> obj("^[a-z]*$" -> obj("type" -> "string")),
+          // the key pattern is enforced (#466); draft 04 has no propertyNames
+          "additionalProperties" -> false
         )
       }
 

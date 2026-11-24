@@ -2,6 +2,7 @@ package petshop
 
 import _root_.play.api.libs.json._
 import com.github.andyglow.jsonschema.PlayProfile
+import com.github.andyglow.jsonschema.harness.TriageB
 import json.Schema
 import json.schema.{JsonSchemaProfile, Version}
 import org.scalatest.matchers.should.Matchers._
@@ -38,6 +39,11 @@ object PlayDefaultCodecs {
   implicit val labelF: OFormat[Label] = OFormat((__ \ "text").read[String].map(Label.apply), (x: Label) => Json.obj("text" -> x.text))
   implicit val identF: OFormat[Ident] = Json.format[Ident]
   implicit val badgeF: OFormat[Badge] = Json.format[Badge]
+  // Map keys (#466): play's KeyWrites cover AnyVal keys (toString); a UUID-keyed Map is written as an array of pairs
+  implicit val intStockW: OWrites[IntStock]   = Json.writes[IntStock]
+  implicit val flagStockW: OWrites[FlagStock] = Json.writes[FlagStock]
+  implicit val charStockW: OWrites[CharStock] = Json.writes[CharStock]
+  implicit val uuidStockW: OWrites[UuidStock] = Json.writes[UuidStock]
 }
 
 // ---- user code: play-json with a JsonConfiguration of its own (an implicit in scope, as play's macros need it)
@@ -95,6 +101,17 @@ class PlayAcceptanceSpec extends AnyWordSpec {
     "tag a member that has an implicit Schema of its own" in assertValid(rendered(Schemas.payment), written(Samples.payments))
     "value class members, written as objects" in assertValid(rendered(Schemas.badge), written(Samples.badges))
     "reject an untagged member" in assertInvalid(rendered(Schemas.pet), List("""{"name":"Rex","animal":{"name":"Rex"}}"""))
+    "Map keys: negative Int and Long, Boolean and Char (a line break included) keys (#466)" in {
+      written(List(Samples.charStock)) shouldBe List("""{"byChar":{"a":1,"\n":2,".":3}}""")
+      assertValid(rendered(Schemas.intStock), written(List(Samples.intStock)))
+      assertValid(rendered(Schemas.flagStock), written(List(Samples.flagStock)))
+      assertValid(rendered(Schemas.charStock), written(List(Samples.charStock)))
+      assertBadKeysRejected(rendered(_))
+    }
+    "Map keys: play writes a UUID-keyed Map as an array of pairs, which the object schema doesn't describe (#466)" taggedAs TriageB in {
+      written(List(Samples.uuidStock)) shouldBe List("""{"byUuid":[["123e4567-e89b-12d3-a456-426614174000",1]]}""")
+      pendingUntilFixed(assertValid(rendered(Schemas.uuidStock), written(List(Samples.uuidStock))))
+    }
     "be the cross-check row of play's default" in {
       crossCheckRow(rendered(Schemas.pet)) shouldBe List(
         "circe semiauto"   -> 0,

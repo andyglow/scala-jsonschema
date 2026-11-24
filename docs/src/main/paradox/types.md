@@ -16,20 +16,26 @@
 | `java.net.URI`, `java.net.URL`                                              | `string`, format `uri`                          |
 | `Option[T]`                                                                 | `T` or `null`; a field is not required (@ref:[more](rendering.md#option)) |
 | `Iterable[T]` (`List`, `Seq`, `Vector`, `Set`, `Array`, ...)                | `array` (`Set`: `uniqueItems`)                  |
-| `Map[String, V]`, `Map[Int, V]`, ...                                        | `object` with `patternProperties`               |
+| `Map[String, V]`, `Map[Int, V]`, ...                                        | `object` with `patternProperties` (keys enforced) |
 | case class                                                                  | `object`                                        |
 | value class                                                                 | its underlying type                             |
 
-A `Map` key needs a known pattern: `String`, `Char`, `Byte`, `Short`, `Int`, `Long` and enums have one. For another
-key type, provide one:
+A `Map` key needs a known pattern (a `KeyPattern`): `String`, `Char`, `Byte`, `Short`, `Int`, `Long` (negative keys
+included), `java.util.UUID`, `Boolean`, value classes of these and enums have one. For another key type, provide one
+(one in scope also replaces a built-in one):
 
 ```scala mdoc:compile-only
 import json.Schema.dictionary.KeyPattern
 
-implicit val uuidKey: KeyPattern[java.util.UUID] = KeyPattern.mk[java.util.UUID]("^[0-9a-f-]{36}$")
+implicit val dateKey: KeyPattern[java.time.LocalDate] = KeyPattern.mk[java.time.LocalDate]("^[0-9]{4}-[0-9]{2}-[0-9]{2}$")
 
-json.Json.schema[Map[java.util.UUID, String]]
+json.Json.schema[Map[java.time.LocalDate, String]]
 ```
+
+The pattern is the `patternProperties` key, and it is enforced: a key that doesn't match it is rejected
+(`propertyNames` from draft 06 on, `additionalProperties: false` on draft 04). `Map[String, V]` accepts any key.
+play-json writes a `Map[UUID, V]` as an array of pairs (it has no `KeyWrites[UUID]`), which this object schema doesn't
+describe: give play a `KeyWrites`/`KeyReads` for the key, or give the map type a `Predef`.
 
 ## Sum types and enums
 

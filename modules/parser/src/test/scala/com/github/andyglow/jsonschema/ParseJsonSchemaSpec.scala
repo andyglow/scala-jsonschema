@@ -243,6 +243,18 @@ class ParseJsonSchemaSpec extends AnyFunSuite {
     ParseJsonSchema("""{ "type": "string", }""").isFailure shouldBe true
   }
 
+  test("patternProperties: parsed back and rendered, ^.*$ (any key, before #466) isn't enforced, another pattern is") {
+    def rendered(pattern: String): Value.obj = {
+      val s = parseType(s"""{ "type": "object", "patternProperties": { "$pattern": { "type": "string" } } }""").value
+      s shouldBe `dictionary`[Any, Any, Map](`string`).withValidation(json.schema.validation.Instance.`patternProperties` := pattern)
+      AsValue.schema(s, json.schema.Version.Draft07("x"))
+    }
+    val any = rendered("^.*$").value
+    any.contains("propertyNames") shouldBe false
+    any.contains("additionalProperties") shouldBe false
+    rendered("^-?[0-9]+$").value("propertyNames") shouldBe Value.obj("pattern" -> "^-?[0-9]+$")
+  }
+
   def parseType(x: String): Try[Schema[_]] =
     ParseJson(x) find { case e: Value.obj => e } flatMap ParseJsonSchema.makeType
 }

@@ -1,5 +1,7 @@
 package com.github.andyglow.jsonschema
 
+import json.Schema.`dictionary`.KeyPattern
+
 private[jsonschema] trait UDictionaries {
   this: UContext with UCommons with UEnums with UValueTypes =>
   import c.universe._
@@ -56,14 +58,14 @@ private[jsonschema] trait UDictionaries {
                 // +------------------------
                 case Enum(U.Enum(_, _: SchemaType.Str, values, _)) =>
                   val names   = values collect { case (_, Some(name)) => name }
-                  val pattern = names.mkString("^(?:", "|", ")$")
+                  val pattern = names.map(KeyPattern.escape).mkString("^(?:", "|", ")$")
                   dict.copy(extra = dict.extra.copy(validations = Seq(q"${N.Validation}.patternProperties := $pattern")))
 
                 // a family of case objects (what 0.7 derived as an enum)
                 case Enum(f: U.Family) if f.enumsAsOneOf => unsupportedKey(tpe, keyTpe, "is an enum, but with Flag.EnumsAsOneOf its members aren't plain strings")
                 case Enum(f: U.Family) if f.members.forall(_.schema.isInstanceOf[SchemaType.Str]) =>
                   val names   = f.members.flatMap(_.knownString)
-                  val pattern = names.mkString("^(?:", "|", ")$")
+                  val pattern = names.map(KeyPattern.escape).mkString("^(?:", "|", ")$")
                   dict.copy(extra = dict.extra.copy(validations = Seq(q"${N.Validation}.patternProperties := $pattern")))
                 case Enum(_) => unsupportedKey(tpe, keyTpe, "is an enum of non-string values")
                 case _       => unsupportedKey(tpe, keyTpe, "is none of these")

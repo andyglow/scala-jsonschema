@@ -93,14 +93,14 @@ class CatsSupportSpec extends AnyWordSpec {
       "be exposed as object" in {
         Json.schema[NonEmptyMap[Int, String]] shouldBe `dictionary`[Int, String, NonEmptyMap](
           `string`
-        ).withValidation(`minProperties` := 1, `patternProperties` := "^[0-9]+$")
+        ).withValidation(`minProperties` := 1, `patternProperties` := "^-?[0-9]+$")
 
         neimEventSchema shouldBe `object`(
           Field("id", `string`),
           Field(
             "data",
             `dictionary`[Int, String, NonEmptyMap](`string`)
-              .withValidation(`minProperties` := 1, `patternProperties` := "^[0-9]+$")
+              .withValidation(`minProperties` := 1, `patternProperties` := "^-?[0-9]+$")
           )
         )
       }
