@@ -1,5 +1,5 @@
 # Same-shaped sealed members and the order of a family's members  (issue #461, item B3)
-Status: draft
+Status: approved (r-b3, 2026-11-23)
 
 ## Problem
 
@@ -178,11 +178,11 @@ A: build every family's members as an insertion-ordered set (declaration order, 
 
 ## Not in scope (same kind of bug, elsewhere; reported to the lead)
 - `Either[Int, Double]` → `oneOf [{value: integer}, {value: number}]`: `{"value": 1}` is rejected; `Either[String, String]`
-  collapses. Either isn't a family (the macros build its `oneof` directly): E7.
+  collapses. Either isn't a family (the macros build its `oneof` directly): B14.
 - refined `A Or B` is inclusive but renders `oneOf`: `String Refined (StartsWith["a"] Or EndsWith["b"])` rejects `"ab"`
-  (RefinedMacro.scala:378, AST.scala:192). With `anyof` in place it's a one-line follow-up.
+  (RefinedMacro.scala:378, AST.scala:192). With `anyof` in place it's a one-line follow-up: B14.
 - A root `oneOf` states no `type` (AsDraftSupport.scala:180, "as in 0.7"): root `Ev` (one member) accepts `5` and `"s"`
-  today. A renderer bug of `oneOf`, not changed here (the new `anyOf` doesn't have it, see A).
+  today. A renderer bug of `oneOf`, not changed here (the new `anyOf` doesn't have it, see A): B15.
 
 ## Implementation plan
 
