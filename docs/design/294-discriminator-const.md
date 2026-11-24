@@ -1,5 +1,5 @@
 # `const` for the discriminator value  (issue #294, item D3)
-Status: draft
+Status: approved (r-d3, 2026-11-23)
 
 ## Problem
 
