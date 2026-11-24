@@ -105,28 +105,58 @@ renders it as `{"enum": ["c"]}`. Under `Enum` nothing changes: the key stays on 
 ```
 
 - Pro: the issue's "config option". Default output is unchanged for every profile, Legacy included.
-- Pro: keeps the profile contract. The profile decides at lowering, so `schema.withProfile(Neutral.withTag(Const))`
-  renders `const` wherever it is rendered later, just like the other knobs. The renderer stays profile-agnostic.
+- Pro: keeps the profile contract one way: `Const` is decided at lowering, so `schema.withProfile(Neutral.withTag(Const))`
+  renders `const` wherever it is rendered later, like the other knobs. The renderer stays profile-agnostic.
 - Pro: one mechanism covers derived families, library profiles (including `taggedProvided`'s copy of an implicit
   object, and `AsTagged` singletons) and hand-written discriminated `oneof`s.
 - Pro: it's additive under PVP (a new knob with a default), so it can ship in 0.9.x.
 - Con: two code paths for the tag: the renderer's `enum` (kept for `Enum` and for trees rendered without lowering)
   and the lowering's `const` field.
-- Con: a hand-written discriminated `oneof` lowered under `Enum` (`withProfile(Neutral)`) still carries its keys, so
-  a `Const` profile at render time converts it. The keys are "not decided yet" under `Enum`. That is harmless, but
-  worth a line in the scaladoc.
+- Con: `Enum` isn't final. `Enum` lowering leaves the keys on the objects, so any tree shaped under `Enum` still takes
+  a later `Const`. That covers derived families (`Json.schema[Shape].withProfile(JsonSchemaProfile.Legacy)`) as well
+  as hand-written `oneof`s. Rendered with an implicit `Neutral.withTag(Const)`, it goes through `Lowering.apply`'s
+  `` case `oneof`(xs, Some(df)) `` and comes out with `const`. Making `Enum` final would need a tree change (a marker
+  for "tag decided as enum", or an `enum` node rendered without `type`, which would break Legacy's byte-exact output).
+  That isn't worth it for a style choice whose two forms validate the same, so it is accepted and documented: the
+  `TagStyle.Enum` scaladoc says so, and a test pins it (plan step 3).
 
 ### C. Pass the profile (or a render option) to the renderer — LOST
 `AsValue.schema(x, v)(builder, profile)` hands `profile.tagStyle` to the renderer, for example as a new
 `AsValue.schema(x, opts)` overload or a ThreadLocal like `definitionNames`. `mkObj` picks `enum` or `const`.
 
 - Pro: no new tree shape; all tag logic stays in `mkObj`.
-- Con: breaks the documented contract that `withProfile(p)` has shaped the schema. A pre-shaped schema would follow
-  the render-time profile's tag style instead of `p`'s.
+- Con: breaks the documented contract that `withProfile(p)` has shaped the schema, **both ways**. A tree shaped under
+  `Const` would render `enum` under a later `Enum` profile, and vice versa. B breaks it one way only: an `Enum`-shaped
+  tree takes a later `Const`.
 - Con: more API surface (`AsValue` is a public trait; renderers are also called directly, as `AsDraft07(...).apply`,
   and through the bridges' `asPlay`/`asCirce`/...). Every entry point needs the option, or it silently falls back.
 
-### D. Option B, but `Neutral` (and so every library profile built from it) defaults to `Const` — LOST (owner's alternative)
+### D. A compile-time `Flag`, e.g. `Flag.DiscriminatorAsConst` — LOST
+The `Flag.EnumsAsOneOf` precedent: the same enum-vs-const style choice, read by the macro and recorded at derivation
+(`family.enumsAsOneOf`).
+
+- Pro: there's precedent, and it is per call site (`Json.schema[T]` with the flag in scope).
+- Con: derivation-time, so it reaches only honored `@discriminator` families. It misses `SumStyle.Discriminator` tags
+  (play/circe/upickle/json4s), `AsTagged` singletons and hand-written `oneof.discriminatedBy`.
+- Con: needs a new field on the public `case class family(members, discriminator, enumsAsOneOf)`. That changes its
+  `apply`/`copy`/`unapply`, so it's binary-breaking (a minor bump under PVP).
+- Con: changes in both macros (Scala 2 `macros/`, Scala 3 `derivation/`), plus the tree dumps (`AsTree`, goldens' `schema` section).
+
+### E. An annotation parameter: `@discriminator(field, phantom, asConst = true)` — LOST
+#294 literally asks for an option "on `@discriminator` properties".
+
+- Pro: right where the user states the discriminator; per family.
+- Con: the same reach problem as D. Library profiles ignore `@discriminator` (`honorsSchemaAnnotations = false`), so
+  play/circe/upickle/json4s users couldn't use it at all. Neither could hand-written `oneof`s.
+- Con: a third parameter on `case class discriminator(field, phantom)` changes `apply`/`copy`/`unapply`
+  (binary-breaking), and `family.Discriminator` needs it too. Both macros read the annotation, so both change.
+
+**Why the profile is the right home**, although profiles describe "how the JSON is shaped" and enum vs const is a
+schema style: the profile is the only render-time configuration surface, it already owns the tag (field, name, member
+shape), and it reaches every path that writes one. The `JsonSchemaProfile` class scaladoc gets a matching phrase
+(step 1).
+
+### F. Option B, but `Neutral` (and so every library profile built from it) defaults to `Const` — LOST (owner's alternative)
 The same mechanism with a different default: `Knobs.tagStyle = Const` for Neutral, and `Legacy.withTag(Enum)`
 explicitly.
 
@@ -152,9 +182,11 @@ explicitly.
 ## Decision
 
 Option B: a `TagStyle` knob (`Enum` default, `Const` opt-in) built with `withTag`. Under `Const`, the lowering writes
-each tag as a required `const` field, so the choice survives `withProfile` and covers derived, library-tagged and
-hand-written discriminated `oneof`s alike. Draft-04 renders every `const` as a one-value `enum`, which fixes 4b. No
-default output changes except the draft-04 renders of `EnumsAsOneOf` families. Option D (Neutral defaults to
+each tag as a required `const` field, so a `Const` choice survives `withProfile` and covers derived, library-tagged
+and hand-written discriminated `oneof`s alike. (An `Enum`-shaped tree still takes a later `Const`; that is documented.)
+Draft-04 renders every `const` node as a one-value `enum`, which fixes 4b. The only default output change is on
+draft-04: every `const` (`EnumsAsOneOf` families, ToValue-driven non-string singletons such as `EnumSpec.case5`'s
+`oneOf[{const: 1}, {const: 2}]`, hand-written `Schema.const`) becomes `{"enum": [v]}`. Option F (Neutral defaults to
 `Const`) is the alternative for the owner, for 0.10.0.
 
 ## Implementation plan
@@ -164,7 +196,11 @@ default output changes except the draft-04 renders of `EnumsAsOneOf` families. O
      `SingletonStyle`, with scaladoc as in option B (Const: "on draft-04, which has no `const`, a one-value `enum`").
    - `def tagStyle: TagStyle = TagStyle.Enum` on the trait. Scaladoc: "How a member's tag (the discriminator field's
      value) is stated. Applies wherever a tag is written: `@discriminator`, `SumStyle.Discriminator`, hand-written
-     `oneof.discriminatedBy`."
+     `oneof.discriminatedBy`." The `TagStyle.Enum` scaladoc adds: "`Enum` leaves the tag to the renderer, so a schema
+     shaped under `Enum` (`withProfile`) and rendered later under a `Const` profile gets `const`."
+   - Class scaladoc of `JsonSchemaProfile`: next to "records facts that a JSON library decides how to encode", one
+     phrase: "and how the tag of a tagged family is stated (`tagStyle`), a schema style that lives here because the
+     profile already owns the tag".
    - `final def withTag(x: TagStyle): JsonSchemaProfile = Knobs(this).copy(tagStyle = x).profile`.
    - `Knobs`: a new field `tagStyle: TagStyle = TagStyle.Enum`, put in `profile` (`override val tagStyle`) and read in
      `Knobs.apply(p)`. Neutral and Legacy are unchanged (`Enum`). The bridge profiles are built from `Neutral` with the
@@ -211,6 +247,8 @@ default output changes except the draft-04 renders of `EnumsAsOneOf` families. O
      `Neutral.withTag(Enum)`);
    - `lower` idempotent under `Const`; `schema.withProfile(Neutral.withTag(Const))` rendered with no profile in scope
      keeps `const`;
+   - the documented one-way behaviour: `Json.schema[Shape].withProfile(JsonSchemaProfile.Legacy)` rendered with an
+     implicit `Neutral.withTag(Const)` gives `const` (the test pins it, so a later change is deliberate);
    - builders: `Neutral.withTag(Const).withSum(...).withSingleton(...).tagStyle == Const`; `Legacy.tagStyle == Enum`;
      `Neutral.withTag(Const) == Neutral.withTag(Const)` and `!= Neutral` (Knobs equality).
 4. **Tests, draft-04** (`AsDraft04Spec`): a new case `oneof.of(const("foo").withTitle(..), const("bar"))` on `Draft04`
@@ -233,30 +271,47 @@ default output changes except the draft-04 renders of `EnumsAsOneOf` families. O
      (`GOLDEN_UPDATE_LEGACY=1`, deliberately, per the lead's Legacy policy). The diff must contain only those six
      files' `draft-04` sections. (Found by loading each golden's `draft-04` render and looking for `"const"`; no other
      golden has one.)
-   - b. Tag (step 1): no golden changes under the default. (Under option D instead: the `draft-07` and
+   - b. Tag (step 1): no golden changes under the default. (Under option F instead: the `draft-07` and
      `draft-2020-12` renders of the 6 tagged goldens, `DiscriminatorSpec.case0/1/3/4/5` and `char/fields/DiscOrder`;
      `golden-legacy/` must not change.)
-8. **Docs** (README.md and paradox `docs/src/main/paradox/types.md` "Discriminators", `rendering.md` profile knob
-   table; the two say the same things):
+8. **Docs** (README and paradox say the same things): the discriminator example, README.md:361/366 and
+   `docs/src/main/paradox/types.md`:103/108; the profile knob table, README.md:727 and
+   `docs/src/main/paradox/rendering.md`:188.
    - after the `@discriminator` JSON example: "The tag is a one-value `enum` on every draft. To get
      `"kind": {"const": "cat"}` (draft-06 and later; draft-04 has no `const`), render with a profile that has
      `.withTag(TagStyle.Const)`.", with a short `implicit val profile = JsonSchemaProfile.Neutral.withTag(TagStyle.Const)` snippet;
    - the knob table: `| withTag | TagStyle.Enum, Const | the tag as a one-value enum or a const (a one-value enum on draft-04) |`;
    - `makeDocs` must pass (the snippet can be `mdoc:compile-only`).
    - No CHANGELOG edit (the lead writes it).
-9. **Risks**: field order in `required` for a
-   `phantom = false` field that wasn't required: its tag now sits at the field's position, not at the end. Both are
-   valid; only `Const` output is affected. A user's custom `JsonSchemaProfile` subclass (not built from `Knobs`)
-   gets `Enum` from the trait default.
+9. **Risks**
+   - Field order in `required` for a `phantom = false` field that wasn't required: its tag now sits at the field's
+     position, not at the end. Both are valid; only `Const` output is affected.
+   - A user's custom `JsonSchemaProfile` subclass (not built from `Knobs`) gets `Enum` from the trait default.
+   - A hand-written tree with `def(sig, keyed object)` as a member of a discriminated `oneof` and the same `sig`
+     elsewhere: under `Const` the two bodies differ (one has the tag field), and `inferDefinitions`' `.toMap` keeps the
+     last, so the result depends on order. `Enum` has the same order dependence today (the tag depends on which `par`
+     the last extraction had), so this isn't new. Derived trees can't hit it: a `@definition` member used as a plain
+     field elsewhere is inlined, not a definition (r-d3's probe on 2.13).
+   - Neighbours: B2 (prop order) rewrites `mkObj`'s `.toMap` and the `oneof` Set that step 1 maps over; rebase onto
+     whichever lands first. D5 (`@discriminatorKey` on case objects / `AsTagged`): the case objects D5 tags pick up
+     `Const` through `constTag` with no extra work. E6 (literal types as `const`) relies on step 2 for draft-04.
 
 ## Compatibility
 
 - Source/binary: additive. New `TagStyle` ADT, `tagStyle` (concrete trait method with a default; Scala 2.12+ traits
   compile to interfaces with default methods, so subclasses compiled against 0.9.0 keep linking), `withTag`. `Knobs`
   is private. No public signature changes, and the core design rule (Schema → `$ref`, Predef → inline) is untouched.
-- Output: unchanged under every built-in profile on draft-06+. Draft-04 only: a `const` renders as a one-value `enum`
-  (a bug fix: the old output rejected every instance of an `EnumsAsOneOf` family). It applies under Legacy as well
-  (three `golden-legacy` files).
-- PVP: patch (0.9.x). Option D would be a default-output change for 0.10.0.
+- Output: unchanged under every built-in profile on draft-06+. Draft-04 only: **every `const` node** renders as a
+  one-value `enum` (`EnumsAsOneOf` families, ToValue-driven non-string singletons, Scala 3 enum consts, hand-written
+  `Schema.const`, and later E6's literal types). It's a bug fix: draft-04 ignores `const`, so for example the old output
+  rejected every instance of an `EnumsAsOneOf` family. It applies under Legacy as well (three `golden-legacy` files).
+- PVP: patch (0.9.x). Option F would be a default-output change for 0.10.0.
 
 ## Review log
+Round 1 (r-d3, on 73eab84):
+- D3-R1 (must) `Enum`-shaped trees (derived too) take a later `Const` → accepted: B's Pro now says "one way", its Con covers derived families and says why making `Enum` final isn't worth a tree change; C's Con says "both ways"; `TagStyle.Enum` scaladoc (step 1) and a pinning test (step 3) added.
+- D3-R2 (must) missing Flag and annotation-parameter options → accepted: added D (`Flag.DiscriminatorAsConst`) and E (`@discriminator(..., asConst)`), both LOST (derivation-time reach, binary-breaking case-class change, both macros); added "why the profile is the right home" and the class-scaladoc phrase (step 1). The old D (Neutral defaults to `Const`) is now F.
+- D3-R3 (nit) the draft-04 fix covers every `const` → accepted: Decision and Compatibility say so, with the examples.
+- D3-R4 (nit) hand-written `def` with a shared sig → accepted: in Risks (not new; derived trees can't hit it).
+- D3-R5 (nit) neighbours B2/D5/E6 → accepted: in Risks.
+- D3-R6 (nit) doc locations → accepted: step 8 names README.md:361/366 and :727, types.md:103/108, rendering.md:188.
