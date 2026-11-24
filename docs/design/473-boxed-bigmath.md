@@ -174,3 +174,17 @@ a Predef but no `KeyPattern` (not in E4's list; one line if the reviewer wants i
 - Core design rule unchanged: the new built-ins are Predefs, so they are inlined, like the Scala ones.
 
 ## Review log
+Round 1 (r-e4, on b70837a):
+- E4-R1 (must) `null` default → `"default": null` fails its own type; state it, keep "omit" visible → accepted: new
+  "`null` defaults" bullet in option A with the drawback, the omit alternative (and why it needs a macro change in both
+  macros, so it's left for the owner), and that this doesn't follow `String`'s `"null"` bug.
+- E4-R2 (must) exact `ToValue`s, tested at extreme values on JVM + JS → accepted: per-type `num` overloads spelled out
+  in option A and plan 2 (never `num(x: Number)`); plan 6 gets `Long.MaxValue`, `0.1f`, 20-digit `java.math` defaults
+  compared with the Scala types, in the shared spec (JVM and JS).
+- E4-R3 (must) Map keys via `dictS` and via each macro's dictionary family → accepted: plan 6 tests
+  `Map[boxed, String]` and `Map[boxed, SomeCaseClass]` for all four boxed integrals.
+- E4-R4 (nit) Option defaults on a boxed field → accepted: `Some(5)` / `None` test in plan 6 (pinning the known Scala 2
+  TRIAGE-A re-parse crash if that's what `Some` hits).
+- E4-R5 (nit) keep Scala-type numeric validations covered on 3 → accepted: plan 6, `ValidationMagnetSpec` covers
+  `Int`/`Long`/`scala.BigDecimal`/`BigInt` too.
+- E4-R6 (nit) D2 hand-off → accepted: the nine equality tests are named as the D2 guard in plan 6; the PR will say so.
