@@ -116,14 +116,17 @@ It would need a new node or a marker, for one library we have no bridge for. 2A 
   2019-09); the definition itself isn't marked.
 - Where a schema is rebuilt, the flag must survive (R2): `duplicate` and `withExtraFrom` (which `Lowering` uses for every node it rebuilds) copy
   it; `Schema.def.adapt` (an implicit `Schema` found by the macros, master drops the def node's extras, B1 #469 keeps its title/description)
-  keeps it too; `Lowering.field`'s three branches (Legacy unwrap: moot, Legacy strips; `optionKeyRequired`: `apply(t)` keeps it; plain) are
-  pinned by tests. The macros put a field's `.withDeprecated(true)` outermost, after `adapt`, so a `$ref` field is marked at the `$ref`
+  keeps it too; `Lowering.field`'s three branches are pinned by tests: the Legacy-Option unwrap moves the dropped `option` layer's flag to what
+  stays (B1's `unwrapped`, extended; on master a small equivalent), because it is reachable with the flag kept, through a non-Legacy profile
+  with `withOption(OptionStyle.Legacy)`; `optionKeyRequired` and plain go through `apply(t)`, which keeps it. The macros put a field's `.withDeprecated(true)` outermost, after `adapt`, so a `$ref` field is marked at the `$ref`
   and the shared definition is not. B1 (#469) touches the same spots (`adapt`, B1's `unwrapped`, `AsDraftSupport.apply`'s `texts(x)`, where
   `"deprecated"` goes): I implement on master and rebase onto B1 once it merges, extending its `unwrapped`/`adapt`/`texts` with the flag.
 - Profiles: every profile keeps it except **Legacy, which strips it** (lead, 2026-11-23: a new keyword is a style addition, and Legacy keeps
   0.7's output for existing models). Mechanism: a profile knob `def deprecatedKeyword: Boolean = true` (+ `withDeprecatedKeyword(x)`, a
-  `Knobs` field), `false` for `Legacy` only; `Lowering`, which already visits every node, clears the flag (`withDeprecated(false)`) when it is
-  false. A knob rather than a test on the profile's name, so `Legacy.withName(..)` and other Legacy-derived profiles keep it. The lost
+  `Knobs` field), `false` for `Legacy` only, read by `Knobs.apply(p)` so every `withX` builder keeps it (R9a). When it is false, `Lowering` clears
+  the flag on every node it visits, leaves, `enum`, `const`, `ref` included (today they pass through `case other => other`), and through field
+  schemas, def bodies and family members (R9b), touching only flagged nodes (`if (s.deprecated) s.withDeprecated(false) else s`), so unflagged
+  schemas lower to the same nodes as today (R9c). A knob rather than a test on the profile's name, so `Legacy.withName(..)` and other Legacy-derived profiles keep it. The lost
   alternative "Legacy keeps it too" is `Legacy`'s knob set to `true`.
 
 #### 3B. A `deprecated` fact on `object.Field` (like `rwMode`) — LOST
@@ -199,7 +202,9 @@ in four bridges (5A).
    `implicit val`, a case class field `data: Array[Byte]`) on 2.12/2.13/3; `@deprecated` (scala and java) on a field, an `Option` field
    (Neutral, Legacy, a bridge profile with `optionKeyRequired`), a `$ref` field (the same implicit-`Schema` type used by a deprecated and a
    plain field: one definition, unmarked; only the deprecated field's `$ref` is marked) and a type, rendered on 2019-09/2020-12, absent on
-   04/06/07, kept by a bridge profile, stripped by Legacy (and `Legacy.withName(..)`). Test models with `@deprecated` get `@nowarn("cat=deprecation")` (2.13 warns at the case class itself). `CatsSupportSpec`,
+   04/06/07, kept by a bridge profile, stripped by Legacy (and `Legacy.withName/withOption/withSum(..)`), including on a
+   leaf (`@deprecated s: String`), a `$ref` field and an `Option` field; kept through a Neutral profile `.withOption(OptionStyle.Legacy)`'s
+   field unwrap. Test models with `@deprecated` get `@nowarn("cat=deprecation")` (2.13 warns at the case class itself). `CatsSupportSpec`,
    `JodaTimeSupportSpec` (+ the Period pattern against the probe's strings), the bridges' specs (`JsNull` field → `{"type":"null"}` on 2 and 3).
    One golden model (`MiscTypes`) for the full rendered output per draft.
 6. **Docs** (README + paradox, same words): java.util collections and Optional under Collections/Option (`Optional` renders like `Option`
@@ -236,3 +241,9 @@ Round 1 (r-e8, on 6840419):
 - E8-R7 (nit) `Optional` under every profile → accepted: stated in 1A; user docs say "rendered like `Option` under every profile".
 - E8-R8 (nit) process → the lead already decided (Legacy strips); E2 overlap: mailed the lead with round 1's answer (the bridge null Predefs sit in
   the same bridge objects as E2's). B11 mention made conditional.
+
+Round 1b (r-e8, on ea7be17):
+- E8-R2 (must, addendum) the Legacy unwrap is reachable via `withOption(OptionStyle.Legacy)` with the flag kept → accepted: the unwrap carries
+  the flag (3A, test in step 5).
+- E8-R9 (nit) knob mechanics → accepted (a) `Knobs.apply` reads it, tests for several builders; (b) cleared on leaves/enum/const/ref, field
+  schemas, def bodies, family members; (c) only flagged nodes are copied.
