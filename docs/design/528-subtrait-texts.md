@@ -1,5 +1,5 @@
 # A sealed sub-trait inside a family keeps its texts and its implicit Schema  (issue #528, item B28)
-Status: draft
+Status: approved (r-b28, 2026-11-23)
 
 ## Problem
 A sealed sub-trait of a sealed family is flattened into the family's members. Both macros build the `Schema.family`
@@ -168,8 +168,8 @@ objects without the tag field, so they'd reject every tagged document. So under 
 implicit is not used and the run is grouped by texts, or stays flat. That's today's behavior for the implicit. A
 provided *leaf* under `@discriminator` is a compile error today; the sub-trait doesn't get one, because the leaves are
 there to fall back on. The fallback isn't silent (B28-R6). When the root has `@discriminator` and a sub-trait has an
-implicit, the macro warns: "the implicit Schema[Sub] is not used inside Fam, which has @discriminator: Sub's leaves are
-derived (add the same @discriminator to Sub, or give Fam a Schema)". It's a compile-time warning on both versions,
+implicit, the macro warns: "the implicit Schema[Sub] is not used inside Fam by profiles that honor its @discriminator
+(Neutral, Legacy, spray): Sub's leaves are derived there (add the same @discriminator to Sub, or give Fam a Schema)". It's a compile-time warning on both versions,
 even though a profile that ignores the annotation (json4s and the library profiles) will use the implicit.
 
 Why A: everything that reads `family.members` today, and that's a lot, keeps working unchanged. That covers the
@@ -307,7 +307,7 @@ for which texts function to use: the sub-trait's texts are "a type's own texts",
       `{ val p0 = $F.Parent(..., Some(<implicit>)); $F.family[T](List($F.Member(..., parents = List(p0)), ...), ..) }`.
       N leaves then cost one evaluation of `implicit def s = Json.schema[Sub]`, not N.
    e. Warning (R6): when the root has `@discriminator` and some parent has `provided`, `c.warning(c.enclosingPosition,
-      "the implicit Schema[Sub] is not used inside Fam, which has @discriminator: ...")`.
+      "the implicit Schema[Sub] is not used inside Fam by profiles that honor its @discriminator ...")`.
    f. Recursion (R3): the recursion pass over the members' schemas is unchanged. A recursion definition of a
       sub-trait is never a `provided`; the parent keeps only its texts.
    g. `Either` (`eitherOneOf`) is unchanged.
@@ -445,7 +445,10 @@ Risks:
 ## Open questions for the owner
 1. Ship in 0.10.0 with B3 (recommended), or docs-only (D) for 0.9.x? Either way the implementation needs B1 (#469) and
    B3 (#470) merged first.
-2. Legacy: flat texts + honored implicit (L-a, recommended), group too (L-b), or 0.7 for both (L-c)?
+2. Legacy: flat texts + honored implicit (L-a, recommended), group too (L-b), or 0.7 for both (L-c)? Weigh both kinds
+   of implicit. A hand-written one of another shape is a fix under L-a. A same-shape one (`implicit val s =
+   Json.schema[Sub]`, or `derives json.Schema` on Scala 3) only moves Legacy from inline leaves to a `$ref` + definition,
+   which is a style change. The macro can't tell the two apart. L-c keeps 0.7 for both.
 3. Implicit: P1 (recommended) or P2 (rescue underivable sub-trees, but consumers see a non-leaf)?
 4. Should scaladoc alone (no annotation) trigger a group? Recommended yes: a type's scaladoc is its description
    everywhere else (B12). The alternative is "annotations only", which would make scaladoc on a sub-trait the one
@@ -472,3 +475,7 @@ Round 1 (r-b28, on 4e311c4):
 - B28-R7 (nit) `DefinitionNames` runs on lowered trees → accepted: 5b is now "no change", with the reason.
 - B28-R8 (nit) json4s `PerFamily` on `Sub` alone → accepted: a paragraph under the sum styles.
 - B28-R9 (nit) owner questions → accepted: Q5 (singleton groups), Q6 (recursive), prerequisites repeated in Q1.
+
+Round 2 (r-b28, on e039d3f): approved. Two optional nits, both folded in:
+- N1 the warning names the profiles that honor `@discriminator` (library profiles do use the implicit).
+- N2 Q2 weighs a same-shape implicit / `derives` (a style change under L-a) against a hand-written one (a fix).
