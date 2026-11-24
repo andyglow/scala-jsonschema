@@ -46,6 +46,11 @@ Together (networknt, all three drafts, both profiles, all three Scala versions):
    object keys (lowercase `toString`); play-json and upickle write Boolean keys as `"true"`/`"false"`. The README's
    example of a custom key pattern *is* UUID.
 
+6. **Enum key names aren't regex-escaped** (r-b6, B6-R1). Both macros (Scala 2 `UDictionaries`, Scala 3
+   `Collections.patternOf`) and `KeyPattern.forEnum` (enumeratum) join the raw names: case objects `` `N/A` ``, `` `1+` ``
+   give `^(?:N/A|1+)$`, which matches `"1"` and `"11"` but not `"1+"`; a name like `"(none)"` makes an invalid regex.
+   Today that only leaves values unchecked; once keys are enforced (4) it would reject real keys.
+
 0.7 has the same output (the `golden-legacy/` files pin `^[0-9]+$`, `^.{1}$` and `^.*$`).
 
 ## Why it is a problem
@@ -85,6 +90,18 @@ Three independent decisions: (I) the patterns, (II) how keys are enforced, (III)
   pattern) still wins, with no ambiguity, on Scala 2 and 3 (tested).
 - `BigInt`, `Double`, `Float` keys stay unsupported (not in this item; `Double`'s `toString` has `NaN`, `Infinity`,
   `1.0E10`, which needs its own design).
+- Enum names are escaped (6): a new public helper `KeyPattern.escape(name)` backslash-escapes the ECMA-262 syntax
+  characters `\ ^ $ . | ? * + ( ) [ ] { }` (not `Pattern.quote`: `\Q...\E` isn't ECMA-262), used by `forEnum`, by the
+  Scala 3 derivation (in core) and by the Scala 2 macro at expansion time (`macros` depends on `core`). Names without those
+  characters render exactly as today (`^(?:Red|Green)$`, `aa-aa`).
+- **play-json and `Map[UUID, V]`** (B6-R2): play has no `KeyWrites[UUID]` and writes such a map as an array of pairs
+  (`[["123e...",1]]`). Today `Json.schema[Map[UUID, V]]` needs a user `KeyPattern` and then gives the same object schema;
+  with `UUIDKeyPattern` built in it compiles without one, so more play users reach a schema that doesn't describe play's
+  output. The profile can't correct it (the tree doesn't keep the key type, and II-E lost). Kept, because circe and upickle
+  users (who write UUID keys as object keys) gain, and documented: a play-json note in README / paradox, a play acceptance
+  test that pins the mismatch (tagged `TRIAGE-B`), and a profile follow-up mailed to the lead. The other bridges: json4s
+  throws for UUID / Boolean keys and circe has no `KeyEncoder[Boolean]` / `KeyEncoder[Char]`, so they write no document
+  that a schema could misdescribe; spray only writes `Map[String, V]`.
 
 #### I-B. Strict canonical integers `^-?(?:0|[1-9][0-9]*)$`  — LOST
 Matches exactly what `toString` writes, but rejects `"01"` that every reader accepts, and reads worse. A schema describes
@@ -101,9 +118,10 @@ like a typo, and whoever edits them later "fixes" them back to `^.*$`.
 
 ### II. Enforcement (in the renderer; only when the key is constrained)
 
-"Constrained" = the dictionary has a `patternProperties` validation whose pattern isn't the any-string pattern
-(`^[\s\S]*$`). So `Map[String, V]` and `Map[java.lang.String, V]` render exactly as before (bar the I-A pattern),
-and so does `Map[StrId, V]` (a value class of `String`).
+"Constrained" = the dictionary has a `patternProperties` validation whose pattern is neither the new any-string pattern
+`^[\s\S]*$` nor the old `^.*$` (B6-R4: a schema parsed back by `ParseJsonSchema`, or a user `KeyPattern.mk("^.*$")`,
+still carries `^.*$` and means "any key"; it keeps its text and gets no restriction). So `Map[String, V]` and
+`Map[java.lang.String, V]` render exactly as before (bar the I-A pattern), and so does `Map[StrId, V]` (a value class of `String`).
 
 #### II-A. `propertyNames` on draft 06+, `additionalProperties: false` on draft 04  — WON
 ```json
@@ -150,8 +168,8 @@ renderer flag (or II-E) to skip the restriction.
 
 ## Decision
 
-Fix the built-in key patterns (`^-?[0-9]+$`, `^[\s\S]$`, `^[\s\S]*$`) and add `UUIDKeyPattern` and `BooleanKeyPattern`
-(I-A). Enforce constrained keys with `propertyNames {pattern}` on draft 06+ and `additionalProperties: false` on draft 04
+Fix the built-in key patterns (`^-?[0-9]+$`, `^[\s\S]$`, `^[\s\S]*$`), add `UUIDKeyPattern` and `BooleanKeyPattern`, and
+regex-escape enum key names (I-A). Enforce constrained keys with `propertyNames {pattern}` on draft 06+ and `additionalProperties: false` on draft 04
 (II-A). Under every profile, Legacy included (III-A).
 
 ## Implementation plan
@@ -162,14 +180,15 @@ Fix the built-in key patterns (`^-?[0-9]+$`, `^[\s\S]$`, `^[\s\S]*$`) and add `U
    the built-ins and saying the renderer enforces the pattern. (`Constants` is `private[jsonschema]` in another package:
    the UUID regex literal is shared by moving it to a `private[json]` constant both use, or duplicated with a comment; the
    implementation picks the one that compiles cleanly on all three versions.)
+   Add `def escape(name: String): String` (ECMA-262 syntax characters) and use it in `forEnum`.
 2. `core/src/main/scala/com/github/andyglow/jsonschema/AsDraftSupport.scala` `mkDict`: default pattern
-   `StringKeyPattern.pattern` instead of the literal `^.*$`; when the pattern isn't that one, add `keyRestriction(pattern)`.
-   `protected def keyRestriction(pattern: String): obj = obj("propertyNames" -> obj("pattern" -> pattern))`;
+   `StringKeyPattern.pattern` instead of the literal `^.*$`; when the pattern is neither that one nor `^.*$`, add
+   `keyRestriction(pattern)`. `protected def keyRestriction(pattern: String): obj = obj("propertyNames" -> obj("pattern" -> pattern))`;
    `AsDraft04` overrides it with `obj("additionalProperties" -> false)`.
-3. No macro change: both macros (Scala 2 `UDictionaries`, Scala 3 `Collections`) read `KeyPattern#pattern` at run time and
-   find the new instances by implicit search; enum-key patterns are unchanged. Only the Scala 3 scaladoc of `Collections`
-   (lines 17-19, 37) names the old patterns: update it. (`KeyKind.Uuid` already exists; Boolean keys are `KeyKind.Custom`.)
-   `clean` before testing anyway (core changed).
+3. Macros: built-in and user `KeyPattern`s are read at run time and found by implicit search (no change). Enum-key
+   patterns: escape each name with `KeyPattern.escape` in Scala 2 `UDictionaries` (both `mkString` sites, at expansion
+   time) and Scala 3 `Collections.patternOf`. Update the Scala 3 scaladoc of `Collections` (lines 17-19, 37) that names
+   the old patterns. (`KeyKind.Uuid` already exists; Boolean keys are `KeyKind.Custom`.) `clean` before testing.
 4. Tests:
    - `MapKeySchemaSpec` (the repro, all green after the fix), plus: UUID keys (lowercase and uppercase valid, `"abc"` and a
      36-char non-UUID invalid), Boolean keys (`"true"`/`"false"` valid, `"yes"`/`"True"` invalid), a value class over
@@ -183,14 +202,29 @@ Fix the built-in key patterns (`^-?[0-9]+$`, `^[\s\S]$`, `^[\s\S]*$`) and add `U
    - `characterization/TriageBPendingSpec` "Map with a UUID key: clear compile error": UUID now compiles; switch the test to
      another unsupported key type (`java.time.LocalDate`), same assertion. (B11 also edits this file's messages: textual
      conflict at most.)
-   - The parser module: check its specs still pass (it reads `patternProperties` and ignores the new keywords).
+   - Enum names with metacharacters (B6-R1): sealed case objects `` `N/A` ``, `` `1+` ``, `` `(none)` `` and a Scala 3
+     `enum` with backticked cases, on both versions: pattern text and networknt (`{"1+":1}` valid, `{"1":1}`, `{"11":1}`
+     invalid); an enumeratum `entryName` with `+` / `.` in `EnumeratumSupportSpec`; `KeyPattern.escape` unit test.
+   - The parser module (B6-R4): its specs still pass; a new parse -> render round-trip of `{"patternProperties":{"^.*$":..}}`
+     renders no `propertyNames` / `additionalProperties`.
+   - Acceptance (B6-R3): a petshop model `Stock(byId: Map[Int, Int], byUuid: Map[UUID, Int], byFlag: Map[Boolean, Int],
+     byChar: Map[Char, Int])` (each field only where the library has key codecs) with negative / `'\n'` / UUID keys, written
+     by the real library in each bridge's acceptance spec and validated under that bridge's profile on 04/07/2020-12:
+     circe (Int, UUID), play (Int, Boolean, Char; UUID pinned as the mismatch of B6-R2, `TRIAGE-B`), upickle (all four),
+     json4s (Int), spray (none: `Map[String, V]` only, so not added). Each spec also checks a document with a bad key is
+     rejected. Enum keys need user key codecs in every library, so they stay in `MapKeySchemaSpec`.
+   - Scala.js (B6-R5): `api/src/test/scala-js/.../KeyPatternRegExpSpec` compiles each built-in pattern and an escaped enum
+     pattern with `js.RegExp` and matches the samples (`-1`, `\n`, `a\nb`, uppercase UUID, `true`, `1+`), so ECMA-262 is
+     checked, not only the JDK regex networknt uses.
 5. Golden files: `GOLDEN_UPDATE=1 sbt clean api/test` and `GOLDEN_UPDATE_LEGACY=1` for `golden-legacy/`, on 2.12, 2.13
    and 3 (check no `@<ver>` override appears). Expected diff: pattern strings, and a `propertyNames` /
    `additionalProperties:false` next to every constrained `patternProperties`; nothing else. Every changed file goes in
    the PR (old -> new pattern per file).
 6. Docs: README "Supported types" (Map row: keys enforced), the "A `Map` key needs a known pattern" paragraph (add `UUID`,
    `Boolean`; the custom example becomes a non-built-in type, e.g. `java.time.LocalDate` `^[0-9]{4}-[0-9]{2}-[0-9]{2}$`),
-   and the same text in `docs/src/main/paradox/types.md`. `makeDocs`.
+   and the same text in `docs/src/main/paradox/types.md`; a play-json note (`Map[UUID, V]` is an array of pairs in play,
+   so its schema doesn't match; give play a `KeyWrites`/`KeyReads` or a `Predef`) in the README's play section and the
+   paradox play page. `makeDocs`.
 7. JS: shared code only; all regexes are ECMA-262 (no lookbehind, no flags). `rootJS/test` on 2.13 and 3 (core changed:
    all three).
 
@@ -207,6 +241,26 @@ Fix the built-in key patterns (`^-?[0-9]+$`, `^[\s\S]$`, `^[\s\S]*$`) and add `U
   invalid, which is also the point.
 - PVP: no API break; a bug fix with an output change. Patch (0.9.x) is defensible; the lead/owner may prefer a minor bump
   because the schemas of existing types change.
+- Enum keys whose names contain regex syntax characters get an escaped pattern (`^(?:N/A|1\+)$`); others are unchanged.
+- play-json: `Map[UUID, V]` now compiles without a user `KeyPattern` and gives a schema that doesn't match play's
+  array-of-pairs output (documented, pinned; profile follow-up with the lead).
+- Public API: `KeyPattern.UUIDKeyPattern`, `KeyPattern.BooleanKeyPattern`, `KeyPattern.escape` (additive).
 - Legacy: changes (III-A), per the lead's policy; listed in the PR.
 
+## Neighbours (not fixed here)
+- `scala.Enumeration` `Value("C++")`: the value enum and the key pattern use the `val` name (`CPP`), but libraries write
+  `toString` (`"C++"`). Pre-existing, wrong for values too; with enforcement `{"C++":1}` becomes a rejection for keys
+  (r-b6 B6-R6, mailed to the lead).
+- refined `EndsWith` renders `^.*<v>$`: a string with a line break before the suffix is rejected.
+- JDK regex `$` also matches before a final `\n` (networknt accepts the key `"1\n"` for `^-?[0-9]+$`), ECMA-262 doesn't.
+  A validator difference; no action.
+
 ## Review log
+B6-R1 (must) escape enum key names → accepted: `KeyPattern.escape`, used by `forEnum` and both macros; Problem 6, I-A, plan 1/3, tests.
+B6-R2 (must) play + `Map[UUID, V]` → accepted, option (a): kept `UUIDKeyPattern`, documented the play mismatch (I-A, Compatibility,
+docs step), a pinning `TRIAGE-B` test in the play acceptance spec, follow-up mailed to the lead. Other bridges checked: no document to misdescribe.
+B6-R3 (must) petshop acceptance for maps → accepted: `Stock` model per bridge (plan 4, "Acceptance"); enum keys stay in
+`MapKeySchemaSpec` because every library needs user key codecs for them.
+B6-R4 (nit) `^.*$` from outside → accepted: `^.*$` counts as unconstrained too (keeps its text); parse -> render round-trip test.
+B6-R5 (nit) ECMA coverage → accepted: `js.RegExp` spec on Scala.js.
+B6-R6 (nit, neighbour) → noted under Neighbours.
