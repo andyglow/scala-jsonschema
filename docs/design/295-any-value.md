@@ -18,7 +18,8 @@ bridge module (they become the real specs in the implementation). All of the fol
 | json4s `JValue`, `JObject` | **compiles, and is wrong**: a sealed family of the AST's case classes, e.g. a JSON string must be `{"s": "..."}`, an object `{"obj": [{"_1": ..., "_2": ...}]}` | same |
 | spray `JsValue`, `JsObject` | **compiles, and is wrong**: `JsObject` must be `{"fields": {...}}`, `JsString` `{"value": "..."}`, `JsTrue` the string `"JsTrue"` | same |
 
-The json4s/spray schemas reject every real JSON value that the library writes (`"abc"` is not `{"s": "abc"}`).
+The json4s/spray schemas reject every real JSON value that the library writes (`"abc"` is not `{"s": "abc"}`). Their repro specs validate
+`"abc"`, `{"a": 1}` and a field holding `5` against today's schemas with the networknt validator: all rejected, on 2.13.18 and 3.3.9.
 
 Workarounds today (#286, #295): `Schema.`object`.Free[JsObject]()` (README "Free objects") covers objects only. For "any value" the user hand-writes a
 `oneOf` of six types (#286's comment), or casts another schema. Neither renders `{}`.
@@ -44,6 +45,9 @@ Workarounds today (#286, #295): `Schema.`object`.Free[JsObject]()` (README "Free
   With texts: `{"description": "plain JSON"}` (title/description on every node is B1, #469; see the plan).
 - Free extras: `` `not`(`any`) `` renders `{"not": {}}`, the "nothing" schema (`false`); a `Map[String, JsValue]` renders
   `"patternProperties": {"^.*$": {}}`; a `List[JsValue]` renders `"items": {}`.
+- An `any` in a `oneOf` always overlaps: `oneof{X, any}` matches every X value twice, so the `oneOf` rejects them. Only a hand-built `oneof` or
+  a family member over an AST type can get there. E2 doesn't change `oneOf` vs `anyOf` (that is B3, #470, which picks `anyOf` on overlap:
+  the lead is told `any` overlaps with everything). The README section says "don't put an `any` into a `oneOf`".
 - Pros: one node, one obvious name; `{}` is valid in every draft we render; the renderers' result type stays `obj`.
 - Cons: a new case in a sealed ADT. Exhaustive matches outside core break (users matching on `Schema` without a default get a warning, not an
   error: `Schema` is sealed, a match without the case still compiles). See Compatibility.
@@ -94,7 +98,7 @@ only searched when nothing in lexical scope matches).
 
 | library | `{}` (any) | free object | array of any | string | number | boolean |
 |---|---|---|---|---|---|---|
-| ours (core `Predef`, no import) | `Value` | `Value.obj` | `Value.arr` | `Value.str` | `Value.num` | `Value.bool` |
+| ours (core `Predef`, no import; also `` Value.`null`.type `` → `` Schema.`null` ``) | `Value` | `Value.obj` | `Value.arr` | `Value.str` | `Value.num` | `Value.bool` |
 | play (`AsPlay.predef`) | `JsValue` | `JsObject` | `JsArray` | `JsString` | `JsNumber` | `JsBoolean` |
 | circe (`AsCirce.predef`) | `Json` | `JsonObject` | | | `JsonNumber` | |
 | ujson (`AsU.predef`) | `ujson.Value` | `ujson.Obj` | `ujson.Arr` | `ujson.Str` | `ujson.Num` | `ujson.Bool` |
@@ -104,8 +108,18 @@ only searched when nothing in lexical scope matches).
 - Free object: `` `object`.Free[T]() `` (`{"type":"object","additionalProperties":true}`). Array: `` `array`[V, IndexedSeq](`any`[V]()) ``
   (`{"type":"array","items":{}}`), cast to `Schema[JsArray]` (the container is phantom; the same cast E8 uses for its null singletons).
 - Numbers render `number`, like the Scala number types today (`integer` for `JInt`/`JLong` is D2's decision, not E2's).
-- Not covered: the singletons `JsTrue`/`JsFalse`/`ujson.True`/... (could be `const`, nobody asked), the null singletons (E8), json4s `JNothing`
-  (means "absent"; a `JValue` covers it). circe's `Json.JString` etc. are private to circe.
+- Not covered: the singletons `JsTrue`/`JsFalse`/`ujson.True`/... (could be `const`, nobody asked), the libraries' null singletons (E8; our
+  own `` Value.`null` `` is core's, so E2 adds it), json4s `JNothing`. circe's `Json.JString` etc. are private to circe.
+- json4s `JNothing`: json4s *omits* a field whose value is `JNothing`, so a required `JValue` field rejects such an object (`required`). That
+  is the field's required-ness, not the value schema: README says to make such a field an `Option[JValue]` or give it a default. The json4s
+  acceptance test shows it (an object written with `JNothing` fails `required`, documented).
+- Defaults. A field default needs a `ToValue` of the field's type:
+  - Ours: core gets an identity `implicit def ValueV[T <: Value]: ToValue[T]` in `object ToValue` (`ToValue` is invariant; the generic covers
+    `Value`, `obj`, `arr`, ...). `ProductV` (which would also match `obj`, a case class) isn't mixed into the companion, so it can't clash.
+  - Bridges: `AsX.toValue` (from the library's writer: `Writes`, `Encoder`, `Writer`, `JsonWriter`) already covers `JsValue = Json.obj()` and
+    the like, with `AsX._` or `profiles.x._` imported, as for every other default today. `AsX.predef` adds no `ToValue` (a second instance next
+    to `AsX.toValue` is a specificity question per Scala version, for no gain). README says which imports a default needs; tests cover a
+    default on each library's root and object type.
 - Option 3B, **root type only** (`JsValue`/`Json`/`ujson.Value`/`JValue`/`Value` → any, nothing else): smaller, but a `JsObject` field (the
   README's own example) and the json4s/spray structural schemas stay as they are. LOST. The subtypes are one line each.
 
@@ -115,13 +129,20 @@ A `{}` already accepts `null`. The Neutral (and every `OptionStyle.Nullable`) lo
 `oneOf[{}, {"type":"null"}]`. That **rejects `null`**: both branches match, and `oneOf` needs exactly one.
 
 #### 4A. The lowering drops the `null` branch when X is any — WON
-`JsonSchemaProfile.Lowering.optionAt` (Nullable): `Option[X]` where X is `any` (or a value class of `any`) lowers to X itself. `Option[JsValue]`
-renders `{}`. Required-ness is unchanged (it comes from the field: not required, or required with `optionKeyRequired`). Legacy renders
+`JsonSchemaProfile.Lowering.optionAt` (Nullable): `Option[X]` where X *admits any value* lowers to X itself. `Option[JsValue]` renders `{}`.
+"Admits any value" (one helper, `isAny`, in core, used by the lowering and the renderer) looks through:
+- `value-class` (a value class over `JsValue`);
+- `def` (a user's `implicit val s: Schema[JsValue] = Schema.`any`[JsValue]()`, which the doc recommends for a definition): `Option[JsValue]`
+  then lowers to the `def` itself, so the `$ref` stays, `{"$ref": "#/definitions/JsValue"}`, and `null` passes (the body is `{}`).
+A `ref(sig)` (a reference to a definition whose body is elsewhere: recursion) can't be seen through. That case still renders
+`oneOf[{"$ref"}, {"type":"null"}]`. It needs a recursive type whose own definition is an `any`, which derivation never makes, so it is only
+documented. Required-ness is unchanged (it comes from the field: not required, or required with `optionKeyRequired`). Legacy renders
 `Option[X]` as X anyway.
 
-#### 4B. Do it in the renderer (`mkNullable`) — LOST
-It also catches a hand-built `` `oneof`(Set(`any`(), `null`)) ``, but the lowered tree (what `withProfile` returns, what tree specs compare) would
-still say `oneof{any, null}`. A user who builds that `oneof` by hand asked for it.
+#### 4B. Only in the renderer (`mkNullable`) — LOST as the fix, kept as a guard
+Fixing it in the renderer alone would leave the lowered tree (what `withProfile` returns, what tree specs compare) saying `oneof{X, null}`.
+As an extra, `mkNullable` renders a hand-built `` `oneof`(Set(`any`(), `null`)) `` (or a def of any) as the any member alone. A `oneOf` of `{}`
+and `null` is never what anyone means, and the guard is two lines.
 
 ## Decision
 A new leaf `` json.Schema.`any`[T]() `` that renders `{}` in every draft and profile (1A). Our own `Value` gets core Predefs (automatic). Each
@@ -133,14 +154,19 @@ bridge gets an opt-in `AsX.predef` object with inlined Predefs for its AST types
 2. **core renderer** (`AsDraftSupport.scala`):
    - `apply`'s `base`: `any`, and a `value-class` of `any`, write no `"type"` (today `value-class(x)` writes `x.jsonType`, which would be
      `"type": "any"`). A helper `isAny(s)` (through value classes) in one place.
-   - `mkAllOf`: `any` members don't count for the shared type (like `$ref`s today), so `allof{any, any}` can't render `"type": "any"`.
-   - `mkPlainOneOf`: the same for `known`/`tpe`. `mkNullable`/`singleType`: unchanged (`any` isn't single-typed; 4A means the lowering never
-     sends it there).
+   - `mkAllOf`: `any` members don't count for the shared type (like `$ref`s today), so `allof{any, any}` can't render `"type": "any"`. This
+     is right for an intersection: `allof{any, string}` is a string.
+   - `mkPlainOneOf`: `any` (and `bodyType` of a `def` of any) is excluded from `tpe`, the stated type, but it stays in `known` as a type
+     that equals nothing. So `oneof{string, any}` is *not* same-typed, and each member keeps its own `"type"`: `oneOf[{"type":"string"}, {}]`.
+     Skipping it in `known` too would give `{"type":"string","oneOf":[{}, {}]}`, which rejects every value.
+   - `mkEnum`: an `enum` over `any` (hand-built only) writes no `"type"`.
+   - `mkNullable`: the 4B guard (`oneof{any-ish, null}` → the any-ish member alone). `singleType` is unchanged (`any` isn't single-typed).
    - No `inferSpecifics` entry (`lift` falls back to `obj.empty`).
    - Per-draft renderers (`AsDraft04`..`AsDraft12`, `AsRaw`) don't match on nodes: no change.
 3. **core profile** (`JsonSchemaProfile.scala`): `optionAt` (Nullable), 4A. `Lowering.apply`'s `case other => other` already passes `any` through.
 4. **core tree tools**: `AsTree.scala` (exhaustive match: add `any`), `SchemaEquality` (falls back to `==`; nothing to add), `DefinitionNames` (default case).
-5. **core Predefs** (`json/schema/Predef.scala`): `Value`, `Value.obj`, `Value.arr`, `Value.str`, `Value.num`, `Value.bool` (3A).
+5. **core Predefs** (`json/schema/Predef.scala`): `Value`, `Value.obj`, `Value.arr`, `Value.str`, `Value.num`, `Value.bool`,
+   `` Value.`null`.type `` (3A). **core `ToValue`**: the identity `ValueV[T <: Value]` (3A, defaults).
 6. **bridges**: `object predef` in `AsPlay`, `AsCirce`, `AsU`, `AsJson4s`, `AsSpray` (3A). Built by hand: no macro calls in main code.
 7. **parser** (`modules/parser/.../ParseJsonSchema.scala`):
    - An object with no `type` and no keyword the parser reads (only annotations: `$schema`, `$id`, `id`, `title`, `description`, `default`,
@@ -148,27 +174,43 @@ bridge gets an opt-in `AsX.predef` object with inlined Predefs for its AST types
    - Nested `true` → `any`, nested `false` → `not(any)`, in `items` and in `properties`. A `true` property is silently dropped today
      (`collect { case (k, v: obj) => ...}`).
    - A root `true` stays an error (the root must be an object with a draft-04 `$schema`).
+   - `default`/`examples` in an annotation-only object are dropped, as the parser drops them everywhere today. `true`/`false` as schemas are
+     not draft-04 (boolean schemas came in draft-06). The parser reads them leniently in a draft-04 document: harmless, and documented in
+     `modules/parser.md`.
 8. **tests** (the repro specs become these):
    - core `SchemaEqualsHashCodeSpec`: `any` equality/hashCode, with and without texts.
    - api `AnyValueSpec`:
      - the trees for `Value` and its subtypes, as a field, `Option[Value]` (Neutral: `{}`, not required; `optionKeyRequired`; Legacy),
        `List[Value]`, `Map[String, Value]`, a value class over `Value`, `not(any)`, `allof`/`oneof` with `any` members;
+     - `Option` of a `Schema[Value]` *definition* (4A through `def`): the `$ref` alone, Neutral and a profile with `optionKeyRequired`,
+       `null` accepted by the validator;
+     - `oneof{string, any}`, `oneof{def(any), string}` (each member keeps its type), `allof{any, string}`, a hand-built `oneof{any, null}`
+       (the 4B guard), rendered per draft and validated;
+     - a default `data: Value = Value.obj(...)` (the identity `ToValue`);
      - the rendered JSON per draft (04, 06, 07, 2019-09, 2020-12);
      - `toDebugString`;
      - the networknt validator: `{}` accepts `1`, `"s"`, `null`, `[]`, `{}`, `true`; `Option[Value]` accepts `null`. JVM; canceled on JS by
        the harness.
-   - One golden model `AnyValues` (fields of each kind) for the full output per draft, with Legacy generated too. No existing golden file changes.
+   - One golden model `AnyValues` (fields of each kind) for the full output per draft. Update mode creates `golden/AnyValues*.json` and the
+     missing `golden-legacy/AnyValues*.json` (it adds, never rewrites). The PR lists both sets of new files. No existing golden file changes.
    - `harness/Golden.scala`'s tree dump (exhaustive): an `"any"` kind.
    - Each bridge, `AnyValueSpec`, with `import AsX.predef._`:
      - the trees;
      - a case class with every AST type as a field;
-     - the library's real codec output for sample values validated against the schema under its profile (acceptance-style, JVM).
+     - the library's real codec output for sample values validated against the schema under its profile (acceptance-style, JVM);
+     - a default on the root and the object type, with `AsX._` imported (the library writer's `ToValue`);
+     - json4s: a `JNothing` field is omitted by json4s and fails `required` (the documented exception);
+     - json4s/spray: the repro specs (today's structural schemas reject `"abc"`) pass with the import.
      - Scala 2 + play: `JsObject` with the import compiles (the Predef is found before derivation, so the B4 crash path isn't reached).
        Without the import it still crashes until B4 (#462) merges.
    - parser: `{}`, `{"title": "t"}`, `"items": true`, a `true`/`false` property, and `{"minimum": 1}` (still an error).
 9. **docs** (README + paradox `validation.md`, same words; `modules/json.md` for the imports):
-   - A section "Any JSON value" next to "Free objects": `Schema.`any``, `Option`, our `Value`, the per-library imports and table, and
-     `ConfigValue` (#295) as the do-it-yourself example: `implicit val p: Predef[ConfigValue] = Predef(Schema.`any`[ConfigValue]())`.
+   - A section "Any JSON value" next to "Free objects":
+     - `Schema.`any``, `Option`, our `Value`, the per-library imports and table;
+     - defaults need `AsX._` (or `profiles.x._`);
+     - don't put an `any` into a `oneOf`;
+     - json4s `JNothing`;
+     - `ConfigValue` (#295) as the do-it-yourself example: `implicit val p: Predef[ConfigValue] = Predef(Schema.`any`[ConfigValue]())`.
    - The README's `JsObject` example gains the import alternative. No CHANGELOG (the lead's).
 10. **JS**: shared code only; the Scala.js bridges (play, circe, ujson) get their `predef` too. The validator tests are canceled on JS as usual.
 11. **title/description on `any`**: rendered by B1's generic `texts` (#469). If B1 has merged when E2 is implemented, E2 builds on it and tests
@@ -186,3 +228,19 @@ bridge gets an opt-in `AsX.predef` object with inlined Predefs for its AST types
 - Core rule: unchanged (Predefs inline, a user's `Schema[JsValue]` still makes a definition and wins).
 
 ## Review log
+Round 1 (r-e2, on eeafc85):
+- E2-R1 (must) `Option` of a `def` of any still renders `oneOf[$ref, null]` → accepted: `isAny` looks through `def` and `value-class`;
+  `Option[def(any)]` lowers to the `def` (the `$ref` stays). A `ref` can't be seen through: documented (4A). Tests added to the plan.
+- E2-R2 (must) `oneof{string, any}` would render `"type":"string","oneOf":[{},{}]` → accepted: `any` is excluded from `tpe` but stays in
+  `known` as a type equal to nothing (also via `bodyType`). `mkEnum` over any writes no type. Tests for oneof/allof with any (plan step 2, 8).
+- E2-R3 (must) defaults → accepted: core identity `ToValue[T <: Value]` (`ProductV` isn't in the companion, so no clash); the bridges' defaults
+  use `AsX.toValue` with `AsX._` / `profiles.x._`, documented and tested per library (3A "Defaults").
+- E2-R4 (nit) `any` in a oneOf overlaps → accepted: noted in 1A and the README; the lead is told (B3). The `mkNullable` guard is added (4B as an
+  extra).
+- E2-R5 (nit) json4s `JNothing` → accepted: documented (3A), with an acceptance test showing the `required` failure.
+- E2-R6 (nit) `` Value.`null` `` → accepted: core (ours, not a library's: E8 takes the libraries' null singletons), `` Predef[Value.`null`.type] ``
+  → `` Schema.`null` `` (cast, as E8's).
+- E2-R7 (nit) json4s/spray repro specs passed on master → accepted: they now validate `"abc"`, `{"a":1}` and a field holding `5` against today's
+  schemas (all rejected on 2.13.18 and 3.3.9).
+- E2-R8 (nit) golden-legacy files are created → accepted: listed in the plan and the PR.
+- E2-R9 (nit) parser `default`/`examples` and draft-04 leniency → accepted: dropped as elsewhere; leniency documented (plan step 7).
