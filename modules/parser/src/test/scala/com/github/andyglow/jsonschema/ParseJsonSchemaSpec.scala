@@ -195,7 +195,7 @@ class ParseJsonSchemaSpec extends AnyFunSuite {
     parseType {
       """{
         | "type": "object",
-        | "properties": { "a": { "title": "no type" } }
+        | "properties": { "a": { "title": "no type", "minimum": 1 } }
         |}
       """.stripMargin
     }.isFailure shouldBe true
@@ -241,6 +241,24 @@ class ParseJsonSchemaSpec extends AnyFunSuite {
 
   test("apply: rejects invalid json") {
     ParseJsonSchema("""{ "type": "string", }""").isFailure shouldBe true
+  }
+
+  test("any value: {} and an annotations-only object") {
+    parseType("{}").value shouldBe `any`[Any]()
+    parseType("""{ "title": "t", "description": "d", "default": 1, "examples": [1] }""").value shouldBe `any`[Any]().withTitle("t")
+    ParseJsonSchema("""{ "$schema": "http://json-schema.org/draft-04/schema#" }""").value shouldBe `any`[Any]()
+    parseType("""{ "minimum": 1 }""").isFailure shouldBe true // a keyword the parser doesn't read, without "type": still an error
+    ParseJsonSchema("true").isFailure shouldBe true           // the root must be an object
+  }
+
+  test("any value: boolean schemas in items and properties") {
+    parseType("""{ "type": "array", "items": true }""").value shouldBe `array`[Any, List](`any`[Any]())
+    parseType("""{ "type": "array", "items": {} }""").value shouldBe `array`[Any, List](`any`[Any]())
+    parseType("""{ "type": "object", "properties": { "a": true, "b": false, "c": {} }, "required": ["a"] }""").value shouldBe `object`[Any](
+      `object`.Field("a", `any`[Any](), required = true),
+      `object`.Field("b", Schema.`not`[Any](`any`[Any]()), required = false),
+      `object`.Field("c", `any`[Any](), required = false)
+    )
   }
 
   def parseType(x: String): Try[Schema[_]] =

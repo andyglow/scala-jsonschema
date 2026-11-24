@@ -58,5 +58,8 @@ object ToValue extends LowPriorityImplicits {
 
   def mk[T](f: T => Value): ToValue[T] = new ToValue[T] { def apply(x: T): Value = f(x) }
 
+  /** A default of our own JSON AST type (`data: Value = Value.obj(...)`) is that value itself. */
+  implicit def ValueV[T <: Value]: ToValue[T] = mk[T](x => x)
+
   def apply[T](x: T)(implicit to: ToValue[T]): Value = to(x)
 }

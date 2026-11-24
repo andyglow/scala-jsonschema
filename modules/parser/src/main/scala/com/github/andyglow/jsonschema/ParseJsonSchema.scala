@@ -85,7 +85,7 @@ object ParseJsonSchema {
     }
 
     def makeArr = for {
-      elementType <- x.value.obj("items").toSuccess("items is not defined") flatMap makeType
+      elementType <- x.value.get("items").filter(isSchema).toSuccess("items is not defined") flatMap makeSub
     } yield {
       val unique = x.value.bool("uniqueItems") getOrElse false
       `array`(elementType, unique = unique)
@@ -103,8 +103,9 @@ object ParseJsonSchema {
           _ collect { case str(x) => x }
         } getOrElse Set.empty
         x.value.obj("properties").map { _.fields }.toSuccess("properties is not defined") flatMap { props =>
-          val fields = props.toList.collect { case (k, v: obj) =>
-            makeType(v) map { `object`.Field(k, _, required.contains(k)) }
+          val fields = props.toList.collect {
+            case (k, v) if isSchema(v) =>
+              makeSub(v) map { `object`.Field(k, _, required.contains(k)) }
           }
 
           fields.foldRight[Try[List[`object`.Field[_]]]](Success(Nil)) { (f, acc) =>
@@ -129,13 +130,33 @@ object ParseJsonSchema {
       case str(t)                                    => List(t)
       case arr(ts) if ts.forall(_.isInstanceOf[str]) => ts.toList.collect { case str(t) => t }
     }
-    val result = types.toSuccess("type is not defined") flatMap {
-      case List(t)                                      => makeSingle(t)
-      case List(a, b) if (a == "null") != (b == "null") => makeSingle(if (a == "null") b else a) map { s => `oneof`[Any](immutable.Set[Schema[_]](s, Schema.`null`)) }
-      case other                                        => Failure(new Exception(s"unsupported type: ${other.mkString("[", ", ", "]")}"))
-    }
+    // no `type` and nothing but annotations (`{}`, `{"title": ...}`): any value. `default`/`examples` are dropped, as everywhere in the parser
+    def annotationsOnly = x.value.keySet.forall(AnnotationKeys.contains)
+    val result          =
+      if (types.isEmpty && annotationsOnly) Success(`any`[Any]())
+      else
+        types.toSuccess("type is not defined") flatMap {
+          case List(t)                                      => makeSingle(t)
+          case List(a, b) if (a == "null") != (b == "null") => makeSingle(if (a == "null") b else a) map { s => `oneof`[Any](immutable.Set[Schema[_]](s, Schema.`null`)) }
+          case other                                        => Failure(new Exception(s"unsupported type: ${other.mkString("[", ", ", "]")}"))
+        }
 
     title.map(t => result.map(_.withTitle(t))).getOrElse(result)
+  }
+
+  // the keywords that don't constrain a value: an object of only these, without `type`, is `{}` (any value)
+  private val AnnotationKeys: Set[String] = Set("$schema", "$id", "id", "title", "description", "default", "examples", "$comment", "definitions")
+
+  // a nested schema: an object, or a boolean schema (`true` = any value, `false` = none; draft-06+, read leniently in a draft-04 document)
+  private def isSchema(v: Value): Boolean = v match {
+    case _: obj | _: bool => true
+    case _                => false
+  }
+
+  private def makeSub(v: Value): Try[Schema[_]] = v match {
+    case o: obj => makeType(o)
+    case `true` => Success(`any`[Any]())
+    case _      => Success(`not`[Any](`any`[Any]()))
   }
 
   private[jsonschema] def parseFormat(x: String): Option[Schema.`string`.Format] = {

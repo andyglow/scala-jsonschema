@@ -1,5 +1,5 @@
 # An "any JSON value" schema, and schemas for the JSON libraries' own AST types  (issues #295, #289, #286, item E2)
-Status: draft
+Status: approved (r-e2, 2026-11-23), implemented
 
 ## Problem
 There is no schema node for "any JSON value" (`{}` in every draft, `true` from draft-06 on). So there is no way to give a field that holds arbitrary JSON a
@@ -43,7 +43,7 @@ Workarounds today (#286, #295): `Schema.`object`.Free[JsObject]()` (README "Free
   it (below).
 - Renders `{}` in every draft (04, 06, 07, 2019-09, 2020-12, Raw) and under every profile, Legacy included (a new node: no 0.7 output to keep).
   With texts: `{"description": "plain JSON"}` (title/description on every node is B1, #469; see the plan).
-- Free extras: `` `not`(`any`) `` renders `{"not": {}}`, the "nothing" schema (`false`); a `Map[String, JsValue]` renders
+- Free extras: `` `not`(`any`) `` has the body `"not": {}`, the "nothing" schema (`false`); a `Map[String, JsValue]` renders
   `"patternProperties": {"^.*$": {}}`; a `List[JsValue]` renders `"items": {}`.
 - An `any` in a `oneOf` always overlaps: `oneof{X, any}` matches every X value twice, so the `oneOf` rejects them. Only a hand-built `oneof` or
   a family member over an AST type can get there. E2 doesn't change `oneOf` vs `anyOf` (that is B3, #470, which picks `anyOf` on overlap:
@@ -244,3 +244,15 @@ Round 1 (r-e2, on eeafc85):
   schemas (all rejected on 2.13.18 and 3.3.9).
 - E2-R8 (nit) golden-legacy files are created → accepted: listed in the plan and the PR.
 - E2-R9 (nit) parser `default`/`examples` and draft-04 leniency → accepted: dropped as elsewhere; leniency documented (plan step 7).
+
+Implementation notes (no change to the approved plan):
+- Correction to E2-R7: the repro specs at 562defa failed on the validator's `$id` check (`'x' is not a valid $id`), not on validation. The
+  implementation's json4s/spray `AnyValueSpec` re-checks with a valid `$id`: the structural schemas (derived without the import) do reject
+  `"abc"` and `{"a":1}` on 2.13.18 and 3.3.9. The claim holds; the earlier evidence didn't show it.
+- Found (pre-existing, every `not`, not E2's): a rendered `not` node writes `"type": "not"` next to `"not"` (`apply`'s base uses `jsonType`),
+  which is not a JSON Schema type. So `not(any)` renders `{"type": "not", "not": {}}`. Reported to the lead. README doesn't advertise `not(any)`.
+- An `enum` over `any` (hand-built) would also get the base `"type": "enum"`: `apply`'s base writes no type for it (with `mkEnum`'s).
+- Parser: an existing test used `{"title": "no type"}` as an invalid property schema. Under 7 it is now `any` with a title, so the test uses
+  `{"title": "no type", "minimum": 1}` (still invalid: a keyword the parser doesn't read, without `type`).
+- `Schema.`any`.admitsEverything(s)` (public, in the `any` companion) is the one "admits every value" check (`any`, through `value-class` and
+  `def`), shared by the lowering and the renderer.

@@ -199,7 +199,9 @@ object JsonSchemaProfile {
     /** An `option` node anywhere but in a Legacy `Option` field. */
     private def optionAt(inner: Schema[_]): Schema[_] = p.optionStyle match {
       case OptionStyle.Nullable =>
-        `oneof`[Any](Set(apply(flatten(inner)), Schema.`null`))
+        val x = apply(flatten(inner))
+        // an `any` (or a definition / value class of one) admits `null` already, and `oneOf[{}, null]` would reject it: X alone
+        if (Schema.`any`.admitsEverything(x)) x else `oneof`[Any](Set(x, Schema.`null`))
       case OptionStyle.Legacy =>
         // exactly what the Scala 2 macro derived in 0.7, member order included (a 2-element Set iterates in insertion order, and the renderer keeps it)
         `oneof`[Any](

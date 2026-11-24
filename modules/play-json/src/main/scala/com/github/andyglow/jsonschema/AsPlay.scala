@@ -84,4 +84,19 @@ object AsPlay {
       Adapter.unadapt(js)
     }
   }
+
+  /** `import com.github.andyglow.jsonschema.AsPlay.predef._` (Scala 3: `.*`): inlined schemas for play-json's own AST types. `JsValue` is any JSON value (`{}`), `JsObject` a free object, `JsArray` an
+    * array of any values. Opt-in: these next to a `Predef[JsObject]` of your own would be ambiguous.
+    */
+  object predef {
+    import _root_.json.schema.Predef
+    import _root_.json.{Schema => S}
+
+    implicit val playJsValuePredef: Predef[JsValue]     = Predef(S.`any`[JsValue]())
+    implicit val playJsObjectPredef: Predef[JsObject]   = Predef(S.`object`.Free[JsObject]())
+    implicit val playJsArrayPredef: Predef[JsArray]     = Predef(S.`array`[JsValue, IndexedSeq](S.`any`[JsValue]()).asInstanceOf[S[JsArray]])
+    implicit val playJsStringPredef: Predef[JsString]   = Predef(S.`string`[JsString])
+    implicit val playJsNumberPredef: Predef[JsNumber]   = Predef(S.`number`[BigDecimal].asInstanceOf[S[JsNumber]])
+    implicit val playJsBooleanPredef: Predef[JsBoolean] = Predef(S.`boolean`.asInstanceOf[S[JsBoolean]])
+  }
 }
