@@ -1,5 +1,5 @@
 # java.time Predefs and FiniteDuration  (issue #474, item E3; also #305 question 3)
-Status: draft
+Status: approved (r-e3, 2026-11-23)
 
 ## Problem
 These types have no built-in schema, so a model that uses them doesn't compile:
@@ -126,7 +126,7 @@ standard text. One more `implicit val` is simpler.
   and play have no codec. A validator that asserts formats (networknt with `formatAssertionsEnabled(true)`; ajv with
   ajv-formats on 2019-09+) rejects every one of them under `format: duration`. Plain `string` accepts them all and
   states nothing false. LOST to consistency only: `Duration` (the supertype, existing output) has `format: duration`
-  and the same problem, so `FiniteDuration` follows it; changing `Duration` is an output change for the lead/owner
+  and the same problem, so `FiniteDuration` follows it; changing `Duration` is an output change, tracked by item D1
   (reported as a neighbour). If `Duration` changes, `FiniteDuration` changes with it (one line).
 - `Year` as `integer` (Jackson's `JavaTimeModule` writes a number) instead of a string: no bridged library writes
   that, circe writes a string. A user who needs it declares their own `implicit val y: Predef[Year]`, which wins
@@ -149,7 +149,7 @@ Trade-offs the owner should see:
 `ToValue[FiniteDuration]` to render the default (`Can't infer json value for default value of ... Please provide
 ToValue[...]`). Core has no `ToValue` for any Predef'd non-primitive type today (`UUID`, `URI`, `LocalDate`, `Instant`,
 `Duration` fail the same way), so adding them for these nine types only would be inconsistent; it is one decision for
-all Predef'd types (left to the lead as a separate item). Workarounds today: a bridge import (`AsCirce._`, `AsPlay._`,
+all Predef'd types, tracked as item B18. Workarounds today: a bridge import (`AsCirce._`, `AsPlay._`,
 ...) derives `ToValue` from the library's encoder, or declare an `implicit ToValue[T]`.
 
 ## Implementation plan
@@ -191,7 +191,8 @@ Per-type alternatives (toString / upickle / #11 texts, format-asserting validato
 (consistency with `Duration`), trade-off stated in Decision.
 E3-R2 (must) field defaults need `ToValue` → accepted (b): "Out of scope: default values" under Decision, with the
 error, why (no Predef'd non-primitive type has a core `ToValue`), and the workarounds (bridge import, own `ToValue`).
-Left to the lead as a separate item.
+Tracked as item B18.
+E3-R6 (nit, at approval) name the items → accepted: B18 (defaults), D1 (Duration).
 E3-R3 (nit) lookahead in the Period pattern → accepted: lookaround-free three-branch pattern (yours); spec updated.
 E3-R4 (nit) OffsetTime beyond the ITEMS row → accepted: lead OK'd it (2026-11-23); the PR summary will say so.
 E3-R5 (nit) `date-time` rejects years > 9999 → accepted: one bullet under A ("don't fix it with a pattern").
