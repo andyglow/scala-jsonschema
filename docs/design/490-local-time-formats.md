@@ -1,5 +1,5 @@
 # Time types whose `format` rejects the written form  (issue #490, item D1)
-Status: draft
+Status: approved (r-d1, 2026-11-23)
 
 ## Problem
 Seven built-in schemas give a string a JSON Schema `format` that the text JSON libraries write for that type doesn't
@@ -249,9 +249,9 @@ Out of scope, noted for the lead:
      `platformDirs("jvm")` wires `scala-jvm`. Each encodes `TimeSamples.slots` with the library's built-in codecs and runs
      `Acceptance.assertValid` against `Schemas.slot` under the library's profile, on every draft. It also runs
      `assertInvalid` against `Schemas.slot09`, to show that the change matters.
-   - json4s, for `Z?` (R4): in `modules/json4s-json/src/test/scala-2/petshop/Json4sAcceptanceSpec.scala` (JVM-only
-     module), write a `LocalDateTime` with `DefaultFormats ++ JavaTimeSerializers.all` and validate it against
-     `Json.schema[LocalDateTime]`. This needs `"org.json4s" %% "json4s-ext" % "4.0.7" % Test` in build.sbt, so run
+   - json4s, for `Z?` (R4): in a new `modules/json4s-json/src/test/scala/petshop/Json4sTimeSpec.scala`
+     (shared, so it runs on 3.3 too: writing a bare value needs no case-class reflection), write a `LocalDateTime` with
+     `DefaultFormats ++ JavaTimeSerializers.all` and validate it against `Json.schema[LocalDateTime]`. This needs `"org.json4s" %% "json4s-ext" % "4.0.7" % Test` in build.sbt, so run
      `scalafmtSbtCheck`. Only `LocalDateTime` and `ZonedDateTime` are checked there. json4s's object `LocalTime` and
      millis `Duration` are out of scope (Decision).
    - upickle and spray have no java.time codecs, so they get no `Slot` test.
@@ -303,3 +303,7 @@ Round 1 (r-d1, at ca831c4):
   an equality test.
 - **D1-R6 (nit) `java.sql.Timestamp`.** Accepted. It's added to the out-of-scope list with what the libraries write.
 - **D1-R7 (nit) FiniteDuration, both orders.** Accepted. Step 1 covers both orders.
+- **D1-R8 (nit, optional)** Run the json4s-ext check on 3.3 too. Accepted: it goes in a new shared
+  `Json4sTimeSpec` (`src/test/scala`) instead of the Scala 2-only acceptance spec.
+
+Approved by r-d1 at 04eccfd. R8 was folded in afterwards with the Status line.
