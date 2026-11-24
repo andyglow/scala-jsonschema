@@ -64,14 +64,26 @@ iterates in order and stores a `mutable.LinkedHashMap`:
    Duplicate keys (a definition met twice) keep the position of the first occurrence, as `LinkedHashMap` does.
 2. `Value.obj`: `+`, `-`, `++`, `deepMerge` build their result from `fields` (the ordered view of whatever map is
    underneath) into a `LinkedHashMap`, so they keep order even when one side was built from an immutable `Map`;
-   `toString` iterates `fields`. A private helper `obj.ordered(Iterable[(String, Value)])` does it in one place.
-   `value` (the `immutable.Map` view for lookups) stays as it is; its scaladoc says it has no order and points to `fields`.
+   `toString` iterates `fields`. A package-private helper `obj.ordered(Iterable[(String, Value)])` (`private[andyglow]`,
+   so the bridges can use it) does it in one place, always into a fresh `LinkedHashMap` (never the receiver's or a
+   caller's map, so `+`/`-` don't alias a user-supplied mutable map). Duplicate keys: the first occurrence's position,
+   the last occurrence's value, which is what `toMap` / `Map ++` give today, so the result is JSON-equal to 0.9.0.
+   For `++` and `deepMerge`: a key of the left side keeps its position and takes the right side's value; new keys are
+   appended. `value` (the `immutable.Map` view for lookups) stays as it is; its scaladoc says it has no order and
+   points to `fields`.
 3. `ToValue.StrMapV`/`IntMapV`: keep the default's own iteration order (`LinkedHashMap` instead of `toMap`).
 4. Bridges, both directions: iterate `obj.fields` (not `value`/`toMap`) and build the library object from an ordered
    sequence: circe `Json.obj(seq: _*)` / `JsonObject.toList`; play `JsObject(seq)` / `JsObject.fields`; u-json
    `ujson.Obj.from(seq)` / `Obj.value` (a `LinkedHashMap`); json4s `JObject(list)` / `JObject.obj`; spray
    `JsObject(ListMap(seq: _*))` (spray's `JsObject` is a `Map`; its varargs constructor builds a `HashMap`) /
-   `JsObject.fields`.
+   `JsObject.fields`. The reverse direction is what each bridge's `toValue` uses, i.e. how a field default is turned
+   into a value through the library's encoder (a case-class-typed default, `s: Six = Six(1, .., 6)`): play, spray,
+   u-json and json4s call `Adapter.unadapt`; circe has its own `translate` in `AsCirce.toValue`, fixed the same way.
+   The bridges stop using `scalamigration.MapMigOps.mapV` (it goes through `toMap`, so it drops order; don't go back to
+   it). It stays in the public package for binary compatibility.
+   Spray limit: a `JsObject` spray builds itself (its parser, `JsObject(k -> v, ...)`, most `JsonWriter`s) is backed by
+   a plain `Map`, so its order is already gone before `AsSpray` sees it; only a `ListMap`-backed one keeps its order.
+   The other four libraries keep order in their own objects.
 
 Sample output (Draft 07, `Six`), keys now as written:
 ```json
@@ -118,12 +130,15 @@ No public API changes.
 4. Bridges `AsCirce`, `AsPlay`, `AsU`, `AsJson4s`, `AsSpray`: both directions over ordered sequences.
 5. Tests:
    - `api/.../PropertyOrderSpec.scala` (the repro, kept): properties on every draft, `required`, defaults, Tuple5,
-     discriminated member, definitions, validation keywords, `Map` default; plus one full-text check of
-     `JsonFormatter.format` for `Six` on Draft 07 so the whole key order is pinned.
+     discriminated member (phantom), a `phantom = false` member with the discriminator field declared in the middle
+     (`a1, a2, type, a3, a4` stays in that order), definitions, validation keywords, `Map` default; plus one full-text
+     check of `JsonFormatter.format` for `Six` on Draft 07 so the whole key order is pinned.
    - `core/.../json/ValueSpec.scala`: `+`, `-`, `++`, `deepMerge`, `toString` keep order with 6+ keys, also when one side
-     was built from an immutable `Map`.
-   - Each bridge's `As*Spec`: "keeps key order" (added with the repro) and the reverse direction (library object of
-     6 keys → `obj.fields` order).
+     was built from an immutable `Map`; the same key on both sides of `++`/`deepMerge` keeps its left position and
+     takes the right value.
+   - Each bridge's `As*Spec`: "keeps key order" (added with the repro), and the `toValue` direction: a case class
+     `WithObjDefault(s: Six = Six(1, .., 6))` with a library encoder for `Six` in scope (written by hand, keys `a1..a6`;
+     a `ListMap` for spray) and `AsX.toValue` imported; the rendered `default` has keys `a1..a6`.
 6. Golden files: no change expected. `golden/` and `golden-legacy/` compare canonicalized JSON (keys sorted), and the
    tree dump already records field order. Run the full suites to confirm; any golden diff is a bug in the change.
    `AsDraftXXSpec` and the other specs compare structurally (`obj.equals` ignores order), so they shouldn't move either.
@@ -141,7 +156,22 @@ tree, not an `obj` problem.
 - Output: JSON-equal to 0.9.0 (same keys, same values); only the textual key order of objects with 5+ keys changes,
   for every profile, Legacy included. Byte-for-byte, Legacy's text changes for such objects, but 0.7 itself wrote them
   in hash order, which is no contract; the `golden-legacy/` files (canonicalized) don't change. Keeping hash order
-  under Legacy would need a profile-aware `obj`, which no one wants.
+  under Legacy would need a profile-aware `obj`, which no one wants. **Lead decision (2026-11-23): OK, no Legacy
+  special case** ("key order is JSON-equal and 0.7's order was an accident"); the PR's output-change section says so.
+- Bridges: the five library objects now come out in the same order as our own rendering. Spray's reverse direction
+  keeps order only for `ListMap`-backed `JsObject`s (see step 4).
 - Users who diff a committed schema file see one reorder of objects with 5+ keys when they upgrade, then stable diffs.
 
 ## Review log
+Round 1 (r-b2, a107352):
+- B2-R1 (must) circe's `toValue` has its own `translate`; test the `toValue` path per bridge → accepted: step 4 names
+  `translate` and says which function each bridge's `toValue` uses; step 5 adds a case-class default test per bridge
+  through `AsX.toValue` with a hand-written encoder.
+- B2-R2 (must) Legacy key order needs the lead's OK → accepted: mailed the lead; answer ("B2 OK, no Legacy special
+  case") recorded in Compatibility.
+- B2-R3 (nit) `mapV` drops order → accepted: step 4 says the bridges stop using it and why; it stays (public package).
+- B2-R4 (nit) pin `phantom = false` with the discriminator field in the middle → accepted: step 5.
+- B2-R5 (nit) spell out duplicate-key value → accepted: step 1 (first position, last value; `++`/`deepMerge` rule);
+  `ValueSpec` case in step 5.
+- B2-R6 (nit) spray's own `JsObject`s are unordered → accepted: step 4 and Compatibility.
+- B2-R7 (nit) `obj.ordered` always copies → accepted: step 1.
