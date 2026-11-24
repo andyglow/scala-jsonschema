@@ -1,5 +1,5 @@
 # refined: numeric `Or`/`And` simplification describes the wrong range  (issue #526, item B27)
-Status: draft
+Status: approved (r-b27, 2026-11-23)
 
 ## Problem
 
@@ -312,7 +312,8 @@ The two macros have the same structure. Make each change in both files, Scala 2 
      in `RefinedBooleanSpec` "and" says it didn't), leave a comment saying so: Scala 2 shares the error path with the
      existing `Outside` error.
 9. **New `RefinedRangesValiditySpec`** (same dir): for each `Int` predicate of step 8, render `Json.schema[Int Refined P]`
-   and a wrapper `case class W(x: Int Refined P)` (a field: `"type"` stated even before B15) as draft-07 and 2020-12. Assert
+   and a wrapper `case class W(x: Int Refined P)` (a field: `"type"` stated even before B15; one top-level or
+   object-member case class per predicate, since a local case class in a test body can trip the Scala 2 macro) as draft-07 and 2020-12. Assert
    that `petshop.JsonValidator.errors(...)` is empty exactly when refined's `Validate[Int, P].isValid(x)`, for x in
    -12..12. For the `Double` rows, check the wrapper for x in -12.0..12.0 step 0.5. This is the probe made permanent;
    it is D's correctness check. Build change: refined's `.dependsOn(core % "compile->compile;test->test", api)` →
@@ -386,3 +387,6 @@ Round 1 (r-b27, on 062d6b1):
 - B27-R7 (nit) plan details → accepted: the scaladoc quirk list (step 7), B14's identical build change and
   `RefinedOrValiditySpec` (step 9 + Risks), the R1 shapes, compile errors and the integer-only gap in step 8, and the B22
   note on raw `NonNegative` operands (Decision, "Not in scope").
+
+Round 2 (r-b27, on bf0b4c6): approved, no further comments. Implementer hint taken into step 9 (wrapper case classes top-level
+or in an object, not local).
