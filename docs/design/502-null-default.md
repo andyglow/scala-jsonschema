@@ -1,5 +1,5 @@
 # A `null` field default throws or renders an invalid `default`  (issue #502, item B17)
-Status: draft
+Status: approved (r-b17, 2026-11-23)
 
 ## Problem
 Both macros turn a field's Scala default into a JSON `default` by calling the companion's default getter **at runtime**
