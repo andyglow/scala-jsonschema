@@ -1,5 +1,5 @@
 # java.time Predefs and FiniteDuration  (issue #474, item E3; also #305 question 3)
-Status: approved (r-e3, 2026-11-23)
+Status: approved (r-e3, 2026-11-23); implemented (#477)
 
 ## Problem
 These types have no built-in schema, so a model that uses them doesn't compile:
