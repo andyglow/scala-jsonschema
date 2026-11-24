@@ -5,8 +5,8 @@ Status: draft
 For a `scala.Enumeration`, both derivations list the names of the object's `val`s (Scala 2: `UEnums.fromScalaEnumeration`,
 every getter whose type has a base class named `Value`; Scala 3: `Enums.scalaEnumeration`, quirk 12 kept for parity).
 A value's name is something else: `Value("C++")`, `Value(10, "Haskell")`, or, with no name given, the val's name found
-at runtime (JVM reflection; on Scala.js the compiler adds the name). The same val names make the `Map[E.Value, V]`
-key pattern.
+at runtime (JVM reflection; on Scala.js the compiler adds the name to `Value`/`Value(id)` in a val definition). The same
+val names make the `Map[E.Value, V]` key pattern.
 
 ```scala
 object Lang extends Enumeration {
@@ -32,74 +32,115 @@ case class Repo(lang: Lang.Value, stars: Map[Lang.Value, Int])
 | JVM, 2.12 / 2.13 / 3.3 | `C++`, `Scala` **or** `Default`, `Haskell`: the aliased value is named after either val, by JVM reflection order (both seen on 2.13 in different runs of the same build) |
 | Scala.js, 2.13 / 3.3 | `C++`, `Scala`, `Haskell` |
 
-Also today (read from the code, the Scala 2 ones run): values declared in a parent class of the object aren't listed
-(only `decls`); on Scala 2 a val of another type named `Value` is listed (`WithOtherValue` in `SumsEnumsCharSpec`:
-`enum("A", "notOne")`).
+A field default contradicts the schema it is in (r-b16's repro, 2.13 + 3.3, JVM + JS): with play's `Format` in scope
+(on Scala 2 play's implicit `enumNameWrites` is enough), `case class D(l: Lang.Value = Lang.CPP)` renders
+`{"default": "C++", "type": "string", "enum": [..., "CPP", ...]}`: the default isn't a member of its own enum.
+
+Also today (run on master, 2.13.18 and 3.3.9):
+- values declared in a parent class of the object aren't listed (only `decls`);
+- on Scala 2 a val of another type named `Value` is listed (`WithOtherValue` in `SumsEnumsCharSpec`: `enum("A", "notOne")`);
+- an empty `object Empty extends Enumeration`: Scala 2 fails with "overloaded method of with alternatives ... cannot be
+  applied to (json.Schema.string[Empty.Value])", Scala 3 derives `enum[string]()`, i.e. `"enum": []`, which no value matches;
+- `val e: Enumeration = Lang; Json.schema[e.Value]`: the same two outcomes (no `Value` vals in `Enumeration`'s decls).
 
 ## Why it is a problem
 The JSON libraries write `toString` and read with `withName` (run, `notes/scratch/c-b16/repro/`):
 - play-json `Json.formatEnum(Lang)`, `Writes.enumNameWrites` (an implicit on Scala 2): `"C++"`, `"Scala"`, `"Haskell"`.
-  `Reads.enumNameReads(Lang)` rejects `"CPP"` (`error.expected.validenumvalue`).
+  `Reads.enumNameReads(Lang)` rejects `"CPP"` (`error.expected.validenumvalue`). Without a `KeyWrites`, play writes a
+  `Map[Lang.Value, V]` as an array of pairs (`[["C++",1]]`, r-b16), so a key pattern only applies with one.
 - circe `Encoder.encodeEnumeration(Lang)`: the same; `Decoder.decodeEnumeration(Lang)` rejects `"CPP"`.
-- json4s-ext `EnumNameSerializer` writes `toString` too (`EnumSerializer` writes the id). Not run: json4s-ext isn't a
-  dependency of the build; from its source.
+- json4s-ext `EnumNameSerializer` writes `toString` too (`EnumSerializer` writes the id: out of scope, an id-based
+  encoding would be a profile question). Not run: json4s-ext isn't a dependency of the build; from its source.
 - upickle, spray-json: no codec for `Enumeration#Value` (run: no implicit). Users write one, normally with `toString`/`withName`.
 
 So for any value with an explicit name, the schema rejects what the codec writes, and allows a string the decoder
 rejects. With B6's key enforcement (#479), `{"C++": 1}` is rejected as a key too. An alias adds a name nobody writes.
 
 ## Options
-### A. Read the names from the object at runtime  — WON
+### A. Read the names from the object at runtime, with a compile-time path for the object's own initializer  — WON
 The macro emits a reference to the `Enumeration` object and a call to a small core helper that reads
-`obj.values.toList.map(_.toString)` when the schema is built:
+`obj.values.toList.map(_.toString)` when the schema is built. It also passes the compile-time names as a fallback for the
+one case where the runtime read can't work, a schema built while the object is still initializing:
 
 ```scala
 // core/src/main/scala/com/github/andyglow/jsonschema/Enumerations.scala (shared, JS-clean)
 object Enumerations {
   def names(e: Enumeration): List[String] = e.values.toList.map(_.toString).distinct
-  def schema[T](e: Enumeration): Schema.`enum`[T] = names(e) match {
-    case h :: t => Schema.`enum`.of[T](Schema.`string`[T](None), Value.str(h), t.map(Value.str(_)): _*)
-    case Nil    => throw new IllegalStateException(s"$e has no values (yet): build its schema after the values, or in a lazy val or def")
+  /** `fallback`: the names the macro saw; used when `e` has no values yet (built during `e`'s initialization). */
+  def schema[T](e: Enumeration, fallback: List[String]): Schema.`enum`[T]  = mk(namesOr(e, fallback))
+  def keyPattern(e: Enumeration, fallback: List[String]): String         = namesOr(e, fallback).map(KeyPattern.escape).mkString("^(?:", "|", ")$")
+  private def namesOr(e: Enumeration, fallback: List[String])             = names(e) match {
+    case Nil => if (fallback.nonEmpty) fallback else throw new IllegalStateException(s"$e has no values")
+    case ns  => ns
   }
-  def keyPattern(e: Enumeration): String = names(e).map(KeyPattern.escape).mkString("^(?:", "|", ")$")
 }
-// Scala 2 expansion of Json.schema[Lang.Value]:   _root_.com.github.andyglow.jsonschema.Enumerations.schema[Lang.Value](Lang)
-// Map[Lang.Value, Int]: ... .withValidation(patternProperties := Enumerations.keyPattern(Lang))
+// Scala 2 expansion of Json.schema[Lang.Value]:
+//   _root_.com.github.andyglow.jsonschema.Enumerations.schema[Lang.Value](Lang, List("C++", "Scala", "Haskell", "Default"))
 ```
 
-Output for `Repo`: `"enum": ["C++", "Scala", "Haskell"]` (JVM: `Scala` or `Default`, whichever `toString` says),
-key pattern `^(?:C\+\+|Scala|Haskell)$`.
+**Inside the object's initializer** (R1). The common home of an Enumeration's implicit schema is the object itself, often
+at the top:
 
-Prototyped on both derivations (patch: `notes/scratch/c-b16/prototype.patch`, about 60 lines; reverted) and run
-on 2.13.18 and 3.3.9, JVM and JS:
+```scala
+object TopSchema extends Enumeration {
+  implicit val schema: json.Schema[Value] = Json.schema[Value] // runs before the vals below
+  val A = Value("a-1"); val B = Value
+}
+```
+
+A runtime read there sees no values (top) or some of them (middle). So the macro checks whether the expansion runs in
+the initializer of the very `Enumeration` object it derives: walking the owners from the call site (Scala 2
+`c.internal.enclosingOwner`, Scala 3 `Symbol.spliceOwner`), it reaches that object's module class through strict vals,
+the constructor and anonymous functions only (a `def`, a `lazy val`, or another class/object on the way means "not
+during initialization"). Then it doesn't read at runtime. It reads the names from the object's trees instead, which are
+available there because the call site is in the same compilation unit (Scala 2: the enclosing `ModuleDef`,
+`c.enclosingClass`; Scala 3: `moduleClass.tree`, same run):
+
+| a val's right-hand side | name |
+|---|---|
+| `Value("x")`, `Value(id, "x")` (a string literal) | `"x"` |
+| `Value`, `Value(id)` | the val's name (what `toString` gives on the JVM and JS) |
+| an alias (`Scala`, not a call of `Value`) | not a value: skipped |
+| anything else (`Value(prefix + "x")`, a custom `Val`) | the val's name, plus a compile warning: "can't tell the name of `TopSchema.B` at compile time; build the schema after the values, or in a lazy val or def, to read it at runtime" |
+
+So the top-of-object case gives `enum("a-1", "B")`: correct, no warning, no crash. The runtime `fallback` covers what the
+owner walk can't see (a `def` called by an early strict val): there the macro's names are today's val names, so the
+output is at worst today's, never a crash.
+
+Output for `Repo`: `"enum": ["C++", "Scala", "Haskell"]` (JVM: `Scala` or `Default`, whichever `toString` says), key
+pattern `^(?:C\+\+|Scala|Haskell)$`. Order: by id (`values`), which is declaration order unless explicit ids say
+otherwise (`Value(10, "high")` declared before `Value(5, "low")` lists `low` first).
+
+Prototyped (runtime part only, no fallback, no initializer path; patch `notes/scratch/c-b16/prototype.patch`,
+about 60 lines; reverted) and run on 2.13.18 and 3.3.9, JVM and JS:
 
 | case | prototype output |
 |---|---|
 | `Lang.Value` | `enum("C++","Default","Haskell")` on the JVM run, `enum("C++","Scala","Haskell")` on JS: equal to `toString` both times |
 | a local `object Local extends Enumeration { val X = Value("x!"); val Y = Value }` (value + Map) | `enum("x!","Y")`, `^(?:x!|Y)$` |
-| `implicit val schema = Json.schema[Value]` **inside** the object, after the values (prefix is `this`) | `enum("a-1","a-2")` |
-| the same, **before** the values | `IllegalStateException: InsideFirst has no values (yet) ...` when the object initializes (JVM: inside an `ExceptionInInitializerError`) |
-| `val e: Enumeration = Lang; Json.schema[e.Value]` (a stable non-object path) | `enum("C++",...)` (today: no values at all) |
+| `implicit val schema = Json.schema[Value]` inside the object, after the values (prefix is `this`) | `enum("a-1","a-2")` |
+| the same, before the values | `IllegalStateException` when the object initializes (JVM: inside an `ExceptionInInitializerError`): the case the initializer path and the fallback now avoid |
+| `val e: Enumeration = Lang; Json.schema[e.Value]` | `enum("C++",...)` (today: compile error / `"enum": []`) |
+| `private[access] object QHidden extends Enumeration`, used as `Outer.QL` (a public `type QL = QHidden.Value`) from another package | `enum("q!")` (2.13, 3.3, JVM and JS): the macro's reference is attributed, so no access check, and `private[pkg]` is public in bytecode |
+| a `private object` used in its own scope (`private case class UsesP(p: PHidden.Value)`) | `enum("p!")`, same four builds. A public alias of a `private` object doesn't compile in user code ("escapes its defining scope"), so no call site outside can name it |
 | custom `Val` without a name (`Planet`, `super.Val(nextId, null)`) | JVM `enum("Mercury","Venus")`; JS `enum("<Unknown name for enum field #0 of class ...>", ...)`, which is also what `toString`, and so every library, writes there |
 | existing tests | only the two pinned T8 behaviors fail (below); `SchemaMacroSpec` passes on the JVM |
 
 Pros: equal to what the libraries write by construction, on every platform, including aliases, computed names
-(`Value(prefix + "x")`), inherited values and explicit ids. Small: one helper, one branch per derivation. Removes the
-Scala 2 `WithOtherValue` quirk (only real `Value`s are in `values`).
+(`Value(prefix + "x")`), inherited values and explicit ids. The schema default and the enum agree. Removes the Scala 2
+`WithOtherValue` quirk (only real `Value`s are in `values`). Today's working in-object schemas keep working.
 
-Cons: the names are no longer a compile-time constant. A schema built while the object is still initializing sees no
-values (caught: the helper throws) or some of them (not caught: documented). The order is `values` order, i.e. by id:
-declaration order unless explicit ids say otherwise (B7 asks for declaration order; for an `Enumeration` the id order is
-its own declared order, and what circe's decoder error lists).
+Cons: the names are no longer a compile-time constant outside the object. Two code paths (runtime; the object's own
+initializer). The id order differs from B7's declaration order where explicit ids are out of order (for an `Enumeration`
+it is its own order: `values`, `withName` and circe's decoder error use it).
 
-### B. Read the `Value("...")` literals at compile time  — LOST
-Look at each val's right-hand side: `Value("x")` / `Value(id, "x")` → `"x"`, `Value` / `Value(id)` → the val name.
-Keeps a compile-time constant. But the right-hand side is mostly not available: a Scala 2 macro has no `Symbol.tree`
-(only the trees of sources compiled in the same run, via `c.enclosingRun.units`), and Scala 3's `Symbol.tree` is empty
-for a class loaded from a classfile or TASTy unless that module was compiled with `-Yretain-trees` (from the compiler
-docs; not run). So it works for an `Enumeration` in the same module and silently falls back to val names for one from a
-dependency: two answers for one type. It misses computed names, aliases (needs a second pass to see that `Default`
-holds `Scala`) and inherited values, and it can't know the JVM's name for an alias.
+### B. Read the `Value("...")` literals at compile time, everywhere  — LOST
+Look at each val's right-hand side, as A does inside the initializer. Keeps a compile-time constant. But outside the
+object's own compilation unit the right-hand side is mostly not available: a Scala 2 macro has no `Symbol.tree`, and Scala
+3's `Symbol.tree` is empty for a class loaded from a classfile or TASTy unless that module was compiled with
+`-Yretain-trees` (from the compiler docs; not run). So it would work for an `Enumeration` in the same module and silently
+fall back to val names for one from a dependency: two answers for one type. It misses computed names and inherited
+values, and it can't know the JVM's name for an alias. A uses it only where it is reliable.
 
 ### C. Keep the val names; document; users who name values provide the schema  — LOST
 Document that `Value("x")` names aren't read, and point to
@@ -113,75 +154,112 @@ Also emit `List("Mercury" -> Planet.Mercury, ...)` and use the val name when the
 write the unknown-name string), it depends on that string's text, and Scala.js already warns at compile time on a
 `Val` without a name. Not worth it.
 
+### E. Runtime `toString` per val (`Value.str(Lang.CPP.toString)`, ...)  — LOST
+Its one pro is declaration order. But it misses inherited values, needs `distinct` for aliases, can't reach `private`
+vals from outside the object, and in the initializer case reads `null` fields (an NPE, not an empty list).
+
 ## Decision
-A: the derivation emits a reference to the `Enumeration` object, and the schema (value enum and Map key pattern) lists
-`values.map(_.toString)` when it is built, which is by definition what the codecs write and read. When the type's prefix
-isn't a stable path (a type projection `E#Value`), it keeps today's val names.
+A: outside the object, the derivation emits a reference to the `Enumeration` object, and the schema (value enum and Map
+key pattern) lists `values.map(_.toString)` when it is built, which is by definition what the codecs write and read.
+Inside the object's own initializer it reads the names from the object's trees (literals, else val names, with a warning
+when it can't tell). An object with no values is a compile error. A type projection (`E#Value`, no stable path) keeps
+today's val names.
 
 ## Implementation plan
 Build on B6 (#479: `KeyPattern.escape`, key enforcement) and B7 (#464: `enum.of` keeps order). Both are in review;
 implement after they merge. If B16 lands first, `keyPattern` joins without `escape` (as today) and B6 adds it there.
 
 1. **core** `core/src/main/scala/com/github/andyglow/jsonschema/Enumerations.scala` (new, shared, JS-clean: only
-   `values`/`toString`): `names`, `schema[T]`, `keyPattern` as in option A. Scaladoc: it is what derived code calls;
-   public because macro expansions call it from user code. The exception message names the object and says what to do.
-2. **Scala 2** (`macros/src/main/scala-2/.../`):
-   - `SchemaTypes.Enum`: a new last field `enumeration: Option[Tree] = None`; `prefix` emits
-     `${N.internal.jsonschema}.Enumerations.schema[$tpe]($obj)` when it is set. Check the other `U.Enum(...)` patterns
-     (`UDictionaries` has two) for the new arity.
-   - `UEnums.fromScalaEnumeration`: when `objTpe` is a `SingleType` or `ThisType`, set
-     `enumeration = Some(c.universe.internal.gen.mkAttributedQualifier(objTpe))`; otherwise keep the val names. Keep
-     `valueTrees` (the fallback). The `isScalaEnum` test is unchanged (the `WithInner.Inner` quirk stays: out of scope,
-     the type's prefix still decides).
-   - `UDictionaries`: before the generic `U.Enum` case, `case Enum(U.Enum(_, _: SchemaType.Str, _, _, Some(obj)))` →
-     `patternProperties := ${N.internal.jsonschema}.Enumerations.keyPattern($obj)` (runtime, so escaping happens in the helper).
-3. **Scala 3** (`core/src/main/scala-3/.../derivation/`):
+   `values`/`toString`): `names`, `schema[T](e, fallback)`, `keyPattern(e, fallback)` as in option A; `schema` builds
+   `Schema.enum.of[T](Schema.string[T](None), ...)`. Scaladoc: it is what derived code calls; public because macro
+   expansions call it from user code.
+2. **Names at compile time** (both derivations, shared logic in each):
+   - `members`: the object's `Value` vals, own and inherited (`objTpe.members`, not `decls`), in declaration order. If
+     the object is a module (not a stable val like `e`) and `members` is empty: compile error "schema for `Empty.Value`
+     is not supported: the Enumeration has no values" (today: the Scala 2 overload error / Scala 3 `"enum": []`).
+   - `inInitializer`: the owner walk of option A. Scala 2: from `c.internal.enclosingOwner` while the owner isn't a class;
+     stop with `false` at a method that isn't an anonymous function or at a lazy val; `true` if the class reached is
+     `objTpe.typeSymbol.moduleClass`. Scala 3: the same from `Symbol.spliceOwner` (`Flags.Lazy`, `isDefDef` and not
+     `isAnonymousFunction`, `isClassDef`).
+   - `literalNames`: only when `inInitializer`: the object's template `ValDef`s, the table in option A. Strip
+     `Typed`/`Inlined`/`Block` wrappers (Scala 3); match `Apply(Ident(Value) | Select(_, Value), args)` syntactically on
+     Scala 2 (later vals are not typechecked yet). Warn with `c.warning(c.enclosingPosition, ...)` /
+     `report.warning(...)`. `c.enclosingClass` is deprecated in 2.12/2.13: `@nowarn` it (2.12: `scala.annotation.nowarn`
+     exists from 2.12.13).
+3. **Scala 2** (`macros/src/main/scala-2/.../`):
+   - `SchemaTypes.Enum`: a new last field `enumeration: Option[(Tree, List[String])] = None` (the object reference and
+     the fallback names); `prefix` emits `${N.internal.jsonschema}.Enumerations.schema[$tpe]($obj, List(..$fallback))`
+     when set. The only other matches are the two `U.Enum(...)` patterns in `UDictionaries` (`Macroses.scala:141`
+     `case Enum(x) => x` uses the extractor, unaffected).
+   - `UEnums.fromScalaEnumeration`: if `inInitializer` → today's `U.Enum` with `literalNames`. Else if `objTpe` is a
+     `SingleType` or `ThisType` → `enumeration = Some(gen.mkAttributedQualifier(objTpe) -> valNames)`. Else (type
+     projection) → today's val names. The `isScalaEnum` test is unchanged (the `WithInner.Inner` quirk stays: out of scope).
+   - `UDictionaries`: before the generic `U.Enum` case, `case Enum(U.Enum(_, _: SchemaType.Str, _, _, Some((obj, fb))))` →
+     `patternProperties := ${N.internal.jsonschema}.Enumerations.keyPattern($obj, List(..$fb))`.
+4. **Scala 3** (`core/src/main/scala-3/.../derivation/`):
    - `Enums.scala`: `enumerationRef(tpe): Option[Term]` (the object of `X.Value` / an alias / `X.type`: `TermRef` →
-     `Ref.term`, `ThisType(tr)` → `This(tr.typeSymbol)`), and a node `EnumerationEnum(tpe, obj: Term, extra)`
-     (`children = Nil`, `emitRaw` = `'{ Enumerations.schema[t](${obj.asExprOf[Enumeration]}) }`). `scalaEnumeration`
-     returns it when `enumerationRef` is defined, else today's `EnumFamily` (source `Enumeration`). Update the trait's
-     scaladoc (point 2, "quirk 12").
-   - `Collections.scala`: `KeyKind.Enumeration(obj: Term)`, chosen before `enumKeyNames` when `enumerationRef(keyTpe)` is
-     defined; `patternOf` emits `'{ Enumerations.keyPattern($o) }`. (`enumKeyNames` only sees `EnumFamily`, so it
-     returns `None` for the new node; nothing else matches on it: `FamilyEmit` handles sealed families and Scala 3 enums only.)
+     `Ref.term`, `ThisType(tr)` → `This(tr.typeSymbol)`), and a node `EnumerationEnum(tpe, obj: Term, fallback:
+     List[String], extra)` (`children = Nil`, `emitRaw` = `'{ Enumerations.schema[t]($o, $fb) }`). `scalaEnumeration`
+     returns today's `EnumFamily` with `literalNames` when `inInitializer`, else `EnumerationEnum` when `enumerationRef`
+     is defined, else today's `EnumFamily`. Update the trait's scaladoc (point 2, "quirk 12").
+   - `Collections.scala`: `KeyKind.Enumeration(obj: Term, fallback: List[String])`, chosen before `enumKeyNames` when the
+     key is an `EnumerationEnum`; `patternOf` emits `'{ Enumerations.keyPattern($o, $fb) }`. (`enumKeyNames` only sees
+     `EnumFamily`, so the in-initializer case keeps going through it; nothing else matches on the new node: `FamilyEmit`
+     handles sealed families and Scala 3 enums only.)
    - Run `clean` after these edits (CLAUDE.md).
-4. **Tests** (shared under `api/src/test/scala` unless said otherwise):
-   - New `EnumerationNamesSpec` with the `Lang` model above plus: `Value(id, name)`, an alias, a computed name, values
-     inherited from an abstract `Enumeration` subclass, a local object, `this.Value` inside the object (after the
-     values), a stable non-object path. Assert `Json.schema[Lang.Value] == enum.of(Lang.values.toList.map(_.toString))`
-     (platform-independent), and on the explicit names exactly (`"C++"`, `"Haskell"`). The Map key pattern is
-     `^(?:C\+\+|Scala|Haskell)$` (the alias name taken from `toString`). A schema before the values: the object's
-     initialization fails with the `IllegalStateException` (JVM: as the cause of `ExceptionInInitializerError`; catch
-     `Throwable`, `Try` doesn't catch linkage errors). With networknt (JVM; canceled on JS): `"C++"` and `{"C++":1}`
-     valid, `"CPP"` and `{"CPP":1}` invalid on 04/07/2020-12.
+5. **Tests** (shared under `api/src/test/scala` unless said otherwise):
+   - New `EnumerationNamesSpec`, the `Lang` model above plus: `Value(id, name)` with ids out of declaration order, a
+     duplicate `toString`, a computed name, values inherited from an abstract `Enumeration` subclass, a local object, a
+     stable non-object path, and `private[pkg]` object reached through a public alias from another package. Assert
+     `Json.schema[Lang.Value] == enum.of(Lang.values.toList.map(_.toString))` (platform-independent; aliases only this
+     way, never in a golden: their JVM name is unstable) and the explicit names exactly (`"C++"`, `"Haskell"`). Map key
+     pattern `^(?:C\+\+|...)$`. A field default `= Lang.CPP` (with a `ToValue` from play or a hand-written one) is a
+     member of the enum. With networknt (JVM; canceled on JS): `"C++"` and `{"C++":1}` valid, `"CPP"` and `{"CPP":1}`
+     invalid, on 04/07/2020-12.
+   - In-object cases, each an object of its own with `implicit val schema: Schema[Value]`, expected output:
+     top (before the values) → literal names, `enum("a-1", "B")`, no warning; middle and bottom → the same (all values,
+     from the trees: the owner walk doesn't compare positions); `lazy val` at the top → runtime; `def` at the top, called from a strict val at the
+     top → fallback (today's val names); a computed name or a custom `Val` at the top → val names, with the warning (that
+     model needs `@nowarn("msg=can't tell the name")` to keep the build warning-free; the output is the assertion).
+     No crash in any of them: assert that touching the object doesn't throw.
+   - Empty: `Json.schema[Empty.Value]` doesn't compile, with the new message (`CompileErrors.errorOf`, both versions).
    - `characterization/SumsEnumsCharSpec`: T8 becomes "uses toString (the Value(name) strings)", expecting
      `enum.of("custom-red", "Green", "custom-blue")`; the quirk test: `WithOtherValue.Value` is `enum.of("A")` on both
      versions now (only `WithInner.Inner` stays a Scala 2 quirk). Its `Planet` assertion (and `SchemaMacroSpec`'s
      `Planet`, a custom `Val` without names) holds on the JVM only: on JS assert against `Planet.values.map(_.toString)`,
      or give the model names, and fix the comment that says the schema doesn't need reflection.
    - Petshop acceptance: an `Enumeration` with a named value as a field and as a Map key, encoded by play
-     (`Json.formatEnum` + `KeyWrites(_.toString)`) and circe (`Encoder.encodeEnumeration` + a `KeyEncoder`), validated
-     under each profile. json4s: only if adding `json4s-ext` as a test dependency is acceptable (`EnumNameSerializer`);
-     otherwise skip.
-5. **Golden files**: `api/src/test/resources/golden/char/types/Colors.Value.json` and `HasColors.json`:
+     (`Json.formatEnum` + an explicit `KeyWrites(_.toString)`: without it play writes an array of pairs) and circe
+     (`Encoder.encodeEnumeration` + a `KeyEncoder`), validated under each profile. json4s: only if adding `json4s-ext` as a
+     test dependency is acceptable (`EnumNameSerializer`); otherwise skip.
+6. **Golden files**: `api/src/test/resources/golden/char/types/Colors.Value.json` and `HasColors.json`:
    `["Blue","Green","Red"]` → `["Green","custom-blue","custom-red"]` (the harness sorts arrays), in the tree and every
    draft. No `golden-legacy/` file has an `Enumeration` (grep). Regenerate with `GOLDEN_UPDATE=1 sbt clean api/test` and
    check that the diff is only these two files.
-6. **Docs** (README + paradox, same words): "Sum types and enums" (README ~L319, `types.md` L58): "`scala.Enumeration`
-   values are string enums of what they are written as (`toString`: the `Value("name")` name, else the val's name), read
-   from the object when the schema is built. Build a schema inside the `Enumeration` object after its values, or as a
-   `lazy val`/`def`." Scala.js note: a custom `Val` without a name has no name at runtime (Scala.js warns): name it.
-   README ~L935 / `scala3.md` L17: the Scala 2 vs 3 difference about other `Value` vals is gone; keep the one about a
-   class inside an `Enumeration`.
-7. Gates per the protocol (all three Scala versions JVM, `rootJS/test` on all three: core and macros change).
+7. **Docs** (README + paradox, same words): "Sum types and enums" (README ~L319, `types.md` L58): "`scala.Enumeration`
+   values are string enums of what they are written as (`toString`: the `Value("name")` name, else the val's name), in
+   id order (`values`), read from the object when the schema is built." Notes: a schema inside the object at the top
+   reads `Value("literal")` names from the source and warns when it can't (build it below the values or as a `lazy
+   val`/`def`); give an aliased value an explicit `Value("name")` (on the JVM its name otherwise depends on reflection
+   order); on Scala.js a custom `Val` without a name has no name at runtime (Scala.js warns): name it. README ~L935 /
+   `scala3.md` L17: the Scala 2 vs 3 difference about other `Value` vals is gone; keep the one about a class inside an
+   `Enumeration`.
+8. Gates per the protocol (all three Scala versions JVM, `rootJS/test` on all three: core and macros change).
 
-Risks: the initialization case (partial values aren't detected; documented, and the common "schema in the companion
-or elsewhere" pattern is unaffected); a schema now forces the object to initialize (it would anyway to encode a value);
-the JVM's alias name is unstable across runs, but the schema and the codec read the same cached `toString` in one JVM.
+Risks: any strict val in the object takes the tree path, also below the values, so a computed name there warns where a
+runtime read would have worked (comparing the call site's position with the last value's would refine it; left out as
+rare, the warning says to use a `lazy val`); a `def` building the schema, called indirectly during initialization after some values exist, lists only those
+(the fallback only kicks in when there are none; documented); the owner walk is new code on both versions and needs
+the in-object tests above; a schema now forces the object to initialize (it would anyway to encode a value); the JVM's
+alias name is unstable across runs (inherent to `Enumeration`; the schema and the codec read the same cached `toString`
+in one JVM, but a schema file written at build time can disagree with another JVM: hence the doc note).
 
 ## Compatibility
-- Source/binary: a new public object `com.github.andyglow.jsonschema.Enumerations`; nothing removed or changed.
-  Code compiled against the new version needs the new core at runtime (as with any macro change). Not breaking under PVP.
+- Source/binary: a new public object `com.github.andyglow.jsonschema.Enumerations`; nothing removed or changed. Code
+  compiled against the new version needs the new core at runtime (as with any macro change). An empty `Enumeration` is
+  now a compile error on Scala 3 too (it derived `"enum": []`, which rejects everything; Scala 2 already failed, less
+  clearly). A new compile warning, only for a schema built in its own object's initializer when a value's name isn't a
+  literal. Not breaking under PVP.
 - Output: changes only for an `Enumeration` whose `toString` differs from its val names, or that has aliases, inherited
   values, or (Scala 2) vals of another `Value` type; and the order is `values` (id) order where explicit ids differ from
   declaration order. Unchanged for `val A, B, C = Value`. Value enums and Map key patterns, all drafts, every profile
@@ -192,3 +270,20 @@ the JVM's alias name is unstable across runs, but the schema and the codec read 
   byte-exact 0.7 output for named `Enumeration` values matters to someone.
 
 ## Review log
+Round 1 (r-b16, on 6b63d1d):
+- B16-R1 (must) schema in the object before the values crashes the object under A → accepted: both of the reviewer's
+  ways. The macro detects the object's own initializer (owner walk) and reads the names from the object's trees there
+  (literal `Value("x")` names, val names otherwise, a warning when it can't tell); the runtime helper takes the
+  compile-time names as a fallback instead of throwing. Option A, plan steps 2–4, the in-object test list (top, middle,
+  bottom, `lazy val`, `def`, computed name) and Compatibility updated.
+- B16-R2 (must) empty Enumeration and inaccessible object → accepted. Empty: ran master (Scala 2 overload error, Scala 3
+  `"enum": []`); now a compile error with a clear message on both (plan step 2, test, Compatibility). Access: ran the
+  prototype on 2.13 + 3.3, JVM + JS: a `private[pkg]` object behind a public alias from another package works (attributed
+  reference, public in bytecode); a public alias of a `private` object doesn't compile in user code, and a `private`
+  object in its own scope works. So no fallback is needed; the case is a test (step 5) and a row in option A.
+- B16-R3 (nit) default contradiction → accepted: in Problem, and a test (default ∈ enum).
+- B16-R4 (nit) per-val runtime option → accepted: option E, LOST.
+- B16-R5 (nit) alias instability → accepted: doc note (step 7), aliases only against `values.map(_.toString)`, never in
+  goldens (step 5), Risks.
+- B16-R6 (nit) order in the docs text → accepted: "in id order (`values`)" in step 7, example in option A.
+- B16-R7 (nit) plan details → accepted: "only these" matches named in step 3; the play `KeyWrites` note in Why and step 5.
