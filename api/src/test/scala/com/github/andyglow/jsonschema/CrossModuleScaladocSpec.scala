@@ -24,6 +24,12 @@ class CrossModuleScaladocSpec extends AnyFunSuite {
     fieldDescriptions(s) shouldBe empty
   }
 
+  test("non-public vals of a class from another module are fields (B4)") {
+    val s = Json.objectSchema[NonPublicValsInOtherModule]()
+    s.fields.toList.map(_.name) shouldBe List("a", "b", "c")
+    fieldDescriptions(s) should contain.only("a" -> "a private val", "b" -> "a protected val")
+  }
+
   test("a class nested in an object of another module") {
     val s = Json.objectSchema[Container.InObject]()
     s.description shouldBe Some("Nested in an object")

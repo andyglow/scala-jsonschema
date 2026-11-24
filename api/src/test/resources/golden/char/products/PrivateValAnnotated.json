@@ -1,0 +1,107 @@
+{
+  "schema": {
+    "kind": "object",
+    "fields": [
+      {
+        "name": "a",
+        "required": true,
+        "description": "from the field",
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "integer"
+        }
+      },
+      {
+        "name": "b",
+        "required": true,
+        "description": "from the param",
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "integer"
+        }
+      },
+      {
+        "name": "c",
+        "required": true,
+        "rwMode": "ReadOnly",
+        "schema": {
+          "kind": "integer"
+        }
+      }
+    ]
+  },
+  "draft-04": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "additionalProperties": false,
+    "properties": {
+      "a": {
+        "description": "from the field",
+        "type": "integer"
+      },
+      "b": {
+        "description": "from the param",
+        "type": "integer"
+      },
+      "c": {
+        "readOnly": true,
+        "type": "integer"
+      }
+    },
+    "required": [
+      "a",
+      "b",
+      "c"
+    ],
+    "type": "object"
+  },
+  "draft-07": {
+    "$id": "golden",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "additionalProperties": false,
+    "properties": {
+      "a": {
+        "description": "from the field",
+        "type": "integer"
+      },
+      "b": {
+        "description": "from the param",
+        "type": "integer"
+      },
+      "c": {
+        "readOnly": true,
+        "type": "integer"
+      }
+    },
+    "required": [
+      "a",
+      "b",
+      "c"
+    ],
+    "type": "object"
+  },
+  "draft-2020-12": {
+    "$id": "golden",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "a": {
+        "description": "from the field",
+        "type": "integer"
+      },
+      "b": {
+        "description": "from the param",
+        "type": "integer"
+      },
+      "c": {
+        "readOnly": true,
+        "type": "integer"
+      }
+    },
+    "required": [
+      "a",
+      "b",
+      "c"
+    ],
+    "type": "object"
+  }
+}

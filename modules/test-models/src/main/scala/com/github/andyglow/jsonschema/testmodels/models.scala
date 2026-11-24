@@ -15,6 +15,15 @@ case class FromOtherModule(id: String, n: Int)
 
 case class UndocumentedInOtherModule(a: Int)
 
+/** Non-public vals from another module
+  *
+  * @param a
+  *   a private val
+  * @param b
+  *   a protected val
+  */
+case class NonPublicValsInOtherModule(private val a: Int, protected val b: String, c: Int)
+
 object Container {
 
   /** Nested in an object
