@@ -21,7 +21,7 @@ class SelfImplicitLintSpec extends AnyFunSuite {
   }
 
   test("#320: an implicit in the companion (found through the implicit scope)") {
-    Account.accountSchema shouldEqual `object`[Account](Field("id", `string`))
+    Account.accountSchema shouldEqual `object`[Account](Field("id", Json.schema[UserId]))
   }
 
   test("#320: an implicit def with a type parameter") {
