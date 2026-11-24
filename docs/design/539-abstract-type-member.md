@@ -1,5 +1,5 @@
 # Types declared in a trait, derived through an object that fixes them  (issue #539, item B33)
-Status: draft
+Status: approved (r-b33, 2026-11-23)
 
 ## Problem
 A case class (or a sealed family) declared inside a trait can use an abstract type member of the trait. An object
