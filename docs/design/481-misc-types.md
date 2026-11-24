@@ -252,4 +252,11 @@ Round 1b (r-e8, on ea7be17):
 
 During implementation:
 - (from c-e2, E2) the bridge null Predefs move from `AsX` into opt-in `AsX.predef` objects: an implicit `Predef` in the object imported for
-  `ToValue` makes a user's own `Predef` of that type ambiguous. Shared `predef` objects with E2. (Mailed r-e8.)
+  `ToValue` makes a user's own `Predef` of that type ambiguous. Shared `predef` objects with E2. (Mailed r-e8; r-e8 OK, "docs must show
+  the extra import": they do.)
+- R9 as implemented: `Knobs` has the 8th field and `Knobs.apply` reads it (`FamilyLoweringSpec` "builders" covers every builder, incl.
+  `withDeprecatedKeyword`); `Lowering.apply` = `stripped(node(s))`, so leaves/`enum`/`const`/`ref` are cleared too, and only flagged nodes are
+  copied; the Legacy-Option unwrap moves the flag (`unwrapped`), tested through `Neutral.withOption(OptionStyle.Legacy)`.
+- The golden harness's lossless `schema` dump records `deprecated`; a golden model each for `JavaColls`, `Old`, `OldOpt`.
+- Found (pre-existing, mailed the lead): on Scala 3, `Json.schema[X]` of a `@deprecated` class warns at a position in the derivation's own
+  source, which a `@nowarn` at the call site can't silence (a deprecated enclosing owner does). The spec uses a deprecated wrapper def.
