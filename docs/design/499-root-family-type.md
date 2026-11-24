@@ -1,5 +1,5 @@
 # A sealed family (or `allOf`) at the root states no `type`  (issue #499, item B15)
-Status: draft
+Status: approved (r-b15, 2026-11-23)
 
 ## Problem
 
