@@ -1,5 +1,5 @@
 # `@discriminatorKey` on case objects in a `@discriminator` family  (issue #293, item D5)
-Status: draft (round 2)
+Status: approved (r-d5, 2026-11-23)
 
 ## Problem
 
