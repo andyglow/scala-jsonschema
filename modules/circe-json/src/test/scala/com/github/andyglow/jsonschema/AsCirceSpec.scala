@@ -38,6 +38,17 @@ class AsCirceSpec extends AnyPropSpec {
     ).noSpaces shouldBe """{"\"quoted-key\"":"\n\t'val\""}"""
   }
 
+  property("boxed and java.math defaults go through circe's Encoders") {
+    import AsCirce._
+
+    def defaults(s: json.Schema[_]) = s match {
+      case o: json.Schema.`object`[_] => o.fields.toList.map(f => f.name -> f.default)
+      case other                      => fail(s"not an object: $other")
+    }
+    defaults(json.Json.schema[JavaDefaults]) shouldEqual defaults(json.Json.schema[ScalaDefaults])
+    defaults(json.Json.schema[JavaDefaults]) shouldEqual List("i" -> Some(num(5)), "l" -> Some(num(7)), "bd" -> Some(num(BigDecimal("12.5"))))
+  }
+
   property("Check Schema.asCirce") {
     import AsCirce._
 
@@ -115,6 +126,11 @@ class AsCirceSpec extends AnyPropSpec {
 }
 
 object AsCirceSpec {
+
+  // E4: circe has Encoders for these; its ToValue (imported) must win over core's, without ambiguity
+  // (values a Double holds: this bridge's ToValue reads every circe number with `toDouble`, for the Scala types too)
+  case class JavaDefaults(i: java.lang.Integer = 5, l: java.lang.Long = 7L, bd: java.math.BigDecimal = new java.math.BigDecimal("12.50"))
+  case class ScalaDefaults(i: Int = 5, l: Long = 7L, bd: BigDecimal = BigDecimal("12.50"))
 
   implicit val jsValEq: Equality[Json] = new Equality[Json] {
     override def areEqual(a: Json, b: Any): Boolean = a match {

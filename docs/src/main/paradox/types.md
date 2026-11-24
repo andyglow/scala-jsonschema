@@ -5,9 +5,10 @@
 | Scala type                                                                  | JSON Schema                                     |
 |-----------------------------------------------------------------------------|-------------------------------------------------|
 | `String`, `Char`, `java.lang.Character`                                     | `string` (`Char`: exactly one character)        |
-| `Boolean`                                                                   | `boolean`                                       |
-| `Int`                                                                       | `integer`                                       |
+| `Boolean`, `java.lang.Boolean`                                              | `boolean`                                       |
+| `Int`, `java.lang.Integer`                                                  | `integer`                                       |
 | `Byte`, `Short`, `Long`, `BigInt`, `Float`, `Double`, `BigDecimal`          | `number`                                        |
+| `java.lang.Byte`/`Short`/`Long`/`Float`/`Double`, `java.math.BigInteger`/`BigDecimal` | `number` (as the Scala type)          |
 | `java.time.Instant`, `LocalDateTime`, `ZonedDateTime`, `java.util.Date`, `java.sql.Timestamp` | `string`, format `date-time`  |
 | `java.time.LocalDate`, `java.sql.Date`                                      | `string`, format `date`                         |
 | `java.time.LocalTime`, `java.sql.Time`                                      | `string`, format `time`                         |
@@ -20,7 +21,7 @@
 | case class                                                                  | `object`                                        |
 | value class                                                                 | its underlying type                             |
 
-A `Map` key needs a known pattern: `String`, `Char`, `Byte`, `Short`, `Int`, `Long` and enums have one. For another
+A `Map` key needs a known pattern: `String`, `Char`, `Byte`, `Short`, `Int`, `Long` (and their `java.lang` boxes) and enums have one. For another
 key type, provide one:
 
 ```scala mdoc:compile-only

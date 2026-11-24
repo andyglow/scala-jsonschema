@@ -196,6 +196,7 @@ trait Collections { this: Derivation =>
     val t = tpe.dealias
     if (t =:= TypeRepr.of[java.lang.String]) KeyKind.JavaStr
     else if (t =:= TypeRepr.of[Int] || t =:= TypeRepr.of[Long] || t =:= TypeRepr.of[Short] || t =:= TypeRepr.of[Byte]) KeyKind.Integral
+    else if (t =:= TypeRepr.of[java.lang.Integer] || t =:= TypeRepr.of[java.lang.Long] || t =:= TypeRepr.of[java.lang.Short] || t =:= TypeRepr.of[java.lang.Byte]) KeyKind.Integral
     else if (t =:= TypeRepr.of[Char]) KeyKind.Character
     else if (t =:= TypeRepr.of[java.util.UUID]) KeyKind.Uuid
     else KeyKind.Custom

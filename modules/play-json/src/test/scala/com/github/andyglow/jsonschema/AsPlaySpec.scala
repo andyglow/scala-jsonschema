@@ -151,9 +151,22 @@ class AsPlaySpec extends AnyPropSpec {
       "required" -> Json.arr("id", "name", "metadata")
     )
   }
+
+  property("boxed and java.math defaults: play's Writes where it has one (BigInteger), else core's ToValue (Integer)") {
+    import AsPlay._
+
+    json.Json.schema[JavaDefaults] match {
+      case o: json.Schema.`object`[_] =>
+        o.fields.toList.map(f => f.name -> f.default) shouldEqual List("i" -> Some(num(5)), "bi" -> Some(num(BigInt("123456789012345678901234567890"))))
+      case other => fail(s"not an object: $other")
+    }
+  }
 }
 
 object AsPlaySpec {
+
+  // E4: play-json has a Writes for java.math.BigInteger, none for the boxed java.lang types
+  case class JavaDefaults(i: java.lang.Integer = 5, bi: java.math.BigInteger = new java.math.BigInteger("123456789012345678901234567890"))
 
   implicit val jsValEq: Equality[JsValue] = new Equality[JsValue] {
     override def areEqual(a: JsValue, b: Any): Boolean = a match {

@@ -1,5 +1,5 @@
 # Boxed `java.lang` numbers/Boolean and `java.math` types  (issue #473, item E4)
-Status: draft
+Status: approved (r-e4, 2026-11-23)
 
 ## Problem
 Core has Predefs for `Int`, `Long`, `Short`, `Byte`, `Double`, `Float`, `Boolean`, `BigDecimal` and `BigInt`
@@ -188,3 +188,11 @@ Round 1 (r-e4, on b70837a):
 - E4-R5 (nit) keep Scala-type numeric validations covered on 3 → accepted: plan 6, `ValidationMagnetSpec` covers
   `Int`/`Long`/`scala.BigDecimal`/`BigInt` too.
 - E4-R6 (nit) D2 hand-off → accepted: the nine equality tests are named as the D2 guard in plan 6; the PR will say so.
+
+Implementation notes (no change to the plan):
+- Core has no `ToValue[Byte]`, so a Scala `Byte` default doesn't compile on Scala 2: the Java-vs-Scala defaults test
+  leaves `Byte` out and checks the `java.lang.Byte` default against `num(2.toByte)` directly. Reported to the lead.
+- `AsCirce.toValue` reads every circe number with `toDouble` (Scala types too), so the circe test compares the Java
+  types with Scala twins at values a `Double` holds; the exact extreme values are tested in core (no bridge). Reported.
+- play-json has a `Writes` for `java.math.BigInteger` but none for the boxed `java.lang` types: `AsPlaySpec` checks
+  both paths under `import AsPlay._` (play's for `BigInteger`, core's for `Integer`).

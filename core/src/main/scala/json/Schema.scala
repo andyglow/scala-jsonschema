@@ -271,6 +271,11 @@ object Schema extends SchemaCompanionPlatform {
       implicit object ShortKeyPattern  extends KeyPattern[Short]("^[0-9]+$")
       implicit object IntKeyPattern    extends KeyPattern[Int]("^[0-9]+$")
       implicit object LongKeyPattern   extends KeyPattern[Long]("^[0-9]+$")
+      // Java's boxed integrals: the Scala type's pattern
+      implicit object JIntegerKeyPattern extends KeyPattern[java.lang.Integer](IntKeyPattern.pattern)
+      implicit object JLongKeyPattern    extends KeyPattern[java.lang.Long](LongKeyPattern.pattern)
+      implicit object JShortKeyPattern   extends KeyPattern[java.lang.Short](ShortKeyPattern.pattern)
+      implicit object JByteKeyPattern    extends KeyPattern[java.lang.Byte](ByteKeyPattern.pattern)
     }
   }
 

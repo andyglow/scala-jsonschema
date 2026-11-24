@@ -21,6 +21,20 @@ trait LowPriorityPrimitiveImplicits {
   implicit val StringV: ToValue[String]         = mk(str.apply)
   implicit val NullV: ToValue[Null]             = mk(_ => `null`)
 
+  // Java's boxed types and java.math: exactly the Scala type's value (never `num(x: Number)`, which goes through
+  // `doubleValue`). A `null` reference (a boxed field's `= null` default) is JSON `null`.
+  private def boxed[T <: AnyRef](f: T => Value): ToValue[T] = mk(x => if (x == null) `null` else f(x))
+
+  implicit val JIntegerV: ToValue[java.lang.Integer]       = boxed(x => num(x.intValue))
+  implicit val JLongV: ToValue[java.lang.Long]             = boxed(x => num(x.longValue))
+  implicit val JShortV: ToValue[java.lang.Short]           = boxed(x => num(x.shortValue))
+  implicit val JByteV: ToValue[java.lang.Byte]             = boxed(x => num(x.byteValue))
+  implicit val JFloatV: ToValue[java.lang.Float]           = boxed(x => num(x.floatValue))
+  implicit val JDoubleV: ToValue[java.lang.Double]         = boxed(x => num(x.doubleValue))
+  implicit val JBooleanV: ToValue[java.lang.Boolean]       = boxed(x => bool(x.booleanValue))
+  implicit val JBigDecimalV: ToValue[java.math.BigDecimal] = boxed(x => num(BigDecimal(x)))
+  implicit val JBigIntegerV: ToValue[java.math.BigInteger] = boxed(x => num(BigInt(x)))
+
   // NOTICE: there are no way to work around objects (case classes) as long as different libraries
   // may generate different json representations out of the single case class instance
 }

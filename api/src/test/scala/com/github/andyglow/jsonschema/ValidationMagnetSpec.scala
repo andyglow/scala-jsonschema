@@ -37,6 +37,16 @@ class ValidationMagnetSpec extends AnyFunSuite {
     Json.schema[Array[String]].withValidation(`minItems` := 1, `maxItems` := 3, `uniqueItems` := true).validations shouldEqual items
   }
 
+  // the boxed / java.math magnets (BoxedBigMathSpec) must not make the Scala numbers' ones ambiguous
+  test("numbers") {
+    val vs = Seq(`minimum` := 1, `maximum` := 10)
+    Json.schema[Int].withValidation(`minimum` := 1, `maximum` := 10).validations shouldEqual vs
+    Json.schema[Long].withValidation(`minimum` := 1, `maximum` := 10).validations shouldEqual vs
+    Json.schema[Double].withValidation(`minimum` := 1, `maximum` := 10).validations shouldEqual vs
+    Json.schema[BigDecimal].withValidation(`minimum` := 1, `maximum` := 10).validations shouldEqual vs
+    Json.schema[BigInt].withValidation(`minimum` := 1, `maximum` := 10).validations shouldEqual vs
+  }
+
   test("Map") {
     val props = Seq(`minProperties` := 1, `maxProperties` := 3)
     Json.schema[Map[String, Int]].withValidation(`minProperties` := 1, `maxProperties` := 3).validations shouldEqual props
