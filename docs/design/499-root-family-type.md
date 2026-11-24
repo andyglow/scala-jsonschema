@@ -58,9 +58,11 @@ The real `allOf` producer is refined's `And` (`modules/refined`: `Int Refined (G
 `mkAllOf`; the hand-built `allOf`s above are the run evidence) `{"allOf": [{"minimum": 5}, {"maximum": 5}]}`, which
 accepts `"s"`.
 
-History: until 0.6.0 the root `oneOf` stated its type (`mkOneOf` wrote `"type" -> tpe` unconditionally). Commit
-d29c3f6 ("refactor Macroses", 2020-11-10, first released in 0.6.1) added `isRoot` and the `!isRoot` guards, with no
-test or changelog entry that asks for it. The 0.7 goldens (`golden-legacy/`) recorded the result.
+History: the two guards come from two commits, neither with a test or changelog entry that asks for them.
+d29c3f6 ("refactor Macroses", 2020-11-10, first tag v0.6.1) added `isRoot` and `mkAllOf`'s `if (!isRoot)`; `mkOneOf`
+still wrote `"type" -> tpe` unconditionally (`git show v0.6.1:core/.../AsDraftSupport.scala`). ee9fe0b ("definitions,
+discriminations", 2020-12-01, first tag v0.7.1) added `mkOneOf`'s `filter { _ => !isRoot }`. So a root `oneOf` stated
+its type up to 0.6.x, and a root `allOf` never did after 0.6.0. The 0.7 goldens (`golden-legacy/`) recorded the result.
 
 ## Why it is a problem
 
@@ -158,6 +160,12 @@ The change is in shared code (`core/src/main/scala`): no Scala 2 / Scala 3 macro
    - On master without B3: in `mkPlainOneOf` (AsDraftSupport.scala:180) replace `tpe filter { _ => !isRoot } map`
      with `tpe map`; drop the `isRoot` parameter of the private `mkPlainOneOf`.
    - Either way, in `mkAllOf` (line 205): `"type" -> Some(`str`(tpe))`, i.e. drop the `if (!isRoot) ... else None`.
+   - Other open PRs on the same lines (merge, don't redesign):
+     - E2 (#486, `Schema.any`) edits `mkPlainOneOf`'s `tpe` lookup (skips `any`) and `mkAllOf`'s `typed`, next to both
+       guards. A textual conflict only: A keeps E2's rule (`oneof{string, any}` isn't same-typed, so no root type);
+     - B14 (design PR #500) assumes B15 for a root refined `oneOf` ("today a root refined `oneOf` states none, B15"):
+       nothing to do here beyond landing A;
+     - E6 (#489): unions become `anyof`, which B3 already types at the root. No interaction.
 2. **Keep the public signatures.** `AsDraftSupport.apply(x, parent, includeType, isRoot)`, `mkOneOf(vl, x, isRoot, par)`,
    `mkAllOf(vl, x, isRoot, par)` and the `inferSpecifics` tuple are public (the trait is public and the bridges/users
    may extend it). Keep `isRoot` in them, now unused by the rendering; add a one-line scaladoc on `apply`: "`isRoot`:
@@ -167,7 +175,10 @@ The change is in shared code (`core/src/main/scala`): no Scala 2 / Scala 3 macro
 3. **New test** `api/src/test/scala/com/github/andyglow/jsonschema/RootCompositeTypeSpec.scala` (shared; validation
    via `petshop.JsonValidator`, so the validating cases run on the JVM and are canceled on JS, as elsewhere). Models
    `One`, `Ev`, `DOne`, `Two`, `Mixed`, `W` from the Problem section (in the spec's companion/object, not
-   `model/`), and the two hand-built `allOf`s. For each of draft-04, draft-07, draft-2020-12:
+   `model/`), and the two hand-built `allOf`s. Keep the render-only checks (first two bullets) in tests of their own,
+   apart from the tests that call the validator: on Scala.js `JsonValidator` cancels the whole test that calls it, so a
+   render check inside it would never run there (the petshop specs split them the same way). For each of draft-04,
+   draft-07, draft-2020-12:
    - rendered root of `One`, `Ev`, `DOne`, `Two` has `"type": "object"`; `EnumsAsOneOf` root and the const `oneOf`
      have `"type": "string"`; `Mixed`'s root has no `type` and each member has its own; an all-`$ref` family
      (`DefinitionsSpec.Pet`-like, or B3's `RefEv` if on B3) has no root `type`;
@@ -177,6 +188,9 @@ The change is in shared code (`core/src/main/scala`): no Scala 2 / Scala 3 macro
      `{"id":"x"}` (`Ev`), `{"a":1,"type":"...D1"}` (`DOne`) stay valid;
    - the same checks for `One` under `JsonSchemaProfile.Legacy`, `withSum(SumStyle.WrapperObject)` and
      `withSum(SumStyle.Discriminator("type"))` (if the owner picks B instead, the Legacy rows assert no root type).
+   - Scala 3 only (`api/src/test/scala-3/...`, render-only): the README's root `enum Event { case Created(id: String);
+     case Deleted(id: String, reason: Option[String]) }` has `"type": "object"` next to its `oneOf`, so the docs'
+     example is pinned by a test.
 4. **Refined.** Add to `modules/refined/src/test/scala-2.13+/.../RefinedQuirksSpec.scala` (or a small new spec in
    the same dir): `AsValue.schema(schema[Int Refined (GreaterEqual[5] And LessEqual[5])], Draft07(...))` has
    `"type": "integer"` next to `"allOf"`. Tree-only today; this is the one render assertion. (Validation isn't
@@ -190,8 +204,10 @@ The change is in shared code (`core/src/main/scala`): no Scala 2 / Scala 3 macro
    `char/fields/DiscOrder`, `char/fields/KeyWithoutDiscriminator`, `groupC/Either[Int,String]`,
    `shared/DiscriminatorSpec.case0`, `.case1`, `.case3`, `.case4`, `shared/EnumSpec.case0.EnumsAsOneOf`,
    `shared/EnumSpec.case8.EnumsAsOneOf` (these two: `"string"`), `shared/FooBar`, `shared/FooBarInsideCompanion`,
-   `shared/MultiLevelSealedTraitRoot`, `triageB/covariant.Base` (the rest: `"object"`). On B3's base, B3's own new
-   root-`oneOf` goldens (if any) change the same way; list them in the PR. No `@2.12`/`@2.13`/`@3` overrides exist,
+   `shared/MultiLevelSealedTraitRoot`, `triageB/covariant.Base` (the rest: `"object"`). This list was measured on
+   master; on B3's base (or after E2/B14), re-measure it: B3's own new root-`oneOf` goldens change the same way, and
+   some of the 13 may come out differently (e.g. a family B3 turns into `anyOf` already has its root type there).
+   List in the PR both the files that join and the files that drop out. No `@2.12`/`@2.13`/`@3` overrides exist,
    none needed (same output on all versions). Unchanged and worth a look in the review: `HybridSum`,
    `HybridRecursiveSum`, `AnyFooBar`, `HybridGenericSum[Int]`, `SumTypeModels.*` (mixed types),
    `DiscriminatorSpec.case5`, `DefinitionsSpec.Pet` (only `$ref`s).
@@ -205,6 +221,17 @@ The change is in shared code (`core/src/main/scala`): no Scala 2 / Scala 3 macro
    - one sentence in the sealed-family bullets (README ~L317, types.md alongside): "The members' shared JSON type is
      stated next to the `oneOf`, at the root too." B3 edits the same paragraphs (member order, `anyOf`): rebase on it
      and merge the wording. `sbt makeDocs` must pass.
+   - **The "Legacy = 0.7 byte for byte" promises** (under A they become false; say "0.7 plus the listed fixes"):
+     - `core/src/main/scala/json/schema/JsonSchemaProfile.scala:146` (`/** The 0.7 output, byte for byte. */`). B3
+       rewrites it to "byte for byte, except where 0.7's schema was wrong: ..."; add "a root `oneOf`/`allOf` states its
+       members' shared type" to that list (whichever PR lands second merges the wording);
+     - `README.md:835` ("render sealed families exactly as 0.8 and 0.7 did") and `README.md:873` ("Legacy reproduces
+       0.7 byte for byte"), and their paradox twins `docs/src/main/paradox/migration-0.9.md:8` and `migration.md:19`.
+       The 0.9.0 migration list's "Two renderer bugs are fixed, also under Legacy" (README:841) is the natural home
+       for one more line, or the next version's migration section if the lead starts one;
+     - `api/src/test/resources/golden/README.md:16` ("a verbatim copy of the 0.7 goldens ... proves Legacy reproduces
+       0.7 byte for byte"), the scaladoc of the Legacy set in `api/src/test/scala/.../harness/Golden.scala:48`, and
+       CLAUDE.md ("`golden-legacy/` is the frozen 0.7 output that `JsonSchemaProfile.Legacy` must reproduce").
 9. **Gates** (for the implementer): `clean test` on 2.12.21, 2.13.18, 3.3.9; `rootJS/test` on all three (core and api
    change); `scalafmtCheckAll` and `rootJS/scalafmtCheckAll`; `makeDocs`.
 
@@ -231,5 +258,16 @@ build JSON by concatenation; `obj ++` replaces it.
 - PVP: a bug fix in output, no API change → **patch** (0.9.x). It can go out with B3 in whatever version B3 ships.
 - Legacy: under A, 13 golden-legacy files change by one `"type"` line per draft (listed in step 6; to be listed in the
   PR). Under B, none.
+- Legacy's **documented contract** changes: "the 0.7 output, byte for byte" becomes "0.7's output, except where 0.7's
+  schema was wrong" (step 8 lists every place that says so). Under the lead's Legacy policy (2026-11-23: style frozen,
+  bugs fixed) that is still a patch, the same treatment as B3's fixes under Legacy.
 
 ## Review log
+B15-R1 (must) the "Legacy = 0.7 byte for byte" promises A breaks → accepted: step 8 lists them (JsonSchemaProfile:146,
+README 835/841/873, migration-0.9.md:8, migration.md:19, golden/README:16, Golden.scala:48, CLAUDE.md) with the new
+wording; Compatibility states the contract change and why it's a patch.
+B15-R2 (nit) history: two commits → accepted: Problem's History paragraph corrected (`allOf` guard d29c3f6 / v0.6.1,
+`oneOf` guard ee9fe0b / v0.7.1). Issue #499's "affected versions" corrected the same way.
+B15-R3 (nit) other open PRs; re-measure goldens on B3's base → accepted: step 1 names E2 (#486), B14 (#500), E6 (#489);
+step 6 says to re-measure on the actual base and list files that join or drop out.
+B15-R4 (nit) render checks out of validating tests → accepted: step 3 splits them; Scala 3 root `enum Event` test added.
