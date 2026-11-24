@@ -142,15 +142,21 @@ ex(p) = unmatch(p) orElse dealias1(p).flatMap(ex) orElse unmatch(p.dealias)
 So `Preds.Div2` → `Divisible[2]` is matched by refined's name before it becomes `Modulo[2, _0]`. `C.unapply` matches
 `t.dealias` instead of `t`, so `MaxSize[Two]` reads `2`. One-step dealias:
 - Scala 2 (no public one-step API): for `TypeRef(pre, sym, args)` with `sym.asType.isAliasType`, the alias body
-  `sym.info.asSeenFrom(pre, sym.owner)` (unwrapping a `PolyType`) with `sym.asType.typeParams` substituted by `args`.
-- Scala 3: `TypeRef` with `typeSymbol.isAliasType` → `translucentSuperType`; `AppliedType(tycon: TypeRef, args)` with an alias
-  `tycon` → `tycon.translucentSuperType.appliedTo(args)` (beta-reduces the alias's type lambda one level).
+  `sym.info.asSeenFrom(pre, sym.owner)`; if that is a `PolyType(tps, res)`, `res` with its own `tps` substituted by `args`.
+- Scala 3: `TypeRef` with an alias `typeSymbol` → `translucentSuperType`; `AppliedType(tycon: TypeRef, args)` with an alias
+  `tycon` → `tycon.translucentSuperType.appliedTo(args)` (beta-reduces the alias's type lambda one level). Opaque types are not
+  aliases here (`isAliasType && !flags.is(Flags.Opaque)`): outside its scope an opaque predicate is abstract, its author hid the
+  right-hand side, and Scala 2 has no such case, so both walks stay equivalent.
 
-Prototyped on 2.12, 2.13 and 3.3.9 (diff kept in `notes/scratch/c-b23/prototype-fix.diff`): 19 aliased forms, each compared with
-the same predicate written directly, all equal and identical across the three versions, e.g. `Preds.Div2` → `integer {multipleOf: 2}`,
-`Preds.Max` on a `List[Int]` → `maxItems: 2`, `MaxSize[Two]` on a `String` → `maxLength: 2`, an alias of an alias of `Positive` →
-`exclusiveMinimum: 0`, a parametric alias (`type Gen[N] = Divisible[N]`), a class-member alias (`h.HD` with `val h = new Holder`).
-All existing refined tests pass unchanged (2.13: 84, 2.12: 69, 3.3.9: 90, incl. the probe), no warnings.
+Prototyped on 2.12, 2.13 and 3.3.9 (diff kept in `notes/scratch/c-b23/prototype-fix.diff`): 25 aliased forms on 2.13/3 (20 on 2.12),
+each compared with the same predicate written directly, all equal and identical across the three versions, e.g. `Preds.Div2` →
+`integer {multipleOf: 2}`, `Preds.Max` on a `List[Int]` → `maxItems: 2`, `MaxSize[Two]` on a `String` → `maxLength: 2`, an alias of an
+alias of `Positive` → `exclusiveMinimum: 0`, a parametric alias (`type Gen[N] = Divisible[N]`), a class-member alias (`h.HD` with
+`val h = new Holder`), aliases inherited from a trait (via an `object` and via a `val` of a class), a bounded parameter
+(`type Bd[N <: Int] = Divisible[N]`), swapped parameters (`type Sw[A, B] = Interval.Closed[B, A]`: `Sw[5, 2]` → `minimum: 2, maximum: 5`).
+An opaque predicate (`opaque type OP = Positive`) reports `Can't infer Predicate out of ...OP` on Scala 3.
+All existing refined tests pass unchanged (2.13: 97, 2.12: 77, 3.3.9: 99, incl. the probes), no warnings. r-b23 checked the
+prototype independently with more edge cases (`notes/reports/r-b23.md`).
 Pros: one mechanism for every alias depth and every predicate the matcher knows, on both versions; refined's own aliases keep
 being matched by name, which is how the extractor was designed (Scala 3 `RefinedSupport` doc comment). Cons: Scala 2 needs a
 hand-written one-step dealias (8 lines).
@@ -165,7 +171,7 @@ matcher already knows; each future refined alias whose expansion isn't covered b
 #### F. Part 2 as its own item  — LOST (the lead's alternative; easy to pick)
 B23 would be Part 1 only. It lost because Part 2 is the same function (`ex` / `Ex.unapply`) and the same test files, one reviewer
 already reproduced both, and Part 1's new error is exactly what a Part-2 user sees on Scala 2 after Part 1 alone. To pick F: drop
-steps 4, 5, 7 and the first sentence of step 9; steps 1–3, 6 and 8 don't depend on them.
+steps 4, 5, 7, 8 and the first sentence of step 9; steps 1–3 and 6 don't depend on them.
 
 ## Decision
 
@@ -187,11 +193,10 @@ Scala 2 main (`modules/refined/src/main/scala-2/com/github/andyglow/jsonschema/r
      // one alias step: `Div2` -> `Divisible[2]`, `Divisible[2]` -> `Modulo[2, _0]`; None if `p` is not an alias
      def dealias1(p: Type): Option[Type] = p match {
        case TypeRef(pre, sym, args) if sym.isType && sym.asType.isAliasType =>
-         val body = sym.info.asSeenFrom(pre, sym.owner) match {
-           case PolyType(_, res) => res
-           case res              => res
+         sym.info.asSeenFrom(pre, sym.owner) match {
+           case PolyType(tps, res) => Some(res.substituteTypes(tps, args))
+           case res                => Some(res)
          }
-         Some(body.substituteTypes(sym.asType.typeParams, args))
        case _ => None
      }
      ```
@@ -203,10 +208,13 @@ Scala 3 main (`modules/refined/src/main/scala-3/com/github/andyglow/jsonschema/r
      step at a time (refined's own names are aliases: `type Div2 = Divisible[2]` must reach `Divisible`, not `Modulo[2, 0]`), then fully dealiased".
    - add:
      ```scala
+     // an opaque predicate is abstract outside its scope: not seen through (Scala 2 has no opaque types)
+     private def isAlias(s: Symbol): Boolean = s.isAliasType && !s.flags.is(Flags.Opaque)
+
      private def dealias1(p: TypeRepr): Option[TypeRepr] = p match {
-       case p: TypeRef if p.typeSymbol.isAliasType                            => Some(p.translucentSuperType)
-       case AppliedType(tycon: TypeRef, args) if tycon.typeSymbol.isAliasType => Some(tycon.translucentSuperType.appliedTo(args))
-       case _                                                                 => None
+       case p: TypeRef if isAlias(p.typeSymbol)                            => Some(p.translucentSuperType)
+       case AppliedType(tycon: TypeRef, args) if isAlias(tycon.typeSymbol) => Some(tycon.translucentSuperType.appliedTo(args))
+       case _                                                              => None
      }
      ```
    Scala 3's error path is already right: no change.
@@ -218,6 +226,8 @@ Tests (`modules/refined/src/test/`; all compile-time, so they run unchanged unde
    - unsupported predicate via `refined[...]`, `implicitly[Predef[...]]`, `Json.schema[...]`, a field, an `Option` field: each error
      includes `Can't infer Predicate out of <the predicate>` and not `asInstanceOf`;
    - nested: `Positive And M` → includes `Can't infer Predicate out of eu.timepit.refined.boolean.And[`;
+   - the second branch: `assertCompiles("def f[T <: Refined[Int, Positive]] = refined[T]")` → includes `Can't infer Refined out of T`
+     (Scala 3's `refined[Int]` test already covers its own branch);
    - empty range: unchanged message;
    - a user's implicit `Predef` for the unsupported type in lexical scope is used (`Json.schema[...] shouldBe` the user's schema).
    **Gotcha (found while prototyping):** inside an `assertCompiles` string, shapeless' ``W.`2`.T`` typechecks without any error on
@@ -230,17 +240,22 @@ Tests (`modules/refined/src/test/`; all compile-time, so they run unchanged unde
    `scala-2.13+/.../RefinedPredicateAliases.scala` (literal types, 2.13 + 3) and `scala-2.12-/.../RefinedPredicateAliases.scala`
    (``W.`2`.T``). One test per row of Part 2's matrix: the aliased schema equals the directly written one, and for the four that fail
    today (`Div2`, `Max`, `MaxSize[Two]`, alias of `Positive`) also equals the literal expected tree (e.g.
-   ``integer.withValidation(`multipleOf` := 2)``), so that two equally wrong trees can't pass. Include an alias of an alias, a
-   parametric alias, a class-member alias and an alias inside `And`/`Not`. The prototype's 19 cases are in
-   `notes/scratch/c-b23/alias/` (`B23AliasModels.scala`, `B23AliasSpec.scala`).
-8. `Scala3RefinedErrorsSpec`: no change needed (its doc comment "Scala 2 reports the refined macro's message alone" becomes true for
-   this message too). Optionally add one alias error case (`type M = Modulo[2, 3]` → `Can't infer Predicate out of ...M`).
+   ``integer.withValidation(`multipleOf` := 2)``), so that two equally wrong trees can't pass. Include the cases that would catch a
+   wrong `dealias1`: an alias of an alias, a parametric alias, a class-member alias (`val h = new Holder`), an alias inside `And`/`Not`,
+   aliases inherited from a trait (`trait PredsT { type TD = Divisible[2]; type TG[N] = Divisible[N] }` used via `object O extends PredsT`
+   and via `val ht = new HT` with `class HT extends PredsT`), a bounded parameter (`type Bd[N <: Int] = Divisible[N]`, 2.13/3), and
+   swapped parameters (`type Sw[A, B] = Interval.Closed[B, A]`: `Sw[5, 2]` equals `Interval.Closed[2, 5]`, the only case that fails if
+   parameters are substituted by the wrong arguments). The prototype's cases are in `notes/scratch/c-b23/alias/`
+   (`B23AliasModels.scala` per version, `B23AliasSpec.scala`). (`json.Schema.equals` compares validations, so the equalities aren't vacuous.)
+8. `Scala3RefinedErrorsSpec`: add an opaque predicate (`opaque type OP = Positive` in an object; `refined[Int Refined O.OP]` →
+   `Can't infer Predicate out of ...OP`), pinning the `Flags.Opaque` exclusion (prototype `notes/scratch/c-b23/opaque/B23OpaqueSpec.scala`).
+   Its doc comment ("Scala 2 reports the refined macro's message alone") needs no change: it becomes true for this message too.
 
 Golden files: none. The refined module has no golden files, and nothing in `api` or the bridges uses refined (checked with grep).
 
 Docs (README "Refined" and paradox `docs/src/main/paradox/modules/refined.md`, same words):
-9. After the list of supported predicates: "A predicate can be an alias, at any depth and also as a type argument
-   (`type Div2 = Divisible[2]`, `MaxSize[Max]` with `type Max = 5`)." README also gets paradox's existing sentence
+9. After the list of supported predicates: "A predicate can be written through a type alias (at any depth), and so can its type
+   arguments (`type Div2 = Divisible[2]`, `MaxSize[Max]` with `type Max = 5`)." README also gets paradox's existing sentence
    "An unsupported predicate, or a range with no values (`Less[2] And Greater[7]`), is a compile error." (README lacks it).
    The Scala 3 notes (README "Scala 3", `scala3.md`) stay as they are.
 
@@ -248,11 +263,9 @@ Gates (when implemented, per the protocol): `clean test` on 2.12.21, 2.13.18, 3.
 only, but `refinedJS` runs the new specs); `scalafmtCheckAll` + `rootJS/scalafmtCheckAll`; `makeDocs` (README/paradox).
 
 Risks:
-- Scala 2 `dealias1` on unusual aliases (bounded or higher-kinded type parameters, aliases inherited from a trait): the prototype
-  covers object members, class members (`asSeenFrom` of a `val` prefix) and a parametric alias. If one misbehaves, the trailing
-  `unmatch(p.dealias)` still runs, so the worst case is today's behaviour, never a crash (no `require`/exception on this path).
-- Scala 3 `translucentSuperType` also sees through opaque types: a predicate declared as an opaque type would now be matched by its
-  right-hand side. Refined has none; if that's unwanted, skip `typeSymbol.flags.is(Flags.Opaque)`.
+- Scala 2 `dealias1`: object, class-member, trait-inherited, parametric, bounded and swapped-parameter aliases are covered by
+  step 7. A higher-kinded alias parameter isn't (a predicate never takes a type constructor). If some alias still misbehaves, the
+  trailing `unmatch(p.dealias)` runs, so the worst case is today's behaviour, never a crash (no `require`/exception on this path).
 - Termination: alias chains are finite (a cyclic alias is a compile error before the macro runs).
 
 ## Compatibility
@@ -269,10 +282,22 @@ Risks:
 
 ## Open questions for the owner
 
-1. Part 2 inside B23 (D) or as its own item (F)? The plan is split so F is "drop steps 4, 5, 7 and step 9's first sentence".
+1. Part 2 inside B23 (D) or as its own item (F)? The plan is split so F is "drop steps 4, 5, 7, 8 and step 9's first sentence".
 2. Out of scope, could be their own items: `Modulo[N, 0]` written directly (= `Divisible[N]`) and shapeless `Nat` arguments on
-   Scala 2 (`Greater[_5]`), both new support (Option E's features).
+   Scala 2 (`Greater[_5]`), both new support (Option E's features). Also: for a nested unsupported predicate both versions name the
+   whole predicate (`And[Positive,Modulo[2,3]]`), not the unsupported leaf; naming the leaf would be a later improvement to both macros.
 3. Neighbour (not B23, reported to the lead): the docs list `Xml` as a supported string predicate, but neither macro has a case for
    it and refined's core artifact has no `eu.timepit.refined.string.Xml` (it is in a separate refined module).
 
 ## Review log
+Round 1 (r-b23, on fb5deb7):
+- B23-R1 (must) pin inherited / bounded / swapped-parameter aliases → accepted: added to step 7 (trait-inherited via `object` and via a
+  `val` of a class, `Bd[N <: Int]`, `Sw[A, B] = Interval.Closed[B, A]`), prototyped on 2.12/2.13/3 (all equal to the direct form, `Sw[5, 2]` →
+  min 2 / max 5); Risks bullet trimmed.
+- B23-R2 (must) test the `Can't infer Refined` branch → accepted: step 6 adds `def f[T <: Refined[Int, Positive]] = refined[T]` →
+  `Can't infer Refined out of T` (prototyped, passes on 2.12/2.13). Kept in the Scala 2 spec; Scala 3 already tests its branch (`refined[Int]`).
+- B23-R3 (nit) substitute the `PolyType`'s own params → accepted: step 4 and Option D changed; re-run, same results.
+- B23-R4 (nit) decide on opaque types → accepted: excluded (`isAlias` = `isAliasType && !flags.is(Flags.Opaque)`), reason in Option D;
+  step 8 pins it with a Scala 3 test (prototyped: `Can't infer Predicate out of b23.B23Opaque.OP`).
+- B23-R5 (nit) docs wording → accepted: step 9 uses the suggested sentence.
+- B23-R6 (nit) name the unsupported leaf → accepted as a note under open question 2 (later improvement, both macros).
