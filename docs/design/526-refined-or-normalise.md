@@ -341,6 +341,10 @@ the `require`s. The predicate in the generic error message is `show`n (`p.show` 
 the type in Scala 2). JS: nothing platform-specific (compile-time code). Validity specs cancel on JS.
 
 Risks:
+- **Landing order with B32** (#533, `docs/design/533-refined-size-exclusive.md`, "Coordination"). B32 fixes the
+  `Size[P]` inclusiveness quirk. If B32 lands first, step 6 calls B32's `sizeRange(lo, hi)` on the interval's bounds
+  instead of `toInt`, and the pin "Size[P] ignores P's inclusiveness" is deleted, not ported. If B27 lands first, B32
+  implements on `Ranges`.
 - **Landing order with B14.** B14 renames refined's `OneOf` to `AnyOf` in the same `Or.norm`, and D's `Ranges.tree`
   builds that node. Whoever lands second rebases a small conflict there, the `oneof` ↔ `anyof` expectations of steps
   7-8, and the build change of step 9. The semantics are the same either way, because the intervals are disjoint.
