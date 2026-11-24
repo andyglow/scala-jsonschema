@@ -14,6 +14,7 @@ one schema, and each one loses part of it:
 | P2 implicit `Schema` of a value class (both macros: `Schema.def.adapt`) | `Schema.scala` L601 `case value-class(innerTpe) => def(sig, innerTpe)` | the underlying's validations and texts | the vc's validations and texts |
 | P3 inline render (field, element, root) | `AsDraftSupport.scala` L53-65 (`inferValidations(x)` of the vc node) + L244-246 `mkValueClass` | the vc's validations | the underlying's validations |
 | P4 inline render of a value class over a definition | `AsDraftSupport.scala` L59 `obj("type" -> x.jsonType)`, `def.jsonType = ???` (L554); `extractDefs` (L309-319) doesn't look inside a value class | | everything: **throws** `NotImplementedError` |
+| P5 value-class member of a `@discriminator` family (Neutral, Legacy: the profiles that honor the annotations) | `JsonSchemaProfile` puts the member's tag (`discriminationKey`) on the member node, i.e. the `value-class`; `mkObj` reads it from the object it renders, the underlying | | the tag's `{"enum": [...]}` property, while `required` still lists the field: **the member matches nothing** |
 
 P1 is the item as filed: `withValidationsAddedFrom(x)` (L91-96) starts from `mkCopy()`, so its result has only `x`'s
 validations, and the receiver's own validations, title, description and discriminationKey are gone. Its other call site,
@@ -39,6 +40,7 @@ case class PersonW(p: Person) extends AnyVal
 | R9 | `implicit val s: Schema[Plain] = Json.schema[Plain].withValidation(pattern := "^[a-f0-9]{16}$")`, field `id: Plain` | `id: def(...Plain, string)` | definition `{"type":"string"}`: the `pattern` is gone (P2) |
 | R7 | `Json.schema[PersonW]`; `case class H(w: PersonW)`; `Option[PersonW]`, `List[PersonW]` fields | `value-class(def(...Person, object))` | **throws** `scala.NotImplementedError` (P4) |
 | Q2 | `sealed trait Fam extends Any; case class FamP(p: Person) extends AnyVal with Fam; case class FamS(s: String) extends AnyVal with Fam` | lowered `oneof(value-class(def(Person)), value-class(string))` | **throws** (P4, via `mkPlainOneOf`'s `memberType` → `jsonType`) |
+| D1 | `@discriminator("t") sealed trait F extends Any; case class Inner(a: Int); case class W(p: Inner) extends AnyVal with F; case class O(b: String) extends F` (found by r-b13, `notes/scratch/r-b13/p2-master.log`) | member W: `value-class(object(a))` keyed `t` | W = `{"additionalProperties":false,"properties":{"a":{"type":"integer"}},"required":["a","t"]}` (P5): `t` is required but not allowed; O is fine. Neutral and Legacy, the same |
 
 What works today: the README pattern `Json.schema[UserId].toDefinition("user-id").withValidation(pattern := ...)`
 (the validation goes into the definition's body after `toDefinition`), and any value class whose underlying schema has
@@ -49,8 +51,12 @@ no validations (every value class in the test suite: no golden file has a value 
   `pattern` makes a schema that accepts values the type can't hold. Wrapping a validated type in a value class is the
   usual way to make it a domain type (`case class Age(v: Int Refined Positive) extends AnyVal`), so the loss hits
   exactly the users who bothered to write validations.
-- `Json.schema[X].withValidation(...)` given as an implicit `Schema` (R9) is the natural way to validate a value class
-  everywhere it's used, and it silently does nothing.
+- `Json.schema[X].withValidation(...)` given as an implicit `Schema` (R9) is the direct way to validate a value class
+  everywhere it's used, and it silently does nothing. (It needs a user `Magnet[X, String]`, as in the README's `UserId`
+  example: no built-in magnet lets `withValidation` onto a value class. The README's
+  `Json.schema[UserId].toDefinition(..).withValidation(..)` is the form that works today, with the same magnet.)
+- A `@discriminator` family with a value-class member (D1) renders a member that no document matches, under the
+  default profile and Legacy.
 - P1 contradicts the method's name (`withValidationsAddedFrom` adds nothing to the receiver; it replaces it).
 - P4 is a crash at render time, for a model that compiles: a value class over any type with an implicit `Schema`.
 
@@ -61,7 +67,9 @@ underlying schema: the validations are the underlying's followed by the value cl
 value class's wins (it's the more specific one, and later `withValidation` calls on a node win today too, since
 `ValidationList.json` is a `toMap`). `title`/`description` are the value class's, falling back to the underlying's (the
 rule B1 #469 already uses in `def.adapt` and `mkValueClass`). `discriminationKey` is the underlying's, falling back to
-the value class's (a family member's key is set on the member object, which is the underlying).
+the value class's: the profiles put a family member's tag on the member node, which for a value-class member is the
+`value-class`, while the renderer reads it from the object it renders (the underlying). Moving it down is what fixes
+D1; an underlying that already has its own key keeps it.
 
 ### A. One helper, `value-class.unwrapped`, used by every path  — WON
 - `json.Schema.withValidationsAddedFrom(x)`: start from `duplicate()` (keeps the receiver's texts and
@@ -97,7 +105,15 @@ same on 2.13 and 3):
 // R7 Option[PersonW] field: "o": {"oneOf": [{"$ref": "#...Person"}, {"type": "null"}]}
 // Q2 FamHolder (Neutral)
 "f": {"oneOf": [{"$ref": "#...Person"}, {"type": "string"}]}, "definitions": {"...Person": {...}}
+// D1 member W, Neutral and Legacy (r-b13, notes/scratch/r-b13/p2-proto.log)
+{"additionalProperties": false, "properties": {"a": {"type": "integer"}, "t": {"enum": ["...W"]}}, "required": ["a", "t"]}
 ```
+
+A value-class member **over a definition** in a `@discriminator` family (`case class FP(p: Person) extends AnyVal with F`,
+`Person` with an implicit `Schema`) renders, with A, as a bare `{"$ref": "#...Person"}`: the tag moves onto the `def`
+node, and a shared definition can't take one member's tag (`mkDef` emits only the `$ref`). By the profile code
+(`withDefinition(m, typed.duplicate(discriminationKey = ...))`), that is what a case-class member with an implicit
+`Schema` renders today, so A adds no new gap there; master throws (P4). The step 4 tests pin it.
 
 Pros: one rule in one place (the tree), used by the tree API (`toDefinition`), both macros (through `adapt`, no macro
 change) and the renderer; fixes the crash as a side effect of the same step; no change to the tree the macros build or
@@ -156,7 +172,10 @@ crash for a value class over a definition. Applies under every profile, Legacy i
      def unwrapped: Schema[I]
      ```
      Build it from `tpe.duplicate(title = title orElse tpe.title, description = ..., discriminationKey = tpe.discriminationKey orElse discriminationKey)`
-     and set `_validations = tpe.validations.filterNot(v => ownKeys(v.validation)) ++ validations`
+     and set `_validations = tpe.validations.filterNot(v => ownKeys(v.validation)) ++ validations`, where `ownKeys` is
+     the set of this value class's `validation`s. The override is done here, in the tree, on purpose: don't rely on
+     `ValidationList.json`'s `.toMap` letting the later entry win (B2 #465 may make it an ordered map, and
+     `ValidationList.extract` takes the first match).
      (`_validations` is a `private var` of the trait, accessible from the companion `Schema`'s nested classes;
      if a compiler disagrees, add a `private[json] def withValidations(vs: Seq[V.Def[_, _]]): Self`).
      Keep it non-recursive: an underlying `value-class` (only hand-built trees have one) stays as is and the renderer
@@ -175,13 +194,17 @@ crash for a value class over a definition. Applies under every profile, Legacy i
      `case x: value-class => extractDefs(x.tpe, par)` (a value class is transparent: same parent).
    - `AsRaw` goes through the same `apply`/`inferDefinitions`: nothing to do.
    - Note for whoever merges second: B3 #470 and B14 rework `mkPlainOneOf`; keep the `map(transparent)` at the top.
-3. Not changed, checked: `JsonSchemaProfile` (value-class members of families under library profiles take `inner` as
-   the field's schema: derived members have no own validations, so nothing is lost; `withProfile` output unchanged),
-   `DefinitionNames` (already walks into value classes), `AsTree`, the macros, the bridges, the parser.
+3. Not changed, checked: `JsonSchemaProfile` (`own`: a value-class member of a family under a library profile becomes
+   `{"<field>": inner}`, which ignores the value class's own validations; derived members have none, so nothing is
+   lost; `withProfile` output unchanged). Decision: keep `inner` and add a one-line comment there saying the value
+   class's own validations/texts aren't carried (derived members have none). Not `vc.unwrapped`: that would also move
+   the member's texts and tag into the field's schema, a second place for them next to the member object.
+   Also unchanged: `DefinitionNames` (already walks into value classes), `AsTree`, the macros, the bridges, the parser.
 4. Tests (shared `src/test/scala`, so they run on 2.12, 2.13, 3, JVM and JS):
    - `core/src/test/scala/json/SchemaCopySpec.scala` (or `SchemaSpec`): `withValidationsAddedFrom` keeps the receiver's
      validations (receiver's first), title, description, discriminationKey; `value-class.unwrapped`: validations order,
-     same keyword → the value class's wins, texts precedence both ways, discriminationKey; `toDefinition` of R1 →
+     same keyword → the value class's wins (asserted on `unwrapped.validations`, the tree, not only the JSON), texts
+     precedence both ways, discriminationKey; `toDefinition` of R1 →
      `def(vc, string{minLength 3, maxLength 5} title "VC T" description "VC D")`; add `value-class.toDefinition` to
      `SchemaSpec`'s "copy extra" list in its own form (the texts land on the body, not the `def`).
    - `api/src/test/scala/com/github/andyglow/jsonschema/ValueClassSpec.scala` (new), full JSON per draft for 04, 07 and
@@ -190,6 +213,10 @@ crash for a value class over a definition. Applies under every profile, Legacy i
      R7 root, field, `Option`, `List` (a `$ref` + the definition, emitted once); Q2 (family with a value-class member
      over a definition, under Neutral); a value class over a definition with its own `withValidation` (keyword beside
      the `$ref`, definition unchanged). Use a non-`Char` underlying so the spec doesn't depend on B5.
+   - Same spec, `@discriminator` families, draft-07, under **Neutral and Legacy**: D1 (the value-class member gets its
+     `"t": {"enum": [...]}` property; validate `{"a": 1, "t": "...W"}` against it where the JVM validator is available),
+     and the value-class member over a definition (`FP(p: Person)`, implicit `Schema[Person]`): a bare `$ref`, the
+     `Person` definition untouched.
    - The petshop acceptance suite (`api/src/test/scala/petshop/`): add a value class over a validated `Predef`
      (e.g. `minLength`) to the model so every library profile checks the merged schema against real codec output
      (JVM; canceled on JS).
@@ -219,15 +246,29 @@ list in the PR and CHANGELOG. (c) An underlying with an invalid or overly strict
 starts to apply inline: see step 6.
 
 ## Compatibility
-- Source and binary: no signature changes. Adds a public method `value-class.unwrapped` (PVP: a minor-compatible
-  addition; it's on a final case class). `mkValueClass` stays. `withValidationsAddedFrom` keeps its signature; its
+- Source and binary: no signature changes. Adds a public method `value-class.unwrapped` (an addition, fine in a
+  0.9.x release; it's on a final case class). `mkValueClass` stays. `withValidationsAddedFrom` keeps its signature; its
   result now keeps the receiver (a behaviour fix).
 - Output: new validation keywords (and, with B1, texts) where a value class's underlying type has validations, inline
   and as a definition; an implicit `Schema` of a value class keeps the value class's own validations; a value class
-  over a definition renders a `$ref` instead of throwing. Nothing that rendered before disappears. All drafts, all
-  profiles, Legacy included (lead's Legacy policy), no golden or golden-legacy change in the current suite.
+  over a definition renders a `$ref` instead of throwing; a value-class member of a `@discriminator` family gets its
+  tag property (D1: was an unsatisfiable member) under Neutral and Legacy. Nothing that rendered before disappears.
+  All drafts, all profiles, Legacy included (lead's Legacy policy: each of these fixes a schema that was wrong), no
+  golden or golden-legacy change in the current suite.
 - PVP: a bug fix, patch level (0.9.x), like B5. It makes some schemas stricter; the PR lists that.
 - Core design rule: unchanged (an implicit `Schema` of a value class is still a definition, a `Predef` is still inlined;
   only what the value class contributes to either changes).
 
 ## Review log
+Round 1 (r-b13, doc 32cd13c):
+- B13-R1 (must) unlisted output change: a value-class member of a `@discriminator` family gets its tag property
+  (Neutral, Legacy) → accepted: P5 row + D1 repro in Problem, a "Why" bullet, the D1 output under A, the
+  discriminationKey rationale corrected (the tag sits on the value-class node; moving it to the underlying is what
+  fixes D1), Compatibility "Output", tests under Neutral and Legacy.
+- B13-R2 (must) value-class member over a definition in a discriminated family → accepted: stated under A (a bare
+  `$ref`, same as a case-class member with an implicit `Schema`; master throws), added to the tests.
+- B13-R3 (nit) R9 needs a user `Magnet` → accepted: said in "Why", with the README form that works today.
+- B13-R4 (nit) per-keyword override in the tree, not via `.toMap` → accepted: step 1 says why; the test asserts on
+  `unwrapped.validations`.
+- B13-R5 (nit) `JsonSchemaProfile.own` → accepted, chose the comment (keep `inner`), and wrote why not `vc.unwrapped`
+  (step 3).
