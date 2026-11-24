@@ -220,7 +220,8 @@ Scala 2 macro and the Scala 3 derivation; types used where they are declared kee
      → two definitions, B29-R2).
    - **Scala 2 only** (`api/src/test/scala-2/com/github/andyglow/jsonschema/PathDependentDefinitionsSpec.scala`; a new dir, sbt's
      built-in `scala-2` source dir, used by 2.12 and 2.13): the same `Tree` / `T1.Node` / `T2.Node` model keeps today's single
-     definition `...Tree.Node` (Scala 2's recursion names the inner `Tree.this.Node`), pinned so a future parity change
+     definition `scala.collection.immutable.List[...Tree.Node]`, with `a`/`b` inlined and `"kids"` referring to it
+     (Scala 2's recursion names the inner `List[Tree.this.Node]`; r-b29, B29-R8), pinned so a future parity change
      is deliberate. The type-member models don't compile on Scala 2 (neighbour bug, not here).
    Optionally one golden model (`enumeration_two_implicits`) through the golden harness, default profile only.
 4. **Guard:** the full JVM suite on 2.12.21, 2.13.18, 3.3.9 (`clean test`) and `rootJS/test` on 2.13 and 3.3 pass with
@@ -235,7 +236,7 @@ Scala 2 macro and the Scala 3 derivation; types used where they are declared kee
    > keep the name of the class that declares them, so their discriminator values don't change.
 
    Plus one line for the Scala 3 notes (README "Scala 3 notes", L921, and paradox `scala3.md`): a recursive class declared in a
-   trait gets one definition per object it's reached through (`T1.Node`, `T2.Node`); Scala 2 names it after the trait.
+   trait gets one definition per object it's reached through (`T1.Node`, `T2.Node`); Scala 2 keeps its single definition, named after `List[<pkg>.Tree.Node]`.
    A "changes in 0.9.x" line goes wherever the lead puts output changes (no CHANGELOG edit by the item). `makeDocs`.
 6. **JS:** nothing platform-specific (compile-time names); the shared spec runs on JS, the validation test is canceled there.
 
@@ -269,7 +270,8 @@ val aliases, applied inherited classes, existentials, JS.
   - **Scala 3 only**, definitions from the **recursion pass**: a recursive class declared in a trait
     (`<pkg>.Tree.Node` → `<pkg>.T1.Node` and `<pkg>.T2.Node`). Without a type member that's two definitions of one
     shape where there was one (valid before and after). With a type member it fixes a wrong schema (B29-R1). Scala 2
-    keeps `<pkg>.Tree.Node`, so the two versions differ there: Scala 2 can't derive the type-member case at all, and
+    keeps its single recursion definition `scala.collection.immutable.List[<pkg>.Tree.Node]` (`a`/`b` inlined), so the
+    two versions differ there (they already did before): Scala 2 can't derive the type-member case at all, and
     renaming its recursion is not needed to fix a bug.
   - `Json.sig` of all of the above.
 
@@ -301,3 +303,7 @@ Round 1 (r-b29, 6c897d9):
   (same words, with the `toDefinition` workaround for older versions) and the Scala 3 notes line.
 - B29-R7 (nit) plan details → accepted: step 1 and option A use `compute(pre)` and say it equals
   `decodedFullName(pre.typeSymbol)`; the self-reference test is spelled out (`Colors.this.Value` and `Colors.Value` give one name).
+
+Round 2 (r-b29, 5fa6b75):
+- B29-R8 (nit) Scala 2's recursion definition is `scala.collection.immutable.List[<pkg>.Tree.Node]`, not
+  `<pkg>.Tree.Node` → accepted: fixed the Scala 2 pin in step 3, the Compatibility bullet and the Scala 3 notes docs line.
