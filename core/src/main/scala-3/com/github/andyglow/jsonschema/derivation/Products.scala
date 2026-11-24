@@ -123,8 +123,10 @@ trait Products { this: Derivation =>
     val fields = ps map { p =>
       val inner = optionElement(p.tpe)
       val node  = inner match {
-        case Some(e) => Opt(optionOf(e), resolve(e, ctx.descend(tpe))) // `Option[e]`, also for a `Some[e]` field
-        case None    => resolve(p.tpe, ctx.descend(tpe))
+        // the field's Option isn't on the stack, so `resolve` would name the case class as the wildcard's owner
+        case Some(e) if isWildcard(e) => notSupported(p.tpe, ctx.descend(tpe), WildcardReason)
+        case Some(e)                  => Opt(optionOf(e), resolve(e, ctx.descend(tpe))) // `Option[e]`, also for a `Some[e]` field
+        case None                     => resolve(p.tpe, ctx.descend(tpe))
       }
       val hasDefault = p.sym.flags.is(Flags.HasDefault)
       Field(

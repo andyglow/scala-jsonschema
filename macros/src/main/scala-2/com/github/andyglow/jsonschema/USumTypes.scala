@@ -14,6 +14,23 @@ private[jsonschema] trait USumTypes {
       isSupportedLeafSymbol(s)
     }
 
+    /** A member that isn't a case class/object (the texts of Scala 3's `Sums`). `stack`: the path to the family, without the family itself. */
+    private def unsupportedMember(root: Type, sym: Symbol, stack: List[Type]): Nothing = {
+      val anonymousOrLocal = sym.name.decodedName.toString.startsWith("$anon") || isBlockLocal(sym)
+      if (anonymousOrLocal)
+        c.abort(
+          c.enclosingPosition,
+          s"schema for ${showType(root)} is not supported${pathOf(stack)}: it has a subclass that is local to a block or anonymous (e.g. `new ${root.typeSymbol.name.decodedName} {}`), " +
+            s"which can't be a member of a derived family. Declare the subclasses at the top level or in an object, or provide an implicit json.Schema for ${showType(root)}"
+        )
+      else
+        c.abort(
+          c.enclosingPosition,
+          s"schema for ${showType(root)} is not supported${pathOf(stack)}: only case classes and case objects are supported as members of a sealed family, and ${showType(sym.asType.toTypeConstructor)} is neither. " +
+            s"Make it one, or provide a json.schema.Predef or json.Schema for ${showType(root)}"
+        )
+    }
+
     def resolveOneOf(tpe: Type)(implicit ctx: ResolutionContext): Option[SchemaType] = {
       Some.when(isSealed(tpe)) {
         // get type annotation for the root type
@@ -24,12 +41,7 @@ private[jsonschema] trait USumTypes {
         val subTypes = resolveSumTypeRecursively(
           tpe,
           include = isSupportedLeafType,
-          otherwise = sym =>
-            abort(
-              "Supported Type:" + isSupportedLeafSymbol(sym) +
-                s"\nOnly Scala case classes/objects are supported for Sum Type leaves.\nActual: ${showRaw(sym)}.\nPlease consider using of " +
-                s"them for Sum Types with base '$tpe' or provide a custom implicitly accessible json.Schema for the Sum Type."
-            )
+          otherwise = sym => unsupportedMember(tpe, sym, ctx.stack.dropRight(1))
         )
 
         val enumExtractor = new SumTypeEnumExtractor(tpe)
