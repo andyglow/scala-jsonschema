@@ -116,7 +116,8 @@ object AsSpraySpec {
   final case class WithObjDefault(s: Six = Six(1, 2, 3, 4, 5, 6))
   implicit val sixWriter: JsonWriter[Six] = new JsonWriter[Six] {
     def write(s: Six): JsValue = JsObject(
-      scala.collection.immutable.ListMap[String, JsValue]("a1" -> JsNumber(s.a1), "a2" -> JsNumber(s.a2), "a3" -> JsNumber(s.a3), "a4" -> JsNumber(s.a4), "a5" -> JsNumber(s.a5), "a6" -> JsNumber(s.a6))
+      scala.collection.immutable
+        .ListMap[String, JsValue]("a1" -> JsNumber(s.a1), "a2" -> JsNumber(s.a2), "a3" -> JsNumber(s.a3), "a4" -> JsNumber(s.a4), "a5" -> JsNumber(s.a5), "a6" -> JsNumber(s.a6))
     )
   }
   lazy val withObjDefault: _root_.json.Schema[WithObjDefault] = {

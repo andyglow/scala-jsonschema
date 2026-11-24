@@ -27,7 +27,7 @@ object PropertyOrderSpec {
   @discriminator(field = "type", phantom = false) sealed trait Declared
   object Declared {
     final case class Member(a1: Int, a2: Int, `type`: String, a3: Int, a4: Int) extends Declared
-    final case class Other(`type`: String, b: String)                          extends Declared
+    final case class Other(`type`: String, b: String)                           extends Declared
   }
 
   final case class D1(x: Int)

@@ -167,7 +167,7 @@ object AsPlaySpec {
   // key order through `toValue`: a case-class default, encoded by play-json
   final case class Six(a1: Int, a2: Int, a3: Int, a4: Int, a5: Int, a6: Int)
   final case class WithObjDefault(s: Six = Six(1, 2, 3, 4, 5, 6))
-  implicit val sixWrites: Writes[Six] = Writes[Six] { s => Json.obj("a1" -> s.a1, "a2" -> s.a2, "a3" -> s.a3, "a4" -> s.a4, "a5" -> s.a5, "a6" -> s.a6) }
+  implicit val sixWrites: Writes[Six]                         = Writes[Six] { s => Json.obj("a1" -> s.a1, "a2" -> s.a2, "a3" -> s.a3, "a4" -> s.a4, "a5" -> s.a5, "a6" -> s.a6) }
   lazy val withObjDefault: _root_.json.Schema[WithObjDefault] = {
     import AsPlay.toValue
     _root_.json.Json.schema[WithObjDefault]

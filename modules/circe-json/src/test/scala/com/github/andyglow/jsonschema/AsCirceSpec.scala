@@ -129,7 +129,14 @@ object AsCirceSpec {
   final case class Six(a1: Int, a2: Int, a3: Int, a4: Int, a5: Int, a6: Int)
   final case class WithObjDefault(s: Six = Six(1, 2, 3, 4, 5, 6))
   implicit val sixEncoder: Encoder[Six] = Encoder.instance { s =>
-    Json.obj("a1" -> Json.fromInt(s.a1), "a2" -> Json.fromInt(s.a2), "a3" -> Json.fromInt(s.a3), "a4" -> Json.fromInt(s.a4), "a5" -> Json.fromInt(s.a5), "a6" -> Json.fromInt(s.a6))
+    Json.obj(
+      "a1" -> Json.fromInt(s.a1),
+      "a2" -> Json.fromInt(s.a2),
+      "a3" -> Json.fromInt(s.a3),
+      "a4" -> Json.fromInt(s.a4),
+      "a5" -> Json.fromInt(s.a5),
+      "a6" -> Json.fromInt(s.a6)
+    )
   }
   lazy val withObjDefault: _root_.json.Schema[WithObjDefault] = {
     import AsCirce.toValue
