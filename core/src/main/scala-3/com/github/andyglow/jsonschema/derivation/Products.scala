@@ -150,15 +150,15 @@ trait Products { this: Derivation =>
     if (tpe <:< TypeRepr.of[Option[Any]]) tpe.baseType(TypeRepr.of[Option[Any]].typeSymbol).typeArgs.headOption
     else None
 
+  /** A field's `@title` (on the parameter or its field). */
+  def fieldTitle(p: Param): Option[String] =
+    p.annotations.filter(_.tpe <:< TypeRepr.of[json.schema.title]).map(stringArg(_, "text", 0)).collectFirst { case Arg.Given(t) => t }
+
   /** Field descriptions by field name (Scala 2's `UFieldDecorations`): `@description` on the parameter or its field, then the type's scaladoc `@param`s, then the `Json.objectSchema` decorations (root
     * only); a later source wins (inventory F7: objectSchema config > scaladoc `@param` > `@description`).
     *
     * Checks (s2fix): an objectSchema decoration must name a field (compile error); a scaladoc `@param` that names no field is a warning, on the root and nested alike (TRIAGE-B).
     */
-  /** A field's `@title` (on the parameter or its field). */
-  def fieldTitle(p: Param): Option[String] =
-    p.annotations.filter(_.tpe <:< TypeRepr.of[json.schema.title]).map(stringArg(_, "text", 0)).collectFirst { case Arg.Given(t) => t }
-
   def fieldDescriptions(tpe: TypeRepr, ps: List[Param], ctx: Ctx): Map[String, String] = {
     val names           = ps.map(_.name)
     val fromAnnotations = ps.flatMap { p =>

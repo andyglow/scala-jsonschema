@@ -191,10 +191,15 @@ object JsonSchemaProfile {
 
     private def field(f: `object`.Field[_]): `object`.Field[_] = f.tpe match {
       // 0.7 dropped one layer for an `Option` field; the macros make every `Option` field not required
-      case `option`(inner) if p.optionStyle == OptionStyle.Legacy && !f.required                            => f.copy(tpe = apply(inner))
+      case o @ `option`(inner) if p.optionStyle == OptionStyle.Legacy && !f.required                        => f.copy(tpe = unwrapped(o, apply(inner)))
       case t @ `option`(_) if p.optionStyle == OptionStyle.Nullable && p.optionKeyRequired && !f.hasDefault => f.copy(tpe = apply(t), required = true)
       case t                                                                                                => f.copy(tpe = apply(t))
     }
+
+    // the dropped `option` layer's texts (a field's `@title`, `.withTitle` on the Option) move to what stays, over its own
+    private def unwrapped(o: Schema[_], t: Schema[_]): Schema[_] =
+      if (o.title.isEmpty && o.description.isEmpty) t
+      else t.duplicate(title = o.title orElse t.title, description = o.description orElse t.description)
 
     /** An `option` node anywhere but in a Legacy `Option` field. */
     private def optionAt(inner: Schema[_]): Schema[_] = p.optionStyle match {

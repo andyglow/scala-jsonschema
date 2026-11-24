@@ -201,6 +201,13 @@ class TitleDescriptionSpec extends AnyWordSpec {
       definitionsOf(legacy(Json.schema[TdHasVC])).values.toList.map(v => textsOf(Some(v))) shouldBe List((Some(str("VC T")), Some(str("VC D"))))
     }
 
+    "keep a field @title on an Option field, whose Option layer Legacy drops" in {
+      textsOf(at(legacy(Json.schema[TdOpt]), "properties", "o")) shouldBe ((Some(str("O")), Some(str("OD"))))
+      val out = legacy(Json.schema[TdOptDef])
+      at(out, "properties", "o", Ref) shouldBe defined
+      at(out, "properties", "o", "title") shouldBe Some(str("OT"))
+    }
+
     "keep the texts of objects (and field descriptions)" in {
       val out = legacy(Json.schema[TdPerson].withTitle("P").withDescription("PD"))
       at(out, "title") shouldBe Some(str("P"))
@@ -260,6 +267,7 @@ object TitleDescriptionSpec {
   }
   final case class TdTwo(@title("First") a: TdInner, b: TdInner)
   final case class TdBoth(@title("FT") @description("FD") inner: TdInner)
+  final case class TdOptDef(@title("OT") o: Option[TdInner])
 
   final case class TdNode(@title("kids") kids: List[TdNode])
 }

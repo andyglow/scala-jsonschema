@@ -48,7 +48,8 @@ models defined in another module or library. `.withTitle`/`.withDescription` wor
 value classes. A definition's, and a field's `@title`/`@description` on a field whose type is a definition, sit next to
 its `$ref` (before draft 2019-09 validators ignore keywords next to a `$ref`, so there they are for documentation
 tools). A type's own annotations and scaladoc apply where it is the root, or where it is given as an implicit
-`Schema` (a definition); a nested derived type doesn't get them.
+`Schema` (a definition), and on the members of a sealed family; a type derived inline as a field's (or an element's)
+type doesn't get them.
 
 ## Scaladoc
 
@@ -90,5 +91,6 @@ Package `json.schema`:
 | `@definition` / `@definition("name")`         | sealed member           | makes it a definition                                     |
 | `@typeHint[T]`                                | sealed root, member     | the JSON type of enum values that come from a `ToValue`   |
 
-A type's `@title`/`@description` apply where it is the root, or a type given as an implicit `Schema`. On Scala 2, a
+A type's `@title`/`@description` apply where it is the root, a type given as an implicit `Schema`, or a member of a
+sealed family. On Scala 2, a
 field annotation can also target the underlying field: `@(description @field)("...")`.
