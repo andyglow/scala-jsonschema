@@ -61,8 +61,11 @@ trait AsDraftSupport {
       case _                                                         => obj.empty
     }
 
-    base ++ validationList.json ++ specifics
+    base ++ validationList.json ++ specifics ++ deprecation(x)
   }
+
+  /** `"deprecated": true` for a schema marked deprecated, from draft 2019-09 on (the keyword doesn't exist before) and in Raw. */
+  private def deprecation(x: json.Schema[_]): obj = if (x.deprecated && this.isInstanceOf[Post09]) obj("deprecated" -> true) else obj.empty
 
   def mkStr(vl: ValidationList, x: `string`[_], par: ParentSchema): obj
 

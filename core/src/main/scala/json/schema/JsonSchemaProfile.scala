@@ -60,6 +60,11 @@ trait JsonSchemaProfile extends JsonSchemaProfileDefault {
   /** The name a member is tagged with ([[SumStyle.Discriminator]], [[SumStyle.WrapperObject]]), or written as ([[SingletonStyle.AsString]] when [[honorsSchemaAnnotations]] is false). */
   def memberName: MemberName = MemberName.FullName
 
+  /** Whether a schema marked deprecated (`@deprecated` on a field or a type, `.withDeprecated(true)`) keeps the mark, rendered as `"deprecated": true` from draft 2019-09 on. True for every profile
+    * but [[JsonSchemaProfile.Legacy]] (0.7 ignored the annotation).
+    */
+  def deprecatedKeyword: Boolean = true
+
   // builders: a profile with one knob changed and every other knob kept
 
   final def withName(x: String): JsonSchemaProfile                     = Knobs(this).copy(name = x).profile
@@ -69,6 +74,7 @@ trait JsonSchemaProfile extends JsonSchemaProfileDefault {
   final def withSingleton(x: SingletonStyle): JsonSchemaProfile        = Knobs(this).copy(singletonStyle = x).profile
   final def withMemberName(x: MemberName): JsonSchemaProfile           = Knobs(this).copy(memberName = x).profile
   final def withHonorsSchemaAnnotations(x: Boolean): JsonSchemaProfile = Knobs(this).copy(honorsSchemaAnnotations = x).profile
+  final def withDeprecatedKeyword(x: Boolean): JsonSchemaProfile       = Knobs(this).copy(deprecatedKeyword = x).profile
 
   /** `schema` with every `option` and `family` node lowered to plain JSON Schema nodes. Idempotent: a schema without those nodes comes back equal. */
   final def lower[T](schema: Schema[T]): Schema[T] = new Lowering(this)(schema).asInstanceOf[Schema[T]]
@@ -144,7 +150,7 @@ object JsonSchemaProfile {
   val Neutral: JsonSchemaProfile = Knobs("neutral", OptionStyle.Nullable).profile
 
   /** The 0.7 output, byte for byte. */
-  val Legacy: JsonSchemaProfile = Knobs("legacy", OptionStyle.Legacy).profile
+  val Legacy: JsonSchemaProfile = Knobs("legacy", OptionStyle.Legacy, deprecatedKeyword = false).profile
 
   /** Every knob of a profile; `profile` builds one from them. */
   private final case class Knobs(
@@ -154,7 +160,8 @@ object JsonSchemaProfile {
     sumStyle: SumStyle = SumStyle.Untagged,
     singletonStyle: SingletonStyle = SingletonStyle.AsString,
     memberName: MemberName = MemberName.FullName,
-    honorsSchemaAnnotations: Boolean = true
+    honorsSchemaAnnotations: Boolean = true,
+    deprecatedKeyword: Boolean = true
   ) { self =>
     def profile: JsonSchemaProfile = new JsonSchemaProfile {
       val name: String                              = self.name
@@ -164,16 +171,22 @@ object JsonSchemaProfile {
       override val singletonStyle: SingletonStyle   = self.singletonStyle
       override val memberName: MemberName           = self.memberName
       override val honorsSchemaAnnotations: Boolean = self.honorsSchemaAnnotations
+      override val deprecatedKeyword: Boolean       = self.deprecatedKeyword
     }
   }
   private object Knobs {
     def apply(p: JsonSchemaProfile): Knobs =
-      Knobs(p.name, p.optionStyle, p.optionKeyRequired, p.sumStyle, p.singletonStyle, p.memberName, p.honorsSchemaAnnotations)
+      Knobs(p.name, p.optionStyle, p.optionKeyRequired, p.sumStyle, p.singletonStyle, p.memberName, p.honorsSchemaAnnotations, p.deprecatedKeyword)
   }
 
   private final class Lowering(p: JsonSchemaProfile) {
 
-    def apply(s: Schema[_]): Schema[_] = s match {
+    def apply(s: Schema[_]): Schema[_] = stripped(node(s))
+
+    // [[deprecatedKeyword]] off (Legacy): the flag goes, on every node (leaves included); an unflagged node is kept as it is
+    private def stripped(s: Schema[_]): Schema[_] = if (s.deprecated && !p.deprecatedKeyword) s.withDeprecated(false) else s
+
+    private def node(s: Schema[_]): Schema[_] = s match {
       case `option`(inner)  => optionAt(inner).withExtraFrom(s)
       case f: `family`[_]   => familyAt(f).withExtraFrom(s)
       case o: `object`[_]   => o.withFieldsUpdated { case f => field(f) }
@@ -191,10 +204,13 @@ object JsonSchemaProfile {
 
     private def field(f: `object`.Field[_]): `object`.Field[_] = f.tpe match {
       // 0.7 dropped one layer for an `Option` field; the macros make every `Option` field not required
-      case `option`(inner) if p.optionStyle == OptionStyle.Legacy && !f.required                            => f.copy(tpe = apply(inner))
+      case o @ `option`(inner) if p.optionStyle == OptionStyle.Legacy && !f.required                        => f.copy(tpe = unwrapped(o, apply(inner)))
       case t @ `option`(_) if p.optionStyle == OptionStyle.Nullable && p.optionKeyRequired && !f.hasDefault => f.copy(tpe = apply(t), required = true)
       case t                                                                                                => f.copy(tpe = apply(t))
     }
+
+    // the dropped `option` layer's deprecation (`@deprecated` on an `Option` field) moves to what stays
+    private def unwrapped(o: Schema[_], t: Schema[_]): Schema[_] = stripped(if (o.deprecated && !t.deprecated) t.withDeprecated(true) else t)
 
     /** An `option` node anywhere but in a Legacy `Option` field. */
     private def optionAt(inner: Schema[_]): Schema[_] = p.optionStyle match {

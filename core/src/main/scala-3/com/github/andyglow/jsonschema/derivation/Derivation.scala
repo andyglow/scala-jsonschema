@@ -41,7 +41,7 @@ final class Derivation(val mode: Mode, val objectSchemaDecorations: List[(String
       case _: FromImplicit => typeAnnotations(tpe, docsFromClasspath = false)
       case _               => typeAnnotations(tpe)
     }
-    val root = node.withExtra(node.extra.copy(title = ta.title, description = ta.description))
+    val root = node.withExtra(node.extra.copy(title = ta.title, description = ta.description, deprecated = node.extra.deprecated || ta.deprecated))
     if (mode == Mode.Derived) derivedDefinition(tpe.dealias, root) else root
   }
 

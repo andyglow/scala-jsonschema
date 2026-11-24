@@ -95,4 +95,11 @@ class GoldenSharedModelsSpec extends AnyFunSuite {
     check("shared/RecursiveTypesSpec.case2.Node", Json.schema[case2.Node])
     check("shared/RecursiveTypesSpec.case3.User", Json.schema[case3.User])
   }
+
+  test("MiscTypesSpec models (#481): java.util collections and Optional, @deprecated") {
+    import MiscTypesSpec._
+    check("shared/MiscTypesSpec.JavaColls", Json.schema[JavaColls])
+    check("shared/MiscTypesSpec.Old", Json.schema[Old])
+    check("shared/MiscTypesSpec.OldOpt", Json.schema[OldOpt])
+  }
 }

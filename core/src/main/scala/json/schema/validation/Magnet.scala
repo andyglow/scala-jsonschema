@@ -23,6 +23,9 @@ trait LowPriorityMagnet {
 // ambiguous ("listMagnet vs iterableMagnet"). Scala 2 fixes `TT = T` before the search, so there only one of them ever matches.
 trait IterableMagnet extends LowPriorityMagnet {
   implicit def iterableMagnet[X]: Magnet[Iterable[X], Iterable[_]] = Magnet.mk[Iterable[X], Iterable[_]]
+
+  // the same levels for java collections: `java.util.List`/`Set` (in `object Magnet`) > `java.util.Collection`
+  implicit def javaCollectionMagnet[X]: Magnet[java.util.Collection[X], Iterable[_]] = Magnet.mk[java.util.Collection[X], Iterable[_]]
 }
 
 trait SeqMagnet extends IterableMagnet {
@@ -44,6 +47,10 @@ object Magnet extends SeqMagnet {
   implicit def listMagnet[X]: Magnet[List[X], Iterable[_]]     = mk[List[X], Iterable[_]]
   implicit def vectorMagnet[X]: Magnet[Vector[X], Iterable[_]] = mk[Vector[X], Iterable[_]]
   implicit def setMagnet[X]: Magnet[Set[X], Iterable[_]]       = mk[Set[X], Iterable[_]]
+
+  implicit def javaListMagnet[X]: Magnet[java.util.List[X], Iterable[_]]   = mk[java.util.List[X], Iterable[_]]
+  implicit def javaSetMagnet[X]: Magnet[java.util.Set[X], Iterable[_]]     = mk[java.util.Set[X], Iterable[_]]
+  implicit def javaMapMagnet[K, V]: Magnet[java.util.Map[K, V], Map[_, _]] = mk[java.util.Map[K, V], Map[_, _]]
 
   implicit def chrMagnet: Magnet[Char, String]            = mk[Char, String]
   implicit def characterMagnet: Magnet[Character, String] = mk[Character, String]

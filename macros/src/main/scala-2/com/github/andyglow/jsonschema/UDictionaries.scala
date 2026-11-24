@@ -13,7 +13,14 @@ private[jsonschema] trait UDictionaries {
           s"json.Schema.dictionary.KeyPattern; the key type $keyTpe $why. Provide an implicit KeyPattern[$keyTpe], or a json.schema.Predef or json.Schema for the Map"
       )
 
-    def unapply(tpe: Type)(implicit ctx: ResolutionContext): Option[U.Dict] = {
+    def unapply(tpe: Type)(implicit ctx: ResolutionContext): Option[SchemaType] = {
+      // a `java.util.Map[K, V]` (HashMap, TreeMap, EnumMap, ...): built as a `dictionary[K, V, java.util.Map]` (its own constructor can't be the `C[_, _]`: `EnumMap[K <: Enum[K], V]`),
+      // as a `Schema[tpe]`. (`Null` conforms too, but has no base type: left to the Scala branch, as before)
+      val jMapArgs = if (tpe <:< T.jMap) tpe.baseType(T.jMap.typeSymbol).typeArgs else Nil
+      if (jMapArgs.size == 2) Some(U.Cast(tpe, dictionary(tpe, T.jMap.typeConstructor, jMapArgs.head, jMapArgs(1)))) else scalaMap(tpe)
+    }
+
+    private def scalaMap(tpe: Type)(implicit ctx: ResolutionContext): Option[U.Dict] = {
       if (tpe <:< T.anyMap && !(tpe <:< T.map))
         c.abort(
           c.enclosingPosition,
@@ -31,8 +38,13 @@ private[jsonschema] trait UDictionaries {
             s"schema for $tpe is not supported: a Map must take its key and value types as its only type parameters (like Map[K, V]), and $tpe is a Map[${mapArgs.mkString(", ")}]. " +
               s"Provide a json.schema.Predef or json.Schema for it"
           )
-        val keyTpe               = tpe.typeArgs.head
-        val valueTpe             = tpe.typeArgs.tail.head
+        dictionary(tpe, containerTpe, tpe.typeArgs.head, tpe.typeArgs.tail.head)
+      }
+    }
+
+    // `dictionary[keyTpe, valueTpe, containerTpe]` for the map type `tpe`, with the key's pattern
+    private def dictionary(tpe: Type, containerTpe: Type, keyTpe: Type, valueTpe: Type)(implicit ctx: ResolutionContext): U.Dict = {
+      {
         val valueSchema          = resolve(valueTpe, ctx :+ tpe)
         val (keyIsString, keyVC) = keyTpe match {
           case T.string                                    => (true, None)
@@ -43,7 +55,7 @@ private[jsonschema] trait UDictionaries {
 
         val dict = U.Dict(keyTpe, valueTpe, containerTpe, valueSchema)
 
-        val effectiveDict: Option[U.Dict] = if (!keyIsString) {
+        val effectiveDict: U.Dict = if (!keyIsString) {
           // lookup for KeyPattern[_]
           c.inferImplicitValue(appliedType(T.keyPattern, keyVC getOrElse keyTpe)) match {
             // +---------

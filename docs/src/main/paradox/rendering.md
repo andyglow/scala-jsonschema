@@ -190,6 +190,7 @@ knobs; each `with...` keeps the others:
 | `withOptionKeyRequired` | `true`, `false` | an `Option` field without a default is required (upickle) |
 | `withHonorsSchemaAnnotations` | `true`, `false` | whether `@discriminator`/`@discriminatorKey` apply |
 | `withOption` | `OptionStyle.Nullable`, `Legacy` | `Option` as "X or null", or the 0.7 shapes |
+| `withDeprecatedKeyword` | `true`, `false` | whether `@deprecated` renders `"deprecated": true` (`false` only for `Legacy`) |
 
 ```scala mdoc:compile-only
 import json._

@@ -71,6 +71,24 @@ class CatsSupportSpec extends AnyWordSpec {
       }
     }
 
+    "NonEmptySeq" should {
+
+      "be exposed as array" in {
+        Json.schema[NonEmptySeq[String]] shouldBe `array`[String, NonEmptySeq](`string`)
+          .withValidation(`minItems` := 1)
+
+        neSeqEventSchema shouldBe `object`(
+          Field("id", `string`),
+          Field("arr", `array`[String, NonEmptySeq](`string`).withValidation(`minItems` := 1))
+        )
+      }
+
+      "take an element with an implicit Schema" in {
+        implicit val ps: Schema[Point] = pointSchema
+        Json.schema[NonEmptySeq[Point]] shouldBe `array`[Point, NonEmptySeq](pointSchema).withValidation(`minItems` := 1)
+      }
+    }
+
     "NonEmptyMap[String, _]" should {
 
       "be exposed as object" in {
@@ -138,6 +156,12 @@ object CatsSupportSpec {
 
   case class NonEmptyChainEvent(id: String, arr: NonEmptyChain[String])
   lazy val necEventSchema: Schema[NonEmptyChainEvent] = Json.schema[NonEmptyChainEvent]
+
+  case class NonEmptySeqEvent(id: String, arr: NonEmptySeq[String])
+  lazy val neSeqEventSchema: Schema[NonEmptySeqEvent] = Json.schema[NonEmptySeqEvent]
+
+  case class Point(x: Int, y: Int)
+  lazy val pointSchema: Schema[Point] = Json.schema[Point]
 
   case class NonEmptyStringMapEvent(id: String, data: NonEmptyMap[String, String])
   lazy val nesmEventSchema: Schema[NonEmptyStringMapEvent] = Json.schema[NonEmptyStringMapEvent]

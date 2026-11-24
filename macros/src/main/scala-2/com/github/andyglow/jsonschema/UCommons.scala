@@ -72,6 +72,15 @@ private[jsonschema] trait UCommons extends SchemaTypes with ULogging {
     val schemaC    = typeOf[json.Schema[_]].typeConstructor
     val predefC    = typeOf[json.schema.Predef[_]].typeConstructor
 
+    // java.util: derived like their Scala counterparts
+    val jCollection = typeOf[java.util.Collection[_]]
+    val jSet        = typeOf[java.util.Set[_]]
+    val jMap        = typeOf[java.util.Map[_, _]]
+    val jOptional   = typeOf[java.util.Optional[_]]
+
+    /** `scala.Option` or `java.util.Optional` (an `option` node either way) */
+    def isOptionLike(t: Type): Boolean = t <:< option || t.typeSymbol == jOptional.typeSymbol
+
     object annotation {
       val title            = typeOf[json.schema.title]
       val description      = typeOf[json.schema.description]
@@ -81,6 +90,10 @@ private[jsonschema] trait UCommons extends SchemaTypes with ULogging {
       val typeHint         = typeOf[json.schema.typeHint[_]]
       val readOnly         = typeOf[json.schema.readOnly]
       val writeOnly        = typeOf[json.schema.writeOnly]
+      val deprecated       = typeOf[scala.deprecated]
+      val jDeprecated      = typeOf[java.lang.Deprecated]
+
+      def isDeprecation(t: Type): Boolean = t <:< deprecated || t <:< jDeprecated
     }
 
     def isNothing(t: Type): Boolean = t.dealias match {
@@ -222,6 +235,8 @@ private[jsonschema] trait UCommons extends SchemaTypes with ULogging {
       lazy val readOnly: Boolean = annotations.map(_.tree.tpe).exists(_ <:< T.annotation.readOnly)
 
       lazy val writeOnly: Boolean = annotations.map(_.tree.tpe).exists(_ <:< T.annotation.writeOnly)
+
+      lazy val deprecated: Boolean = annotations.map(_.tree.tpe).exists(T.annotation.isDeprecation)
     }
   }
 }

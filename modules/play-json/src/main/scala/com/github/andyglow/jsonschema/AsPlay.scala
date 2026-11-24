@@ -9,6 +9,13 @@ import json.schema.Version
 
 object AsPlay {
 
+  /** Schemas of play-json's own types, opt-in: `import AsPlay.predef._` (an implicit here, in `AsPlay`, would clash with a user's own Predef of the same type). */
+  object predef {
+
+    /** `JsNull` (e.g. a field that is always `null`): `{"type": "null"}`. */
+    implicit val jsNullPredef: _root_.json.schema.Predef[JsNull.type] = _root_.json.schema.Predef(Schema.`null`.asInstanceOf[Schema[JsNull.type]])
+  }
+
   def apply[T](value: T)(implicit a: Adapter[T]): a.P = a.adapt(value)
 
   implicit class PlayJsonSchemaOps[T](val x: Schema[T]) extends AnyVal {

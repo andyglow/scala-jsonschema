@@ -12,6 +12,7 @@ sealed trait Schema[+T] {
   private var _title: Option[String]                    = None
   private var _description: Option[String]              = None
   private var _discriminationKey: Option[String]        = None
+  private var _deprecated: Boolean                      = false
   private var _validations: collection.Seq[V.Def[_, _]] = Seq.empty
   def jsonType: String
   def withValidation[TT >: T, B](v: V.Def[B, _], vs: V.Def[B, _]*)(implicit
@@ -26,6 +27,9 @@ sealed trait Schema[+T] {
   def description: Option[String]       = _description
   def title: Option[String]             = _title
   def discriminationKey: Option[String] = _discriminationKey
+
+  /** Whether the schema is marked deprecated (`@deprecated` on a field or a type). Rendered as `"deprecated": true` from draft 2019-09 on. */
+  def deprecated: Boolean = _deprecated
 
   // NOTE: `.toSeq` is required for scala 2.13
   // otherwise we'll see
@@ -46,6 +50,7 @@ sealed trait Schema[+T] {
       _description foreach { x => sb.append(" description=`").append(x).append('`') }
       _title foreach { x => sb.append(" title=`").append(x).append('`') }
       _discriminationKey foreach { x => sb.append(" discriminationKey=`").append(x).append('`') }
+      if (_deprecated) sb.append(" deprecated")
     }
     def writeValidations(sb: StringBuilder): Unit = {
       if (validations.nonEmpty) {
@@ -76,6 +81,7 @@ sealed trait Schema[+T] {
     copy._discriminationKey = discriminationKey
     copy._description = description
     copy._title = title
+    copy._deprecated = this._deprecated
 
     copy
   }
@@ -85,6 +91,7 @@ sealed trait Schema[+T] {
     copy._description = x._description
     copy._title = x._title
     copy._discriminationKey = x._discriminationKey
+    copy._deprecated = x._deprecated
 
     copy
   }
@@ -101,15 +108,21 @@ sealed trait Schema[+T] {
       this.title == s.title &&
       this.description == s.description &&
       this.discriminationKey == s.discriminationKey &&
+      this.deprecated == s.deprecated &&
       // compare collections disregarding order
       this.validations.forall(s.validations.contains) &&
       s.validations.forall(this.validations.contains)
 
     case _ => false
   }
-  def withDescription(x: String): Self                     = duplicate(description = Some(x))
-  def withTitle(x: String): Self                           = duplicate(title = Some(x))
-  def withDiscriminationKey(x: String): Self               = duplicate(discriminationKey = Some(x))
+  def withDescription(x: String): Self       = duplicate(description = Some(x))
+  def withTitle(x: String): Self             = duplicate(title = Some(x))
+  def withDiscriminationKey(x: String): Self = duplicate(discriminationKey = Some(x))
+  def withDeprecated(x: Boolean): Self       = {
+    val copy = duplicate()
+    copy._deprecated = x
+    copy
+  }
   def toDefinition[TT >: T](sig: String): Schema.`def`[TT] = Schema.`def`(sig, this)
 
   /** This schema shaped by `profile` now (see [[json.schema.JsonSchemaProfile]]): its `option` nodes become plain JSON Schema. Idempotent, so a later render, under any profile, keeps this shape. */
@@ -597,9 +610,9 @@ object Schema extends SchemaCompanionPlatform {
   object `def` {
     def adapt[T](tpe: Schema[_], sig: => String): `def`[T] = {
       tpe match {
-        case `def`(originalSig, innerTpe) => `def`(originalSig, innerTpe)
-        case `value-class`(innerTpe)      => `def`(sig, innerTpe)
-        case _                            => `def`(sig, tpe)
+        case d @ `def`(originalSig, innerTpe) => `def`[T](originalSig, innerTpe).withDeprecated(d.deprecated)
+        case vc @ `value-class`(innerTpe)     => `def`(sig, if (vc.deprecated) innerTpe.withDeprecated(true) else innerTpe)
+        case _                                => `def`(sig, tpe)
       }
     }
   }

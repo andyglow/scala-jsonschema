@@ -1,5 +1,5 @@
 # Misc types: java.util collections and Optional, Array[Byte], @deprecated, cats NonEmptySeq, joda Period/DateTimeZone/Interval, a null schema  (issues #481, #288, item E8)
-Status: draft
+Status: approved (r-e8, 2026-11-23)
 
 ## Problem
 All on 0.9.0, the same on 2.12.21, 2.13.18 and 3.3.9 (JVM; JS derives the same trees) unless noted. Repro specs on the branch:
@@ -157,9 +157,11 @@ Rejects values joda writes (`P-1D`, `PT1.5S`, `P1Y2W`) where formats are asserte
 #### 5A. Document `Schema.`null`` / `Predef[Null]`, and ship `Predef`s for the bridges' null singletons — WON
 - README + paradox: `Schema.`null`` renders `{"type":"null"}`; a `Null` field needs `implicit val n: Predef[Null] = Predef(Schema.`null`)`
   (if B11 #476 has merged by then, its `Null` error text points at it too).
-- Bridges: an implicit `Predef` for the library's null singleton, next to the bridge's other implicits (in scope with the import users already
-  write for `ToValue`): play-json `JsNull.type` (`AsPlay`), spray-json `JsNull.type` (`AsSpray`), json4s `JNull.type` (`AsJson4s`), upickle
-  `ujson.Null.type` (`AsU`). Built once with a cast (`Schema.`null`.asInstanceOf[Schema[JsNull.type]]`), so it works on Scala 3. circe has no
+- Bridges: an implicit `Predef` for the library's null singleton in an opt-in `predef` object of the bridge (`import AsPlay.predef._`):
+  play-json `JsNull.type` (`AsPlay.predef`), spray-json `JsNull.type` (`AsSpray.predef`), json4s `JNull.type` (`AsJson4s.predef`), upickle
+  `ujson.Null.type` (`AsU.predef`). Not in `AsPlay` itself: c-e2 measured that an implicit `Predef` in the object users import for `ToValue`
+  makes a user's own `Predef` of the same type ambiguous (2.13 and 3.3.9); `JodaTimeSupport.predef` is the precedent, and E2 puts its
+  `JsValue`/`JsObject` Predefs in the same `predef` objects (agreed with c-e2: whoever merges second merges the two object bodies). Built once with a cast (`Schema.`null`.asInstanceOf[Schema[JsNull.type]]`), so it works on Scala 3. circe has no
   null type (`Json.Null` is a `Json`). These are leaves next to E2's "any value" Predefs (`JsValue`, `Json`, ...); E2 adds those, not the null ones.
 
 #### 5B. Documentation only (with a cast for Scala 3) — LOST
@@ -247,3 +249,7 @@ Round 1b (r-e8, on ea7be17):
   the flag (3A, test in step 5).
 - E8-R9 (nit) knob mechanics → accepted (a) `Knobs.apply` reads it, tests for several builders; (b) cleared on leaves/enum/const/ref, field
   schemas, def bodies, family members; (c) only flagged nodes are copied.
+
+During implementation:
+- (from c-e2, E2) the bridge null Predefs move from `AsX` into opt-in `AsX.predef` objects: an implicit `Predef` in the object imported for
+  `ToValue` makes a user's own `Predef` of that type ambiguous. Shared `predef` objects with E2. (Mailed r-e8.)

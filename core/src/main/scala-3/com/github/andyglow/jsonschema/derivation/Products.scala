@@ -121,17 +121,20 @@ trait Products { this: Derivation =>
     val ps     = params(tpe)
     val descrs = fieldDescriptions(tpe, ps, ctx)
     val fields = ps map { p =>
-      val inner = optionElement(p.tpe)
-      val node  = inner match {
+      val inner    = optionElement(p.tpe)
+      val optional = inner orElse javaOptionalElement(p.tpe) // `java.util.Optional[e]` too, but its default goes the `ToValue` way
+      val plain    = optional match {
         case Some(e) => Opt(optionOf(e), resolve(e, ctx.descend(tpe))) // `Option[e]`, also for a `Some[e]` field
         case None    => resolve(p.tpe, ctx.descend(tpe))
       }
+      // `@deprecated` on the field: marks the field's schema, outermost (a `$ref` field is marked, its definition isn't)
+      val node       = if (isDeprecated(p.annotations)) plain.withExtra(plain.extra.copy(deprecated = true)) else plain
       val hasDefault = p.sym.flags.is(Flags.HasDefault)
       Field(
         name = p.name,
         tpe = p.tpe,
         schema = node,
-        optional = inner.isDefined,
+        optional = optional.isDefined,
         hasDefault = hasDefault,
         default = Option.when(hasDefault)(defaultValue(tpe, p, inner)),
         description = descrs.get(p.name),

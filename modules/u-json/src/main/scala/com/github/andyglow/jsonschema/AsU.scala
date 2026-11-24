@@ -9,6 +9,13 @@ import upickle.default._
 
 object AsU {
 
+  /** Schemas of ujson's own types, opt-in: `import AsU.predef._` (an implicit here, in `AsU`, would clash with a user's own Predef of the same type). */
+  object predef {
+
+    /** `ujson.Null` (e.g. a field that is always `null`): `{"type": "null"}`. */
+    implicit val ujsonNullPredef: _root_.json.schema.Predef[ujson.Null.type] = _root_.json.schema.Predef(Schema.`null`.asInstanceOf[Schema[ujson.Null.type]])
+  }
+
   def apply[T](value: T)(implicit a: Adapter[T]): a.P = a.adapt(value)
 
   implicit class UJsonSchemaOps[T](val x: Schema[T]) extends AnyVal {

@@ -79,6 +79,7 @@ Package `json.schema`:
 | `@description("...")`                         | type, field, enum value | `description`                                             |
 | `@readOnly`                                   | field                   | `"readOnly": true`                                        |
 | `@writeOnly`                                  | field                   | `"writeOnly": true`                                       |
+| `@deprecated` (Scala's, or Java's `@Deprecated`) | field, type          | `"deprecated": true` (draft 2019-09 and 2020-12; not under the Legacy profile) |
 | `@discriminator(field = "type", phantom = true)` | sealed root          | adds a discriminator field to each `oneOf` member         |
 | `@discriminatorKey("key")`                    | sealed member           | the member's discriminator value (default: its full name) |
 | `@definition` / `@definition("name")`         | sealed member           | makes it a definition                                     |

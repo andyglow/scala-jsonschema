@@ -15,8 +15,11 @@
 | `java.util.UUID`                                                            | `string`, format `uuid`                         |
 | `java.net.URI`, `java.net.URL`                                              | `string`, format `uri`                          |
 | `Option[T]`                                                                 | `T` or `null`; a field is not required (@ref:[more](rendering.md#option)) |
+| `java.util.Optional[T]`                                                     | the same as `Option[T]`, under every profile    |
 | `Iterable[T]` (`List`, `Seq`, `Vector`, `Set`, `Array`, ...)                | `array` (`Set`: `uniqueItems`)                  |
+| `java.util.Collection[T]` (`List`, `Set`, `ArrayList`, `EnumSet`, ...)       | `array` (`java.util.Set`: `uniqueItems`)        |
 | `Map[String, V]`, `Map[Int, V]`, ...                                        | `object` with `patternProperties`               |
+| `java.util.Map[K, V]` (`HashMap`, `TreeMap`, `EnumMap`, ...)                | the same as `Map[K, V]`                         |
 | case class                                                                  | `object`                                        |
 | value class                                                                 | its underlying type                             |
 
@@ -30,6 +33,25 @@ implicit val uuidKey: KeyPattern[java.util.UUID] = KeyPattern.mk[java.util.UUID]
 
 json.Json.schema[Map[java.util.UUID, String]]
 ```
+
+`Array[Byte]` is an `array` of numbers, which is how circe, play-json, upickle, spray-json and json4s write it. Jackson
+writes a base64 string instead; for that, use `Predef.bytesAsBase64` (`{"type": "string", "contentEncoding":
+"base64", "pattern": ...}`):
+
+```scala mdoc:compile-only
+implicit val bytes: json.schema.Predef[Array[Byte]] = json.schema.Predef.bytesAsBase64
+
+case class Blob(data: Array[Byte])
+
+json.Json.schema[Blob]
+```
+
+### A null schema
+
+`json.Schema.`null`` is `{"type": "null"}`. A field of type `Null` needs it as a `Predef`:
+`implicit val n: json.schema.Predef[Null] = json.schema.Predef(json.Schema.`null`)`. For a JSON library's own null
+(e.g. a field that is always `null`), the bridges have one, opt-in: `import com.github.andyglow.jsonschema.AsPlay.predef._`
+(`JsNull`), `AsSpray.predef._` (`JsNull`), `AsJson4s.predef._` (`JNull`), `AsU.predef._` (`ujson.Null`).
 
 ## Sum types and enums
 

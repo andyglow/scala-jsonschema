@@ -72,6 +72,16 @@ object Predef extends LowPriorityPredefs {
   )
   implicit val durationS: Predef[Duration] = Predef(`string`[Duration](Format.`duration`))
 
+  /** `Array[Byte]` as a base64 string (what Jackson writes): `{"type": "string", "contentEncoding": "base64", "pattern": ...}` (standard alphabet, padded, no line feeds). Not implicit: the default,
+    * from [[arrayS]], is an array of numbers (what circe, play-json, upickle, spray-json and json4s write). Opt in with `implicit val bytes: Predef[Array[Byte]] = Predef.bytesAsBase64`.
+    */
+  val bytesAsBase64: Predef[Array[Byte]] = Predef(
+    `string`[Array[Byte]].withValidation(
+      `contentEncoding` := "base64",
+      `pattern`         := "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$"
+    )(validation.Magnet.mk[Array[Byte], String])
+  )
+
   implicit def arrayS[T](implicit p: Predef[T]): Predef[Array[T]] = Predef(
     `array`[T, Array](p.schema, unique = false)
   )

@@ -303,8 +303,10 @@ class FamilyLoweringSpec extends AnyWordSpec {
         .withSingleton(SingletonStyle.AsTagged)
         .withMemberName(MemberName.SimpleName)
         .withHonorsSchemaAnnotations(false)
-      def knobs(p: JsonSchemaProfile) = (p.name, p.optionStyle, p.optionKeyRequired, p.sumStyle, p.singletonStyle, p.memberName, p.honorsSchemaAnnotations)
-      knobs(base) shouldEqual (("n", OptionStyle.Legacy, true, SumStyle.WrapperObject, SingletonStyle.AsTagged, MemberName.SimpleName, false))
+        .withDeprecatedKeyword(false)
+      def knobs(p: JsonSchemaProfile) =
+        (p.name, p.optionStyle, p.optionKeyRequired, p.sumStyle, p.singletonStyle, p.memberName, p.honorsSchemaAnnotations, p.deprecatedKeyword)
+      knobs(base) shouldEqual (("n", OptionStyle.Legacy, true, SumStyle.WrapperObject, SingletonStyle.AsTagged, MemberName.SimpleName, false, false))
       knobs(base.withName("m")) shouldEqual knobs(base).copy(_1 = "m")
       knobs(base.withOption(OptionStyle.Nullable)) shouldEqual knobs(base).copy(_2 = OptionStyle.Nullable)
       knobs(base.withOptionKeyRequired(false)) shouldEqual knobs(base).copy(_3 = false)
@@ -312,12 +314,15 @@ class FamilyLoweringSpec extends AnyWordSpec {
       knobs(base.withSingleton(SingletonStyle.AsString)) shouldEqual knobs(base).copy(_5 = SingletonStyle.AsString)
       knobs(base.withMemberName(MemberName.FullName)) shouldEqual knobs(base).copy(_6 = MemberName.FullName)
       knobs(base.withHonorsSchemaAnnotations(true)) shouldEqual knobs(base).copy(_7 = true)
+      knobs(base.withDeprecatedKeyword(true)) shouldEqual knobs(base).copy(_8 = true)
     }
     "keep Neutral's and Legacy's knobs" in {
       for (p <- List(Neutral, Legacy)) {
         (p.optionKeyRequired, p.sumStyle, p.singletonStyle, p.memberName, p.honorsSchemaAnnotations) shouldEqual
           ((false, SumStyle.Untagged, SingletonStyle.AsString, MemberName.FullName, true))
       }
+      Neutral.deprecatedKeyword shouldBe true
+      Legacy.deprecatedKeyword shouldBe false
       Neutral.toString shouldBe "JsonSchemaProfile(neutral)"
     }
   }
