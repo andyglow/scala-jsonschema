@@ -40,6 +40,12 @@ class AnyValueSpec extends AnyFunSuite {
     Acceptance.assertInvalid(render, List(Json.obj("id" -> Json.fromString("1"), "data" -> Json.Null, "obj" -> Json.fromInt(5), "n" -> Json.fromInt(1)).noSpaces))
   }
 
+  test("validated: a Payload written by circe's deriveEncoder") {
+    val render = Acceptance.rendered(J.schema[Payload])(profile)
+    val sample = Payload("1", Json.obj("x" -> Json.arr(Json.Null)), None, JsonObject("a" -> Json.fromInt(1)), JsonNumber.fromDecimalStringUnsafe("1.5"))
+    Acceptance.assertValid(render, List(payloadEncoder(sample).noSpaces, payloadEncoder(sample.copy(data = Json.Null, opt = Some(Json.Null))).noSpaces))
+  }
+
   test("defaults: circe's Encoder (AsCirce._)") {
     import AsCirce._
     val o = ProfileSpec.body(ProfileSpec.render(J.schema[WithDefault], _root_.json.schema.Version.Draft07("id"))(profile))
@@ -50,6 +56,7 @@ class AnyValueSpec extends AnyFunSuite {
 
 object AnyValueSpec {
   case class Payload(id: String, data: Json, opt: Option[Json], obj: JsonObject, n: JsonNumber)
+  val payloadEncoder: io.circe.Encoder[Payload] = io.circe.generic.semiauto.deriveEncoder[Payload]
 
   case class WithDefault(data: Json = Json.fromInt(5), obj: JsonObject = JsonObject("a" -> Json.arr(Json.fromInt(1))))
 }

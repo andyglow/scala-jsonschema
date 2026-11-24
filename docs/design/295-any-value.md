@@ -256,3 +256,13 @@ Implementation notes (no change to the approved plan):
   `{"title": "no type", "minimum": 1}` (still invalid: a keyword the parser doesn't read, without `type`).
 - `Schema.`any`.admitsEverything(s)` (public, in the `any` companion) is the one "admits every value" check (`any`, through `value-class` and
   `def`), shared by the lowering and the renderer.
+
+Code review round 1 (r-e2, PR #486 at 5851c6e):
+- E2-R10 (must) the collapsed `Option` of an any lost the any's texts/validations (`withExtraFrom` replaces them) → accepted:
+  `Lowering.apply` merges for the collapsed case (new `private[json] Schema#withExtraMergedFrom`: the option's texts where it has them, else
+  the inner's; validations of both). Tests: tree-level, the option's own description wins, a value class of any, and #286's case (a `Predef`
+  of `any.withDescription("plain JSON")` behind an `Option` field) under Neutral, `optionKeyRequired` and Legacy.
+- E2-R11 (nit) the parser's `false` → `not(any)` renders the pre-existing `"type": "not"` → accepted as a note (PR Notes): the `not` fix
+  covers the parser path too. Kept `false` (`not(any)` is the right tree).
+- E2-R12 (nit) a real codec round → accepted: play `Json.writes[Payload]` and circe `deriveEncoder[Payload]` output validated.
+- E2-R13 (nit) README table → accepted: `` Value.`null` `` added, columns aligned (README and paradox).

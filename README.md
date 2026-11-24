@@ -551,14 +551,14 @@ implicit val configValuePredef: json.schema.Predef[ConfigValue] = json.schema.Pr
 The JSON libraries' own AST types get theirs from an import, one per bridge. Our own
 `com.github.andyglow.json.Value` needs none.
 
-| AST type                   | `{}` (any)    | free object   | array of any | string, number, boolean            | import                                              |
-|----------------------------|---------------|---------------|--------------|------------------------------------|-----------------------------------------------------|
-| ours                       | `Value`       | `Value.obj`   | `Value.arr`  | `Value.str`, `Value.num`, `Value.bool` | none                                            |
-| play-json                  | `JsValue`     | `JsObject`    | `JsArray`    | `JsString`, `JsNumber`, `JsBoolean` | `com.github.andyglow.jsonschema.AsPlay.predef._`   |
-| circe                      | `Json`        | `JsonObject`  |              | `JsonNumber`                       | `com.github.andyglow.jsonschema.AsCirce.predef._`  |
-| ujson                      | `ujson.Value` | `ujson.Obj`   | `ujson.Arr`  | `ujson.Str`, `ujson.Num`, `ujson.Bool` | `com.github.andyglow.jsonschema.AsU.predef._`  |
-| json4s                     | `JValue`      | `JObject`     | `JArray`, `JSet` | `JString`, `JDouble`, `JDecimal`, `JLong`, `JInt`, `JNumber`, `JBool` | `com.github.andyglow.jsonschema.AsJson4s.predef._` |
-| spray-json                 | `JsValue`     | `JsObject`    | `JsArray`    | `JsString`, `JsNumber`, `JsBoolean` | `com.github.andyglow.jsonschema.AsSpray.predef._`  |
+| AST        | `{}` (any)    | free object  | array of any     | string, number, boolean, null                                         | import                                             |
+|------------|---------------|--------------|------------------|-----------------------------------------------------------------------|----------------------------------------------------|
+| ours       | `Value`       | `Value.obj`  | `Value.arr`      | `Value.str`, `Value.num`, `Value.bool`, `` Value.`null` ``            | none                                               |
+| play-json  | `JsValue`     | `JsObject`   | `JsArray`        | `JsString`, `JsNumber`, `JsBoolean`                                   | `com.github.andyglow.jsonschema.AsPlay.predef._`   |
+| circe      | `Json`        | `JsonObject` |                  | `JsonNumber`                                                          | `com.github.andyglow.jsonschema.AsCirce.predef._`  |
+| ujson      | `ujson.Value` | `ujson.Obj`  | `ujson.Arr`      | `ujson.Str`, `ujson.Num`, `ujson.Bool`                                | `com.github.andyglow.jsonschema.AsU.predef._`      |
+| json4s     | `JValue`      | `JObject`    | `JArray`, `JSet` | `JString`, `JDouble`, `JDecimal`, `JLong`, `JInt`, `JNumber`, `JBool` | `com.github.andyglow.jsonschema.AsJson4s.predef._` |
+| spray-json | `JsValue`     | `JsObject`   | `JsArray`        | `JsString`, `JsNumber`, `JsBoolean`                                   | `com.github.andyglow.jsonschema.AsSpray.predef._`  |
 
 ```scala
 import play.api.libs.json.{JsObject, JsValue}

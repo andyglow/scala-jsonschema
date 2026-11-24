@@ -71,6 +71,16 @@ class AnyValueSpec extends AnyFunSuite {
     prop(body(render(s, Draft07("id"))(JsonSchemaProfile.Legacy)), "opt") shouldBe obj()
   }
 
+  test("Option of an any keeps the any's own texts (the option's win where it has them)") {
+    `option`(`any`[Value]().withDescription("d").withTitle("t")).withProfile(neutral) shouldBe `any`[Value]().withDescription("d").withTitle("t")
+    `option`(`any`[Value]().withDescription("d")).withDescription("o").withProfile(neutral).description shouldBe Some("o")
+    `option`(`value-class`[Wrapped, Value](`any`[Value]()).withDescription("w")).withProfile(neutral).description shouldBe Some("w")
+    import WithDescribed._
+    for (p <- List(neutral, neutral.withOptionKeyRequired(true), JsonSchemaProfile.Legacy)) {
+      Json.schema[UsesDescribed].withProfile(p).asInstanceOf[`object`[_]].fields.find(_.name == "opt").get.tpe.description shouldBe Some("plain JSON")
+    }
+  }
+
   test("Option of a definition of an any: the reference alone") {
     import WithDefinition._
     val s = Json.schema[UsesDef]
@@ -133,5 +143,12 @@ object AnyValueSpec {
     implicit val valueSchema: Schema[Value] = Schema.`any`[Value]()
 
     case class UsesDef(opt: Option[Value])
+  }
+
+  object WithDescribed {
+    // #286's wish: "an empty schema with a description that this is plain JSON"
+    implicit val valuePredef: json.schema.Predef[Value] = json.schema.Predef(Schema.`any`[Value]().withDescription("plain JSON"))
+
+    case class UsesDescribed(opt: Option[Value])
   }
 }

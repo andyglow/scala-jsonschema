@@ -42,6 +42,12 @@ class AnyValueSpec extends AnyFunSuite {
     Acceptance.assertInvalid(render, List(Json.stringify(Json.obj("id" -> "1", "data" -> 1, "obj" -> 5, "arr" -> Json.arr(), "s" -> "s", "n" -> 1, "b" -> true))))
   }
 
+  test("validated: a Payload written by play's Json.writes") {
+    val render = Acceptance.rendered(J.schema[Payload])(profile)
+    val sample = Payload("1", Json.obj("x" -> Json.arr(1, JsNull)), None, Json.obj("a" -> 1), Json.arr("x", 2), JsString("s"), JsNumber(1.5), JsBoolean(true))
+    Acceptance.assertValid(render, List(Json.stringify(Json.toJson(sample)), Json.stringify(Json.toJson(sample.copy(data = JsNull, opt = Some(JsNull))))))
+  }
+
   test("defaults: play's Writes (AsPlay._)") {
     import AsPlay._
     val o = ProfileSpec.body(ProfileSpec.render(J.schema[WithDefault], _root_.json.schema.Version.Draft07("id"))(profile))
@@ -52,6 +58,7 @@ class AnyValueSpec extends AnyFunSuite {
 
 object AnyValueSpec {
   case class Payload(id: String, data: JsValue, opt: Option[JsValue], obj: JsObject, arr: JsArray, s: JsString, n: JsNumber, b: JsBoolean)
+  implicit val payloadWrites: OWrites[Payload] = Json.writes[Payload]
 
   case class WithDefault(data: JsValue = JsNumber(5), obj: JsObject = Json.obj("a" -> Json.arr(1)))
 }

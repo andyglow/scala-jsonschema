@@ -174,7 +174,11 @@ object JsonSchemaProfile {
   private final class Lowering(p: JsonSchemaProfile) {
 
     def apply(s: Schema[_]): Schema[_] = s match {
-      case `option`(inner)  => optionAt(inner).withExtraFrom(s)
+      case `option`(inner) =>
+        optionAt(inner) match {
+          case x if Schema.`any`.admitsEverything(x) => x.withExtraMergedFrom(s) // the inner itself (Nullable, X admits null): it keeps its own texts and validations
+          case x                                     => x.withExtraFrom(s)
+        }
       case f: `family`[_]   => familyAt(f).withExtraFrom(s)
       case o: `object`[_]   => o.withFieldsUpdated { case f => field(f) }
       case `array`(c, u)    => `array`[Any, List](apply(c).asInstanceOf[Schema[Any]], u).withExtraFrom(s)

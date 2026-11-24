@@ -88,6 +88,16 @@ sealed trait Schema[+T] {
 
     copy
   }
+
+  /** A copy with `x`'s texts where `x` has them (else this schema's own) and this schema's validations followed by `x`'s: for a node that replaces `x` but keeps its own extras (an `Option` of an
+    * `any` lowered to the `any`).
+    */
+  private[json] def withExtraMergedFrom(x: Schema[_]): Self = {
+    val copy = duplicate(x._description orElse _description, x._title orElse _title, x._discriminationKey orElse _discriminationKey)
+    copy._validations = _validations ++ x._validations
+
+    copy
+  }
   def withValidationsAddedFrom(x: Schema[_]): Self = {
     val copy = mkCopy()
     copy._validations = copy._validations ++ x._validations
