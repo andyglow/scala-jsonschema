@@ -1,5 +1,5 @@
 # A generic implicit `Schema[T]` is used on Scala 3 but not on Scala 2  (issue #511, item B20)
-Status: draft
+Status: approved (r-b20, 2026-11-23)
 
 ## Problem
 A generic implicit whose `Schema` type argument is fixed only by the expected type is used by the derivation on Scala 3
