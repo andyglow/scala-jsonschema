@@ -33,6 +33,14 @@
         "description": "d2"
       },
       {
+        "kind": "value-class",
+        "schema": {
+          "kind": "string"
+        },
+        "title": "t3",
+        "description": "d3"
+      },
+      {
         "kind": "enum",
         "type": {
           "kind": "string"
@@ -41,12 +49,6 @@
           "M4",
           "M5"
         ]
-      },
-      {
-        "kind": "value-class",
-        "schema": {
-          "kind": "string"
-        }
       }
     ]
   },
@@ -82,13 +84,15 @@
         "type": "object"
       },
       {
+        "description": "d3",
+        "title": "t3",
+        "type": "string"
+      },
+      {
         "enum": [
           "M4",
           "M5"
         ],
-        "type": "string"
-      },
-      {
         "type": "string"
       }
     ]
@@ -126,13 +130,15 @@
         "type": "object"
       },
       {
+        "description": "d3",
+        "title": "t3",
+        "type": "string"
+      },
+      {
         "enum": [
           "M4",
           "M5"
         ],
-        "type": "string"
-      },
-      {
         "type": "string"
       }
     ]
@@ -170,13 +176,15 @@
         "type": "object"
       },
       {
+        "description": "d3",
+        "title": "t3",
+        "type": "string"
+      },
+      {
         "enum": [
           "M4",
           "M5"
         ],
-        "type": "string"
-      },
-      {
         "type": "string"
       }
     ]

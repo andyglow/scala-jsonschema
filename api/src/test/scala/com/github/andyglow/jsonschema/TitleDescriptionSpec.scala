@@ -189,18 +189,16 @@ class TitleDescriptionSpec extends AnyWordSpec {
       AsValue.schema(s, Draft07("id"))
     }
 
-    def noTexts(v: Option[Value]): Unit = {
-      v.flatMap(at(_, "title")) shouldBe None
-      v.flatMap(at(_, "description")) shouldBe None
-    }
+    def textsOf(v: Option[Value]): (Option[Value], Option[Value]) = (v.flatMap(at(_, "title")), v.flatMap(at(_, "description")))
 
-    "stay as in 0.7: no title or description on a non-object" in {
-      noTexts(Some(legacy(Json.schema[String].withTitle("T").withDescription("D"))))
-      noTexts(Some(legacy(Json.schema[List[Int]].withTitle("T").withDescription("D"))))
-      noTexts(Some(legacy(Json.schema[TdColor])))
-      noTexts(Some(legacy(Json.schema[TdId].withTitle("T").withDescription("D"))))
-      noTexts(at(legacy(Json.schema[TdPerson]), "properties", "name").map(_.asInstanceOf[obj] - "description"))
-      definitionsOf(legacy(Json.schema[TdHasVC])).values foreach { v => noTexts(Some(v)) }
+    // lead policy 2026-11-23: Legacy keeps 0.7's style, not its bugs; 0.7 dropped these texts
+    "render them too, on every kind of schema" in {
+      textsOf(Some(legacy(Json.schema[String].withTitle("T").withDescription("D")))) shouldBe ((Some(str("T")), Some(str("D"))))
+      textsOf(Some(legacy(Json.schema[List[Int]].withTitle("T").withDescription("D")))) shouldBe ((Some(str("T")), Some(str("D"))))
+      textsOf(Some(legacy(Json.schema[TdColor]))) shouldBe ((Some(str("Color")), Some(str("A color"))))
+      textsOf(Some(legacy(Json.schema[TdId].withTitle("T").withDescription("D")))) shouldBe ((Some(str("T")), Some(str("D"))))
+      textsOf(at(legacy(Json.schema[TdPerson]), "properties", "name")) shouldBe ((Some(str("Name")), Some(str("The name"))))
+      definitionsOf(legacy(Json.schema[TdHasVC])).values.toList.map(v => textsOf(Some(v))) shouldBe List((Some(str("VC T")), Some(str("VC D"))))
     }
 
     "keep the texts of objects (and field descriptions)" in {
@@ -208,16 +206,6 @@ class TitleDescriptionSpec extends AnyWordSpec {
       at(out, "title") shouldBe Some(str("P"))
       at(out, "description") shouldBe Some(str("PD"))
       at(out, "properties", "name", "description") shouldBe Some(str("The name"))
-    }
-
-    "apply to a schema shaped with withProfile(Legacy) and rendered under the default profile" in {
-      val out = AsValue.schema(Json.schema[TdColor].withProfile(JsonSchemaProfile.Legacy), Draft07("id"))
-      noTexts(Some(out))
-    }
-
-    "carry over to a profile built from Legacy" in {
-      implicit val profile: JsonSchemaProfile = JsonSchemaProfile.Legacy.withName("legacy2")
-      noTexts(Some(AsValue.schema(Json.schema[String].withTitle("T"), Draft07("id"))))
     }
   }
 

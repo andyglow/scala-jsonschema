@@ -48,8 +48,7 @@ models defined in another module or library. `.withTitle`/`.withDescription` wor
 value classes. A definition's, and a field's `@title`/`@description` on a field whose type is a definition, sit next to
 its `$ref` (before draft 2019-09 validators ignore keywords next to a `$ref`, so there they are for documentation
 tools). A type's own annotations and scaladoc apply where it is the root, or where it is given as an implicit
-`Schema` (a definition); a nested derived type doesn't get them. `JsonSchemaProfile.Legacy` keeps 0.7's output, which
-had them on objects and on `const`s only.
+`Schema` (a definition); a nested derived type doesn't get them.
 
 ## Scaladoc
 

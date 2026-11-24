@@ -95,7 +95,7 @@ definition it sits next to the `$ref` and the definition keeps its own title. Fi
 
 Pros: no model change: `object.Field` stays as in 0.9.0 (source and binary compatible, patch release). Works with
 part A unchanged. Cons: asymmetry (field description on `Field`, field title on `Field.tpe`); a hand-built tree sets a
-field title with `Field("name", schema.withTitle("x"))`. Under Legacy see L1's caveat.
+field title with `Field("name", schema.withTitle("x"))`. (Under L1 it had a Legacy caveat, see there.)
 
 #### F1. Add `title: Option[String]` to `object.Field` — LOST
 Symmetric with `description`, and the Legacy profile could drop exactly the field titles. But `Field` is a case
@@ -106,8 +106,19 @@ Pick it instead if the owner prefers the symmetric model and a minor bump: the r
 
 ### Legacy profile (`JsonSchemaProfile.Legacy`, "the 0.7 output, byte for byte")
 
-#### L1. Legacy lowering keeps texts only where 0.7 rendered them — WON
-A private knob (`legacyTexts`, true only for `Legacy`, carried by the `with...` builders) makes `Lowering` clear
+Changed after approval (2026-11-23): the lead's Legacy policy (`notes/PROTOCOL-gaps.md`, "Lead policy on Legacy") says
+Legacy freezes 0.7's *style*, not its bugs. Dropping a title the user wrote is a bug, so L2 won; L1 stays below as
+the alternative (it was implemented and green at `8068d6b`, reverted in the next commit).
+
+#### L2. Render texts under Legacy too — WON
+Dropped titles are a 0.7 bug that Legacy doesn't reproduce: no knob, no stripping; the renderer change applies to every
+profile. Legacy output gains the texts in the 3 golden-legacy files listed in plan step 5 (rendered sections only; the
+tree dump is unchanged). The Legacy docs wording ("0.7 byte for byte", README L606/L873, paradox `rendering.md`,
+`JsonSchemaProfile.Legacy` scaladoc) is qualified once for all Legacy-policy PRs by the lead, not here.
+
+#### L1. Legacy lowering keeps texts only where 0.7 rendered them — LOST (the alternative)
+To choose it instead: cherry-pick `8068d6b`'s `JsonSchemaProfile.scala`, `harness/Families.scala` and
+`FamilyLoweringSpec.scala`, and the Legacy cases of `TitleDescriptionSpec` from that commit. A private knob (`legacyTexts`, true only for `Legacy`, carried by the `with...` builders) makes `Lowering` clear
 `title`/`description` on every node that isn't an `object` or a `const` (where 0.7's `mkObj`/`mkConst` rendered them;
 field descriptions are on `Field` and untouched). It works for both ways of choosing Legacy (`withProfile(Legacy)` and
 an implicit Legacy at render time), because the renderer then has nothing to render.
@@ -117,17 +128,14 @@ Legacy. 0.7 ignored field `@title` entirely, so this is new output for a model n
 avoid it. (2) A tree shaped with `withProfile(Neutral)` and then rendered under an implicit Legacy loses its non-object
 texts (lowering under Legacy strips them although the option/family shapes are already fixed). (3) The `"schema"` dump
 in the 3 affected `golden-legacy` files changes (the Legacy-lowered tree has fewer texts); their rendered draft
-sections stay byte-identical. That needs `GOLDEN_UPDATE_LEGACY=1` for those 3 files, reviewed by hand.
-
-#### L2. Render texts under Legacy too — LOST (one-line alternative)
-Treat dropped titles as a bug in 0.7 that Legacy needn't reproduce: no knob, no stripping. Legacy output changes for
-the 3 golden-legacy files (rendered sections). Simpler, but breaks Legacy's documented byte-for-byte promise, which
-the team rules say only the lead can waive. If the lead/owner prefers it: drop step 3 of the plan.
+sections stay byte-identical. That needs `GOLDEN_UPDATE_LEGACY=1` for those 3 files, reviewed by hand. (4) The
+test harness `Families.as07` used `Legacy.lower` for the 0.7 *tree*, which now lacked texts: it needs a
+Legacy-shaped profile without the strip (`Neutral.withOption(OptionStyle.Legacy)`), and two `FamilyLoweringSpec`
+tree assertions under Legacy flip.
 
 ## Decision
 Render every node's own `title`/`description` in `AsDraftSupport.apply` (A), read field `@title` in both macros
-onto the field's schema (F2), and keep `JsonSchemaProfile.Legacy` byte-for-byte 0.7 by stripping texts from
-non-object/non-const nodes in its lowering (L1).
+onto the field's schema (F2), under every profile, Legacy included (L2, per the lead's Legacy policy).
 
 ## Implementation plan
 1. `core/.../AsDraftSupport.scala`: `texts(x)`; `apply` adds `own` before and after the specifics; drop the texts from
@@ -140,13 +148,8 @@ non-object/non-const nodes in its lowering (L1).
      (param + field annotations, already merged in `Param.annotations`); `product` sets
      `node.withExtra(node.extra.copy(title = ...))`. Check the recursion pass/emit don't key definitions on node equality
      with extras.
-3. `core/src/main/scala/json/schema/JsonSchemaProfile.scala`: private `legacyTexts` knob (Knobs field + trait member
-   `private[schema]`, default false; `Legacy` sets it); `Lowering` strips non-object/non-const texts when it's on
-   (one recursive pass after lowering, or in `apply`'s cases; `option` in a Legacy field already unwraps).
-   `Knobs(p)` reads it, so a tweaked Legacy (`Legacy.withSum(...)` etc.) still strips; profiles built from Neutral or the
-   bridges' profiles have it false. A concrete `private[schema]` member on the public trait is binary compatible on
-   2.12+/3 (a default method; it is public in bytecode, so it isn't a "private" break either). Legacy's scaladoc states
-   L1 caveat 2.
+3. (L1 only, dropped with L2) a private `legacyTexts` knob in `JsonSchemaProfile.scala` making Legacy's lowering
+   strip non-object/non-const texts; carried by `Knobs(p)`; binary compatible. See `8068d6b`.
 3b. (B1-R1) Value class → definition keeps its texts in the tree, in `core/src/main/scala/json/Schema.scala`:
    - `def.adapt` (both macros call it for every implicit `Schema`): `case vc @ value-class(inner)` →
      `def(sig, inner.duplicate(title = vc.title orElse inner.title, description = vc.description orElse inner.description))`;
@@ -155,14 +158,14 @@ non-object/non-const nodes in its lowering (L1).
    - NOT `value-class.toDefinition` (`tpe.withValidationsAddedFrom(this)` starts from `mkCopy()` and keeps neither
      node's texts nor the receiver's validations): that's item B13 (validations-copy), which fixes
      `withValidationsAddedFrom` itself.
-   Under Legacy the body is a string, so L1 strips it again: 0.7 output kept.
+   Under Legacy too (L2).
 4. Tests:
    - `TitleDescriptionSpec` (already committed) goes green; add: `def`/`ref` site texts (`$ref` sibling), `allof`, `not`,
      `enum` from `Schema.enum.of(...).withTitle`, `oneof` member texts, a value class whose underlying type has its own
      title (outer wins), field `@title` on a definition-typed field, on an `Option` field, `@(title @field)` (Scala 2),
-     field `@title` under `Json.objectSchema`, and Legacy cases for each kind (no texts, as 0.7) incl. `withProfile(Legacy)`.
+     field `@title` under `Json.objectSchema`, and Legacy cases (L2: the texts render under Legacy too).
    - (B1-R1) a titled value class given as `implicit val s: Schema[VC] = Json.schema[VC]` and used as a field: the
-     definition body has the texts; under Legacy: no texts (0.7). (`toDefinition` is B13's.)
+     definition body has the texts, under Legacy too. (`toDefinition` is B13's.)
    - (B1-R3) F2 with definitions and recursion, on both Scala versions: (a) the same definition-typed type in two
      fields, one with `@title` → one definition, the title only next to the titled field's `$ref`, the body untouched;
      (b) `case class Node(@title("kids") kids: List[Node])` (title on the array, the item stays a plain `$ref`);
@@ -172,13 +175,14 @@ non-object/non-const nodes in its lowering (L1).
 5. Golden files (all versions; `GOLDEN_UPDATE=1 sbt clean api/test`, review the diff): neutral `golden/` gains texts in
    `char/products/Id.json` (root value class: `"title": "Id", "description": "A wrapper"` on the string) and
    `shared/SumTypeModels.FooBarInsideCompanionWithAnnotations{,.EnumsAsOneOf}.json` (the value-class member `M3`:
-   `"title": "t3", "description": "d3"`). `golden-legacy/`: only the `"schema"` dump of those 3 files (L1 caveat 3).
+   `"title": "t3", "description": "d3"`). `golden-legacy/`: the same 3 files gain the same texts in their rendered sections (L2; `GOLDEN_UPDATE_LEGACY=1`,
+   reviewed by hand; the tree dump is unchanged).
    Plus new golden cases if the reviewer wants them. Bridge petshop suites: no change in the prototype.
 6. Docs (README L479 and paradox `descriptions.md` L78, the annotation table): `@title` row "type (the root, or a
    type given as an implicit `Schema`), field, enum value" (B1-R2), same for `@description`'s type part; one sentence
    that titles/descriptions render on every schema kind, a definition's (or a field's on a definition-typed field) next
-   to its `$ref`, which validators before 2019-09 ignore, so it's for doc tools there (B1-R6); and that
-   `JsonSchemaProfile.Legacy` keeps 0.7's object/const-only texts. `makeDocs`. No CHANGELOG (lead).
+   to its `$ref`, which validators before 2019-09 ignore, so it's for doc tools there (B1-R6). The Legacy
+   "byte for byte" wording is the lead's (see L2). `makeDocs`. No CHANGELOG (lead).
 7. Gates per protocol step 8 (core + macros + api touched: JVM 2.12/2.13/3, `rootJS/test` on all three, fmt checks).
 
 ## Out of scope
@@ -192,11 +196,13 @@ non-object/non-const nodes in its lowering (L1).
   PR says it stays open (B1-R7).
 
 ## Compatibility
-- Source/binary: no public signature changes (F2; the Legacy knob is private). Patch release under PVP (0.9.1).
+- Source/binary: no public signature changes (F2, L2). Patch release under PVP (0.9.1).
 - Output (Neutral and the bridge profiles): new `title`/`description` keys wherever the tree has them on a non-object
   node; nothing removed, objects/consts byte-identical. In our suites: 3 golden files (listed in step 5). Users who
   annotate enums/families/value classes or call `withTitle` on non-objects will see the keys appear: that's the fix.
-- Legacy: rendered output byte-identical to 0.7 (L1), except caveat (1) for a field `@title` on an object-typed field.
+- Legacy: the same new keys as Neutral (L2, a bug fix under the lead's policy): in our suites
+  `golden-legacy/char/products/Id.json` and `golden-legacy/shared/SumTypeModels.FooBarInsideCompanionWithAnnotations{,.EnumsAsOneOf}.json`,
+  rendered sections only.
 - Neighbours: B2 (property order) also edits `mkObj` (adjacent lines: textual conflict only, trivial); E2 adds a node
   that A covers for free.
 
@@ -215,3 +221,7 @@ Round 1 (r-b1, on cc4d73e):
 - B1-R7 (nit) PR body: `Fixes #290`, custom annotations stay open → accepted: "Out of scope" + PR body.
 Round 2 (r-b1, on 8750908): approved; R4 pushback accepted.
 - B1-R8 (nit) plan step 7 sat under "Out of scope" → accepted: moved back into the plan.
+Change after approval (c-b1, lead's Legacy policy of 2026-11-23): L1 → L2; r-b1 OK'd it with conditions, all applied:
+Decision/Compatibility/log updated with L1 as the alternative; the "Legacy keeps object-only texts" docs sentence
+dropped; the Legacy "byte for byte" wording left to the lead (lead's call); the PR lists each regenerated golden-legacy
+file; the knob is fully removed (`JsonSchemaProfile.scala`, `Families.scala`, `FamilyLoweringSpec.scala` are as on master).
