@@ -99,7 +99,7 @@ rendered: the root, fields, collection items, map values, definitions, `not` bod
 validations on a value-class node itself (`value-class(...).withValidation(...)`, written by that node's `apply`).
 It does not cover validations of the schema *inside* a value class: `mkValueClass` (`AsDraftSupport.scala:244-246`)
 renders the inner type's specifics with the outer node's list and never writes the inner node's validations, on any
-draft. That is a separate bug (found by r-b30, reported to the lead), not this item; see Risks.
+draft. That is a separate bug, in B13's design (#507), not this item; see Risks.
 
 - Pro: valid draft-04; exactly the constraint the tree states; no API change; one place.
 - Pro: two bounds on one side (by hand; refined merges each side into one bound) stay exact without new keywords.
@@ -227,7 +227,7 @@ Option A. On draft-04 the renderer states each side as one `minimum`/`maximum`, 
 
 ### Risks and neighbours
 
-- **Value-class inner validations** (neighbour, r-b30): `mkValueClass` never writes the inner schema's validations,
+- **Value-class inner validations** (B13, #507): `mkValueClass` never writes the inner schema's validations,
   on any draft. Whoever fixes that must write them through `renderValidations` (or `apply`), not `ValidationList.json`
   directly, or draft-04 exclusive bounds come back broken there.
 - **Textual conflicts:** D3 (#294) overrides `mkConst` in `AsDraft04.scala` (same file, a different method). B2 (#460)
@@ -262,3 +262,4 @@ B30-R3 (nit) keyword position is hash order before B2 → accepted: step 2 says 
 `obj.ordered` lands; tests compare `obj`s (order-insensitive).
 B30-R4 (nit) the `not` case → accepted: step 3 says the expectation is B30's alone (no `type`, B22's area) and who
 updates it; step 4's meta-schema check covers the `not` case (`dependencies` inside the body).
+B30-R5 (nit) the inner value-class drop is B13's design (#507) → accepted: option A and Risks name B13, #507.
