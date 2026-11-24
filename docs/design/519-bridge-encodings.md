@@ -49,8 +49,10 @@ dictionary records nothing about its key, except a `patternProperties` validatio
 
 ## Why it is a problem
 
-A profile promises "the shapes this library writes" (P6A in the 0.9 profile design: what the library emits, widened by what its
-decoder accepts). For these types it describes another library's output. A play service that validates its responses rejects
+A profile promises "the shapes this library writes" (P6A in the 0.9 profile design: "what the library emits, widened by the
+null/absent leniency its decoder accepts"). For these types it describes another library's output. Every re-shape in this doc
+is the writer's form only: no reader leniency beyond P6A's null/absent (play's `DefaultDateReads` also reads `"yyyy-MM-dd"`, and
+`BigDecimal(String)` reads `.5` and `+1`, but neither library writes them). A play service that validates its responses rejects
 every `java.util.Date` field. Under upickle every `BigDecimal` field is rejected, and so is every `Long` id above 2^53
 (Snowflake-style ids, hashes). A json4s user who registers the usual `JavaTimeSerializers.all` gets a schema that rejects every
 `LocalDate`, `LocalTime`, `Instant` and `Duration`. Only someone who knows the internals can work around it today: a local
@@ -96,6 +98,10 @@ Sample output, `case class Event(at: java.util.Date, n: Long, price: BigDecimal)
 | Neutral, Legacy, circe, spray | `{"type":"string","format":"date-time"}` (as today) | `number` (`integer` after D2) | `number` |
 | play | `{"type":"integer"}` | as Neutral | as Neutral |
 | upickle | as Neutral | `{"oneOf":[{"type":"number"},{"type":"string","pattern":"^-?[0-9]+$"}]}` (`integer` inside, after D2) | `{"type":"string","pattern":"^-?[0-9]+(?:\\.[0-9]+)?(?:E[+-]?[0-9]+)?$"}` |
+
+`Option[Long]` under upickle (Nullable): `{"oneOf":[{"oneOf":[{"type":"number"},{"type":"string","pattern":"^-?[0-9]+$"}]},{"type":"null"}]}`.
+The renderer's `mkNullable` collapses `{X, null}` into a type array only when X has one JSON type, which this X doesn't. That's valid,
+just nested (see A3 for the flat alternative).
 
 Pros: it reuses the 0.9 model (the derivation records a fact, the profile decides at render), so one derived schema renders
 right for every library, `withProfile` and the implicit profile work as they do, and it doesn't matter where the schema was
@@ -144,13 +150,14 @@ know the shapes. Kept as the fallback if the owner rejects A.
 |---|---|---|---|
 | A1 | which Predefs record their type | **every leaf Predef** in core and joda-time (`String`, numbers, `Boolean`, `Char`, `UUID`, `URI`, java.time, java.util/sql dates, durations; E3/E4/E5's new ones too). Collections don't, since their shape is structural | only the types some bridge re-shapes today (smaller, but users can't re-shape `Instant` for their own codec) |
 | A2 | key format | the type's full Scala name as a `String` (`scala.Long`, `java.lang.String`) | `Class[_]` (no `classOf[java.sql.Date]` on Scala.js); a closed ADT (not open to modules/users) |
-| A3 | upickle `Long` | `oneOf[number→integer, string ^-?[0-9]+$]` | string only (rejects small ones, which upickle writes as numbers); a tighter `^-?[0-9]{16,19}$` (upickle's reader accepts any numeric string anyway); keep |
+| A3 | upickle `Long` | `oneOf[number→integer, string ^-?[0-9]+$]`: expressible with today's nodes, keeps the `Long`'s validations on its number member | the flatter, equivalent `{"type":["integer","string"],"pattern":"^-?[0-9]+$"}` (`pattern` applies only to strings; `Option[Long]` would become `type: [integer, string, null]`). It needs a multi-type leaf or a renderer rule that merges a `oneof` of single-typed leaves, which is renderer work outside this item (a follow-up can switch to it without changing the knob). Also: string only (rejects small ones, which upickle writes as numbers); a tighter `^-?[0-9]{16,19}$` (upickle's reader accepts any numeric string anyway); keep |
 | A4 | upickle (and circe) `NaN`/`±Infinity` | **not modelled**: every `Double` field becoming `oneOf[number, enum]` would make schema-driven codegen emit `Double | String` unions, for values that are usually bugs. Users opt in with `withTypeSchema[Double]` | model it in `UPickleProfile` (circe writes `null` for `NaN`, a `oneOf[number, null]`) |
-| A5 | json4s: how the profile learns the shapes | **encode one sample per recorded type with the `Formats`** at `fromFormats` and map the result: `JString` → keep; `JInt`/`JLong` → `integer`; `JDouble`/`JDecimal` → `number`; a non-empty `JObject` of integers → an object with those fields, `integer`, all required. Anything else (`{}`, an exception such as JDK 17+ reflection) → keep | a fixed list keyed by serializer class: doesn't work, json4s-ext registers `LocalDate`, `LocalTime`, `Period`, ... as anonymous `ClassSerializer`s |
+| A5 | json4s: how the profile learns the shapes | **one sample per recorded type, gated on the `Formats`' custom serializers**: only when `f.customSerializer(f).isDefinedAt(sample)` (true exactly for json4s-ext's serializers and users' own `CustomSerializer`s; false for reflection and for `java.util.Date`'s built-in `dateFormat` path) is the sample encoded with `Extraction.decompose(sample)(f)`, and the result mapped: `JString` → keep; `JInt`/`JLong` → `integer`; `JDouble`/`JDecimal` → `number`; a non-empty `JObject` of integers → an object with those fields, `integer`, all required; anything else, or an exception → keep. So reflection output (`{}` on JDK 11, an exception on 17+) never becomes a schema | ungated sampling (the reflection result would depend on the JDK); a fixed list keyed by serializer class: doesn't work, json4s-ext registers `LocalDate`, `LocalTime`, `Period`, ... as anonymous `ClassSerializer`s |
 | A6 | json4s `java.sql.Date` → `{}` | keep the `string` schema: `{}` is reflection debris that json4s can't read back, not an encoding | describe it (`{"type":"object"}`) |
 | A7 | a replacement's texts and validations | the replacement gets the original's `title`/`description` where it has none. `f` receives the original (validations included) and decides: upickle `Long` keeps them on its number member, a string replacement drops numeric ones | copy validations blindly (a `minimum` on a string) |
 | A8 | a replacement is lowered | yes (its `option`/`family`/D2 `number`s) but **not re-shaped** again: no loops, one pass | re-shape to a fixed point |
 | A9 | enum and singleton value schemas (`@typeHint[Long]`) | **not re-shaped** (values are fixed; re-shaping would give `enum(oneOf(...))`) | re-shape |
+| A10 | a user's Predef/Schema built from a built-in (`Predef(Json.schema[Long])`, `Predef(Predef.bigDecimalS.schema.withValidation(...))`, a Scala 3 `given Predef[Id] = Predef(Json.schema[Long])` for `opaque type Id = Long`) | **inherits the tag, intended**: such a wrapper is almost always written by the same library codec as the type it wraps, so it is re-shaped with it. Opt-out per schema: the public `withoutScalaType` (`Predef(Json.schema[Long].withoutScalaType)`) | don't inherit: impossible without a macro change (the tag travels with the value), and the usual case would then be wrong |
 
 ### K. Map keys (play's array of pairs)  — phase 2 of A
 
@@ -189,13 +196,20 @@ a number or an object. Neutral, Legacy, circe and spray output doesn't change. M
    - `private var _scalaType: Option[String] = None`; `def scalaType: Option[String] = _scalaType`, with scaladoc: "the
      Scala type this schema stands for, recorded by its `Predef` (full name, e.g. `java.util.Date`, `scala.Long`) so that a
      `JsonSchemaProfile` can give it the shape its library writes (`typeSchemas`). Not part of equality."
-   - `def withScalaType(x: String): Self` (copy with it set) and `private[json] def withoutScalaType: Self`.
-   - `duplicate(...)` and `withExtraFrom(x)` copy `_scalaType` (both mean "this node, rebuilt"). `withValidation` goes through
-     `duplicate`, so it keeps it. `withValidationsAddedFrom` starts from `mkCopy()` and drops everything (B13, #498): if B13 has
-     merged, follow its fix; otherwise leave it.
-   - `equals`, `hashCode`, `ToString` unchanged (the doc comment on `equals` says why).
-   - `` `value-class` ``/`` `def` `` `toDefinition` overrides: check that they copy through `withExtraFrom`. A definition body
-     keeps its own tag (the tag is on the leaf, not on the `def`).
+   - `def withScalaType(x: String): Self` (copy with it set) and `def withoutScalaType: Self` (copy without it), both public:
+     `withoutScalaType` is the user's opt-out (A10).
+   - Every direct `mkCopy()` caller in the trait keeps the receiver's `_scalaType`: `duplicate(...)` (Schema.scala:74),
+     `withExtraFrom(x)` (:83, takes `x`'s, both mean "this node, rebuilt") and `withValidationsAddedFrom(x)` (:91) keeps
+     the **receiver's** own tag whatever B13's state (one line). Without that, `` `value-class`.toDefinition `` (:627,
+     `tpe.withValidationsAddedFrom(this)`) drops it: `UserId(v: Long) extends AnyVal` with an implicit `Schema[UserId]`
+     wouldn't be re-shaped under upickle. If B13 (#498) has merged, its replacement method (`unwrapped` or similar) keeps the
+     tag too. `withValidation` goes through `duplicate`. The other `mkCopy()` use, `AsDraftSupport.inferDefinitions` (:311),
+     runs after lowering, when there are no tags left.
+   - `equals`, `hashCode`, `toString` unchanged (the doc comment on `equals` says why). `AsTree` (`toDebugString`) shows the
+     tag on a leaf (`number scalaType=scala.Long`, the `ToString.writeExtra` style), so "why isn't my type re-shaped?" can be
+     answered from the debug tree. `toDebugString` is only used in test failure messages and one `include("option(")`
+     (`ProfileSpec.scala:75`), which still holds.
+   - `` `def` `` `toDefinition`: the body keeps its own tag (the tag is on the leaf, not on the `def`).
 2. `core/src/main/scala/json/schema/Predef.scala`: every leaf Predef records its type, using a private helper
    `private def leaf[T](name: String, s: Schema[T]): Predef[T] = Predef(s.withScalaType(name))`. One name per `implicit val`
    (0.9.0 has 26): `strS` `java.lang.String`, `chrS` `scala.Char`, `jchrS` `java.lang.Character`, `boolS` `scala.Boolean`,
@@ -218,7 +232,10 @@ a number or an object. Neutral, Legacy, circe and spray output doesn't change. M
      `Schema.scalaType` names, that `f` gets the node with its validations and texts, A7/A8/A9, an example).
    - builders: `final def withTypeSchemas(x: Map[String, Schema[_] => Schema[_]]): JsonSchemaProfile` (replace all; `Map.empty`
      drops a bridge's) and `final def withTypeSchema[T](f: Schema[_] => Schema[_])(implicit p: Predef[T]): JsonSchemaProfile`
-     (adds/replaces one, keyed by `p.schema.scalaType`; `IllegalArgumentException` naming the type if that Predef records none).
+     (adds/replaces one, keyed by `p.schema.scalaType`; `IllegalArgumentException` naming the type if that Predef records none),
+     plus `final def withTypeSchemaNamed(scalaType: String)(f: Schema[_] => Schema[_]): JsonSchemaProfile` for a type whose
+     tag comes from an implicit `Schema`, not a `Predef` (joda-time's): `withTypeSchemaNamed("org.joda.time.Instant")(_ => `integer`)`.
+     A different name, not an overload: an overload would break `_ => ...` lambdas (missing parameter type on Scala 2).
    - `Knobs`: field `typeSchemas: Map[...] = Map.empty`, `override val` in `profile`, copied in `Knobs.apply(p)`. The trait
      scaladoc's "Everything else ... passes through unchanged" and `lower`'s "comes back equal" get the type-schema case.
      (D2 #491 and E8 #485 add knobs on the same lines: textual conflicts.)
@@ -254,13 +271,16 @@ a number or an object. Neutral, Legacy, circe and spray output doesn't change. M
      `LocalDateTime`, `ZonedDateTime`, `Duration`; `java.util.Date`, `java.sql.*`; joda `Instant`, `LocalDate`, `LocalTime`,
      `LocalDateTime`, `DateTime`, `Duration` built reflectively by class name, since json4s-json doesn't depend on joda-time
      (JVM-only module: reflection is allowed); E3's `Year`/`Period`/`YearMonth`/`MonthDay` once they have Predefs).
-     `Extraction.decompose(sample)(f)` in a `Try`, mapped by A5. The fields of an object replacement come in the sample's
+     For each sample with `f.customSerializer(f).isDefinedAt(sample)`, `Extraction.decompose(sample)(f)` in a `Try`, mapped by A5.
+     Samples without a custom serializer keep the default. The fields of an object replacement come in the sample's
      order, `integer`, required, the object strict like a derived one. Computed once per `fromFormats`, so `default` costs
      one pass at class init.
    - `CirceProfile`, `SprayProfile`: no change (scaladoc: circe writes `NaN` as `null`, not modelled, A4).
 6. Tests (new files; all shared unless noted):
    - `core/src/test/scala/json/schema/TypeSchemaLoweringSpec.scala`: the tag survives `duplicate`/`withValidation`/`withTitle`/
-     `toDefinition`; `equals`/`hashCode` ignore it; a profile with a type schema re-shapes it at the root, in a field, an
+     `toDefinition`/`withValidationsAddedFrom`, including `` `value-class`(longS.schema).toDefinition("UserId") `` (B24-R1);
+     a user `Predef(Json.schema[Long])` inherits it and is re-shaped, and `Predef(Json.schema[Long].withoutScalaType)` isn't
+     (A10); `toDebugString` shows it; `equals`/`hashCode` ignore it; a profile with a type schema re-shapes it at the root, in a field, an
      `Option` (Nullable and Legacy), an array, a map value, a value class, a definition body, a family member; texts kept
      (A7); the replacement is lowered (an `option` inside it) but not re-shaped (A8, a self-referencing `f` terminates);
      `lower` is idempotent; `withProfile(p)` then a render under another profile keeps `p`'s shape; an `@typeHint[Long]`
@@ -278,8 +298,9 @@ a number or an object. Neutral, Legacy, circe and spray output doesn't change. M
      canceled there (as today), and the rendering asserts still run.
    - `build.sbt`: `"org.json4s" %% "json4s-ext" % "4.0.7" % Test` and `joda-time` `% Test` for json4s-json.
 7. Docs: README "Library profiles" and `docs/src/main/paradox/rendering.md` (same words): a "types a library writes differently"
-   table (the rows of this doc's Problem table with the new schemas), a paragraph on `withTypeSchema` (the `Instant` as
-   millis example, plain `scala` or `mdoc:compile-only`), and the scaladoc of `Schema.scalaType`. `types.md`: one line that
+   table (the rows of this doc's Problem table with the new schemas), a paragraph on `withTypeSchema` /
+   `withTypeSchemaNamed` (the `Instant` as millis example, plain `scala` or `mdoc:compile-only`), one line that a Predef built
+   from a built-in's schema is re-shaped with it unless you call `.withoutScalaType` (A10), and the scaladoc of `Schema.scalaType`. `types.md`: one line that
    built-in types record their type for profiles. No CHANGELOG (the lead's).
 
 ### Phase 2: map keys under play (K1; after B6 #479 and B3 #470)
@@ -316,7 +337,9 @@ a number or an object. Neutral, Legacy, circe and spray output doesn't change. M
   `integer`), upickle `Long` (→ `oneOf`), `BigInt`/`BigDecimal` (`number` → patterned `string`), json4s with json4s-ext
   serializers (`string` → `integer` / an object, per `Formats`), and in phase 2 play maps with non-`String`/`AnyVal` keys
   (`object` → an array of pairs). Neutral, Legacy, circe and spray: byte-exact. No golden file changes (goldens render under
-  Neutral and Legacy). A user-written `Predef`/`Schema` for these types is untouched (it records no type). The new schemas
+  Neutral and Legacy). A user-written `Predef`/`Schema` built from fresh nodes (`` Predef(`string`[java.util.Date](...)) ``)
+  records no type and is untouched. One built from a built-in's schema (`Predef(Json.schema[Long])`) inherits the tag and is
+  re-shaped too (A10, opt out with `.withoutScalaType`). The new schemas
   accept every value the library writes. What they now reject is what the library never writes: a date string under play,
   a JSON number for a `BigInt`/`BigDecimal` under upickle (upickle's own reader rejects it too).
 - **Source:** additive: `Schema.scalaType`/`withScalaType`, `JsonSchemaProfile.typeSchemas`/`withTypeSchemas`/`withTypeSchema`,
@@ -335,9 +358,16 @@ a number or an object. Neutral, Legacy, circe and spray output doesn't change. M
 
 ## Risks and neighbours (not in scope)
 
+- Sets dedupe members that differ only by the tag (B24-R5). Equality ignores it, so `oneof`/`allof` `Set`s merge them at
+  construction: the derived `Either[java.util.Date, java.time.Instant]` is `oneOf(object{value: Date}, object{value: Instant})`
+  in the macro, which collapses into one member. Under play one branch is then wrong (`integer` or `string`, whichever
+  survived). Today it's harmless (the members are identical). Making the tag part of equality would break tree equality, and
+  "equal when either side has no tag" isn't transitive, which is wrong for `Set`s. So the plan pins it: a test in
+  `TypeSchemaLoweringSpec` documents the collapse (tagged `UNTRIAGED`). B3 (#470) keeps `oneof` on a `Set` (its `anyof`
+  uses a `ListSet`, still deduping), so it doesn't fix this either. A real fix is a member list for `oneof`, outside this item.
 - refined builds its own nodes (Scala 2 `refined/AST.scala`, Scala 3 `RefinedMacro.scala:282`: `integer` for `Int` *and*
-  `Long`), so `Long Refined Positive` isn't re-shaped under upickle. A follow-up can tag the refined base schema. Noted for
-  the lead.
+  `Long`), so `Long Refined Positive` isn't re-shaped under upickle. A follow-up can tag the refined base schema. Mailed to the
+  lead as a BACKLOG line.
 - play writes value-class keys (`Map[Id, V]`, `Id extends AnyVal`) through `anyValKeyWrites`, i.e. `toString`: `{"Id(a)": 1}`.
   The schema accepts it (`^.*$`), but the key isn't the value. That's play's quirk. Phase 2 leaves value-class keys as objects,
   which is what play writes.
@@ -350,3 +380,27 @@ a number or an object. Neutral, Legacy, circe and spray output doesn't change. M
 - B6 (#479) rewrites the `KeyPattern` block that phase 2 extends, and adds the UUID/Boolean `KeyPattern`s phase 2 needs.
 
 ## Review log
+
+Round 1 (r-b24, on 6d4441b):
+
+- B24-R1 (must) `` `value-class`.toDefinition `` goes through `withValidationsAddedFrom`, which drops the tag → accepted:
+  step 1 makes `withValidationsAddedFrom` keep the receiver's tag whatever B13's state (and B13's replacement must too), lists
+  every direct `mkCopy()` caller, and step 6 tests the value-class definition case.
+- B24-R2 (must) the tag leaks into users' Predefs built from a built-in, and there's no public opt-out → accepted: new
+  sub-decision A10 (inheritance is intended, for the reason given), `withoutScalaType` is public, step 6 pins inheritance and
+  the opt-out, step 7 adds a docs line, and Compatibility is corrected.
+- B24-R3 (must) P6A misquoted → accepted: quoted as in `profiledesign.md` ("null/absent leniency"), plus one sentence that
+  every re-shape is the writer's form only.
+- B24-R4 (nit) json4s: gate on `customSerializer(f).isDefinedAt(sample)` → accepted: A5 and step 5 sample only types with a
+  custom serializer, so reflection output never becomes a schema on any JDK, and users' own `CustomSerializer`s are covered.
+- B24-R5 (nit) `Set`s dedupe members that differ only by the tag (`Either[Date, Instant]`) → accepted: added to Risks, with why
+  equality can't include the tag, and pinned by a test.
+- B24-R6 (nit) `withTypeSchema[T]` needs a `Predef[T]`, and joda's tags are on implicit `Schema`s → accepted:
+  `withTypeSchemaNamed(name)(f)` (a separate name, not an overload, so `_ => ...` lambdas still infer), with joda as the example.
+- B24-R7 (nit) nothing shows the tag → accepted: `AsTree`/`toDebugString` shows `scalaType=...` on leaves (`toString` and
+  `equals` unchanged). Checked that no test pins leaf debug output.
+- B24-R8 (nit) a flatter upickle `Long`, `{"type":["integer","string"],"pattern":...}` → kept `oneOf`, the flat form is listed
+  in A3: the ADT has no multi-type leaf, and the renderer merges a type array only for `{X, null}`. The flat form needs renderer
+  work outside this item, and a follow-up can switch to it without changing the knob. Added the `Option[Long]` output under
+  upickle to the sample.
+- B24-R9 (nit) mail the refined follow-up to the lead as a BACKLOG line → accepted: mailed. Risks says so.
