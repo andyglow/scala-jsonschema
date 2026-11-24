@@ -1,5 +1,5 @@
 # Scala 2: compiler crash on a case class with a non-public val parameter  (issue #459, item B4)
-Status: draft
+Status: approved (r-b4, 2026-11-23)
 
 ## Problem
 On Scala 2.12 and 2.13 the derivation macro crashes the compiler for a case class whose constructor has a `private val`,

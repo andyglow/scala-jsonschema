@@ -12,15 +12,18 @@ private[jsonschema] trait UProductTypes {
   private[UProductTypes] def fieldAnnotationMap(
     tpe: Type
   ): Map[String, List[c.universe.Annotation]] = {
-    // old implementation of annotation extractor
+    // annotations aimed at the underlying field (`@(description @field)`), read from the fields themselves (`a `, with the
+    // local suffix). Not through the case accessor methods: a non-public val (`private val a`, `private[pkg]`, `protected`)
+    // has a getter `a` that isn't a case accessor and a synthetic case accessor `a$access$0` that isn't a getter, whose
+    // `accessed` fails an assertion (a compiler crash).
     def annotations0 = tpe.decls.collect {
 
-      case s: MethodSymbol if s.isCaseAccessor =>
+      case s: TermSymbol if !s.isMethod && s.isCaseAccessor =>
         // workaround: force loading annotations
         s.typeSignature
-        s.accessed.annotations.foreach(_.tree.tpe)
+        s.annotations.foreach(_.tree.tpe)
 
-        s.name.decodedName.toString.trim -> s.accessed.annotations
+        s.name.decodedName.toString.trim -> s.annotations
     }.toMap
 
     // new implementation of annotation extractor
