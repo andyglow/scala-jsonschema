@@ -138,7 +138,8 @@ object JsonSchemaProfile {
     *     has any type), or
     *   - are both objects and one requires a property that the other, a closed object (not a `Map`, not `additionalProperties`), doesn't have at all (distinct field names), or
     *   - are both objects and a property both require has types that can't meet, or
-    *   - are both enums/consts without a value in common.
+    *   - are both enums/consts without a value in common, or
+    *   - are an enum/const and an object none of whose values is a document of the object.
     *
     * Members with equal schemas appear once. The check is conservative: what it can't prove is treated as an overlap, which costs only the "exactly one" of `oneOf`.
     */
@@ -148,7 +149,7 @@ object JsonSchemaProfile {
     /** `anyOf` the members (at least one matches). The default. */
     case object AnyOf extends OverlappingMembers
 
-    /** `oneOf` the members anyway, as 0.7 did ([[JsonSchemaProfile.Legacy]]): a document that matches two of them is rejected. */
+    /** `oneOf` the members anyway, as 0.7 did: a document that matches two of them is rejected. */
     case object OneOf extends OverlappingMembers
   }
 
@@ -170,8 +171,8 @@ object JsonSchemaProfile {
   /** The default: the 0.7 shapes, with every `Option[X]` as "X or null". */
   val Neutral: JsonSchemaProfile = Knobs("neutral", OptionStyle.Nullable).profile
 
-  /** The 0.7 output, byte for byte. */
-  val Legacy: JsonSchemaProfile = Knobs("legacy", OptionStyle.Legacy, overlappingMembers = OverlappingMembers.OneOf).profile
+  /** The 0.7 output, byte for byte, except where 0.7's schema was wrong: a family's members in declaration order, an `anyOf` for overlapping members (see [[OverlappingMembers]]). */
+  val Legacy: JsonSchemaProfile = Knobs("legacy", OptionStyle.Legacy).profile
 
   /** Every knob of a profile; `profile` builds one from them. */
   private final case class Knobs(
@@ -248,8 +249,8 @@ object JsonSchemaProfile {
 
     // ---- sealed families
     //
-    // Under Legacy this reproduces what the 0.7 macro derived, except that the members are in declaration order (0.7: up to 4, then hash order) (`oneof` holds an insertion-ordered set).
-    // Neutral differs from it in one more way: an untagged family whose members a document could match two of is an `anyOf` (see OverlappingMembers). Both:
+    // Under Neutral and Legacy this reproduces what the 0.7 macro derived, except where 0.7 was wrong: the members are in declaration order (0.7: up to 4, then hash order; `oneof` now holds
+    // an insertion-ordered set), and an untagged family whose members one document could match two of is an `anyOf` (see OverlappingMembers):
     //   - a case class / value class member gets the member's title, description and `@discriminatorKey` where it has none of its own; with `@discriminator`, its key is set to
     //     `@discriminatorKey`, else the signature; then `@definition` wraps it. A member from an implicit Schema/Predef is used as it is;
     //   - singletons with equal value schemas merge into one `enum` (moved to the end at every merge), their texts dropped; with `enumsAsOneOf`, a `const` each, with its texts and key;
@@ -446,8 +447,19 @@ object JsonSchemaProfile {
       x.fields.exists(f => f.required && ys.get(f.name).exists(leaves(f.tpe, _)))
     }
 
+    // every value of an enum/const `s` is not a document of the object `o` (a codec's ToValue that writes an object, e.g. play's {"_type": "Fish"})
+    private def valuesOutside(s: Schema[_], o: `object`[_]): Boolean = values(s) exists {
+      _ forall {
+        case v: Value.obj =>
+          o.fields.exists(f => f.required && !v.value.contains(f.name)) || (!o.isInstanceOf[`object`.Free] && v.keys.exists(k => !o.fields.exists(_.name == k)))
+        case _ => true
+      }
+    }
+
     def disjoint(a: Schema[_], b: Schema[_]): Boolean = (body(a), body(b)) match {
       case (x: `object`[_], y: `object`[_]) => requiresMissing(x, y) || requiresMissing(y, x) || requiredFieldsDisjoint(x, y)
+      case (x: `object`[_], y)              => leaves(x, y) || valuesOutside(y, x)
+      case (x, y: `object`[_])              => leaves(x, y) || valuesOutside(x, y)
       case (x, y)                           => leaves(x, y)
     }
   }

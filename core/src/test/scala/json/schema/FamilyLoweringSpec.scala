@@ -188,7 +188,8 @@ class FamilyLoweringSpec extends AnyWordSpec {
       members(Neutral.lower(`family`[Any](List(id, fish)))).head shouldEqual `value-class`[Any, String](`string`[String](None))
       // untagged, "Fish" is a string too: a document can match both members (B3)
       Neutral.lower(`family`[Any](List(id, fish))) shouldBe an[`anyof`[_]]
-      Legacy.lower(`family`[Any](List(id, fish))) shouldBe an[`oneof`[_]]
+      Legacy.lower(`family`[Any](List(id, fish))) shouldBe an[`anyof`[_]]
+      Legacy.withOverlappingMembers(OverlappingMembers.OneOf).lower(`family`[Any](List(id, fish))) shouldBe an[`oneof`[_]]
     }
     "state a oneOf of consts in a field by the values' type, never \"const\" (reviewer11 F7)" in {
       val consts = `family`[Any](List(single("X"), single("Y")), enumsAsOneOf = true)
@@ -324,12 +325,13 @@ class FamilyLoweringSpec extends AnyWordSpec {
       }
       Neutral.toString shouldBe "JsonSchemaProfile(neutral)"
     }
-    "set overlappingMembers: AnyOf by default and for Neutral, OneOf for Legacy, kept by the other builders" in {
+    "set overlappingMembers: AnyOf by default, for Neutral and Legacy; kept by the other builders" in {
       Neutral.overlappingMembers shouldBe OverlappingMembers.AnyOf
-      Legacy.overlappingMembers shouldBe OverlappingMembers.OneOf
-      Legacy.withName("x").withSum(SumStyle.WrapperObject).overlappingMembers shouldBe OverlappingMembers.OneOf
-      Neutral.withOverlappingMembers(OverlappingMembers.OneOf).overlappingMembers shouldBe OverlappingMembers.OneOf
-      Legacy.withOverlappingMembers(OverlappingMembers.AnyOf).optionStyle shouldBe OptionStyle.Legacy
+      Legacy.overlappingMembers shouldBe OverlappingMembers.AnyOf
+      val oneOf = Legacy.withOverlappingMembers(OverlappingMembers.OneOf)
+      oneOf.overlappingMembers shouldBe OverlappingMembers.OneOf
+      oneOf.optionStyle shouldBe OptionStyle.Legacy
+      oneOf.withName("x").withSum(SumStyle.WrapperObject).overlappingMembers shouldBe OverlappingMembers.OneOf
     }
   }
 
@@ -377,6 +379,8 @@ class FamilyLoweringSpec extends AnyWordSpec {
       isAnyOf(fam(`value-class`[Any, String](`string`[String](None)), `integer`)) shouldBe false                          // through value classes
       isAnyOf(`family`[Any](List(dog))) shouldBe false                                                                    // one member
       isAnyOf(animal) shouldBe false                                                                                      // an object and an enum of strings
+      isAnyOf(fam(dogObj, `const`[Any](Value.obj("_type" -> str("Fish"))))) shouldBe false // an object value that isn't a Dog (no name, a key Dog doesn't have)
+      isAnyOf(fam(dogObj, `const`[Any](Value.obj("name" -> str("Rex"))))) shouldBe true // one that is
     }
     "be an anyOf when a document can match two members" in {
       isAnyOf(fam(obj(req("id", `string`)), obj(req("id", `string`), opt("name", `string`)))) shouldBe true                                    // overlapping
@@ -395,10 +399,11 @@ class FamilyLoweringSpec extends AnyWordSpec {
       val out = Neutral.lower(fam(obj(req("id", `string`)), obj(req("id", `string`))))
       out shouldEqual `oneof`[Any](Set(obj(req("id", `string`))), None)
     }
-    "be a oneOf under Legacy and OverlappingMembers.OneOf, and when tagged" in {
+    "be a oneOf under OverlappingMembers.OneOf and when tagged, an anyOf under Legacy too" in {
       val f = fam(obj(req("id", `string`)), obj(req("id", `string`), opt("name", `string`)))
-      isAnyOf(f, Legacy) shouldBe false
+      isAnyOf(f, Legacy) shouldBe true
       isAnyOf(f, Neutral.withOverlappingMembers(OverlappingMembers.OneOf)) shouldBe false
+      isAnyOf(f, Legacy.withOverlappingMembers(OverlappingMembers.OneOf)) shouldBe false
       for (p <- List(play, circe, upickle)) withClue(p.name) { isAnyOf(f, p) shouldBe false }
       isAnyOf(f, json4s) shouldBe true
       // @discriminator, honored by Neutral

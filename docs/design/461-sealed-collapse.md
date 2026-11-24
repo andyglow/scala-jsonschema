@@ -82,34 +82,42 @@ document of every member is valid.
   each member keeps its own. Without that, a root `anyOf` of objects accepts `5` (r-b3's probe), because a non-object
   document satisfies every object member; `oneOf` only rejects it by accident ("2 are valid").
 - Profile: a new knob `JsonSchemaProfile.overlappingMembers: OverlappingMembers` (`AnyOf`: the default; `OneOf`:
-  always `oneOf`, the 0.7 output), with `withOverlappingMembers(...)`. `Legacy` sets `OneOf`; Neutral and the
-  bridge profiles keep the default.
+  always `oneOf`, the 0.7 output), with `withOverlappingMembers(...)`. Every built-in profile keeps the default,
+  Legacy included (the lead's Legacy policy, 2026-11-23: Legacy freezes 0.7's style, not its bugs; see the review log).
+- Only an untagged family (no discriminator field) can become an `anyOf`: a tagged one is told apart by its tag, and
+  the renderer writes the tag from the `oneof`'s discriminator field, which `anyof` doesn't have. (This replaces a
+  "(tag)" rule of the first draft: tagged families never reach the check.)
 - The disjointness check (`Lowering`, after the members are built; conservative: "can't prove it" means overlap).
   Two members are disjoint when, after looking through `def` and `value-class` wrappers:
-  - (tag) both are objects with different `discriminationKey`s and the `oneof` has a discriminator field;
   - (type) their JSON types can't meet: object (`object`, `dictionary`), array, string, boolean, null, integer,
-    number (integer ⊂ number); an `enum` has its value schema's type (never `jsonType`, which is `"enum"`; an enum of
-    numbers next to an `integer` member is an overlap), a `const` its value's type; a `ref` or a
-    nested `oneof`/`allof`/`anyof` member is "any type";
+    number (integer ⊂ number); an `enum` or `const` has its values' types (never `jsonType`, which is `"enum"`; an
+    enum of numbers next to an `integer` member is an overlap); a `ref` or a nested `oneof`/`allof`/`anyof` member is
+    "any type";
   - (key) both are objects and one requires a field that is not among the other's properties at all (an optional
     property still counts as "has"), and the other is closed: a non-`Free` `object` (not a `dictionary`, not `Free`,
     not a `ref`). This covers `WrapperObject` (one required key per member; wrapper objects are built non-`Free` by
     `object.fromList`) and most untagged families (distinct field names);
   - (field) both are objects and a field required by both has types that can't meet by the (type) rule;
-  - (values) both are `enum`/`const` with no value in common.
+  - (values) both are `enum`/`const` with no value in common;
+  - (values vs object) one is an `enum`/`const` and the other an object, and no value is a document of that object
+    (an object value lacks one of its required fields, or has a key the closed object doesn't have; a non-object
+    value never is). Found in implementation: a `ToValue` that writes a case object as an object (play's
+    `{"_type": "V"}`, `EnumSpec` case10) next to a case class would otherwise become an `anyOf` needlessly.
   A family with a single member, or whose members are pairwise disjoint, stays `oneOf`.
 - Exact twins (`Ev`) stay one entry: their schemas are equal, the `Set` keeps one, and one member is trivially
   disjoint: output unchanged. Both entries would be identical (no title, no name), so keeping two would add
   nothing a reader could use; it would need `subTypes: Seq` (see D).
 
-Sample (Neutral, draft-07):
+Sample (Neutral, draft-07; Legacy the same, except that its `Option` field isn't nullable):
 
 ```json
 // DocEv
-{"anyOf": [{"description": "created", "additionalProperties": false, "properties": {"id": {"type": "string"}}, "required": ["id"]},
+{"type": "object",
+ "anyOf": [{"description": "created", "additionalProperties": false, "properties": {"id": {"type": "string"}}, "required": ["id"]},
            {"description": "deleted", "additionalProperties": false, "properties": {"id": {"type": "string"}}, "required": ["id"]}]}
 // OvEv
-{"anyOf": [{"additionalProperties": false, "properties": {"id": {"type": "string"}}, "required": ["id"]},
+{"type": "object",
+ "anyOf": [{"additionalProperties": false, "properties": {"id": {"type": "string"}}, "required": ["id"]},
            {"additionalProperties": false, "properties": {"id": {"type": "string"}, "name": {"type": ["string", "null"]}}, "required": ["id"]}]}
 // Five: oneOf, members E1, D2, C3, B4, A5 (declaration order)
 ```
@@ -171,7 +179,8 @@ and correct today), and drops the "exactly one" information that `oneOf` gives r
 
 A: build every family's members as an insertion-ordered set (declaration order, all profiles), and lower a family to
 `anyOf` instead of `oneOf` when its members can't be proven disjoint, controlled by a new profile knob
-(`OverlappingMembers.AnyOf` by default, `OneOf` for Legacy). A is breaking under PVP (0.10.0). For the owner:
+(`OverlappingMembers.AnyOf` by default, Legacy included; `OneOf` keeps 0.7's `oneOf`). A is breaking under PVP
+(0.10.0). For the owner:
 - A in 0.10.0 (recommended; E2 adds a model node too);
 - F if B3 must ship in a 0.9.x patch (same behavior, a marker on `oneof` instead of a new case);
 - C alone (order only) if neither: a pure patch, and A or F can follow.
@@ -193,7 +202,7 @@ A: build every family's members as an insertion-ordered set (declaration order, 
      (`ListSet(ys.toSeq.map(deepCopy): _*)`, not `ys map`, which on 2.12 may rebuild a hash set).
 2. `core/src/main/scala/json/schema/JsonSchemaProfile.scala`
    - `sealed trait OverlappingMembers { AnyOf, OneOf }`, `def overlappingMembers = AnyOf`, `withOverlappingMembers`, the
-     `Knobs` field; `Legacy` = `Knobs("legacy", OptionStyle.Legacy, overlappingMembers = OneOf)`;
+     `Knobs` field; Legacy keeps the default (round 2: the lead's Legacy policy);
    - `familyAt`: `ListSet(schemas: _*)`; when `p.overlappingMembers == AnyOf` and some pair isn't disjoint,
      `anyof(ListSet(schemas: _*))` (no discriminator field; tagged families never get here). A private `Disjoint`
      helper with the rules above; scaladoc on the knob states them;
@@ -201,7 +210,8 @@ A: build every family's members as an insertion-ordered set (declaration order, 
      (2 members: order unchanged);
    - update the comment at the top of the sealed-families section (Sets and insertion order).
 3. `core/src/main/scala/com/github/andyglow/jsonschema/AsDraftSupport.scala`: `mkAnyOf` (share `mkPlainOneOf`'s member
-   typing in a helper taking the keyword and a `typeAtRoot` flag: `false` for `oneOf`, unchanged; `true` for `anyOf`);
+   typing in a helper, `mkAlternatives`, taking the keyword and an `omitRootType` flag: at the root for `oneOf`, as
+   before; never for `anyOf`);
    `mkNullable` treats an `anyof` X like a `oneof` X (not a single type: `oneOf [anyOf[...], {"type": "null"}]`);
    dispatch; `extractDefs`; the no-validations case at line 57.
    `AsTree`, `SchemaEquality`, `DefinitionNames`: the `anyof` case, as for `allof`.
@@ -210,9 +220,10 @@ A: build every family's members as an insertion-ordered set (declaration order, 
    keep order: unchanged. No macro change otherwise (the derived `family` tree is unchanged).
 5. Tests
    - `SameShapeFamilySpec` (already committed, failing): order under Neutral, a library-like untagged profile,
-     WrapperObject, Discriminator, plus Legacy (order only: Legacy keeps `oneOf`); validity of `Ev`, `DocEv`, `RefEv`,
+     WrapperObject, Discriminator, plus Legacy; validity of `Ev`, `DocEv`, `RefEv`,
      `OvEv` under untagged profiles; tagged twins kept and valid. Add: `withOverlappingMembers(OneOf)` gives the
-     old `oneOf`; Legacy's same-shape output equals today's bytes; the README `Event` example validates;
+     old `oneOf` (Neutral and Legacy); Legacy: exact twins as in 0.7, `DocEv` an `anyOf` (compared as JSON),
+     overlapping members valid, disjoint families `oneOf`; the README `Event` example validates;
      `Option[OvEv]` as a field: `null`, `{"id":"x"}` valid, `5` invalid; root and nested `DocEv`/`OvEv` reject `5`,
      `"s"`, `[]` and (not an Option) `null`.
    - order-sensitive Legacy assert on one of the 5-member golden-legacy models (`MultiLevelSealedTraitRoot`), whose
@@ -220,14 +231,17 @@ A: build every family's members as an insertion-ordered set (declaration order, 
    - guard tests that ordinary families stay `oneOf`: a WrapperObject family, an untagged json4s-like
      (`honorsSchemaAnnotations = false`) family of distinct shapes, a recursive family (`Leaf(v)`, `Node(l, r)` with
      `ref` fields).
-   - core `FamilyLoweringSpec`: one tree case per disjointness rule (tag, type, key, field, values) and its negative,
-     including an enum of numbers next to an `integer` member (overlap).
+   - core `FamilyLoweringSpec`: one tree case per disjointness rule (type, key, field, values, values vs object) and
+     its negative, including an enum of numbers next to an `integer` member (overlap); tagged profiles stay `oneOf`.
+   - existing tree specs of `FooBarInsideCompanionWithAnnotations` (`SumTypeWithEnumsSpec`, `SumTypeWithConstantsSpec`,
+     Legacy-lowered via `as07`): `oneof` → `anyof`.
    - `AsDraft04/06/07/09/12Spec`: render an `anyof.of(...)` (full JSON per draft).
    - `SchemaCopySpec` / `SchemaEqualsHashCodeSpec`: `anyof`.
    - harness: `Golden` tree printer and `Families.as07` get the `anyof` case (sorted members, like `allof`).
-   - goldens (Neutral `golden/` only): `FooBarInsideCompanionWithAnnotations` and
-     `...WithAnnotations.EnumsAsOneOf` switch `oneOf` → `anyOf` (`GOLDEN_UPDATE=1 sbt clean api/test`, review the
-     diff); `golden-legacy/` unchanged (the harness sorts arrays, and Legacy keeps `oneOf`).
+   - goldens: `SumTypeModels.FooBarInsideCompanionWithAnnotations` and `...WithAnnotations.EnumsAsOneOf` switch
+     `oneOf` → `anyOf`, in `golden/` (`GOLDEN_UPDATE=1 sbt clean api/test`, diff reviewed: only the keyword, 3 drafts
+     each) and in `golden-legacy/` (by hand, update mode never rewrites it: the keyword and the tree's `"kind"`).
+     The order change can't show in any golden (the harness sorts arrays).
    - Scala.js: order tests run on JS; validation tests cancel on JS (existing harness).
    - bridges: re-run the json4s petshop acceptance (Untagged, real codec output) and the other bridges' suites; the
      PR lists the result.
@@ -249,9 +263,12 @@ A: build every family's members as an insertion-ordered set (declaration order, 
     `oneof.of`/`allof.of` of 5+ members. Legacy gets declaration order too, as in B7/B2 (**the lead's decision,
     2026-11-23**): 0.7's order was hash order that differed between 2.12 and 2.13 (no bytes a user could rely on
     across versions). The PR's output-change section calls it out.
-  - Neutral and the bridge profiles: an untagged family whose members may overlap renders `anyOf` instead of `oneOf`
-    (today such a schema rejects valid documents). Tagged families: unchanged except for order.
-  - Legacy: byte-identical to today except the order above (it keeps `oneOf`, collapse included).
+  - every profile, Legacy included: an untagged family whose members may overlap renders `anyOf` instead of `oneOf`
+    (today such a schema rejects valid documents). Tagged families: unchanged except for order. Families of disjoint
+    members, and exact twins (one entry), are unchanged.
+  - Legacy: as today except the order and the `anyOf` above (validity fixes, per the lead's Legacy policy); the
+    alternative "Legacy keeps 0.7's `oneOf`" is one line (`Legacy` with `overlappingMembers = OneOf`), and any user can
+    get it with `withOverlappingMembers(OverlappingMembers.OneOf)`. golden-legacy changes: the 2 files above.
 - PVP: A is **breaking** (a new case in an exported sealed ADT): 0.10.0. F is the same behavior as a patch (0.9.x).
   C alone is a pure patch. The owner picks (see Decision).
 
@@ -273,3 +290,17 @@ Round 1 (r-b3, design at eb0306e):
 - B3-R7 (nit) "Not in scope" list → accepted: new section.
 - B3-R8 (nit) `Option[OvEv]` and bridges → accepted: `mkNullable` handling in step 3, assertions and the bridge
   acceptance re-run in step 5.
+
+Approved by r-b3 at 6e51b29 (conditions met at 054adbe/d7fdd30).
+
+Round 2 (changes found during implementation; need r-b3's OK):
+- Legacy gets `anyOf` too. The lead's new Legacy policy (PROTOCOL-gaps.md, 2026-11-23: Legacy freezes 0.7's style, not
+  its bugs) and the lead's answer to my question: Legacy gets `anyOf`, but only where members actually overlap;
+  non-overlapping families stay `oneOf`. So `Legacy` keeps the default knob; golden-legacy: 2 files change; Legacy
+  tests updated. "Legacy keeps `oneOf`" stays as the alternative (Compatibility).
+- The "(tag)" rule is gone: only untagged families can become `anyOf`, because the renderer writes a discriminator tag
+  from the `oneof`'s discriminator field (an `anyof` has none). Same outcome for every tagged family (always `oneOf`).
+- New rule "(values vs object)": the full test run showed `EnumSpec` case10 (a case class, plus a case object whose
+  `ToValue` writes `{"_type": "V"}`) turning into an `anyOf` needlessly; an object value that lacks a required field
+  or has a key the closed object doesn't have is not a document of it.
+- `enum` types come from its values (more precise than its value schema; never `"enum"`).

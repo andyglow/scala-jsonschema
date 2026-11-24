@@ -172,9 +172,9 @@ class SameShapeFamilySpec extends AnyFunSuite {
     Acceptance.assertInvalid(has, others.map(x => s"""{"e":$x}""") ++ others.filterNot(_ == "null").map(x => s"""{"e":{"id":"x"},"o":$x}"""))
   }
 
-  test("OverlappingMembers.OneOf and Legacy keep the oneOf") {
-    val oneOf = JsonSchemaProfile.Neutral.withOverlappingMembers(JsonSchemaProfile.OverlappingMembers.OneOf)
-    List(oneOf, JsonSchemaProfile.Legacy) foreach { implicit p =>
+  test("OverlappingMembers.OneOf keeps the oneOf") {
+    val oneOf = JsonSchemaProfile.OverlappingMembers.OneOf
+    List(JsonSchemaProfile.Neutral.withOverlappingMembers(oneOf), JsonSchemaProfile.Legacy.withOverlappingMembers(oneOf)) foreach { implicit p =>
       withClue(p.name) {
         keyword(Json.schema[DocEv]) shouldBe "oneOf"
         keyword(Json.schema[OvEv]) shouldBe "oneOf"
@@ -182,13 +182,18 @@ class SameShapeFamilySpec extends AnyFunSuite {
     }
   }
 
-  test("Legacy: the 0.7 output of same-shaped members") {
+  test("Legacy: equal members as in 0.7, overlapping ones an anyOf (a validity fix), disjoint ones a oneOf") {
     implicit val p: JsonSchemaProfile        = JsonSchemaProfile.Legacy
     val idObj                                = """"additionalProperties":false,"properties":{"id":{"type":"string"}},"required":["id"]"""
     val head                                 = """"$schema":"http://json-schema.org/draft-07/schema#","$id":"https://b3.test/schema.json""""
     def same(s: Schema[_], expected: String) = withClue(text(s)) { Acceptance.sameJson(text(s), expected) shouldBe true } // as JSON: object key order is B2's
     same(Json.schema[Ev], s"""{$head,"oneOf":[{$idObj}]}""")
-    same(Json.schema[DocEv], s"""{$head,"oneOf":[{"description":"created",$idObj},{"description":"deleted",$idObj}]}""")
+    same(Json.schema[DocEv], s"""{$head,"type":"object","anyOf":[{"description":"created",$idObj},{"description":"deleted",$idObj}]}""")
+    keyword(Json.schema[OvEv]) shouldBe "anyOf"
+    keyword(Json.schema[Five]) shouldBe "oneOf"
+    keyword(Json.schema[Tree]) shouldBe "oneOf"
+    Acceptance.assertValid(Acceptance.rendered(Json.schema[OvEv]), List("""{"id":"x"}""", """{"id":"x","name":"n"}"""))
+    Acceptance.assertValid(Acceptance.rendered(Json.schema[RefEv]), List("""{"id":"x"}"""))
   }
 
   test("Legacy: a 5-member family (golden-legacy MultiLevelSealedTraitRoot) in declaration order") {
