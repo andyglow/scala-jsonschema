@@ -1,5 +1,5 @@
 # refined: `Size[P]` ignores whether `P`'s bound is exclusive  (issue #533, item B32)
-Status: draft
+Status: approved (r-b32, 2026-11-23)
 
 ## Problem
 
@@ -197,9 +197,9 @@ table above.
      val b = hi.map { case (v, incl) => (if (incl) v.setScale(0, FLOOR) else v.setScale(0, CEILING) - 1) min maxInt }
      if (a > maxInt || b.exists(_ < a)) None
      else (lo, b) match {
-       case (_, None)          => Some(Size.Def.Min(a.toInt))
-       case (None, Some(b))    => Some(Size.Def.Max(b.toInt))
-       case (Some(_), Some(b)) => Some(Size.Def.Range(a.toInt, b.toInt))
+       case (_, None)            => Some(Size.Def.Min(a.toInt))
+       case (None, Some(hiN))    => Some(Size.Def.Max(hiN.toInt))
+       case (Some(_), Some(hiN)) => Some(Size.Def.Range(a.toInt, hiN.toInt))
      }
    }
    ```
@@ -288,3 +288,5 @@ Round 1 (r-b32, on 8ab312b):
   table, the helper, the tests and Compatibility; an upper bound above `Int.MaxValue` still clamps (harmless, every size satisfies it).
 - B32-R6 (nit) one empty check, the range's own message → accepted: `sizeRange` has the single check (`a > max` or `b < a`) and returns
   `None`; the caller reports it with `P` as written, so `Size[Interval.Closed[-5, -1]]` names its own range.
+
+Round 2 (r-b32, on f29aa56): approved. Leftover hint taken: the `sizeRange` sketch no longer shadows `b` in its match (`hiN`).
