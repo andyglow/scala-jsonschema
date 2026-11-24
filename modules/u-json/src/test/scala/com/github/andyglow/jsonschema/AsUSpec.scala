@@ -29,6 +29,10 @@ class AsUSpec extends AnyPropSpec {
     forAll(examples) { (internal, u) => AsU(internal) shouldEqual u }
   }
 
+  property("AsU keeps key order") {
+    AsU(obj("k1" -> 1, "k2" -> 2, "k3" -> 3, "k4" -> 4, "k5" -> 5, "k6" -> 6)).render() shouldBe """{"k1":1,"k2":2,"k3":3,"k4":4,"k5":5,"k6":6}"""
+  }
+
   property("AsU escapes") {
     val jobj = AsU(obj(""""quoted-key"""" -> "\n\t'val\""))
     jobj.render() shouldBe """{"\"quoted-key\"":"\n\t'val\""}"""

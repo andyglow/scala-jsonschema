@@ -30,6 +30,10 @@ class AsPlaySpec extends AnyPropSpec {
     forAll(examples) { (internal, play) => AsPlay(internal) shouldEqual play }
   }
 
+  property("AsPlay keeps key order") {
+    Json.stringify(AsPlay(obj("k1" -> 1, "k2" -> 2, "k3" -> 3, "k4" -> 4, "k5" -> 5, "k6" -> 6))) shouldBe """{"k1":1,"k2":2,"k3":3,"k4":4,"k5":5,"k6":6}"""
+  }
+
   property("AsPlay escapes") {
     val jobj = AsPlay(obj(""""quoted-key"""" -> "\n\t'val\""))
     Json.stringify(jobj) shouldBe """{"\"quoted-key\"":"\n\t'val\""}"""

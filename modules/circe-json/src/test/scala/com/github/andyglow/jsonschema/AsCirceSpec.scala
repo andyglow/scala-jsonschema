@@ -32,6 +32,10 @@ class AsCirceSpec extends AnyPropSpec {
     forAll(examples) { (internal, circe) => AsCirce(internal) shouldEqual circe }
   }
 
+  property("AsCirce keeps key order") {
+    AsCirce(obj("k1" -> 1, "k2" -> 2, "k3" -> 3, "k4" -> 4, "k5" -> 5, "k6" -> 6)).noSpaces shouldBe """{"k1":1,"k2":2,"k3":3,"k4":4,"k5":5,"k6":6}"""
+  }
+
   property("AsCirce escapes") {
     AsCirce(
       obj(""""quoted-key"""" -> "\n\t'val\"")

@@ -30,6 +30,12 @@ class AsJson4sSpec extends AnyPropSpec {
     forAll(examples) { (internal, play) => AsJson4s(internal) shouldEqual play }
   }
 
+  property("AsJson4s keeps key order") {
+    import org.json4s.native.JsonMethods._
+
+    compact(render(AsJson4s(obj("k1" -> 1, "k2" -> 2, "k3" -> 3, "k4" -> 4, "k5" -> 5, "k6" -> 6)))) shouldBe """{"k1":1,"k2":2,"k3":3,"k4":4,"k5":5,"k6":6}"""
+  }
+
   property("AsCirce escapes") {
     import org.json4s.native.JsonMethods._
 

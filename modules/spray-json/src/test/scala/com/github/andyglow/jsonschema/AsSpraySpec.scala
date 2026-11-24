@@ -30,6 +30,10 @@ class AsSpraySpec extends AnyPropSpec {
     forAll(examples) { (internal, spray) => AsSpray(internal) shouldEqual spray }
   }
 
+  property("AsSpray keeps key order") {
+    AsSpray(obj("k1" -> 1, "k2" -> 2, "k3" -> 3, "k4" -> 4, "k5" -> 5, "k6" -> 6)).compactPrint shouldBe """{"k1":1,"k2":2,"k3":3,"k4":4,"k5":5,"k6":6}"""
+  }
+
   property("AsSpray escapes") {
     val jobj = AsSpray(obj(""""quoted-key"""" -> "\n\t'val\""))
     jobj.compactPrint shouldBe """{"\"quoted-key\"":"\n\t'val\""}"""
