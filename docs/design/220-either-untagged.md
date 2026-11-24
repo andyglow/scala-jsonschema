@@ -1,5 +1,5 @@
 # `Either` shaped by the profile: an `eitherStyle` knob  (issue #220, item E7)
-Status: draft (round 1 answered)
+Status: approved (r-e7, 2026-11-23)
 
 Depends on #470 (B3: `Schema.anyof`, the `OverlappingMembers` knob and its disjointness check). The implementation
 goes on top of B3, as E6 does. This doc-only branch stays on `master`.
