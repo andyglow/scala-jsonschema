@@ -1,5 +1,5 @@
 # Member names chosen by sampling: a selective renamer is ignored  (issue #520, item B25)
-Status: draft
+Status: approved (r-b25, 2026-11-23)
 
 ## Problem
 
