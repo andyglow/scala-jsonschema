@@ -1,5 +1,5 @@
 # A nested derived type keeps its own `@title` / `@description` / scaladoc; annotations win over scaladoc  (issue #501, item B12)
-Status: draft
+Status: approved (r-b12, 2026-11-23)
 
 Builds on B1 (#469, `gap/b1-title-desc`): B1 makes the renderers emit `title`/`description` on every node kind, which is
 what makes a nested value class's or enum's texts visible at all. This item is about what the **derivation** puts in the
@@ -180,7 +180,7 @@ other order since the feature was added, so users who relied on it got the wrong
 
 ### Legacy profile
 
-#### L1. The changes apply under Legacy too — WON (the lead must confirm: is this a bug or 0.7 style?)
+#### L1. The changes apply under Legacy too — WON (lead, 2026-11-23: a 0.7 bug, README promises texts on any schema; owner may still pick L2 or D)
 Under the lead's Legacy policy (style frozen, bugs fixed), both parts are bugs: part 1 is a silent regression of
 0.3-0.5.1 behavior, which README's annotation table never limited to the root; part 2 is code contradicting the docs.
 golden-legacy gets the same 5 changes as golden (listed below). Counter-argument, stated fairly: 0.7's README did describe
@@ -197,7 +197,7 @@ undone at render time at all (the scaladoc text isn't in the tree).
 A: every structurally derived node takes its type's own title/description at resolve time, on both macros (implicits,
 collections and `Option` excluded; a recursive type's texts go on the definition body, and a recursive root keeps them
 at the document root too). P1: `@description` wins over
-scaladoc, for type and field descriptions, as the docs say. L1: under every profile, Legacy included (lead to confirm).
+scaladoc, for type and field descriptions, as the docs say. L1: under every profile, Legacy included (the lead's reading of the Legacy policy).
 
 ## Implementation plan
 0. Prerequisite: B1 (#469) merged; rebase on master. Without B1, the new texts on non-object nodes (value class, enum,
@@ -295,18 +295,20 @@ Risks / notes for the implementer:
 ## Out of scope
 - A titled sealed **sub-trait** inside a family (`@title sealed trait Sub extends Fam`): flattened into the family's
   members, its texts dropped (both versions, before and after; Scala 3 keeps them on the `NestedFamily` member and the
-  lowering drops them). Members/lowering, not resolve: reported to the lead (B12-R3); the docs say so.
+  lowering drops them). Members/lowering, not resolve: reported to the lead (B12-R3), queued as item B28; the docs say so.
 - `value-class.toDefinition` / `withValidationsAddedFrom` dropping texts: B13 (#498).
 
 ## Compatibility
 - Source/binary: no public signature changes (macro internals only). Patch under PVP (0.9.x), like B1: output-only fixes.
 - Output: additive for part 1 (new keys, nothing removed); part 2 changes a description's value where both sources
   exist. Both are listed for the lead's CHANGELOG.
-- Legacy: changes too (L1, needs the lead's OK); the alternative is L2 or the flag D.
+- Legacy: changes too (L1, the lead's call); the alternatives are L2 or the flag D.
 
-## Open questions for the owner/lead
-1. L1: is root-only texts a 0.7 bug (fix under Legacy) or 0.7 style (keep under Legacy, via L2 or D)?
+## Open questions for the owner
+1. L1 (the lead treats root-only texts as a 0.7 bug): or keep 0.7's root-only texts under Legacy, via L2 or D?
 2. Want flag D as an escape hatch anyway?
+3. P1 changes a description's value where a type/field has both a scaladoc and an `@description`: OK, or keep the
+   code's order and fix the docs instead (P2)?
 
 ## Review log
 Round 1 (r-b12, on b4b5993; A, P1, L1 agreed):
@@ -320,3 +322,5 @@ Round 1 (r-b12, on b4b5993; A, P1, L1 agreed):
   implicit `Schema` as root and nested.
 - B12-R5 (nit) unions/intersections in `withTypeTexts` → accepted: class-naming types only (skip `OrType`/`AndType`).
 - B12-R6 (nit) `docsFromClasspath` → accepted: stated in option A.
+Round 2 (r-b12, on 82e19bd): approved. Then the lead's Legacy answer (L1, bug) and B28 recorded: status, L1 heading,
+Decision, Out of scope, Compatibility, Open questions (wording only, no plan change).
