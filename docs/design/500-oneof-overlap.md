@@ -1,5 +1,5 @@
 # `oneOf` for alternatives that can overlap: `Either` and refined `Or`  (issue #500, item B14)
-Status: draft
+Status: approved (r-b14, 2026-11-23)
 
 ## Problem
 
@@ -353,3 +353,5 @@ Round 2 (r-b14, design at b231ed6; R1-R5 OK):
   `const(null)` stays (rendered without a type).
 - B14-R7 (nit) an exclusive `oneof` admits `null` only when exactly one member does (`anyof`: at least one) →
   accepted: rule and a negative test (two null-admitting members).
+
+Approved by r-b14 at 35ab3fd.
