@@ -1,5 +1,5 @@
 # A value class keeps its underlying type's validations and texts  (issue #498, item B13)
-Status: draft
+Status: approved (r-b13, 2026-11-23)
 
 ## Problem
 A value class (`case class X(v: T) extends AnyVal`) is the tree node `value-class(<schema of T>)`. The node can carry
