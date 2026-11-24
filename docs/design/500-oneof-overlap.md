@@ -53,6 +53,32 @@ Items folded into B14 by the lead, checked against B3's branch (`origin/gap/b3-s
 - E2's `Schema.any` (`{}`, #486; r-e2 R4) overlaps every member. B3's `Disjoint.types` treats every node it doesn't
   know as "any type", so an `any` member is already an overlap. B14 makes that case explicit and tests it.
 
+Found in review (r-b14, B14-R1): `Option[X]` where X already admits `null`. `case class VOpt(x: Option[Int]) extends AnyVal`,
+`case class HasVOpt(v: Option[VOpt])` renders `"v": {"oneOf": [{"type": ["integer","null"]}, {"type": "null"}]}`, and
+`{"v": null}` is **rejected** ("2 are valid"), on master and on B3's branch, 2.13 and 3. `optionAt`'s `flatten` drops only a
+top-level `option`, not one inside a `value-class`, and `mkNullable`'s single-type short-cut doesn't apply to
+`value-class(oneof)`. The same for `Option[D]` where `D` has an implicit `Schema` whose body admits `null` (a `def` of a
+`oneof{…, null}`). E2 fixes only the X-admits-*everything* case (`Option[JsValue]`).
+
+### Every derived `oneof`, and what happens to it
+
+| source | members can overlap? | verdict |
+|---|---|---|
+| `Either` (both macros today; E7's `eitherAt` later) | yes | B14 (step 2) |
+| refined `Or` (both refined macros) | yes | B14 (step 1) |
+| `optionAt`, `OptionStyle.Nullable`: `oneof{X, null}` | when X admits `null` | B14 (step 3, R1) |
+| `optionAt`, `OptionStyle.Legacy`: `enum["None"]` vs `{value: X}` | never (a string vs an object) | nothing to do |
+| `familyAt` (sealed families, Scala 3 enums, `Flag.EnumsAsOneOf` on both versions: they all go through `family`) | yes | B3 (#470); `AsTagged` + `any` members: tests in B14 (step 4) |
+| a hand-built `Schema.oneof` | the user's choice | rendered as written ("exactly one" may be the point: an XOR); option B |
+| the parser (`oneOf` in, `oneof` out; `[X, "null"]` → `oneof{X, null}`) | as written in the input | nothing to do |
+
+### Not in scope (neighbours)
+- B15: a root `oneOf` states no `type` (a root refined `oneOf` rejects `5` only because both members match it).
+- B22: `Schema.not` renders `"type": "not"`, which makes `Not[...]` reject every value.
+- refined numeric `Or` normalization (r-b14, sent to the lead): `Greater[7] Or Less[2]` / `Positive Or Less[-5]` become a
+  `not{exclusiveMinimum a, exclusiveMaximum b}` that accepts every integer, and `Less[2] Or Greater[7]` keeps 2 and 7 as
+  exclusive bounds, so it accepts 2. Those `Or`s never reach the `oneof` that B14 changes.
+
 ## Why it is a problem
 
 - The schema rejects valid values: a service validating its output against it fails on `Left(1)` of an
@@ -103,10 +129,28 @@ E7's `either` node (`eitherAt`).
    ```
    `withOverlappingMembers(OneOf)` keeps `oneOf` for `Either` as for families. With this, every `eitherStyle` goes
    through the same check, and `ValueWrapped` equals `AsFamily` under an untagged `sumStyle` (E7's request).
-   Conservative cases (the check can't prove them, so `anyOf`, which still validates exactly the `Either`'s values):
-   a side that is itself a `oneOf`/`anyOf` (`Either[Int, Either[String, Boolean]]`, `Either[Int, SealedFamily]` when
-   the family is a `oneOf`), a `$ref` side, an `Option` side (lowered to `oneOf[X, null]`).
-3. **`any` and `AsTagged` singletons.** `Disjoint.types` gets an explicit `` case _: `any`[_] => anyType `` (today's
+   Two more sound refinements of `Disjoint` (B14-R3), so that common `Either`s stay `oneOf`:
+   - (type) of a nested alternative: `types(oneof(ms))` and `types(anyof(ms))` are the union of the members' types (a
+     document of either node matches some member). `Either[Int, SealedFamily]` and an `Option` side
+     (`oneof{X, null}`) then get a real answer. `allof`, `not`, `ref` stay "any type".
+   - (field) with one side optional: a property required by one object and *declared* (even optional) by the other,
+     with disjoint schemas, makes the two disjoint: a document without it fails the first, one with it can't satisfy
+     both property schemas. Closedness doesn't matter. `Either[Option[Int], String]` (E7's A3: `value` optional on the
+     `Option` side) is then `oneOf`.
+   Conservative cases left (`anyOf`, which still validates exactly the `Either`'s values): a `$ref` side, an `allOf` or
+   `not` side.
+3. **`Option[X]` where X admits `null` (R1) → X itself.** `optionAt` (`Nullable`) builds `oneof{X, null}` only when the
+   lowered X doesn't already admit `null`; otherwise `Option[X]` adds nothing, and it lowers to X (its extras kept by
+   `apply`'s `withExtraFrom`, as today). One predicate `admitsNull(s)`: `null`; an `enum` with a `null` value; a
+   `const(null)`; a `oneof`/`anyof` with a member that admits `null`; an `allof` whose members all do; a `def` or
+   `value-class` of one; E2's `any` (it generalises E2's "an `Option` of an `any` is the `any`"). A `ref`, `not` or
+   anything else: no (today's output). `Option[VOpt]`:
+   ```json
+   "v": {"type": ["integer", "null"]}
+   ```
+   No overlap check is needed: the two members overlap exactly in `null`, so "admits `null`" is the whole question.
+   `Legacy` (`enum["None"]` vs `{value: X}`) never overlaps and is unchanged.
+4. **`any` and `AsTagged` singletons.** `Disjoint.types` gets an explicit `` case _: `any`[_] => anyType `` (today's
    fall-through gives the same answer; the case documents it and survives a later change of the default). Tests for
    both; no output change beyond B3/E2.
 
@@ -139,7 +183,7 @@ Lost while E7 is planned: the sides aren't lowered yet (a `family` or `option` s
 `Either[SealedA, SealedB]` would become `anyOf` even when disjoint); the profile and its knob can't change it at render
 time; it adds public API that E7 replaces. **If the owner drops E7**, this is the way to fix `Either`: plan step 2
 becomes "move `Disjoint` to a core object the helper can call; both macros emit the helper; tree tests expect
-`anyof`/`oneof` per pair". Steps 1, 3 and 4 don't change.
+`anyof`/`oneof` per pair". The other steps don't change.
 
 ### E. Keep `Either`'s `ValueWrapped` as `oneOf` (E7 as approved), document it  — LOST
 
@@ -150,13 +194,16 @@ No change for the default style. Lost: Neutral and Legacy keep rejecting `Left(1
 
 A: refined's `Or` emits `anyof` (always; it is an inclusive or), and `Either`'s default `ValueWrapped` style goes
 through B3's overlap check in E7's `eitherAt`, so overlapping sides render `anyOf` (knob: B3's
-`overlappingMembers`), with B3's (field) rule made recursive so that object sides with distinct fields stay `oneOf`.
-B14 adds tests for the `any` and `AsTagged` cases B3 already covers. Implement after B3 (#470)
-and E7 (#220); the refined part needs only B3. If E7 is dropped, D fixes `Either`.
+`overlappingMembers`), with B3's (field) rule made recursive (plus two more sound refinements) so that object sides
+with distinct fields stay `oneOf`. An `Option[X]` whose X already admits `null` lowers to X instead of
+`oneOf[X, null]`. B14 adds tests for the `any` and `AsTagged` cases B3 already covers. Implement after B3 (#470)
+and E7 (#220); the refined and `Option` parts need only B3 (the `Option` part not even that). If E7 is dropped, D
+fixes `Either`.
 
 ## Implementation plan
 
-Order: after B3 (#470) is merged; step 2 after E7's implementation; steps 1, 3 and 4 can go first.
+Order: after B3 (#470) is merged; step 2 after E7's implementation; the other steps can go first (step 3 needs
+neither B3 nor E7).
 If the owner picks B3's option F (an `Inclusive` marker on `oneof` instead of a new `anyof` case), read
 `` `oneof`.inclusive(...) `` for every `` `anyof` `` below; nothing else changes.
 
@@ -183,33 +230,59 @@ If the owner picks B3's option F (an `Inclusive` marker on `oneof` instead of a 
    E7's `eitherAt`): after building the two lowered members, `if (p.overlappingMembers == OverlappingMembers.AnyOf &&
    Disjoint.overlapping(members.toVector)) `anyof`[Any](members) else `oneof`[Any](members, None)`, the same expression
    E7 uses for its other styles (factor one private `alternatives(members)` helper for `familyAt`'s untagged branch and
-   every `eitherAt` style; `optionAt` stays as it is: `X | null` is B3's and E2's). An `Either[X, X]` (one member) stays a
-   one-member `oneof` (one member is never an overlap).
-   - `Disjoint.requiredFieldsDisjoint`: `ys.get(f.name).exists(disjoint(f.tpe, _))` instead of `leaves(f.tpe, _)`.
-     Tests in `FamilyLoweringSpec`: `{value: Foo}` vs `{value: Bar}` (distinct required fields) disjoint;
-     `{value: OCreated}` vs `{value: OUpdated}` overlap; a family `A(x: Foo)`, `B(x: Bar)` → `oneof`.
+   every `eitherAt` style; `optionAt` is step 3). An `Either[X, X]` (one member) stays a one-member `oneof` (one member
+   is never an overlap).
+   - `Disjoint` refinements, each with a positive and a negative tree case in `FamilyLoweringSpec`:
+     - (field) recursive: `requiredFieldsDisjoint` compares with `disjoint(f.tpe, _)` instead of `leaves(f.tpe, _)`.
+       `{value: Foo}` vs `{value: Bar}` (distinct required fields) disjoint; `{value: OCreated}` vs `{value: OUpdated}`
+       overlap; a family `A(x: Foo)`, `B(x: Bar)` → `oneof`.
+     - (field) one side optional: a property required by `x` and declared (required or not) by `y`, with
+       `disjoint` schemas → disjoint (either direction). `{value?: [integer, null]}` vs `{value: string}` disjoint;
+       `{value?: integer}` vs `{value: number}` overlap.
+     - (type) of `oneof`/`anyof`: the union of the members' `types`. `{value: integer}` vs `{value: oneof{obj, obj}}`
+       disjoint; `{value: string}` vs `{value: oneof{string, null}}` overlap.
+   - Before changing them, grep B3's `FamilyLoweringSpec`/`SameShapeFamilySpec` for a case that pins `anyof` through the
+     (field) rule with object-typed or alternative-typed properties (r-b14 found none at d97e12e); such a case would
+     flip to `oneof` and must be updated on purpose.
    - Scaladoc of `OverlappingMembers` and `overlappingMembers`: "an untagged sealed family **or an `Either`** ...";
-     the (field) bullet: "a property both require has schemas that are disjoint by these rules".
+     the (field) bullet: "a property one requires and the other declares has schemas that are disjoint by these
+     rules"; the (type) bullet: "a nested `oneOf`/`anyOf` has its members' types".
    - Tests (api, new `OverlappingAlternativesSpec`, shared, validation cancels on JS): under Neutral and Legacy,
      `Either[Int, Double]`, `Either[Int, Long]`, `Either[String, java.util.UUID]`, `Either[String, LocalDate]`,
      `Either[String, Color]` (a case-object enum), `Either[OCreated, OUpdated]` → `anyOf`, their overlapping documents
      valid, a wrong-typed `{"value": true}` invalid; guards `Either[Int, String]`, `Either[Foo, Bar]` (distinct required
-     fields) → `oneOf`; `Either[Int, Either[String, Boolean]]` → `anyOf` (conservative) with every side's document
-     valid; `withOverlappingMembers(OneOf)` → `oneOf`; root
+     fields), `Either[Int, Either[String, Boolean]]` and `Either[Option[Int], String]` (R3) → `oneOf`, every side's
+     documents valid; `withOverlappingMembers(OneOf)` → `oneOf`; root
      `Either[Int, Double]` states `"type": "object"` and rejects `5`; `Option[Either[Int, Double]]` field: `null` and
      `{"value": 1}` valid; `ValueWrapped` equals `AsFamily` under an untagged profile for an overlapping pair (compared
      as JSON). E7's `EitherLoweringSpec` (or `FamilyLoweringSpec`): one tree case `ValueWrapped` overlap → `anyof`,
      disjoint → `oneof`.
    - No macro change (E7 owns the `either` node in both macros).
-3. **`any` and `AsTagged`** (`JsonSchemaProfile.scala` `Disjoint.types`): add `` case _: `any`[_] => anyType `` with a
+3. **`Option[X]` where X admits `null`** (`JsonSchemaProfile.scala`, `optionAt`, `OptionStyle.Nullable` branch):
+   `val x = apply(flatten(inner)); if (admitsNull(x)) x else `oneof`[Any](Set(x, Schema.`null`))`, with a private
+   `admitsNull` (rules in option A, item 3) next to `Disjoint`. If E2 (#486) lands first, its `any` short-cut in
+   `optionAt` becomes one case of `admitsNull` (merge, don't duplicate); if B14 lands first, E2 adds `any` to
+   `admitsNull`. The renderer's `mkNullable` is unchanged (E2's `anyOrNull` there handles hand-built trees).
+   - Tests: `FamilyLoweringSpec` (or a new `OptionLoweringSpec`): `option(value-class(option(integer)))` lowers to the
+     value class unchanged; `option(def(sig, oneof{string, null}))` → the `def`; `option(enum(string, {"a", null}))` →
+     the enum; `option(integer)` and `option(ref(sig))` → `oneof{X, null}` as today. api (validation cancels on JS):
+     `HasVOpt(v: Option[VOpt])`, `VOpt(x: Option[Int]) extends AnyVal`: `{"v": null}`, `{"v": 1}`, `{}` valid,
+     `{"v": "s"}` invalid; `Option[D]` with an implicit `Schema[D]` of a nullable body: `null` valid. Under Legacy:
+     unchanged (`Option` fields drop a layer; elsewhere `enum["None"]` vs `{value}`), asserted on `HasVOpt`.
+4. **`any` and `AsTagged`** (`JsonSchemaProfile.scala` `Disjoint.types`): add `` case _: `any`[_] => anyType `` with a
    comment (needs E2 #486). Tests: `FamilyLoweringSpec`: a family with an `any` member (a value class over
    `com.github.andyglow.json.Value`) → `anyof`; api: `Either[Value, Int]` → `anyOf`, `{"value": 1}` valid.
    `SameShapeFamilySpec` (B3's): `DocShape` (documented case objects + a case class) under
    `Neutral.withSingleton(AsTagged)` and the json4s-like profile → `anyOf`, `{}` and `{"r": 1}` valid.
-4. **Goldens**: none expected. The golden `Either` models (`groupC/Either[Int,String]`, `groupC/HasEither`, golden and
-   golden-legacy) have disjoint sides; no golden uses refined. Run `GOLDEN_UPDATE=1 sbt clean api/test` on each
-   version to confirm an empty diff. (The harness sorts arrays; keyword changes would still show.)
-5. **Docs** (README and paradox, the same words):
+5. **Goldens**: none expected. The golden `Either` models (`groupC/Either[Int,String]`, `groupC/HasEither`, golden and
+   golden-legacy) have disjoint sides; no golden uses refined; `grep` the golden models for an `Option` of a value
+   class over an `Option` (none expected). Run `GOLDEN_UPDATE=1 sbt clean api/test` on each version to confirm an
+   empty diff. (The harness sorts arrays; keyword changes would still show.)
+6. **Docs** (README and paradox, the same words):
+   - refined, one more sentence: `format` (and so `IPv4`, `IPv6`, `Uri`, `Url`, ...) is an annotation from 2019-09 on
+     unless the validator is set to assert formats, so `IPv4 Or IPv6` accepts any string there (R5).
+   - `Option` (README ~L114 / "Option" section, `rendering.md` ~L53): "an `Option[X]` whose X already admits `null`
+     (e.g. a value class over an `Option`) is X".
    - refined (README "Refined" ~L766, `docs/src/main/paradox/modules/refined.md` L25): "boolean: `And` (`allOf`), `Or`
      (`anyOf`: at least one holds), `Not` (`not`)".
    - `Either` (README ~L719 profiles, ~L966 known issues; `rendering.md` ~L180): E7 rewrites these lines; add "sides
@@ -217,7 +290,7 @@ If the owner picks B3's option F (an `Inclusive` marker on `oneof` instead of a 
      in the `overlappingMembers` row of the profile-knob table.
    - A note in the B3 section: a hand-built `Schema.oneof` is rendered as written ("exactly one"); use `Schema.anyof`
      for inclusive alternatives.
-6. **Gates** (when implemented): `clean test` on 2.12.21, 2.13.18, 3.3.9; `rootJS/test` on all three (core and
+7. **Gates** (when implemented): `clean test` on 2.12.21, 2.13.18, 3.3.9; `rootJS/test` on all three (core and
    refined change); `scalafmtCheckAll` + `rootJS/scalafmtCheckAll`; `scalafmtSbtCheck` (build.sbt change);
    `makeDocs`.
 
@@ -234,13 +307,32 @@ the refined module's new `api` test dependency on JS (api's test shims are cross
   - refined `A Or B` that doesn't normalize to a range: `oneOf` → `anyOf`, with `"type"` stated at the root too
     (today a root refined `oneOf` states none, B15; `5` is rejected only because it matches both members). For
     disjoint operands the same documents validate.
-  - with step 2's recursive (field) rule, a sealed family whose members differ only inside a shared required
-    property (`A(x: Foo)`, `B(x: Bar)`) goes back from B3's `anyOf` to `oneOf` (both valid; B3 is unreleased).
+  - step 2's `Disjoint` refinements, relative to **0.9.0**: no change (a family that was `oneOf` in 0.9.0 is `oneOf`
+    or B3's `anyOf`; the refinements only keep more of them `oneOf`, where the members are provably disjoint).
+    Relative to B3's unreleased branch: such families (`A(x: Foo)`, `B(x: Bar)`; members whose shared property is an
+    `Option` or a nested family) go back from `anyOf` to `oneOf`.
   - `Either` (`ValueWrapped`) with sides that can match one document: `oneOf` → `anyOf`. Disjoint sides unchanged.
-  - golden and golden-legacy files: none change (step 4).
+  - `Option[X]` (`Nullable`: Neutral and the bridge profiles) where X already admits `null`: `oneOf[X, {"type":"null"}]`
+    → X. Legacy unchanged.
+  - golden and golden-legacy files: none change (step 5).
   - Alternative "Legacy keeps 0.7's `oneOf`": for `Either`, `Legacy` with `overlappingMembers = OneOf` (one line, but
     it would also undo B3's family fix under Legacy); for refined, not expressible without a fact node. Not proposed.
 - PVP: B14 adds nothing breaking of its own. It ships in the release that has B3's `anyof` (0.10.0 with B3's option A;
   a 0.9.x patch with B3's option F). The output changes are bug fixes.
 
 ## Review log
+Round 1 (r-b14, design at a4981cb):
+- B14-R1 (must) `Option[X]` with a null-admitting X (a value class over `Option`, a nullable definition) is a derived
+  overlapping `oneOf` neither B3 nor E2 fixes → accepted, folded in: Problem (repro), option A item 3, plan step 3
+  (`optionAt` lowers to X when `admitsNull(X)`; one predicate shared with E2's `any` short-cut, whoever lands second
+  merges), tests, docs, Compatibility. Issue #500's body updated with the case.
+- B14-R2 (nit) list every derived `oneof` source; "Not in scope" → accepted: a table of sources with verdicts
+  (Either, refined, `optionAt` Nullable/Legacy, `familyAt` incl. `EnumsAsOneOf`, hand-built, parser) and a Not-in-scope
+  list (B15, B22, refined numeric `Or` normalization).
+- B14-R3 (nit) two sound `Disjoint` refinements → accepted both: (type) of a nested `oneof`/`anyof` is the union of
+  its members' types; (field) a property required by one and declared by the other with disjoint schemas. Plan step 2
+  has a positive and a negative tree case for each; `Either[Int, Either[String, Boolean]]` and
+  `Either[Option[Int], String]` now stay `oneOf` (moved from "conservative" to the guards).
+- B14-R4 (nit) compatibility relative to 0.9.0; grep B3's specs for pinned cases → accepted: Compatibility states
+  "no change vs 0.9.0, some anyOf → oneOf vs B3's branch"; plan step 2 has the grep.
+- B14-R5 (nit) docs: `format` is annotation-only from 2019-09 → accepted: plan step 6, refined section.
