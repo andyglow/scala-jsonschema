@@ -1,5 +1,5 @@
 # `scala.Enumeration`: list what the values are written as, not the val names  (issue #503, item B16)
-Status: draft
+Status: approved (r-b16, 2026-11-23)
 
 ## Problem
 For a `scala.Enumeration`, both derivations list the names of the object's `val`s (Scala 2: `UEnums.fromScalaEnumeration`,
