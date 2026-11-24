@@ -125,17 +125,37 @@ def withScalaNamedFields(names: Set[String]): `object`[T]
 - Two fields of one object that end up with the same name (`fooBar` and `foo_bar` under snake_case) are an
   `IllegalArgumentException` naming both and the profile, as for other settings a profile can't describe.
 - Not renamed: hand-written `Schema.object` fields (no fact), the parser module's objects, map keys, the
-  discriminator field, the WrapperObject key, Legacy's `{"value": X}` Option wrapper (built by the lowering).
+  discriminator field, the WrapperObject key, Legacy's `{"value": X}` Option wrapper (built by the lowering), the
+  `value` field of `Either`'s `Left` / `Right` (no fact, see below), and **a field's `default`**: its `Value` comes from
+  the bridge's `ToValue`, the library's own encoder, so it is already written with the library's names (play
+  SnakeCase, `inner: Inner = Inner(7)`: `"default": {"inner_val": 7}` today, next to a property still called
+  `innerVal`). Rewriting it would rename twice, or with another library's function when the `ToValue` comes from a
+  different bridge.
+- `Either`: both derivations build it as a `oneOf` of the derived case classes `Left(value)` / `Right(value)`
+  (`USumTypes.eitherOneOf`, Scala 3 `SumKind.Either`). No library derives those codecs with the user's config (circe
+  needs `encodeEither`, upickle writes `[0, x]`, play has none), so `{"value": ...}` is our shape, not the library's:
+  the derivations give `scala.util.Left` / `Right` no fact, and `Either` renders the same under every profile until E7
+  reworks it.
+- A field renamed onto the discriminator's name (`Type` under a lower-casing renamer, with `Discriminator("type")`)
+  collides with the tag the renderer adds. That is the same, pre-existing case as a Scala field called `type`; the
+  collision check doesn't cover it (the tag is added after the member's object is lowered).
 
-The bridges stop throwing and read the setting (the `renamed` sample check stays, to keep `Identity`, so the default
-profiles still compare equal):
+The bridges stop throwing and read the setting. `Identity` only where identity is known by reference, never by trying
+sample names: a selective renamer (`{ case "id" => "_id"; case n => n }`, Mongo style) leaves every sample name
+alone, and a sample gate would make it `Identity` and the schema silently wrong. The lowering applies the function per
+field, so `Custom` is exact; it only costs profile equality for configured profiles (main code never compares
+profiles; tests of the default profiles still do, and those stay `Identity`):
 
 | profile | `fieldName` |
 |---|---|
-| `PlayProfile.fromConfig(cfg)` | `Custom(cfg.naming)` if it renames, else `Identity` |
-| `CirceProfile.configured(..., transformMemberNames)`, Scala 3 `fromConfig(c)` | `Custom(transformMemberNames)` if it renames, else `Identity` |
-| `UPickleProfile.fromApi(api)` | `Custom(n => api.objectAttributeKeyWriteMap(n).toString)` if it renames, else `Identity` |
+| `PlayProfile.fromConfig(cfg)` | `Identity` if `cfg.naming eq JsonNaming.Identity` (what `JsonConfiguration.default` holds), else `Custom(cfg.naming)` |
+| `CirceProfile.configured(..., transformMemberNames)` | `Identity` if it is the default argument (a stable `private val Same: String => String = identity` used as the default, compared with `eq`), else `Custom(transformMemberNames)` |
+| Scala 3 `CirceProfile.fromConfig(c)` | as `configured`, plus `Identity` if `c.transformMemberNames eq Configuration.default.transformMemberNames` (`withDiscriminator` etc. copy the reference) |
+| `UPickleProfile.fromApi(api)` | `Identity` if `api eq upickle.default`, else `Custom(n => api.objectAttributeKeyWriteMap(n).toString)` |
 | `Json4sProfile`, `SprayProfile` | `Identity` (no global naming setting; `withFieldName` for yours) |
+
+(The same sample gate picks `memberName` from `transformConstructorNames` / `objectTypeKeyWriteMap` today, with the same
+blind spot for selective renamers. Not changed here: it's the member-name knob, outside D4; reported to the lead.)
 
 The repro with the play profile then renders:
 
@@ -158,9 +178,10 @@ implicit val profile: JsonSchemaProfile = JsonSchemaProfile.Neutral
 
 Pros: fixes every library with one rule; the derived tree stays library-neutral (derive once, render under any
 profile); matches what the libraries rename and nothing else; implicit `Json.schema[X]` definitions (derived) are
-renamed like inline ones, hand-written implicit Schemas are used as they are (README's "used as it is" rule); a
-mixed setup (one type with another naming) is `implicit val s = Json.schema[X].withProfile(itsProfile)` for that
-type. Purely additive API; default output unchanged.
+renamed like inline ones, hand-written implicit Schemas are used as they are (README's "used as it is" rule, reworded:
+step 9); a mixed setup (one type with another naming) is `implicit val s = Json.schema[X].withProfile(itsProfile)` for
+that type (Scala 3: `given Schema[X] = Json.schema[X].withProfile(p)`; a `derives` given can't take `.withProfile`).
+Purely additive API; default output unchanged.
 Cons: a new fact on `object` that equality ignores, so two trees that compare equal can render differently under a
 renaming profile (a derived object and a hand-written one with the same fields). Every derived object carries the
 set (a small `Set[String]` per object in the generated code).
@@ -214,11 +235,12 @@ fact to `Field` (step 1 changes, 0.10.0); E is "do nothing but docs".
    the extras). `rebuild(fs)` and `strict` / `Free.of` carry the set intersected with `fs.map(_.name)`. Not in
    `equals`, `hashCode`, `toString` or `AsTree`. Scaladoc: the fact, who sets it, that profiles clear it.
 2. **Scala 2 macro** (`macros/src/main/scala-2/.../SchemaTypes.scala`, `Obj.prefix`): for a case class (not a tuple:
-   `definitions.isTupleType(tpe)`), append `.withScalaNamedFields(Set(<names>))` (a literal `Set` of the field names;
+   `definitions.isTupleType(tpe)`; not `scala.util.Left` / `Right`, whose objects `USumTypes.eitherOneOf` builds), append `.withScalaNamedFields(Set(<names>))` (a literal `Set` of the field names;
    nothing for zero fields). Check `Json.objectSchema` (Macroses.scala:65) goes through the same `Obj`.
 3. **Scala 3 derivation** (`core/src/main/scala-3/.../derivation/Products.scala`, `Obj.emitRaw`): for
-   `ProductKind.CaseClass`, emit `` Schema.`object`.fromList[t]($fs).withScalaNamedFields(Set(...)) ``. Scala 3
-   `enum` cases with parameters go through `Obj` as case classes (check). `clean` before testing (macros).
+   `ProductKind.CaseClass` other than `scala.util.Left` / `Right` (built for `SumKind.Either`), emit
+   `` Schema.`object`.fromList[t]($fs).withScalaNamedFields(Set(...)) ``. Scala 3 `enum` cases with parameters go
+   through `Obj` as case classes (check). `clean` before testing (macros).
 4. **Profile** (`core/src/main/scala/json/schema/JsonSchemaProfile.scala`): `FieldName` (`Identity`, `Custom`), the
    `fieldName` member (default `Identity`), `withFieldName`, a `fieldName` field in `Knobs` (and `Knobs.apply(p)`).
    `Lowering.apply` for `object`: rename the fields in `o.scalaNamedFields` with `p.fieldName`, recurse into types
@@ -226,9 +248,10 @@ fact to `Field` (step 1 changes, 0.10.0); E is "do nothing but docs".
    then `withScalaNamedFields(Set.empty)`. `Lowering.own` (value-class member): `Field(p.fieldName(f), inner, ...)`.
    Update the `lower` scaladoc ("Idempotent ...": a schema without `option`/`family` nodes and without Scala-named
    fields comes back equal) and the trait scaladoc (what a profile lowers).
-5. **Bridges**: `PlayProfile.fromConfig`, `CirceProfile.configured` (Scala 3 `fromConfig` delegates already),
-   `UPickleProfile.fromApi`: drop the throw, set `withFieldName` as in the table above; update their scaladocs
-   ("Throws ... renames fields" goes; upickle keeps its `optionsAsNulls` throw).
+5. **Bridges**: `PlayProfile.fromConfig`, `CirceProfile.configured` (its `transformMemberNames` default becomes the
+   stable `Same`), Scala 3 `CirceProfilePlatform.fromConfig`, `UPickleProfile.fromApi`: drop the throw, set
+   `withFieldName` as in the table above (by reference, no sample names); update their scaladocs ("Throws ... renames
+   fields" goes; upickle keeps its `optionsAsNulls` throw).
 6. **Tests, core/api** (`api/src/test/scala/com/github/andyglow/jsonschema/ProfileSpec.scala`, shared, all versions;
    a Scala 3 case under `scala-3/` for `derives` and `enum`):
    - the fact: a derived case class has all its fields in `scalaNamedFields`, a tuple none, `Schema.object(...)` none;
@@ -236,10 +259,13 @@ fact to `Field` (step 1 changes, 0.10.0); E is "do nothing but docs".
      keep it; equality ignores it;
    - `Neutral.withFieldName(Custom(snake))`: top-level, nested, in an implicit `Json.schema` definition, in a
      recursive type, family members (case class, value class `{"<field>"}`, tagged under a `Discriminator`, wrapped
-     under `WrapperObject`: the tag field and wrapper key unchanged), `required` and `default` follow the new names,
-     map keys unchanged, hand-written implicit `Schema` unchanged, Legacy's `{"value"}` unchanged;
+     under `WrapperObject`: the tag field and wrapper key unchanged), `required` follows the new names, a field's
+     `default` value is left exactly as derived, map keys unchanged, hand-written implicit `Schema` unchanged, Legacy's
+     `{"value"}` unchanged, `Either[A, B]`'s `{"value"}` unchanged (no fact on `Left` / `Right`, both versions);
    - idempotence: `p.lower(p.lower(s)) == p.lower(s)`; `s.withProfile(Neutral)` rendered under a renaming profile
      keeps the Scala names; the collision error;
+   - per-type naming: `implicit val x: Schema[X] = Json.schema[X].withProfile(p1)` inside a parent rendered under a
+     different renaming `p2` keeps `p1`'s names for X and gets `p2`'s for the parent (Scala 3: the `given` form);
    - `Identity`: every golden file unchanged (no golden or golden-legacy edits expected; a diff is a bug).
 7. **Tests, bridges** (acceptance, networknt): replace the "fail fast" cases with real-codec cases that validate:
    play `JsonConfiguration(JsonNaming.SnakeCase)` (plus `assertInvalid` under `AsPlay._` Neutral, the repro);
@@ -247,20 +273,35 @@ fact to `Field` (step 1 changes, 0.10.0); E is "do nothing but docs".
    `CirceProfile.configured(transformMemberNames = ...)` (`CirceAcceptanceSpec`); circe Scala 3
    `Configuration.default.withSnakeCaseMemberNames` + `derives ConfiguredCodec` (`Circe3Spec`); upickle `SnakeFields`
    (already in `UPickleAcceptanceSpec`, upper-cases keys). Use a model with a nested case class, an `Option` field and
-   a family member. "read settings" tests: the default profiles' `fieldName` is `Identity`.
+   a family member, and a nested case-class default (play SnakeCase `inner: Inner = Inner(7)`: the default's keys
+   equal the renamed property names, and the document validates). A selective renamer
+   (`{ case "id" => "_id"; case n => n }`) as play `JsonNaming(...)` and circe `transformMemberNames`: the schema has
+   `_id`, the codec's output validates. "read settings" tests: the default profiles' `fieldName` is `Identity`
+   (`PlayProfile.default`, `CirceProfile.default`, Scala 3 `fromConfig(Configuration.default.withDiscriminator("t"))`,
+   `UPickleProfile.default`); a configured one is `Custom`.
 8. **JS**: nothing platform-specific (plain string functions; play-json, circe, upickle run on JS). The new
    acceptance cases cancel on JS like the others; the ProfileSpec cases run there. Run `rootJS/test`.
 9. **Docs** (README and `docs/src/main/paradox/rendering.md`, same words): the knob table (`withFieldName`,
    `FieldName.Identity`, `Custom(scalaName => name)`, "the JSON name of a case-class field"); the library table's
    "read from" column (play `naming`, circe `transformMemberNames`, upickle `objectAttributeKeyWriteMap`); replace
-   "Renamed fields ... are an error" with what is renamed and what isn't (hand-written schemas, `@JsonKey` / `@key`
-   per-field annotations still unseen); a PureConfig recipe (the snippet above, plain `scala`: no PureConfig in the
-   docs build) closing #292's remainder.
+   "Renamed fields ... are an error" with what is renamed and what isn't (hand-written schemas, defaults, `Either`,
+   `@JsonKey` / `@key` per-field annotations still unseen); reword the "What a profile describes" bullet "a type with
+   an implicit `Schema` or `Predef` is used as it is" to: used as it is, except that the fields of a *derived* one
+   (`Json.schema[X]`) are named by the profile like any derived object, a hand-written one keeps its names; one line
+   for the per-type recipe (`Json.schema[X].withProfile(p)`); a PureConfig recipe (the snippet above, plain `scala`: no
+   PureConfig in the docs build) closing #292's remainder.
 
-Risks: an `object` built by a user's own macro or code from a derived one by `new`/`Free.of` paths that skip
-`rebuild` loses the fact (renamed nothing: today's behavior). Per-type namings (two `JsonConfiguration`s in one
-model) need the `withProfile` per type; a knob that sees the owner type would need the owner in the tree (not in
-scope).
+Risks:
+- An `object` built by a user's own macro or code from a derived one by `new`/`Free.of` paths that skip `rebuild`
+  loses the fact (renamed nothing: today's behavior).
+- A case class whose codec the library *ships* rather than derives gets renamed all the same: cats `NonEmptyList`'s
+  `{head, tail}` before E1, any library-provided codec of a case class. Harmless for snake/kebab of one-word names,
+  and that shape is already wrong there; `Either` is the one we exclude explicitly.
+- Before B3 (#470) lands, `oneof` keeps members in a `Set`: renaming can make two distinct members equal
+  (`A(fooBar)`, `B(foo_bar)` under snake_case), so the collapse can newly bite. After B3 it can't.
+- B2 (prop order) edits `object` / `mkObj` in `Schema.scala` / `AsDraftSupport.scala`: expect a textual conflict;
+  rebase on it.
+- Per-type namings (two `JsonConfiguration`s in one model) need the `withProfile` per type (tested, step 6).
 
 ## Not in scope
 
@@ -270,6 +311,9 @@ scope).
 - Built-in `snake_case` / `kebab-case` functions in core: the libraries disagree on edge cases (`URL`, `x1`), so the
   profile takes the library's own function.
 - Tuples rendered as objects of `_1`, `_2` while libraries write arrays: a separate mismatch.
+- A per-type knob (`FieldName.PerType((owner, name) => ...)`): it would need the owner (the case class's full name,
+  which both derivations know) recorded with the fact, e.g. `scalaNamedFields` as a `Map[String, String]` or an owner
+  next to it. Additive later; the `withProfile`-per-type recipe covers the case meanwhile.
 
 ## Compatibility
 
@@ -284,3 +328,17 @@ scope).
 - PVP: a 0.9.x patch-level addition (no breaking change). Legacy: unchanged (`Identity`), golden-legacy untouched.
 
 ## Review log
+Round 1 (r-d4, on c13db2e):
+- D4-R1 (must) sample-based `Identity` gate breaks selective renamers → accepted: `Identity` only by reference (play
+  `eq JsonNaming.Identity`, circe a stable default `Same` / Scala 3 `Configuration.default`'s function, upickle
+  `api eq upickle.default`), else `Custom`; test with `{case "id" => "_id"}`. The same gate for `memberName` noted,
+  out of scope, reported to the lead.
+- D4-R2 (must) defaults → accepted: stated as not rewritten (already the library's names via `ToValue`); acceptance
+  test with a nested case-class default.
+- D4-R3 (must) `Either` → accepted: no fact for `scala.util.Left` / `Right` (both derivations), `Either` unchanged
+  under every profile until E7; test; Risks generalised to library-shipped case-class codecs.
+- D4-R4 (nit) test the per-type recipe → accepted: step 6 test (Scala 3 `given` form) + README line.
+- D4-R5 (nit) README "used as it is" bullet → accepted: step 9 rewords it.
+- D4-R6 (nit) collision with the tag field → left as is, stated in A (pre-existing, same as a field named `type`).
+- D4-R7 (nit) neighbours B3/B2 → accepted: both in Risks.
+- D4-R8 (nit) room for per-type naming → accepted: one entry in "Not in scope" with what it would take.
