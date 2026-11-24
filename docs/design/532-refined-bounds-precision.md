@@ -1,5 +1,5 @@
 # refined: numeric predicate literals keep their exact value  (issue #532, item B31)
-Status: draft
+Status: approved (r-b31, 2026-11-23)
 
 ## Problem
 
@@ -241,7 +241,9 @@ macros anyway (otherwise `fs-example` renders `16.0` on Scala 2 and `16` on Scal
      `min.v.show`/`max.v.show`.
    - **(b) on B27-D**: `Bound(v: Lit, inclusive)`; every `math.compare(a, b)` → `a compare b` (B27 step 1's helper
      goes, with `Math.scala`); `Ranges.tree` emits each bound with `litTree`; `Divisable(t, v: Lit)` as in (a); B27 step 6's
-     `Size` reads `lo.v.value.toInt` / `hi.v.value.toInt`; both of B27's messages format values with `show`.
+     `Size` reads `lo.v.value.toInt` / `hi.v.value.toInt`; both of B27's messages format values with `show`. Every
+     equality test on bounds (B27's point and empty-interval checks, `normalize`'s ties) is `a.compare(b) == 0`, never
+     `Lit`'s case-class `==`: equal values can have different kinds (`Size[GreaterEqual[5] And LessEqual[5.0]]`).
 2. **Scala 3 `modules/refined/src/main/scala-3/com/github/andyglow/jsonschema/refined/RefinedMacro.scala`**, both bases:
    - `Lit` as a private case class of `RefinedMacro` (base-type tests `t =:= TypeRepr.of[Long]` etc.);
      `Lit(t: TypeRepr, v: Any)` replaces `asNumber`.
@@ -327,3 +329,6 @@ Round 1 (r-b31, on edc3342):
 - B31-N7 (nit) → accepted: option E "Legacy keeps the old output — LOST (not possible)".
 - B31-N8 (nit) → accepted: step 3 probes `illTyped` first, fallback a comment.
 - B31-N9 (nit) → accepted, conditional: `Long` validity rows if B27/B14's validity spec is in place.
+
+Round 2 (r-b31, on c596f75): approved. Non-blocking B31-N10 (bound equality via `compare == 0`, not case-class `==`)
+→ accepted: one sentence in plan step 1 (b).
