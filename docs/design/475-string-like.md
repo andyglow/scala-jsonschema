@@ -56,7 +56,8 @@ Hand-written codecs: `getHostAddress` (`127.0.0.1`, `0:0:0:0:0:0:0:1`, `fe80:0:0
 or `toString`, `Charset.name`, `Pattern.pattern` / `Regex.regex`, `Path.toString`.
 
 How networknt 1.5.9 (the validator of our acceptance suite) treats the candidate formats. It asserts `format` on
-draft-04/07 and treats it as an annotation on 2020-12; unknown formats are ignored on every draft:
+draft-04/06/07 and treats it as an annotation on 2019-09 and later; unknown formats are ignored on every draft
+(the acceptance suite runs draft-04, 07 and 2020-12):
 
 | text | `ipv4` | `ipv6` | `regex` |
 |---|---|---|---|
@@ -68,7 +69,8 @@ draft-04/07 and treats it as an annotation on 2020-12; unknown formats are ignor
 | `(`, `[a-`, `a{,3}` | | | rejected |
 
 So networknt's `regex` check is lenient towards Java-only syntax (it checks with a Java-compatible engine), and it
-asserts `regex` on draft-04 too, although draft-04 doesn't define that format.
+asserts `regex` on draft-04/06 too, although those drafts don't define that format. A strict ECMA 262 validator (ajv
+with ajv-formats) would reject Java-only syntax such as `(?i)abc`, `a++` or `\A...\z`.
 
 ## Options
 ### A. Core Predefs: a standard `format` where one exists, a `pattern` where the text has a fixed shape, else a plain string — WON
@@ -99,8 +101,11 @@ Per type:
   (they are also draft 07 formats). Validators ignore formats they don't know (networknt does, on every draft), and networknt checks
   `regex` leniently on draft-04/07 (table above).
 - **InetAddress**: plain. It is either family member, and `oneOf [ipv4, ipv6]` is wrong: where formats are
-  annotations (2019-09+, networknt on 2020-12) both branches match every string, so `oneOf` rejects every value. The
-  model has no `anyOf` node, and an IPv4|IPv6 pattern is a page of regex.
+  annotations (2019-09 and later; networknt there) both branches match every string, so `oneOf` rejects every value
+  ("must be valid to one and only one schema, but 2 are valid"). The model has no `anyOf` node, and an IPv4|IPv6
+  pattern is a page of regex. `anyOf [ipv4, ipv6]` is the natural follow-up if an `anyOf` node appears (E6 discusses
+  one for union types); it would still reject Jackson's host-name form (`example.com`), a second reason plain wins
+  today. (refined's `IP` already renders the `oneOf` form: a neighbouring bug, reported to the lead, not fixed here.)
 - **Inet4Address / Inet6Address**: `ipv4` / `ipv6`, the standard formats. Con: Java writes a *scoped* link-local IPv6
   address as `fe80:0:0:0:0:0:0:1%1`, which RFC 4291's text form (and networknt on draft-04/07) rejects. Such addresses
   only come from interface enumeration on the local host; addresses in payloads (parsed from text) have no scope.
@@ -111,9 +116,11 @@ Per type:
 
 To attach a `pattern` to `string[Currency]` / `string[Charset]`, core needs `validation.Magnet[Currency, String]` and
 `Magnet[Charset, String]` (next to `uuidMagnet`), as E3 (#474) adds for its patterned types. They are public
-implicits, so users can add string validations to these schemas too. No Magnets for the unpatterned types (same rule
-as E3; a Magnet for `InetAddress` and one for `Inet4Address` could also both match on Scala 3, where `withValidation`'s
-`TT >: T` is still open during the search).
+implicits, so users can add string validations to these schemas too. **The rule (E3's rule, a choice): a Magnet only
+where core attaches a validation.** So `Json.schema[Currency].withValidation(maxLength := 3)` compiles, while
+`Json.schema[Locale].withValidation(pattern := ...)` doesn't, exactly as for `URI`/`URL` today. (Also, a Magnet for
+`InetAddress` and one for `Inet4Address` could both match on Scala 3, where `withValidation`'s `TT >: T` is still open
+during the search.)
 
 Pros: every schema accepts what the JDK and the codecs write (except the scoped-IPv6 case), the patterns and formats
 reject junk where the text has a fixed shape, and users get the standard formats that tools (OpenAPI generators,
@@ -150,10 +157,13 @@ Magnets. Additive only.
 1. `core/src/main/scala/json/Schema.scala`: `case object `regex` extends Format` in `string.Format` (with a comment:
    "added in draft 07; ECMA 262"). `Pre09.mkStr` and the 2019-09+ renderer need no change (they write
    `productPrefix`); a renderer test pins it on every draft.
-2. `core/src/main/scala/json/schema/validation/Magnet.scala`: `currencyMagnet`, `charsetMagnet` (`Magnet[T, String]`).
+2. `core/src/main/scala/json/schema/validation/Magnet.scala`: `currencyMagnet`, `charsetMagnet` (`Magnet[T, String]`),
+   as a separate block under a `// string-likes (#475)` comment after `uuidMagnet`, apart from where E3 (#474) adds its
+   Magnets, so whichever PR lands second rebases trivially.
 3. `core/src/main/scala/json/schema/Predef.scala`: `localeS`, `currencyS`, `patternS`, `regexS`, `inetAddressS`,
-   `inet4AddressS`, `inet6AddressS`, `pathS`, `fileS`, `charsetS`, after `urlS`; the two patterns as private vals in
-   `object Predef`. Nothing in either macro changes (rule 2 of the core design rule: found by implicit search).
+   `inet4AddressS`, `inet6AddressS`, `pathS`, `fileS`, `charsetS`, as one block under a `// string-likes (#475)` comment
+   after `durationS` (E3 adds next to the java.time vals); the two patterns as private vals in `object Predef`. Nothing
+   in either macro changes (rule 2 of the core design rule: found by implicit search).
 4. Tests:
    - `StringLikeSchemaSpec` (shared, committed with this doc): trees, also as fields (inlined, never a definition);
      rendering on all five drafts under Neutral and Legacy; networknt validation (JVM; canceled on JS) of the written
@@ -162,16 +172,19 @@ Magnets. Additive only.
      charset name/alias matches its pattern.
    - To add during implementation: a local `implicit Predef[Locale]` and a local `implicit Schema[Currency]` still win
      over the built-ins (the Compatibility claim), on both Scala versions; `Json.schema[Currency].withValidation(maxLength := 3)`
-     compiles (the Magnet); `Format.regex` in `AsDraft04Spec`..`AsDraft12Spec`-style renderer assertions if the
-     existing specs enumerate formats.
+     compiles (the Magnet); a `regex` row in `AsDraft04Spec` next to the `ipv6` one (L117). That is the only
+     renderer spec that enumerates formats (AsDraft06/07/09/12 only use `uuid` in a model); the other drafts are
+     pinned by `StringLikeSchemaSpec`'s every-draft rendering test.
 5. Golden files: none change (no golden model has these types; they didn't compile). `golden-legacy`: none.
 6. Scala.js: the Scala.js 1.23 javalib has `java.util.regex.Pattern` and `java.nio.charset.Charset` (and
    `scala.util.matching.Regex` is in the Scala library), but not `Locale`, `Currency` (scala-java-locales provides
    them), the `InetAddress` family, `Path` or `File`. The Predefs only name the types (`Predef` is a value class over
    `Schema[T]`, and `string[T]` erases `T`), so core links without them, like the existing `java.sql`/`URL` Predefs;
-   compilation uses the JDK's classes. `StringLikeSchemaSpec` runs on JS and proves it links; value-level checks live
-   in the JVM-only spec. README's Scala.js note gets one sentence: "the schemas of `Locale`, `Currency`, `InetAddress`,
-   `Path` and `File` work too; values of those types need an implementation (e.g. scala-java-locales)".
+   compilation uses the JDK's classes. `StringLikeSchemaSpec` runs on JS and proves it links (r-e5 verified this on
+   apiJS 2.13 and 3); value-level checks live in the JVM-only spec. README's Scala.js note gets one sentence: "The
+   schemas (and models with fields) of `Locale`, `Currency`, `InetAddress`, `Path` and `File` compile and link on
+   Scala.js; creating values of `Locale`/`Currency` needs scala-java-locales, the others have no Scala.js
+   implementation."
 7. Docs: README "Supported types" table and `docs/src/main/paradox/types.md` (same table), new rows:
    `Locale`, `InetAddress`, `java.nio.file.Path`, `java.io.File` → `string`; `java.util.Currency` → `string`, ISO 4217
    pattern; `java.nio.charset.Charset` → `string`, charset-name pattern; `java.util.regex.Pattern`,
@@ -186,6 +199,8 @@ Out of scope (noted in the report):
 - `modules/parser` `parseFormat` doesn't map `"regex"` (nor `uuid`/`duration` today), so a parsed schema with
   `format: regex` becomes a plain string: unchanged; the parser is a draft-04 subset.
 - `CharSequence`, `Symbol` (gaps-types row 17) are not in E5's list.
+- Map keys: `Map[Currency, V]`, `Map[Locale, V]` (etc.) still need a user `KeyPattern`, as `UUID` keys do (README
+  "Supported types"). Key patterns belong to B6; these Predefs cover values only.
 
 ## Compatibility
 Additive: new implicit vals in `object Predef` and `object Magnet`, a new case object in the (unsealed) `string.Format`.
@@ -199,3 +214,18 @@ Additive: new implicit vals in `object Predef` and `object Magnet`, a new case o
 - PVP: additive, so a patch-level release (0.9.x) is enough. Legacy: no impact (0.7 had none of these types).
 
 ## Review log
+Round 1 (r-e5, 186e507): no must, 7 nits, all accepted.
+- E5-R1 (nit) networknt is annotation-only on 2019-09 too → accepted: "What the codecs write" and the InetAddress bullet
+  now say "2019-09 and later" (and note that the acceptance suite runs 04/07/2020-12).
+- E5-R2 (nit) state the Magnet rule → accepted: one bolded line in A ("a Magnet only where core attaches a
+  validation", E3's rule), with the Currency-compiles / Locale-doesn't consequence, as for URI/URL.
+- E5-R3 (nit) rebase-friendly placement vs E3 → accepted: plan steps 2–3 put both blocks under a
+  `// string-likes (#475)` comment after `uuidMagnet` / `durationS`.
+- E5-R4 (nit) map keys out of scope → accepted: added to "Out of scope" (B6 owns key patterns).
+- E5-R5 (nit) `anyOf` follow-up and Jackson's host-name form → accepted: InetAddress bullet; also the refined `IP`
+  `oneOf` neighbour bug, which goes to the lead.
+- E5-R6 (nit) concrete renderer rows → accepted, narrowed: only `AsDraft04Spec` enumerates formats (L117); the other
+  AsDraftXXSpecs have no format rows to sit next to, and `StringLikeSchemaSpec` pins `regex` on all five drafts.
+- E5-R7 (nit) README Scala.js wording → accepted verbatim (plan step 6).
+- (from r-e5's pre-design note 2) strict ECMA 262 validators reject Java-only syntax → one line added under the
+  networknt table; the "plain string for Pattern/Regex" alternative already covers it.
