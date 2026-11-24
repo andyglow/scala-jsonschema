@@ -1,5 +1,5 @@
 # `@typeHint[T]` must name a JSON type, not a derived structure  (issue #523, item B26)
-Status: draft
+Status: approved (r-b26, 2026-11-23)
 
 ## Problem
 `@typeHint[T]` (on a sealed root or a member) gives the JSON type of enum values that come from an implicit `ToValue`.
