@@ -9,8 +9,8 @@ import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers._
 import petshop.Acceptance
 
-/** `Char` and `java.lang.Character` (core Predefs): a string of exactly one character, `minLength` and `maxLength` 1 and no `pattern` (#463, design doc `docs/design/463-char-pattern.md`). The tree and
-  * rendering tests run on both platforms; the validating ones use the acceptance harness' JSON Schema validator on draft-04, draft-07 and 2020-12 (JVM; canceled on Scala.js), under Neutral and
+/** `Char` and `java.lang.Character` (core Predefs): a string of exactly one character, `minLength` and `maxLength` 1 and no `pattern` (#463, design doc `docs/design/463-char-pattern.md`). The tree
+  * and rendering tests run on both platforms; the validating ones use the acceptance harness' JSON Schema validator on draft-04, draft-07 and 2020-12 (JVM; canceled on Scala.js), under Neutral and
   * Legacy.
   */
 class CharSchemaSpec extends AnyFunSuite {
