@@ -1,5 +1,5 @@
 # `-Xlint` warns "Implicit resolves to enclosing value" on `implicit val s: Schema[X] = Json.schema[X]`  (issue #320, item B9)
-Status: draft
+Status: approved (r-b9, 2026-11-23)
 
 ## Problem
 
@@ -126,10 +126,12 @@ right output (the fallback works, no crash); on `--scala 2.13.18`, no warning.
 Pros: no user change; same schemas as today on every compiler (and as Scala 3); scalac does the search, the macro only replays its
 ranking between the found implicit and the enclosing one.
 Cons: the ranking replay is our code (about 60 lines mirroring `improves` / `isStrictlyMoreSpecific` / `isProperSubClassOrObject`
-and the lexical-vs-implicit-scope split), so it can be wrong in corners: an implicit imported *from* a companion of a part of `pt`
-counts as implicit scope (declined), and the `-Xsource:3` variance flip in `isAsSpecificValueType` isn't replayed (`Schema` and
-`Predef` are covariant, so it doesn't matter for them). Any miss there declines (derives), i.e. it falls back to the self reference's
-outcome. Only on 2.13.17+ compilers; 2.13.0–2.13.16 keep today's warning (documented, with the `-Wconf` filter). Two small
+and the lexical-vs-implicit-scope split), so it can be wrong in corners. The known ones: an implicit imported *from* an object of
+`pt`'s implicit scope (a companion, an enclosing object, a package object) counts as implicit scope, so it's declined where today it
+may win; under `-Xsource:3` package objects aren't in the implicit scope any more, but are still treated as if they were (same
+effect); `-Xsource:3`'s variance flip in `isAsSpecificValueType` isn't replayed (`Schema` and `Predef` are covariant, so it doesn't
+matter for them). Most misses decline (derive, the self reference's outcome); a misread `isLexical` could keep `y` instead. Only on
+2.13.17+ compilers; 2.13.0–2.13.16 keep today's warning (documented, with the `-Wconf` filter). Two small
 version-specific files.
 
 ### B. Don't search when an enclosing implicit already provides the type — LOST
@@ -189,11 +191,16 @@ version (the only output change).
    - `SelfImplicitLintSpec` (repro commit): the README pattern with `toDefinition`, a comment inside the type, a companion implicit,
      a generic implicit def. Add: `import Json.auto._` + a self `Predef` (in an object and in the companion); a two-line self
      `Schema` next to a `Predef` of the type (→ the Predef, on all versions); r-b9's P1, P2, P3, P5, P6 with one expectation for
-     2.12, 2.13 and 3 (derive, derive, derive, `def(custom)`, `def(custom)`); P3 also with the `Schema.object` in the base trait
-     (more specific type vs. subclass: a tie today → derive).
+     2.12, 2.13 and 3 (derive, derive, derive, `def(custom)`, `def(custom)`).
+   - `api/src/test/scala-2.13+/.../SelfImplicitTieSpec` (2.13 and 3): P3 with a `Schema.object` in the base trait (more specific type
+     vs. defined in a subclass: a tie). Master reports it: "ambiguous implicit values", a compile error on 2.12 and 2.13 (checked); so it
+     can't be a 2.12 test. On 2.13.17+ the tie is a declined self reference: derived, as Scala 3 does. 2.12 / 2.13.0–16 keep the error.
+   - `api/src/test/scala-2/.../SelfImplicitLintScala2Spec` (2.12, 2.13): an un-annotated `implicit val mine = Json.schema[U1]` next to
+     U1's companion schema: the self isn't a candidate while it's being typed, so the companion's is used, `def(U1, custom)` (master
+     gives the same, checked). Scala 3 requires the result type of an implicit, so Scala 2 only (B9-R7).
    - `EntryPointsCharSpec` R4: one expectation for both versions (adjacent = separated); drop the `TriageA` tag and the
      "KEEP THESE TWO LINES ADJACENT" comment's Scala 2 part (keep the models: they're the regression test).
-   - Golden files: no change (prototype). golden-legacy: no change.
+   - Golden files: no change. golden-legacy: no change.
 5. Manual check, recorded in the report (done once with the v1 prototype, repeat on the final code): scala-cli on Scala 2.13.16
    with the jars built on 2.13.18 (the fallback: compiles, warns as today, no crash). sbt doesn't allow that combination (see A).
 6. CLAUDE.md Conventions: one line that `macros/src/main/scala-2.12` / `scala-2.13` are fine (Scala 3 compiles no Scala 2 macro code).
@@ -207,7 +214,8 @@ version (the only output change).
 - Source/binary: no public API change (`ImplicitSearch` and `UImplicits` are `private[jsonschema]` macro internals). Patch (0.9.1).
 - Compiler support: unchanged. 2.13.0–2.13.16 compilers take the plain search (today's behavior minus `isSelfRef`).
 - Output from A: none. The found implicit is used only where today's search would have picked it (P1–P6 above: the same on
-  2.12, every 2.13 and Scala 3, pinned in `SelfImplicitLintSpec`).
+  2.12, every 2.13 and Scala 3, pinned in `SelfImplicitLintSpec`). One compile error goes away on 2.13.17+: a tie between the
+  self reference and another implicit ("ambiguous implicit values") now derives, as on Scala 3 (`SelfImplicitTieSpec`).
 - Output from removing `isSelfRef`, Scala 2 only (Scala 3 already does this), Neutral and every profile including Legacy:
   - an implicit `Schema[X]` declared on the line just before another `Json.schema` call that uses X is now a definition + `$ref`
     (was: X inlined, the implicit ignored);
@@ -226,3 +234,8 @@ B9-R3 (nit) old-compiler fallback → verified with scala-cli 2.13.16 (warns as 
 `scalaVersion` < 2.13.18 with our artifacts (SIP-51) unless `allowUnsafeScalaLibUpgrade`. The catch is `IncompatibleClassChangeError`,
 remembered in the object (per classloader). Noted in A.
 B9-R4 (nit) exact-binary dirs → accepted: CLAUDE.md line (plan step 6).
+B9-R5 (nit) package-object prefixes → accepted: `implicitScopeModules` adds the package objects of the parts' packages (corner listed in A).
+B9-R6 (nit) "any miss declines" → accepted: A lists the known corners, "most misses decline".
+B9-R7 (nit) two more pinned cases → accepted, with one finding: the P3 tie is a compile error on master ("ambiguous implicit
+values", 2.12 and 2.13), so it lives in `scala-2.13+` (2.13 and 3: derived); the un-annotated self is Scala 2 only (Scala 3 requires
+the type of an implicit). Plan step 4 and Compatibility updated.
