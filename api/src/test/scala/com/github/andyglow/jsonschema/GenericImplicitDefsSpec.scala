@@ -58,9 +58,9 @@ class GenericImplicitDefsSpec extends AnyFunSuite {
     def names(v: Value): List[String] = v match {
       case o: obj =>
         o.fields.toList.flatMap {
-          case ("$ref", str(s))        => List(s)
-          case ("definitions", d: obj) => d.keys.toList ++ names(d)
-          case (_, x)                  => names(x)
+          case (k, str(s)) if k == f"$$ref" => List(s)
+          case ("definitions", d: obj)      => d.keys.toList ++ names(d)
+          case (_, x)                       => names(x)
         }
       case a: arr => a.value.toList.flatMap(names)
       case _      => Nil
