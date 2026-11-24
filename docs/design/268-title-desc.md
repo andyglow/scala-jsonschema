@@ -143,11 +143,30 @@ non-object/non-const nodes in its lowering (L1).
 3. `core/src/main/scala/json/schema/JsonSchemaProfile.scala`: private `legacyTexts` knob (Knobs field + trait member
    `private[schema]`, default false; `Legacy` sets it); `Lowering` strips non-object/non-const texts when it's on
    (one recursive pass after lowering, or in `apply`'s cases; `option` in a Legacy field already unwraps).
+   `Knobs(p)` reads it, so a tweaked Legacy (`Legacy.withSum(...)` etc.) still strips; profiles built from Neutral or the
+   bridges' profiles have it false. A concrete `private[schema]` member on the public trait is binary compatible on
+   2.12+/3 (a default method; it is public in bytecode, so it isn't a "private" break either). Legacy's scaladoc states
+   L1 caveat 2.
+3b. (B1-R1) Value class → definition keeps its texts in the tree, in `core/src/main/scala/json/Schema.scala`:
+   - `def.adapt` (both macros call it for every implicit `Schema`): `case vc @ value-class(inner)` →
+     `def(sig, inner.duplicate(title = vc.title orElse inner.title, description = vc.description orElse inner.description))`;
+     `case d @ def(originalSig, inner)` keeps `d`'s own title/description (only those: its validations stay dropped,
+     as today), so they render next to the `$ref` like a hand-built definition's.
+   - `value-class.toDefinition`: the body gets the same texts (`tpe.withValidationsAddedFrom(this)` starts from
+     `mkCopy()` and keeps neither node's texts). Validations are not touched (the reviewer reports
+     `withValidationsAddedFrom` separately to the lead).
+   Under Legacy the body is a string, so L1 strips it again: 0.7 output kept.
 4. Tests:
    - `TitleDescriptionSpec` (already committed) goes green; add: `def`/`ref` site texts (`$ref` sibling), `allof`, `not`,
      `enum` from `Schema.enum.of(...).withTitle`, `oneof` member texts, a value class whose underlying type has its own
      title (outer wins), field `@title` on a definition-typed field, on an `Option` field, `@(title @field)` (Scala 2),
      field `@title` under `Json.objectSchema`, and Legacy cases for each kind (no texts, as 0.7) incl. `withProfile(Legacy)`.
+   - (B1-R1) a titled value class given as `implicit val s: Schema[VC] = Json.schema[VC]` and used as a field: the
+     definition body has the texts; `Json.schema[VC].toDefinition("x")`: same; under Legacy: no texts (0.7).
+   - (B1-R3) F2 with definitions and recursion, on both Scala versions: (a) the same definition-typed type in two
+     fields, one with `@title` → one definition, the title only next to the titled field's `$ref`, the body untouched;
+     (b) `case class Node(@title("kids") kids: List[Node])` (title on the array, the item stays a plain `$ref`);
+     (c) `@title` + `@description` on a `def`-typed field → `{"$ref", "title", "description"}`.
    - `AsDraft04/06/07/09/12Spec`: one renderer case each (string + array with texts) in the full-JSON style.
    - Enumeratum #268 case (committed) goes green.
 5. Golden files (all versions; `GOLDEN_UPDATE=1 sbt clean api/test`, review the diff): neutral `golden/` gains texts in
@@ -155,9 +174,20 @@ non-object/non-const nodes in its lowering (L1).
    `shared/SumTypeModels.FooBarInsideCompanionWithAnnotations{,.EnumsAsOneOf}.json` (the value-class member `M3`:
    `"title": "t3", "description": "d3"`). `golden-legacy/`: only the `"schema"` dump of those 3 files (L1 caveat 3).
    Plus new golden cases if the reviewer wants them. Bridge petshop suites: no change in the prototype.
-6. Docs (README L479 and paradox `descriptions.md` L78, the annotation table): `@title` row "type, field, enum
-   value"; one sentence that titles/descriptions render on every schema kind (a definition's next to its `$ref`), and
-   that `JsonSchemaProfile.Legacy` keeps 0.7's object/const-only texts. `makeDocs`. No CHANGELOG (lead).
+6. Docs (README L479 and paradox `descriptions.md` L78, the annotation table): `@title` row "type (the root, or a
+   type given as an implicit `Schema`), field, enum value" (B1-R2), same for `@description`'s type part; one sentence
+   that titles/descriptions render on every schema kind, a definition's (or a field's on a definition-typed field) next
+   to its `$ref`, which validators before 2019-09 ignore, so it's for doc tools there (B1-R6); and that
+   `JsonSchemaProfile.Legacy` keeps 0.7's object/const-only texts. `makeDocs`. No CHANGELOG (lead).
+
+## Out of scope
+- (B1-R2) A **nested** derived type's own `@title`/`@description`/scaladoc (`case class Nested(c: Color, i: Inner)`
+  with titled `Color`/`Inner`): the derivation doesn't put them in the tree (only the root and implicit-`Schema`
+  definitions get type texts; `Derivation.scala` L37 "R8", parity decision 2026-11-20). Changing that is a derivation
+  change with output changes for every annotated nested type, not a rendering bug; the reviewer flags it to the lead
+  as a follow-up. The docs above stop promising it.
+- #290's "customizable annotations" (user-defined keywords): needs an extension point in the ADT and renderers; the
+  PR says it stays open (B1-R7).
 7. Gates per protocol step 8 (core + macros + api touched: JVM 2.12/2.13/3, `rootJS/test` on all three, fmt checks).
 
 ## Compatibility
@@ -170,3 +200,15 @@ non-object/non-const nodes in its lowering (L1).
   that A covers for free.
 
 ## Review log
+Round 1 (r-b1, on cc4d73e):
+- B1-R1 (must) value class → definition drops texts (`def.adapt`, `value-class.toDefinition`) → accepted: plan step 3b
+  + tests in step 4. Also applied to `def.adapt`'s `def` case (it re-wraps and drops the def node's own texts); only
+  title/description are kept there, its validations stay dropped as today.
+- B1-R2 (must) nested-type texts → accepted: new "Out of scope" section; README/paradox wording in step 6.
+- B1-R3 (must) F2 tests with definitions/recursion → accepted: step 4, cases (a)–(c).
+- B1-R4 (nit) drop `AsRaw.render`'s `base` → pushed back: with it the root's texts stay the first keys of AsRaw's
+  output (`obj ++` keeps a key's first position, the values are the same); without it they move after `type`. Same
+  values either way; I keep it, with a comment saying it's there for key order.
+- B1-R5 (nit) L1 knob details + Legacy scaladoc → accepted: step 3.
+- B1-R6 (nit) `$ref` siblings before 2019-09 in the docs → accepted: step 6.
+- B1-R7 (nit) PR body: `Fixes #290`, custom annotations stay open → accepted: "Out of scope" + PR body.
