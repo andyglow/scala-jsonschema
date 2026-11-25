@@ -121,11 +121,7 @@ trait Products { this: Derivation =>
     val ps     = params(tpe)
     val descrs = fieldDescriptions(tpe, ps, ctx)
     val fields = ps map { p =>
-      val inner    = optionElement(p.tpe)
-      val typeNode = inner match {
-        case Some(e) => Opt(optionOf(e), resolve(e, ctx.descend(tpe))) // `Option[e]`, also for a `Some[e]` field
-        case None    => resolve(p.tpe, ctx.descend(tpe))
-      }
+      val (typeNode, optional) = fieldNode(tpe, p.tpe, ctx)
       // `@title` on a field goes on the field's schema (`object.Field` has no title), over its type's
       val node       = fieldTitle(p).fold(typeNode)(t => typeNode.withExtra(typeNode.extra.copy(title = Some(t))))
       val hasDefault = p.sym.flags.is(Flags.HasDefault)
@@ -133,9 +129,9 @@ trait Products { this: Derivation =>
         name = p.name,
         tpe = p.tpe,
         schema = node,
-        optional = inner.isDefined,
+        optional = optional,
         hasDefault = hasDefault,
-        default = Option.when(hasDefault)(defaultValue(tpe, p, inner)),
+        default = Option.when(hasDefault)(defaultValue(tpe, p, optionElement(p.tpe))),
         description = descrs.get(p.name),
         rwMode = fieldRWMode(p),
         annotations = p.annotations
@@ -143,6 +139,13 @@ trait Products { this: Derivation =>
     }
     val kind = if (defn.isTupleClass(cls)) ProductKind.Tuple(fields.size) else ProductKind.CaseClass
     Obj(tpe, kind, fields)
+  }
+
+  /** The node of a field of type `ft` in `owner`, and whether it is an `Option` field: an [[Opt]] around `X` for an `Option[X]`, also for a `Some[X]` field. Shared with the long tuples of [[Tuples]].
+    */
+  def fieldNode(owner: TypeRepr, ft: TypeRepr, ctx: Ctx): (Node, Boolean) = optionElement(ft) match {
+    case Some(e) => (Opt(optionOf(e), resolve(e, ctx.descend(owner))), true)
+    case None    => (resolve(ft, ctx.descend(owner)), false)
   }
 
   /** `Some(X)` if `tpe` is an `Option[X]` (Scala 2: `<:< Option[_]`). */
