@@ -48,6 +48,12 @@ For each type it meets, the macro looks for an implicit in this order:
 2. otherwise an implicit `json.schema.Predef[T]`, which is **inlined** (all built-ins such as String, numbers, java.time, collections are Predefs);
 3. otherwise it derives the schema from the type's structure (case classes, sealed families, value classes, enums).
 
+Since 0.10 (issue #542, `docs/design/542-semi-auto-derivation.md`) step 3 is **semi-auto**, as in circe/pureconfig: it applies to the root (and the cases of a root sealed family)
+and to native kinds (Option, collections, maps, tuples, Either, value classes, enums). A *nested* case class or sealed family without an implicit gets the
+`[json-schema-semi-auto]` warning (an error under `Flag.SemiAuto`, and in the next breaking release), unless `import Json.auto._` is in scope (auto: derived in place).
+`Json.auto.derived` is an `Exported[Predef[T]]`, reached through the lowest-priority `Predef.importedPredef`, so user instances always win; inside a derivation it is a
+placeholder the derivation fills from its own expansion. An implicit `Schema` is emitted through `def.adaptOrLazy` (a `lazy-ref` in a recursion cycle between instances).
+
 Whether a type becomes a definition depends on which of the two implicits is in scope. Keep this distinction intact when changing derivation or adding type support.
 
 ## Build & test
