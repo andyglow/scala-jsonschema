@@ -24,6 +24,11 @@ final case class Predef[T](schema: Schema[T]) extends AnyVal
 
 trait LowPriorityPredefs {
 //  implicit def iterableS[F[_], T](implicit p: Predef[T], ev0: F[T] <:< Iterable[T]): Predef[F[T]] = Predef(`array`[T, F](p.schema))
+
+  /** The bridge from `import json.Json.auto._` (issue #542, as circe's `importedEncoder`): auto gives an [[Exported]] `Predef`, which never competes with a real `Predef` and is reached only through
+    * this lowest-priority instance. So every `Predef` or `Schema` the user or a library defines wins over auto.
+    */
+  implicit def importedPredef[T](implicit exported: Exported[Predef[T]]): Predef[T] = exported.instance
 }
 object Predef extends LowPriorityPredefs {
   implicit val strS: Predef[String] = Predef(`string`[String])

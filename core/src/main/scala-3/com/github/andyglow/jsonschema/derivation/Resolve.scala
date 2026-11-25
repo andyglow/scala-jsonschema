@@ -4,7 +4,10 @@ package com.github.andyglow.jsonschema.derivation
   *   1. the type is already being derived (on the stack) -> a `$ref` ([[Recursion]]);
   *   2. `Nothing` -> compile error;
   *   3. an implicit `Schema[T]` -> definition + `$ref`, else an implicit `Predef[T]` -> inlined ([[Implicits]]). Skipped for the root of `derives` and of `DerivedSchema`;
-  *   4. otherwise derived from the type's structure by the first family that accepts it ([[families]]).
+  *   4. otherwise derived from the type's structure by the first family that accepts it ([[families]]);
+  *   5. a nested type of a gated kind ([[isGatedKind]]: a case class or a sealed family with one) that gets here is derived implicitly (issue #542). Semi-auto (`Json.schema`, `objectSchema`,
+  *      `derives`, `DerivedSchema`): a deprecation warning, or a compile error under `Flag.SemiAuto` ([[semiAutoGate]]). Auto (`Json.auto.derived`, or `Json.auto` imported and available for the type,
+  *      [[Implicits.isAutoAvailable]]): derived in place. The cases of a sealed family being derived are derived as part of it, never gated (they don't come through here).
   *
   * Every type is dealiased first (root and nested, like the Scala 2 macro since s2fix): stack entries, `$ref`s and definitions all use the dealiased type, so a root `type IntBox = Box[Int]` works and
   * an implicit `Schema[String]` is the definition `java.lang.String` everywhere. Only `Json.sig` keeps aliases.
@@ -53,8 +56,11 @@ trait Resolve { this: Derivation =>
         // a wildcard can't be searched for (`asType` asserts) or derived: name the type that has it (the owner's own implicit search ran already)
         if (isWildcard(tpe)) notSupported(ctx.stack.lastOption getOrElse tpe, outer(ctx), WildcardReason)
         if (tpe =:= TypeRepr.of[Nothing]) report.errorAndAbort("No json.Schema[_] for Nothing" + pathOf(ctx))
-        val searched = if (ctx.isRoot && skipRootSearch) None else lookupImplicit(tpe)
-        searched getOrElse structural(tpe, ctx)
+        val searched = if (ctx.isRoot && skipRootSearch) None else lookupImplicit(tpe, ctx)
+        searched getOrElse {
+          if (!ctx.isRoot) semiAutoGate(tpe, ctx)
+          structural(tpe, ctx)
+        }
     }
   }
 
@@ -69,10 +75,44 @@ trait Resolve { this: Derivation =>
         notSupported(tpe, ctx, singletonReason(tpe) getOrElse "", why)
       }
 
+  // ---- semi-auto (issue #542)
+
+  /** A nested type of a gated kind without an implicit `Schema` or `Predef`: derived here (auto) or with the phase-1 warning, or the error under `Flag.SemiAuto`. */
+  private def semiAutoGate(tpe: TypeRepr, ctx: Ctx): Unit =
+    if (mode != Mode.Auto && !isCaseOfFamilyOnStack(tpe, ctx) && !isAutoAvailable(tpe) && isGatedKind(tpe)) {
+      if (semiAutoNow) semiAutoError(tpe, ctx)
+      // the warning only from an expansion that isn't inside an implicit search: `DerivedSchema` always is (typer), an inline given expanded by another derivation's search is too
+      else if (mode != Mode.DerivedSchema && !AutoGuard.isSearching && !warned.exists(_._1 =:= tpe)) warned = warned :+ (tpe -> semiAutoWarning(tpe, ctx))
+    }
+
+  /** A case of a sealed family being derived, met as a field type (`Group(items: List[Circle])` inside `Shape`): part of the family, so part of `T` itself, as on Scala 2 (`USemiAuto`). */
+  private def isCaseOfFamilyOnStack(tpe: TypeRepr, ctx: Ctx): Boolean = {
+    val bases = tpe.baseClasses.drop(1).toSet
+    ctx.stack.exists(s => isSealed(s) && bases.contains(classSymbol(s)))
+  }
+
+  private var warned: List[(TypeRepr, String)] = Nil
+
+  /** The phase-1 warning of this expansion, one line per type (one diagnostic: the compiler shows only the first of several at the same position). */
+  def reportSemiAutoWarnings(): Unit = if (warned.nonEmpty) report.warning(warned.map(_._2).mkString("\n"))
+
+  private lazy val semiAutoNow: Boolean = hasFlag[json.schema.Flag.SemiAuto]
+
+  /** The kinds semi-auto doesn't derive behind the user's back (design "Gated kinds"): non-tuple case classes, and sealed families with a case class case (not `Either`). Value classes, case-object
+    * families, Scala 3 enums without a parameterized case, Java enums, `Enumeration`, tuples, `Option`/`Optional`, collections and maps stay native.
+    */
+  def isGatedKind(tpe: TypeRepr): Boolean = {
+    val native = tpe <:< TypeRepr.of[Option[Any]] || tpe <:< TypeRepr.of[Either[Any, Any]] || tpe <:< TypeRepr.of[Iterable[Any]] || defn.isTupleClass(classSymbol(tpe)) || isStdTuple(tpe)
+    !native && (isCaseClass(tpe) || (isSealed(tpe) && hasCaseClassCase(classSymbol(tpe))))
+  }
+
+  private def hasCaseClassCase(cls: Symbol): Boolean = cls.children exists { c =>
+    !c.isTerm && !c.flags.is(Flags.Module) && (c.flags.is(Flags.Case) || (c.flags.is(Flags.Sealed) && c != cls && hasCaseClassCase(c)))
+  }
+
   /** `derives` would only find its own given (rejected anyway). `DerivedSchema` must not find the type's own implicit `Schema`: standing in for it is what the type class is for (e.g.
     * `implicit val s: Schema[X] = implicitly[DerivedSchema[X]].schema`). `objectSchema` does search, like Scala 2: a root with an implicit `Schema` is then a definition, which is an error there.
-    * `auto` searches too: Scala 3 picks `auto.derived[T]` for every `Predef[T]` (it is in lexical scope, so it shadows the `Predef`s in implicit scope, e.g. `Predef.intS`), and the root search lets
-    * those take over (auto declines inside the search through its `AutoGuard.Allowed` parameter, see [[AutoGuard]]).
+    * `auto` searches too: a `Predef` or `Schema` of the root wins over auto, and auto's own hole for the root means "derive it" (see [[Implicits]]).
     */
   private def skipRootSearch: Boolean = mode == Mode.Derived || mode == Mode.DerivedSchema
 

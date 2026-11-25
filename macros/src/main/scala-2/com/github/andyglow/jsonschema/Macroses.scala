@@ -19,7 +19,8 @@ trait MacroCake
     with UTypeAnnotations
     with UJsonValueType
     with UFieldDecorations
-    with UScalaParsers {
+    with UScalaParsers
+    with USemiAuto {
 
   import c.universe._
 
@@ -37,16 +38,23 @@ trait MacroCake
     }
   }
 
-  /** Derives a Predef
-    *
-    * @tparam T
-    * @return
+  /** `Json.auto.derived[T]` (issue #542). Inside a derivation's implicit search: the placeholder `Exported(AutoHole.hole[T])`, which that derivation fills in from its own expansion. Anywhere else:
+    * `T` derived deeply, in auto mode, in one expansion.
     */
-  def derivePredef[T: c.WeakTypeTag]: c.Expr[json.schema.Predef[T]] =
-    c.Expr[json.schema.Predef[T]] {
-      val schema = deriveInternal[T, json.Schema]()
-      q"${N.Predef}($schema)"
+  def deriveAuto[T: c.WeakTypeTag]: c.Expr[json.schema.Exported[json.schema.Predef[T]]] = {
+    val tpe       = weakTypeOf[T]
+    val predefTpe = tq"_root_.json.schema.Predef[$tpe]"
+    c.Expr[json.schema.Exported[json.schema.Predef[T]]] {
+      if (AutoSearch.isSearching) q"_root_.json.schema.Exported[$predefTpe](_root_.com.github.andyglow.jsonschema.internal.AutoHole.hole[$tpe])"
+      else {
+        // An abort here, while a search for a `Predef` tries the bridge `importedPredef` (which takes this as its implicit argument, expanded at once), makes the bridge fail: the user's
+        // search reports "could not find implicit value", without the reason (Scala 2's searches keep no reason; design S2-R6).
+        autoRoot = true
+        val schema = deriveInternal[T, json.Schema]()
+        q"_root_.json.schema.Exported[$predefTpe](${N.Predef}[$tpe]($schema))"
+      }
     }
+  }
 
   /** Derives a Schema
     *
@@ -82,11 +90,13 @@ trait MacroCake
     val recursiveTypes = new RecursiveTypes
     implicit val ctx   = new ResolutionContext(Nil, recursiveTypes.append)
 
-    val out = {
+    var rootFromImplicit = false
+    val out0             = {
 
       val st = recursiveTypes.substitute(
         resolve(tpe, ctx, specFD, noImplicitSearch)
       )
+      rootFromImplicit = st.isInstanceOf[U.`-from-tree-`]
 
       if (requireObject && !st.isInstanceOf[U.Obj])
         c.abort(
@@ -103,6 +113,15 @@ trait MacroCake
       )
 
     }.tree
+
+    Implicit.leftoverHole(out0) foreach { h =>
+      c.abort(
+        c.enclosingPosition,
+        s"json-schema: an auto-derivation placeholder was left in the derived schema of ${showType(tpe)}: ${showCode(h)} (a bug in the derivation, please report it)"
+      )
+    }
+
+    val out = autoMarker(buildingRoot(tpe, out0, rootFromImplicit, requireObject))
 
     // debug
     if (c.settings.contains("print-jsonschema-code") || debugEnabled)
@@ -132,7 +151,12 @@ trait MacroCake
       implicit def _ctx    = ctx
       implicit def _specFD = specFD
 
-      def genTree: SchemaType = tpe match {
+      def genTree(auto: Boolean): SchemaType = {
+        if (!auto && !ctx.isEmpty && isGatedKind(tpe) && !isCaseOfFamilyOnStack(tpe, ctx.stack)) semiAutoGate(tpe, ctx.stack)
+        structural
+      }
+
+      def structural: SchemaType = tpe match {
         // `Null <: Map`, `Null <: Iterable`: before the families, which would claim it (after the implicit search: a user `Predef[Null]` wins)
         case t if t.typeSymbol == definitions.NullClass => notSupported(t, ctx.stack, NullReason)
         // `Option[X]` in every position but a field (UProductTypes wraps those): before the sum types, which would derive it as `Some | None`
@@ -152,7 +176,13 @@ trait MacroCake
         case _             => notSupported(tpe, ctx.stack, singletonReason(tpe) getOrElse "")
       }
 
-      if (noImplicitSearch) genTree else Implicit.getOrElse(tpe, genTree)
+      if (noImplicitSearch) genTree(autoRoot)
+      else
+        Implicit.lookup(tpe) match {
+          case Implicit.Lookup.Found(st)     => st
+          case Implicit.Lookup.AutoAvailable => genTree(auto = true)
+          case Implicit.Lookup.Missing       => genTree(autoRoot)
+        }
     }
   }
 }

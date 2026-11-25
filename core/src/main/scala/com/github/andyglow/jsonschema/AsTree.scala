@@ -55,6 +55,7 @@ object AsTree {
     case `not`(tpe)         => Apply("not", Iterator(AsTree(tpe)))
     case `def`(sig, tpe)    => Apply("def", Iterator("sig" -> sig, AsTree(tpe)))
     case `ref`(sig)         => Apply("ref", Iterator(sig))
+    case `lazy-ref`(sig)    => Apply("lazy-ref", Iterator(sig))
     case `value-class`(tpe) => Apply("value-class", Iterator(AsTree(tpe)))
     case `const`(v)         => Apply("const", Iterator(v.toString))
     case _: `null`          => "null"

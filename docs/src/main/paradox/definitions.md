@@ -72,9 +72,9 @@ case class Price(amount: BigDecimal, currency: Currency)
 Json.schema[Price] // currency: {"type": "string"}, no definition
 ```
 
-`import Json.auto._` gives a `Predef` for every type the macro can derive, for APIs that ask for one. These
-derived `Predef`s are inlined like any other, so the import doesn't change what `Json.schema` derives: an
-explicit implicit `Schema` still becomes a definition.
+`import Json.auto._` also gives a `Predef` for every type the macro can derive, for APIs that ask for one. These
+derived `Predef`s are inlined like any other; an explicit implicit `Schema` still becomes a definition, and any
+instance you define wins over auto.
 
 ```scala mdoc:compile-only
 import json._
@@ -87,6 +87,32 @@ case class Foo(a: Int)
 
 schemaOf[Foo]
 ```
+
+## Semi-auto and auto derivation
+
+Since 0.10 the model is circe's and pureconfig's (issue #542):
+
+- **Semi-auto, the default.** `Json.schema[T]` (also `objectSchema`, `derives json.Schema`, `DerivedSchema[T]`) derives
+  `T` itself: its fields, the cases of a sealed family, an enum's values. Every other case class or sealed family it
+  meets needs an implicit `Schema` (a definition + `$ref`) or `Predef` (inlined). Built-ins need nothing: primitives,
+  `String`, java.time, `Option`, collections, maps, tuples, `Either`, Java enums, `Enumeration`, value classes,
+  case-object enums and Scala 3 enums.
+- **Auto, opt-in.** With `import Json.auto._` (Scala 3: also `import Json.auto.given`) nested types without an instance
+  are derived too, inlined, in one expansion. Your own instances always win over auto.
+
+```scala mdoc:compile-only
+import json._
+
+case class Company(name: String)
+case class Person(name: String, company: Company)
+
+implicit val companySchema: json.Schema[Company] = Json.schema[Company] // Company: a definition + $ref
+Json.schema[Person]
+```
+
+In 0.10 a nested case class or sealed family without an instance is still derived, with a warning starting with
+`[json-schema-semi-auto]`; it becomes an error in the next breaking release. `Flag.SemiAuto` in scope gives the error
+now; `-Wconf:msg=json-schema-semi-auto:s` silences the warning.
 
 ## Definition names
 

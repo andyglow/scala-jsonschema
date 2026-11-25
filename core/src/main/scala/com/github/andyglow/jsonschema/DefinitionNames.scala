@@ -49,6 +49,7 @@ private[jsonschema] object DefinitionNames {
   def signatures(x: Schema[_]): Set[String] = x match {
     case `def`(sig, t)    => signatures(t) + sig
     case `ref`(sig)       => Set(sig)
+    case `lazy-ref`(sig)  => Set(sig)
     case o: `object`[_]   => o.fields.flatMap(f => signatures(f.tpe)).toSet
     case `array`(t, _)    => signatures(t)
     case `dictionary`(t)  => signatures(t)

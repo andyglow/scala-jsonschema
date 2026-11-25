@@ -98,6 +98,8 @@ lazy val commonSettings = ScalaVer.settings ++ Seq(
   scalacOptions ++= CompilerOptions(scalaV.value),
   // Scala 3 consumers of the derivation: read scaladoc from TASTy (other modules, files not recompiled), and check the generated trees
   Test / scalacOptions ++= { if (scalaV.value.isScala3) Seq("-Yread-docs", "-Xcheck-macros") else Nil },
+  // the 0.10 deprecation warning for nested types derived implicitly (issue #542): the suites test deep derivation as it is, SemiAutoSpec tests the new model with Flag.SemiAuto
+  Test / scalacOptions += "-Wconf:msg=json-schema-semi-auto:s",
   Compile / doc / scalacOptions := {
     val muted = Seq("-Ywarn-unused")
 
