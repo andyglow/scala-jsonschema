@@ -91,6 +91,17 @@ class EnumeratumSupportSpec extends AnyWordSpec {
       // the aliases (extraNamesToValuesMap) after the declared names, by name
       values(Json.schema[EAlias]) shouldBe List("A", "B", "a1", "a2", "b1", "b2", "b3").map(com.github.andyglow.json.Value.str(_))
     }
+
+    "render @title and @description of an EnumEntry enum (#268)" in {
+      import com.github.andyglow.json.Value._
+      import json.schema.Version._
+      val tree = Json.schema[Titled]
+      tree.title shouldBe Some("foo")
+      tree.description shouldBe Some("bar")
+      val out = AsValue.schema(tree, Draft04())
+      out.value.get("title") shouldBe Some(str("foo"))
+      out.value.get("description") shouldBe Some(str("bar"))
+    }
   }
 }
 
@@ -204,6 +215,15 @@ object EnumeratumSupportSpec {
     case object AaAa extends StringVWithAlias("q")
     case object BbBb extends StringVWithAlias("q")
     case object CcCc extends StringVWithAlias("z")
+    override def values = findValues
+  }
+
+  @json.schema.title("foo")
+  @json.schema.description("bar")
+  sealed trait Titled extends EnumEntry
+  object Titled       extends Enum[Titled] {
+    case object A extends Titled
+    case object B extends Titled
     override def values = findValues
   }
 }

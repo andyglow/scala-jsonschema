@@ -7,6 +7,7 @@ object AsRaw extends AsValue with AsDraftSupport with Post09 {
   def schema(x: json.Schema[_]): obj = render(lowered(x))
 
   private def render(x: json.Schema[_]): obj = {
+    // `apply` renders the root's texts too; these keep them the first keys of the output
     val base = obj("description" -> x.description, "title" -> x.title)
 
     val definitions = inferDefinitions(x)

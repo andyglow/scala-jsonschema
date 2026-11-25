@@ -84,13 +84,15 @@
         "type": "object"
       },
       {
+        "description": "d3",
+        "title": "t3",
+        "type": "string"
+      },
+      {
         "enum": [
           "M4",
           "M5"
         ],
-        "type": "string"
-      },
-      {
         "type": "string"
       }
     ]
@@ -128,13 +130,15 @@
         "type": "object"
       },
       {
+        "description": "d3",
+        "title": "t3",
+        "type": "string"
+      },
+      {
         "enum": [
           "M4",
           "M5"
         ],
-        "type": "string"
-      },
-      {
         "type": "string"
       }
     ]
@@ -172,13 +176,15 @@
         "type": "object"
       },
       {
+        "description": "d3",
+        "title": "t3",
+        "type": "string"
+      },
+      {
         "enum": [
           "M4",
           "M5"
         ],
-        "type": "string"
-      },
-      {
         "type": "string"
       }
     ]
