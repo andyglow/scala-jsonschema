@@ -502,7 +502,9 @@ object Schema extends SchemaCompanionPlatform {
     def discriminatedBy(x: String): Self = new `oneof`[T](subTypes, Some(x))
   }
   object `oneof` {
-    def of[T](x: Schema[_], xs: Schema[_]*): `oneof`[T] = new `oneof`[T]((x +: xs).toSet, None)
+
+    /** Members in the given order (an insertion-ordered set). */
+    def of[T](x: Schema[_], xs: Schema[_]*): `oneof`[T] = new `oneof`[T](ListSet((x +: xs): _*), None)
   }
 
   // +------------
@@ -529,7 +531,41 @@ object Schema extends SchemaCompanionPlatform {
     }
   }
   object `allof` {
-    def of[T](x: Schema[_], xs: Schema[_]*): `allof`[T] = new `allof`[T]((x +: xs).toSet)
+
+    /** Members in the given order (an insertion-ordered set). */
+    def of[T](x: Schema[_], xs: Schema[_]*): `allof`[T] = new `allof`[T](ListSet((x +: xs): _*))
+  }
+
+  // +------------
+  // | AnyOf
+  // +---------------
+  //
+  /** At least one of the members matches (JSON Schema `anyOf`). A profile lowers a sealed family to it, instead of a `oneof`, when its members can't be told apart by the JSON (see
+    * [[json.schema.JsonSchemaProfile.overlappingMembers]]).
+    */
+  final case class `anyof`[T](subTypes: Set[Schema[_]]) extends Schema[T] {
+    type Self = `anyof`[T]
+    override def jsonType: String             = "anyof"
+    def mkCopy()                              = new `anyof`[T](subTypes)
+    override def canEqual(that: Any): Boolean = that.isInstanceOf[`anyof`[_]]
+    override def equals(obj: Any): Boolean    = obj match {
+      case `anyof`(s) => subTypes == s && super.equals(obj)
+      case _          => false
+    }
+    override def toString: String = ToString { sb =>
+      sb append "anyof("
+      subTypes foreach { tpe =>
+        sb append tpe
+        sb append ","
+      }
+      sb.setLength(sb.length - 1) // drop last comma
+      sb append ")"
+    }
+  }
+  object `anyof` {
+
+    /** Members in the given order (an insertion-ordered set). */
+    def of[T](x: Schema[_], xs: Schema[_]*): `anyof`[T] = new `anyof`[T](ListSet((x +: xs): _*))
   }
 
   // +------------
@@ -584,8 +620,9 @@ object Schema extends SchemaCompanionPlatform {
           case o: `object`[_]          => o.rebuild(o.fields.map { f => f.copy(tpe = deepCopy(f.tpe)) })
           case `array`(y, u)           => `array`(deepCopy(y), u)
           case `dictionary`(y)         => `dictionary`(deepCopy(y))
-          case `oneof`(ys, df)         => `oneof`(ys map deepCopy, df)
-          case `allof`(ys)             => `allof`(ys map deepCopy)
+          case `oneof`(ys, df)         => `oneof`(ListSet(ys.toSeq.map(deepCopy): _*), df)
+          case `allof`(ys)             => `allof`(ListSet(ys.toSeq.map(deepCopy): _*))
+          case `anyof`(ys)             => `anyof`(ListSet(ys.toSeq.map(deepCopy): _*))
           case `not`(y)                => `not`(deepCopy(y))
           case `value-class`(y)        => `value-class`[Any, Any](deepCopy(y).asInstanceOf[Schema[Any]])
           case `option`(y)             => `option`[Any](deepCopy(y).asInstanceOf[Schema[Any]])

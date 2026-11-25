@@ -54,6 +54,7 @@ private[jsonschema] object DefinitionNames {
     case `dictionary`(t)  => signatures(t)
     case `oneof`(ts, _)   => ts.flatMap(signatures)
     case `allof`(ts)      => ts.flatMap(signatures)
+    case `anyof`(ts)      => ts.flatMap(signatures)
     case Schema.`not`(t)  => signatures(t)
     case `value-class`(t) => signatures(t)
     case `option`(t)      => signatures(t)

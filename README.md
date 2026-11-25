@@ -316,6 +316,9 @@ object Shape {
   `{"type": "string", "enum": ["Red", "Green"]}`.
 - A sealed family with case classes is a `oneOf` of its members' schemas (case objects among them are merged into
   one enum member).
+- When one document could match two members (the same fields, or one member's fields plus optional ones), the
+  family is an `anyOf` instead, because a `oneOf` would reject that document. Members with identical schemas appear
+  once. A family whose members are told apart by a tag (a discriminator, a wrapper object) is always a `oneOf`.
 - `scala.Enumeration` values and Java enums (`java.time.DayOfWeek`, ...) are string enums of their names.
 - Scala 3 `enum`s follow the same rules: only singleton cases give a string enum, cases with parameters a `oneOf`.
 
@@ -323,8 +326,8 @@ object Shape {
 // Scala 3
 enum Status { case Active, Suspended }                 // {"type": "string", "enum": ["Active", "Suspended"]}
 
-enum Event {                                           // {"oneOf": [{"additionalProperties": false, "properties": {"id": ...}, ...}, ...]}
-  case Created(id: String)
+enum Event {                                           // {"type": "object", "anyOf": [{"additionalProperties": false, "properties": {"id": ...}, ...}, ...]}
+  case Created(id: String)                             // {"id": "x"} is a Created and a Deleted: anyOf
   case Deleted(id: String, reason: Option[String])
 }
 ```
@@ -334,10 +337,11 @@ values are the codec's output. Their schema is your `@typeHint[T]` if you give o
 values themselves when the schema is rendered: strings make a string enum, any other value is a `const` of it.
 
 These are the default shapes. The derived `family` lists the members in declaration order (on Scala 2, a family
-compiled in another module is in name order: its class files have no source positions). A rendered `enum` keeps that
-order whatever its size. A rendered `oneOf`, including the `oneOf` of `const`s that `Flag.EnumsAsOneOf` makes, keeps
-it up to 4 entries (with more, the order is fixed, but it is hash order). An `enum` you build yourself keeps your order
-when you use `Schema.enum.of(...)` or pass a `ListSet`; a plain `Set` of 5 or more values iterates in hash order.
+compiled in another module is in name order: its class files have no source positions). A rendered `oneOf` or
+`anyOf` keeps that order, including the `oneOf` of `const`s that `Flag.EnumsAsOneOf` makes (so do
+`Schema.oneof.of(...)`, `allof.of(...)` and `anyof.of(...)`; a `oneof(Set(...))` you build yourself has its `Set`'s
+order). A rendered `enum` keeps it whatever its size. An `enum` you build yourself keeps your order when you use
+`Schema.enum.of(...)` or pass a `ListSet`; a plain `Set` of 5 or more values iterates in hash order.
 To match how a JSON library writes sealed families (play's `_type`, circe's wrapper object, ...), render with that
 library's profile: see [Library profiles](#library-profiles).
 
@@ -741,6 +745,7 @@ knobs; each `with...` keeps the others:
 | `withOptionKeyRequired` | `true`, `false` | an `Option` field without a default is required (upickle) |
 | `withHonorsSchemaAnnotations` | `true`, `false` | whether `@discriminator`/`@discriminatorKey` apply |
 | `withOption` | `OptionStyle.Nullable`, `Legacy` | `Option` as "X or null", or the 0.7 shapes |
+| `withOverlappingMembers` | `OverlappingMembers.AnyOf`, `OneOf` | an untagged family where one document could match two members: `anyOf`, or `oneOf` anyway (it then rejects that document) |
 
 ```scala
 import json.schema.JsonSchemaProfile

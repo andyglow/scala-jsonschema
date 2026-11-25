@@ -14,7 +14,8 @@ class SumTypeWithEnumsSpec extends AnyWordSpec {
     "generate schema for Sealed Trait subclasses defined inside of it's companion object and include sub-types annotations" in {
       import `object`.Field
 
-      as07(Json.schema[FooBarInsideCompanionWithAnnotations]) shouldEqual `oneof`(
+      // "M4" is a string too: an anyOf (B3, #461; a oneOf rejected "M4")
+      as07(Json.schema[FooBarInsideCompanionWithAnnotations]) shouldEqual `anyof`(
         Set(
           `object`(Field("val1", `number`[Double])).withTitle("t1").withDescription("d1"),
           `object`(Field("val2", `number`[Double])).withTitle("t2").withDescription("d2"),

@@ -26,6 +26,21 @@ class AsDraft09Spec extends AnyWordSpec {
       )
     }
 
+    "emit anyOf, its shared type stated at the root too (B3)" in {
+      val created = `object`[Any](`object`.Field("id", `string`)).withDescription("created")
+      AsValue.schema(`anyof`.of[Any](created, created.withDescription("deleted")), json.schema.Version.Draft09(id = "http://example.com/foobarbaz.json")) should beStructurallyEqualTo(
+        obj(
+          f"$$schema" -> "https://json-schema.org/draft/2019-09/schema",
+          f"$$id"     -> "http://example.com/foobarbaz.json",
+          "type"      -> "object",
+          "anyOf"     -> arr(
+            obj("description" -> "created", "additionalProperties" -> false, "properties" -> obj("id" -> obj("type" -> "string")), "required" -> arr("id")),
+            obj("description" -> "deleted", "additionalProperties" -> false, "properties" -> obj("id" -> obj("type" -> "string")), "required" -> arr("id"))
+          )
+        )
+      )
+    }
+
     "emit const" in {
 
       val a = `oneof`.of(

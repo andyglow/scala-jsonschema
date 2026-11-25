@@ -215,6 +215,7 @@ object Golden extends Assertions {
         case `oneof`(ms, df) =>
           List("kind" -> str("oneof"), "members" -> sorted(ms.toList.map(apply))) ++ df.toList.map(x => "discriminationField" -> (str(x): Value))
         case `allof`(ms)      => List("kind" -> str("allof"), "members" -> sorted(ms.toList.map(apply)))
+        case `anyof`(ms)      => List("kind" -> str("anyof"), "members" -> sorted(ms.toList.map(apply)))
         case `not`(t)         => List("kind" -> str("not"), "schema" -> apply(t))
         case `def`(sig, t)    => List("kind" -> str("def"), "sig" -> str(sig), "schema" -> apply(t))
         case `ref`(sig)       => List("kind" -> str("ref"), "sig" -> str(sig))
