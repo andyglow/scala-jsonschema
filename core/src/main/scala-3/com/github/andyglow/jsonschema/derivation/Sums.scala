@@ -124,7 +124,7 @@ trait Sums { this: Derivation =>
       if (!isCaseSingleton(c.sym)) unsupportedLeaf(c.sym, root.tpe, ctx)
       val item   = singletonItem(c, root.tpe, root.toValue)
       val ta     = symbolAnnotations(List(c.sym, c.sym.moduleClass).filterNot(_.isNoSymbol).distinct)
-      val schema = lookupImplicit(c.tpe) getOrElse Singleton(c.tpe, root.tpe, item, valueSchemaOf(item, root.typeHint, ctx))
+      val schema = lookupImplicit(c.tpe, ctx) getOrElse Singleton(c.tpe, root.tpe, item, valueSchemaOf(item, root.typeHint, ctx))
       val kind   = if (item.kind == ValueKind.EnumSingletonCase) MemberKind.EnumSingletonCase else MemberKind.CaseObject
       SumMember(name, sig, kind, c.tpe, Some(item.ref), item.texts, item.discriminatorKey, ta.definition, schema)
     } else if (isSealed(c.tpe)) {
@@ -133,7 +133,7 @@ trait Sums { this: Derivation =>
       SumMember(name, sig, MemberKind.NestedFamily, c.tpe, None, ta.texts, ta.discriminatorKey, ta.definition, nested)
     } else if (classSymbol(c.tpe).flags.is(Flags.Case)) {
       val ta      = typeAnnotations(c.tpe)
-      val derived = lookupImplicit(c.tpe) orElse deriveValueClass(c.tpe, ctx)
+      val derived = lookupImplicit(c.tpe, ctx) orElse deriveValueClass(c.tpe, ctx)
       val kind    =
         if (derived.exists(_.isInstanceOf[ValueClass])) MemberKind.ValueClass
         else if (c.sym.flags.is(Flags.Enum)) MemberKind.EnumClassCase

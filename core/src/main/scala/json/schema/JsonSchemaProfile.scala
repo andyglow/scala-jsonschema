@@ -83,8 +83,10 @@ trait JsonSchemaProfile extends JsonSchemaProfileDefault {
   final def withOverlappingMembers(x: OverlappingMembers): JsonSchemaProfile = Knobs(this).copy(overlappingMembers = x).profile
   final def withDeprecatedKeyword(x: Boolean): JsonSchemaProfile             = Knobs(this).copy(deprecatedKeyword = x).profile
 
-  /** `schema` with every `option` and `family` node lowered to plain JSON Schema nodes. Idempotent: a schema without those nodes comes back equal. */
-  final def lower[T](schema: Schema[T]): Schema[T] = new Lowering(this)(schema).asInstanceOf[Schema[T]]
+  /** `schema` with every `option` and `family` node lowered to plain JSON Schema nodes, and every `lazy-ref` materialized first (so a forced body is lowered with this profile too). Idempotent: a
+    * schema without those nodes comes back equal.
+    */
+  final def lower[T](schema: Schema[T]): Schema[T] = new Lowering(this)(Schema.materialized(schema)).asInstanceOf[Schema[T]]
 
   override def toString: String = s"JsonSchemaProfile($name)"
 }

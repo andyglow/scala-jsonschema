@@ -220,6 +220,7 @@ object Golden extends Assertions {
         case `not`(t)         => List("kind" -> str("not"), "schema" -> apply(t))
         case `def`(sig, t)    => List("kind" -> str("def"), "sig" -> str(sig), "schema" -> apply(t))
         case `ref`(sig)       => List("kind" -> str("ref"), "sig" -> str(sig))
+        case `lazy-ref`(sig)  => List("kind" -> str("lazy-ref"), "sig" -> str(sig))
         case `value-class`(t) => List("kind" -> str("value-class"), "schema" -> apply(t))
         case `const`(v)       => List("kind" -> str("const"), "value" -> v)
         case _: `null`        => List("kind" -> str("null"))

@@ -42,6 +42,15 @@ trait Signatures { this: Derivation =>
     case t                     => unsupported(t)
   }
 
+  /** `signature(tpe)` names it (doesn't abort). */
+  def hasSignature(tpe: TypeRepr): Boolean = tpe match {
+    case ConstantType(_) | _: TermRef | _: TypeRef | _: ThisType | _: ParamRef | TypeBounds(_, _) => true
+    case AppliedType(tc, args)                                                                    => hasSignature(tc) && args.forall(hasSignature)
+    case AnnotatedType(u, _)                                                                      => hasSignature(u)
+    case AndType(a, b)                                                                            => hasSignature(a) && hasSignature(b)
+    case _                                                                                        => false
+  }
+
   private def unsupported(t: TypeRepr): Nothing =
     report.errorAndAbort(s"schema for ${showType(t)} is not supported: a definition can't be named after this type (a structural or other unnamed type). Use a named type, e.g. a case class")
 

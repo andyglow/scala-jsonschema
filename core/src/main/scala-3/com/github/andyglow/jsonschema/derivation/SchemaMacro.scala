@@ -4,7 +4,7 @@ import scala.quoted.*
 
 import com.github.andyglow.jsonschema.TypeSignature
 import json.Schema
-import json.schema.Predef
+import json.schema.{Exported, Predef}
 
 /** Entry points of the Scala 3 derivation (the `${ ... }` targets).
   *
@@ -27,7 +27,7 @@ object SchemaMacro {
     Derivation.derive[T](Mode.DerivedSchema)
 
   /** @param allowed `auto.derived`'s evidence, unused here: its resolution is the point (see [[AutoGuard.Allowed]]) */
-  def autoImpl[T: Type](@annotation.unused allowed: Expr[AutoGuard.Allowed])(using Quotes): Expr[Predef[T]] =
+  def autoImpl[T: Type](@annotation.unused allowed: Expr[AutoGuard.Allowed])(using Quotes): Expr[Exported[Predef[T]]] =
     Derivation.deriveAuto[T]
 
   def sigImpl[T: Type](using Quotes): Expr[TypeSignature[T]] =
@@ -37,20 +37,24 @@ object SchemaMacro {
 /** What the expansion was asked for. Decides the root's implicit search (see [[Resolve]]). */
 enum Mode {
 
-  /** `Json.schema[T]`: the root looks for an implicit `Schema[T]` / `Predef[T]` first, like every nested type. */
+  /** `Json.schema[T]`: the root looks for an implicit `Schema[T]` / `Predef[T]` first, like every nested type. Semi-auto (issue #542): a nested case class or sealed family without an instance is
+    * derived with a warning (an error under `Flag.SemiAuto`), unless `Json.auto` is imported.
+    */
   case Schema
 
-  /** `Json.objectSchema[T](...)`: the root must be a (non-value) case class; it is never looked up. */
+  /** `Json.objectSchema[T](...)`: the root must be a (non-value) case class; it is never looked up. Semi-auto, like [[Schema]]. */
   case ObjectSchema
 
-  /** `derives json.Schema` / `Schema.derived[T]`: the root is always derived (it would find its own given). */
+  /** `derives json.Schema` / `Schema.derived[T]`: the root is always derived (it would find its own given). Semi-auto, like [[Schema]]. */
   case Derived
 
   /** `json.schema.derived.DerivedSchema[T]` (module `derived`): the root is always derived (so the type class works as a context bound without finding the type's own implicit `Schema`), and, unlike
-    * [[Derived]], it stays inline, not a definition (Scala 2 parity: `noImplicitSearch = true` for the root, nothing else).
+    * [[Derived]], it stays inline, not a definition (Scala 2 parity: `noImplicitSearch = true` for the root, nothing else). Semi-auto, like [[Schema]], without the warning (it always runs inside an
+    * implicit search).
     */
   case DerivedSchema
 
-  /** `Json.auto.derived[T]`: like [[Schema]] (owner decision 2026-11-20: nested types follow the plain derivation rules); auto's own given never counts. */
+  /** `Json.auto.derived[T]` outside a derivation: deep, every nested type without an instance is derived in place. A user-provided implicit `Schema` still becomes a definition, a `Predef` is inlined.
+    */
   case Auto
 }
