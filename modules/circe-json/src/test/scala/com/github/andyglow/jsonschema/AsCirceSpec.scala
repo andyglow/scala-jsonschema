@@ -32,10 +32,30 @@ class AsCirceSpec extends AnyPropSpec {
     forAll(examples) { (internal, circe) => AsCirce(internal) shouldEqual circe }
   }
 
+  property("AsCirce keeps key order") {
+    AsCirce(obj("k1" -> 1, "k2" -> 2, "k3" -> 3, "k4" -> 4, "k5" -> 5, "k6" -> 6)).noSpaces shouldBe """{"k1":1,"k2":2,"k3":3,"k4":4,"k5":5,"k6":6}"""
+  }
+
+  property("AsCirce.toValue keeps key order (a case-class default)") {
+    val props = AsValue.schema(withObjDefault, Draft04()).value("properties").asInstanceOf[obj]
+    props.value("s").asInstanceOf[obj].value("default").asInstanceOf[obj].fields.map(_._1).toList shouldBe List("a1", "a2", "a3", "a4", "a5", "a6")
+  }
+
   property("AsCirce escapes") {
     AsCirce(
       obj(""""quoted-key"""" -> "\n\t'val\"")
     ).noSpaces shouldBe """{"\"quoted-key\"":"\n\t'val\""}"""
+  }
+
+  property("boxed and java.math defaults go through circe's Encoders") {
+    import AsCirce._
+
+    def defaults(s: json.Schema[_]) = s match {
+      case o: json.Schema.`object`[_] => o.fields.toList.map(f => f.name -> f.default)
+      case other                      => fail(s"not an object: $other")
+    }
+    defaults(json.Json.schema[JavaDefaults]) shouldEqual defaults(json.Json.schema[ScalaDefaults])
+    defaults(json.Json.schema[JavaDefaults]) shouldEqual List("i" -> Some(num(5)), "l" -> Some(num(7)), "bd" -> Some(num(BigDecimal("12.5"))))
   }
 
   property("Check Schema.asCirce") {
@@ -115,6 +135,28 @@ class AsCirceSpec extends AnyPropSpec {
 }
 
 object AsCirceSpec {
+
+  // key order through `toValue`: a case-class default, encoded by circe
+  final case class Six(a1: Int, a2: Int, a3: Int, a4: Int, a5: Int, a6: Int)
+  final case class WithObjDefault(s: Six = Six(1, 2, 3, 4, 5, 6))
+  implicit val sixEncoder: Encoder[Six] = Encoder.instance { s =>
+    Json.obj(
+      "a1" -> Json.fromInt(s.a1),
+      "a2" -> Json.fromInt(s.a2),
+      "a3" -> Json.fromInt(s.a3),
+      "a4" -> Json.fromInt(s.a4),
+      "a5" -> Json.fromInt(s.a5),
+      "a6" -> Json.fromInt(s.a6)
+    )
+  }
+  lazy val withObjDefault: _root_.json.Schema[WithObjDefault] = {
+    import AsCirce.toValue
+    _root_.json.Json.schema[WithObjDefault]
+  }
+  // E4: circe has Encoders for these; its ToValue (imported) must win over core's, without ambiguity
+  // (values a Double holds: this bridge's ToValue reads every circe number with `toDouble`, for the Scala types too)
+  case class JavaDefaults(i: java.lang.Integer = 5, l: java.lang.Long = 7L, bd: java.math.BigDecimal = new java.math.BigDecimal("12.50"))
+  case class ScalaDefaults(i: Int = 5, l: Long = 7L, bd: BigDecimal = BigDecimal("12.50"))
 
   implicit val jsValEq: Equality[Json] = new Equality[Json] {
     override def areEqual(a: Json, b: Any): Boolean = a match {

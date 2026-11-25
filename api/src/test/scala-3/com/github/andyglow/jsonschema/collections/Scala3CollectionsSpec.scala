@@ -18,6 +18,8 @@ object Scala3CollectionsSpec {
 
   case class Spelled(m: Map[String, scala.collection.immutable.List[User]])
 
+  enum Grade { case `A+`, `B.`, `(none)`, C }
+
   case class Room(id: String)
   object RoomKeys { given KeyPattern[Room] = KeyPattern.mk[Room]("^room-.*$") }
 
@@ -38,7 +40,11 @@ class Scala3CollectionsSpec extends AnyFunSuite {
   test("a `derives json.Schema` element is a definition (it is a user-provided implicit Schema)") {
     val item = `def`[Item]("com.github.andyglow.jsonschema.collections.Scala3CollectionsSpec.Item", `object`[Item](Field("id", `integer`)))
     Json.schema[List[Item]] shouldEqual `array`[Item, List](item)
-    Json.schema[Map[Int, Item]] shouldEqual `dictionary`[Int, Item, Map](item).withValidation(`patternProperties` := "^[0-9]+$")
+    Json.schema[Map[Int, Item]] shouldEqual `dictionary`[Int, Item, Map](item).withValidation(`patternProperties` := "^-?[0-9]+$")
+  }
+
+  test("a Scala 3 enum key: the case names regex-escaped, in declaration order (#466)") {
+    Json.schema[Map[Grade, Int]].validations shouldEqual Seq(`patternProperties` := "^(?:A\\+|B\\.|\\(none\\)|C)$")
   }
 
   test("a `given` KeyPattern is used for the key") {

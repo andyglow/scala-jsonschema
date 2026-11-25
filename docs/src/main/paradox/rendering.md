@@ -161,7 +161,9 @@ schema whatever is in scope where it is rendered.
 What the profiles can't see: the libraries' own annotations (upickle `@key`, circe-generic-extras `@JsonKey`, play's
 `@JsonKey`) and hand-written codecs (give such a type an implicit `Schema`). Renamed fields (play `naming`, circe
 `transformMemberNames`, upickle `objectAttributeKeyWriteMap`) are an error (tried on sample names). json4s 4 fails
-to encode case classes on Scala 3 itself, so its profile is for Scala 2 users.
+to encode case classes on Scala 3 itself, so its profile is for Scala 2 users. A `Map` whose key play-json has no
+`KeyWrites` for (e.g. `Map[UUID, V]`) is written by play as an array of pairs, which `PlayProfile` doesn't describe
+(see @ref:[Supported types](types.md#supported-types)).
 
 What a profile describes (the same rules for every library):
 
@@ -190,6 +192,8 @@ knobs; each `with...` keeps the others:
 | `withOptionKeyRequired` | `true`, `false` | an `Option` field without a default is required (upickle) |
 | `withHonorsSchemaAnnotations` | `true`, `false` | whether `@discriminator`/`@discriminatorKey` apply |
 | `withOption` | `OptionStyle.Nullable`, `Legacy` | `Option` as "X or null", or the 0.7 shapes |
+| `withOverlappingMembers` | `OverlappingMembers.AnyOf`, `OneOf` | an untagged family where one document could match two members: `anyOf`, or `oneOf` anyway (it then rejects that document) |
+| `withDeprecatedKeyword` | `true`, `false` | whether `@deprecated` renders `"deprecated": true` (`false` only for `Legacy`) |
 
 ```scala mdoc:compile-only
 import json._

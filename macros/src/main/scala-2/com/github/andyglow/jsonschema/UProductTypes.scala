@@ -12,15 +12,18 @@ private[jsonschema] trait UProductTypes {
   private[UProductTypes] def fieldAnnotationMap(
     tpe: Type
   ): Map[String, List[c.universe.Annotation]] = {
-    // old implementation of annotation extractor
+    // annotations aimed at the underlying field (`@(description @field)`), read from the fields themselves (`a `, with the
+    // local suffix). Not through the case accessor methods: a non-public val (`private val a`, `private[pkg]`, `protected`)
+    // has a getter `a` that isn't a case accessor and a synthetic case accessor `a$access$0` that isn't a getter, whose
+    // `accessed` fails an assertion (a compiler crash).
     def annotations0 = tpe.decls.collect {
 
-      case s: MethodSymbol if s.isCaseAccessor =>
+      case s: TermSymbol if !s.isMethod && s.isCaseAccessor =>
         // workaround: force loading annotations
         s.typeSignature
-        s.accessed.annotations.foreach(_.tree.tpe)
+        s.annotations.foreach(_.tree.tpe)
 
-        s.name.decodedName.toString.trim -> s.accessed.annotations
+        s.name.decodedName.toString.trim -> s.annotations
     }.toMap
 
     // new implementation of annotation extractor
@@ -66,9 +69,13 @@ private[jsonschema] trait UProductTypes {
         }
 
     def toField(fieldSym: TermSymbol, i: Int): Field = {
-      val name       = NameTransformer.decode(fieldSym.name.toString)
-      val fieldTpe   = fieldSym.typeSignature.dealias // In(tpe).dealias
-      val isOption   = fieldTpe <:< T.option
+      val name     = NameTransformer.decode(fieldSym.name.toString)
+      val fieldTpe = fieldSym.typeSignature.dealias // In(tpe).dealias
+      // the bottom types conform to Option too, but have no type argument: `resolve` reports them.
+      // `java.util.Optional` too: not required, an `option` node; only a `scala.Option` default is checked for `None` (an `Optional` default needs a `ToValue`)
+      val isBottom   = fieldTpe <:< definitions.NullTpe
+      val isScalaOpt = fieldTpe <:< T.option && !isBottom
+      val isOption   = T.isOptionLike(fieldTpe) && !isBottom
       val hasDefault = fieldSym.isParamWithDefault
       if (hasDefault && isLocal)
         c.abort(
@@ -89,7 +96,7 @@ private[jsonschema] trait UProductTypes {
           subjectCompanion.typeSignature.member(TermName(s"apply$$default$$${i + 1}")).asTerm
         val hasSource = defaultGetterSym.pos.source != NoSourceFile
         // we don't want to infer default value for `scala.None`
-        val isNone = if (isOption) {
+        val isNone = if (isScalaOpt) {
           val effectiveDefaultGetterTree =
             c.untypecheck {
               c.typecheck {
@@ -209,6 +216,9 @@ private[jsonschema] trait UProductTypes {
         // a stale scaladoc @param is only a warning, the same for the root and for nested types
         scaladocFD.warnUnknown(tpe, resolvedFields)
 
+        // field titles (`@title` on a field): set on the field's schema
+        val titles = FieldDecorations.titlesFromFieldAnnotations(resolvedFields)
+
         // compute field trees
         val fields = resolvedFields map { f =>
           val name = f.name.decodedName.toString
@@ -216,7 +226,10 @@ private[jsonschema] trait UProductTypes {
           // resolve the field type schema; an `Option[X]` field keeps the Option as an `option` node around X
           val optTpe      = appliedType(T.option.typeConstructor, List(f.effectiveTpe))
           val valueSchema = resolve(f.effectiveTpe, ctx :+ tpe)
-          val fieldSchema = if (f.isOption) U.Opt(optTpe, f.effectiveTpe, valueSchema) else valueSchema
+          val typeSchema  = if (f.isOption) U.Opt(optTpe, f.effectiveTpe, valueSchema) else valueSchema
+          val titled      = titles.get(name).fold[SchemaType](typeSchema)(t => typeSchema.withExtra(typeSchema.extra.copy(title = Some(t))))
+          // `@deprecated` on the field: marks the field's schema, outermost (a `$ref` field is marked, its definition isn't)
+          val fieldSchema = if (f.hasAnnotation.deprecated) titled.withExtra(titled.extra.copy(deprecated = true)) else titled
           val fieldTpe    = if (f.isOption) optTpe else f.effectiveTpe
 
           // description

@@ -17,6 +17,34 @@ class AsDraft04Spec extends AnyWordSpec {
 
   "AsValue.schema" should {
 
+    "emit title and description on any schema (#268)" in {
+      val a = `array`[String, List](`string`[String](None).withTitle("Item").withDescription("an item")).withTitle("Items").withDescription("the items")
+
+      AsValue.schema(a, Draft04()) should beStructurallyEqualTo(
+        obj(
+          f"$$schema"   -> "http://json-schema.org/draft-04/schema#",
+          "type"        -> "array",
+          "title"       -> "Items",
+          "description" -> "the items",
+          "items"       -> obj("type" -> "string", "title" -> "Item", "description" -> "an item")
+        )
+      )
+    }
+
+    "emit anyOf, its shared type stated at the root too (B3)" in {
+      val created = `object`[Any](`object`.Field("id", `string`)).withDescription("created")
+      AsValue.schema(`anyof`.of[Any](created, created.withDescription("deleted")), json.schema.Version.Draft04()) should beStructurallyEqualTo(
+        obj(
+          f"$$schema" -> "http://json-schema.org/draft-04/schema#",
+          "type"      -> "object",
+          "anyOf"     -> arr(
+            obj("description" -> "created", "additionalProperties" -> false, "properties" -> obj("id" -> obj("type" -> "string")), "required" -> arr("id")),
+            obj("description" -> "deleted", "additionalProperties" -> false, "properties" -> obj("id" -> obj("type" -> "string")), "required" -> arr("id"))
+          )
+        )
+      )
+    }
+
     "emit const" in {
 
       val a = `oneof`.of(
@@ -115,6 +143,8 @@ class AsDraft04Spec extends AnyWordSpec {
       asDraft04(`string`[String](F.`ipv4`)) shouldEqual obj("type" -> "string", "format" -> "ipv4")
 
       asDraft04(`string`[String](F.`ipv6`)) shouldEqual obj("type" -> "string", "format" -> "ipv6")
+
+      asDraft04(`string`[String](F.`regex`)) shouldEqual obj("type" -> "string", "format" -> "regex")
     }
 
     "emit String with Custom Format" in {
@@ -259,7 +289,7 @@ class AsDraft04Spec extends AnyWordSpec {
     "emit Map[String, _]" in {
       asDraft04(`dictionary`(`string`[String])) shouldEqual obj(
         "type"              -> "object",
-        "patternProperties" -> obj("^.*$" -> obj("type" -> "string"))
+        "patternProperties" -> obj("^[\\s\\S]*$" -> obj("type" -> "string"))
       )
     }
 
@@ -372,7 +402,9 @@ class AsDraft04Spec extends AnyWordSpec {
           "type"              -> "object",
           "maxProperties"     -> 10,
           "minProperties"     -> 4,
-          "patternProperties" -> obj("^[a-z]*$" -> obj("type" -> "string"))
+          "patternProperties" -> obj("^[a-z]*$" -> obj("type" -> "string")),
+          // the key pattern is enforced (#466); draft 04 has no propertyNames
+          "additionalProperties" -> false
         )
       }
 

@@ -22,11 +22,13 @@ What's new on Scala 3: `derives json.Schema` (see @ref:[Definitions](definitions
   `= { None }` need the `ToValue` too.
 - **A generic `derives` class** has a `Schema[Box[X]]` only when `X` has an implicit `Schema`: then `Box[X]` is a
   definition, otherwise it is derived inline (see @ref:[Definitions](definitions.md)). Inside the derived schema, an
-  implicit `Schema` for an abstract type parameter is used as it is at runtime: an existing definition keeps its
-  name, anything else is inlined.
+  implicit `Schema` for an abstract type parameter is used as it is, as for a generic implicit `def` on both versions.
 - **refined:** `refined[T]` has no `T <: Refined[_, _]` bound (Refined is an opaque type on Scala 3; a non-refined
   `T` is a compile error), and an unsupported predicate found while deriving fails with the derivation's
   `is not supported` error followed by refined's own message.
+- **`*:` tuples** (`Int *: String *: EmptyTuple`, what `Tuple.Concat`/`Tuple.Map` produce) are the same object as
+  `(Int, String)`, also beyond 22 elements (`_1` .. `_23` ...). `Tuple`, `NonEmptyTuple`, `Int *: Tuple` (no known
+  arity) and `EmptyTuple` are compile errors.
 - Compile errors quote Scala 3 code, so their text differs from Scala 2's.
 
 ## Debugging
@@ -40,11 +42,13 @@ Union types, literal types, opaque types (beyond refined) and named tuples.
 
 ## Known issues
 
-- **Recursive generic `derives`.** For `case class Tree[A](value: A, children: List[Tree[A]]) derives json.Schema`,
-  `Tree[Int]` used as a field or as the root of `Json.schema` is a definition named `pkg.Tree[scala.Int]`, but a
-  summoned `Schema[Tree[X]]` (e.g. `summon[json.Schema[Tree[Company]]]`, `Company derives json.Schema`) and a
-  `Tree[A]` inside another generic `derives` class keep the type parameter's name (`pkg.Tree[pkg.Tree.A]`), so two
-  instantiations in one schema share it.
+- **Recursive generic `derives`** (also generic implicit `def`s, on both versions). For
+  `case class Tree[A](value: A, children: List[Tree[A]]) derives json.Schema`, `Tree[Int]` used as a field or as the
+  root of `Json.schema` is a definition named `pkg.Tree[scala.Int]`, but a `Tree[A]` inside another generic
+  `derives` class and a definition from a generic class's member keep the type parameter's name
+  (`pkg.Tree[pkg.Tree.A]`): two instantiations in one schema then get **one definition with one body, an invalid
+  schema**. A summoned `Schema[Tree[X]]` (e.g. `summon[json.Schema[Tree[Company]]]`) keeps that name too (valid on
+  its own). Workaround: one `given`/`implicit val` per instantiation.
 
 Known issues on both versions (and Scala 2-only ones) are listed in the
 [README](https://github.com/andyglow/scala-jsonschema#known-issues).

@@ -1,6 +1,6 @@
 {
   "schema": {
-    "kind": "oneof",
+    "kind": "anyof",
     "members": [
       {
         "kind": "object",
@@ -54,7 +54,7 @@
   },
   "draft-04": {
     "$schema": "http://json-schema.org/draft-04/schema#",
-    "oneOf": [
+    "anyOf": [
       {
         "additionalProperties": false,
         "description": "d1",
@@ -84,13 +84,15 @@
         "type": "object"
       },
       {
+        "description": "d3",
+        "title": "t3",
+        "type": "string"
+      },
+      {
         "enum": [
           "M4",
           "M5"
         ],
-        "type": "string"
-      },
-      {
         "type": "string"
       }
     ]
@@ -98,7 +100,7 @@
   "draft-07": {
     "$id": "golden",
     "$schema": "http://json-schema.org/draft-07/schema#",
-    "oneOf": [
+    "anyOf": [
       {
         "additionalProperties": false,
         "description": "d1",
@@ -128,13 +130,15 @@
         "type": "object"
       },
       {
+        "description": "d3",
+        "title": "t3",
+        "type": "string"
+      },
+      {
         "enum": [
           "M4",
           "M5"
         ],
-        "type": "string"
-      },
-      {
         "type": "string"
       }
     ]
@@ -142,7 +146,7 @@
   "draft-2020-12": {
     "$id": "golden",
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "oneOf": [
+    "anyOf": [
       {
         "additionalProperties": false,
         "description": "d1",
@@ -172,13 +176,15 @@
         "type": "object"
       },
       {
+        "description": "d3",
+        "title": "t3",
+        "type": "string"
+      },
+      {
         "enum": [
           "M4",
           "M5"
         ],
-        "type": "string"
-      },
-      {
         "type": "string"
       }
     ]

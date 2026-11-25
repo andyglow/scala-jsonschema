@@ -31,7 +31,7 @@ object TriageBPendingSpec {
   case class R[A](a: A, next: Option[R[java.lang.String]])
   type IntBox = Box[Int]
 
-  case class UuidKeys(m: Map[java.util.UUID, Int])
+  case class DateKeys(m: Map[java.time.LocalDate, Int]) // UUID keys have a built-in KeyPattern since #466
   case class MutableMap(m: scala.collection.mutable.Map[String, Int])
   sealed trait Key
   object Key {
@@ -204,9 +204,9 @@ class TriageBPendingSpec extends AnyFunSuite {
 
   // --- unsupported map keys ---
 
-  test("Map with a UUID key: clear compile error naming the key type", TriageB) {
-    // was: an error in the generated code: `scala.collection.immutable.Map takes two type parameters, expected: one`
-    failsWith(outcome(assertCompiles("Json.schema[UuidKeys]")), ClearUnsupported, "java.util.UUID")
+  test("Map with a key type without a KeyPattern: clear compile error naming the key type", TriageB) {
+    // was (with a UUID key, which has a built-in KeyPattern since #466): an error in the generated code: `scala.collection.immutable.Map takes two type parameters, expected: one`
+    failsWith(outcome(assertCompiles("Json.schema[DateKeys]")), ClearUnsupported, "java.time.LocalDate")
   }
 
   test("mutable.Map: clear compile error", TriageB) {

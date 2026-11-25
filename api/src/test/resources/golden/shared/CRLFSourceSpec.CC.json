@@ -84,7 +84,7 @@
             "validations": [
               {
                 "name": "patternProperties",
-                "value": "^[0-9]+$"
+                "value": "^-?[0-9]+$"
               }
             ]
           }
@@ -100,12 +100,13 @@
         "additionalProperties": false,
         "properties": {
           "intMap": {
+            "additionalProperties": false,
             "default": {
               "1": "1",
               "2": "2"
             },
             "patternProperties": {
-              "^[0-9]+$": {
+              "^-?[0-9]+$": {
                 "type": "string"
               }
             },
@@ -138,7 +139,7 @@
               "foo": 0.12
             },
             "patternProperties": {
-              "^.*$": {
+              "^[\\s\\S]*$": {
                 "type": "number"
               }
             },
@@ -174,9 +175,12 @@
               "2": "2"
             },
             "patternProperties": {
-              "^[0-9]+$": {
+              "^-?[0-9]+$": {
                 "type": "string"
               }
+            },
+            "propertyNames": {
+              "pattern": "^-?[0-9]+$"
             },
             "type": "object"
           },
@@ -207,7 +211,7 @@
               "foo": 0.12
             },
             "patternProperties": {
-              "^.*$": {
+              "^[\\s\\S]*$": {
                 "type": "number"
               }
             },
@@ -240,9 +244,12 @@
               "2": "2"
             },
             "patternProperties": {
-              "^[0-9]+$": {
+              "^-?[0-9]+$": {
                 "type": "string"
               }
+            },
+            "propertyNames": {
+              "pattern": "^-?[0-9]+$"
             },
             "type": "object"
           },
@@ -273,7 +280,7 @@
               "foo": 0.12
             },
             "patternProperties": {
-              "^.*$": {
+              "^[\\s\\S]*$": {
                 "type": "number"
               }
             },

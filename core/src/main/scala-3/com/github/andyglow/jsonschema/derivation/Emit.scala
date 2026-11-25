@@ -23,9 +23,10 @@ trait Emit { this: Derivation =>
       val de = Expr(d)
       '{ $e1.withDescription($de) }
     }
-    x.discriminationKey.fold(e2) { k =>
+    val e3 = x.discriminationKey.fold(e2) { k =>
       val ke = Expr(k)
       '{ $e2.withDiscriminationKey($ke) }
     }
+    if (x.deprecated) '{ $e3.withDeprecated(true) } else e3
   }
 }

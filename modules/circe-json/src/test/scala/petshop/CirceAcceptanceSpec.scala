@@ -35,11 +35,20 @@ object CirceSemiautoCodecs {
   implicit val kiteE: Encoder[Toy.Kite.type] = deriveEncoder
   implicit val toyE: Encoder[Toy]            = deriveEncoder
   implicit val boxE: Encoder[Box]            = deriveEncoder
+  // Map keys (#466): circe has KeyEncoders for Int, Long and UUID (toString), none for Boolean or Char
+  implicit val intStockE: Encoder[IntStock]   = deriveEncoder
+  implicit val uuidStockE: Encoder[UuidStock] = deriveEncoder
 }
 
 object CirceSchemas {
   import com.github.andyglow.jsonschema.AsCirce.toValue // the Some(1) default's value
   val reading: Schema[Reading] = json.Json.schema[Reading]
+
+  // circe writes a Char / java.lang.Character as a one-character string (#463)
+  case class Initials(first: Char, last: Character)
+  implicit val initialsE: Encoder[Initials] = io.circe.generic.semiauto.deriveEncoder
+  val initials: Schema[Initials]            = json.Json.schema[Initials]
+  val someInitials: List[Initials]          = List(Initials('a', 'Z'), Initials(' ', '\n'), Initials('é', '.'))
 }
 
 class CirceAcceptanceSpec extends AnyWordSpec {
@@ -67,8 +76,15 @@ class CirceAcceptanceSpec extends AnyWordSpec {
     "members nested in the trait's companion" in assertValid(rendered(Schemas.box), written(Samples.boxes))
     "a family of case objects only" in assertValid(rendered(Schemas.paint), written(Samples.paints))
     "Option fields with defaults" in assertValid(rendered(CirceSchemas.reading), written(Samples.readings))
+    "Char and java.lang.Character fields (#463)" in assertValid(rendered(CirceSchemas.initials), written(CirceSchemas.someInitials))
     "ignore @discriminator, which circe's derivation never sees (R4B)" in assertValid(rendered(Schemas.shape), written(Samples.shapes))
     "wrap a member that has an implicit Schema of its own" in assertValid(rendered(Schemas.payment), written(Samples.payments))
+    "Map keys: negative Int and Long keys, UUID keys (#466)" in {
+      written(List(Samples.intStock)) shouldBe List("""{"byId":{"-1":1,"0":2,"42":3},"byLong":{"-4294967296":1}}""")
+      assertValid(rendered(Schemas.intStock), written(List(Samples.intStock)))
+      assertValid(rendered(Schemas.uuidStock), written(List(Samples.uuidStock)))
+      assertBadKeysRejected(rendered(_))
+    }
     "be the cross-check row of circe semiauto" in {
       crossCheckRow(rendered(Schemas.pet)) shouldBe List(
         "circe semiauto"   -> 2,

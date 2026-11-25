@@ -110,6 +110,7 @@
         "type": "string"
       },
       "hours": {
+        "additionalProperties": false,
         "patternProperties": {
           "^(?:MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY|SATURDAY|SUNDAY)$": {
             "type": "integer"
@@ -188,6 +189,9 @@
             "type": "integer"
           }
         },
+        "propertyNames": {
+          "pattern": "^(?:MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY|SATURDAY|SUNDAY)$"
+        },
         "type": "object"
       },
       "month": {
@@ -260,6 +264,9 @@
           "^(?:MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY|SATURDAY|SUNDAY)$": {
             "type": "integer"
           }
+        },
+        "propertyNames": {
+          "pattern": "^(?:MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY|SATURDAY|SUNDAY)$"
         },
         "type": "object"
       },

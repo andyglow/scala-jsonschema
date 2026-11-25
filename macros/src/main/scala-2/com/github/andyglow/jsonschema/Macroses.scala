@@ -97,7 +97,8 @@ trait MacroCake
       st.withExtra(
         st.extra.copy(
           title = typeDeco.texts.flatMap(_.title),
-          description = typeDeco.texts.flatMap(_.description)
+          description = typeDeco.texts.flatMap(_.description),
+          deprecated = st.extra.deprecated || typeDeco.deprecated
         )
       )
 
@@ -126,27 +127,29 @@ trait MacroCake
       ctx.onCycle(defTpe)
       U.Ref(defTpe, q"$sig")
     } else if (T.isNothing(tpe)) {
-      c.abort(c.enclosingPosition, "No json.Schema[_] for Nothing")
+      c.abort(c.enclosingPosition, "No json.Schema[_] for Nothing" + pathOf(ctx.stack))
     } else {
       implicit def _ctx    = ctx
       implicit def _specFD = specFD
 
       def genTree: SchemaType = tpe match {
+        // `Null <: Map`, `Null <: Iterable`: before the families, which would claim it (after the implicit search: a user `Predef[Null]` wins)
+        case t if t.typeSymbol == definitions.NullClass => notSupported(t, ctx.stack, NullReason)
         // `Option[X]` in every position but a field (UProductTypes wraps those): before the sum types, which would derive it as `Some | None`
         case t if t.typeSymbol == T.option.typeSymbol && t.typeArgs.size == 1 =>
           val x = t.typeArgs.head
           U.Opt(t, x, resolve(x, ctx :+ t))
+        // `java.util.Optional[X]`: the same `option` node, as a `Schema[Optional[X]]`
+        case t if t.typeSymbol == T.jOptional.typeSymbol && t.typeArgs.size == 1 =>
+          val x = t.typeArgs.head
+          U.Cast(t, U.Opt(appliedType(T.option.typeConstructor, List(x)), x, resolve(x, ctx :+ t)))
         case Dict(x)       => x
         case Arr(x)        => x
         case Enum(x)       => x
         case SumType(x)    => x
         case CaseClass(x)  => x
         case ValueClass(x) => x
-        case _             =>
-          c.abort(
-            c.enclosingPosition,
-            s"schema for $tpe is not supported, ${ctx.stack mkString " :: "}"
-          )
+        case _             => notSupported(tpe, ctx.stack, singletonReason(tpe) getOrElse "")
       }
 
       if (noImplicitSearch) genTree else Implicit.getOrElse(tpe, genTree)

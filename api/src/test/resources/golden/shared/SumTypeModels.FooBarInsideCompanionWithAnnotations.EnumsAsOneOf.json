@@ -92,7 +92,7 @@
   },
   "draft-04": {
     "$schema": "http://json-schema.org/draft-04/schema#",
-    "oneOf": [
+    "anyOf": [
       {
         "additionalProperties": false,
         "description": "d1",
@@ -132,6 +132,8 @@
         "title": "t5"
       },
       {
+        "description": "d3",
+        "title": "t3",
         "type": "string"
       }
     ]
@@ -139,7 +141,7 @@
   "draft-07": {
     "$id": "golden",
     "$schema": "http://json-schema.org/draft-07/schema#",
-    "oneOf": [
+    "anyOf": [
       {
         "additionalProperties": false,
         "description": "d1",
@@ -179,6 +181,8 @@
         "title": "t5"
       },
       {
+        "description": "d3",
+        "title": "t3",
         "type": "string"
       }
     ]
@@ -186,7 +190,7 @@
   "draft-2020-12": {
     "$id": "golden",
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "oneOf": [
+    "anyOf": [
       {
         "additionalProperties": false,
         "description": "d1",
@@ -226,6 +230,8 @@
         "title": "t5"
       },
       {
+        "description": "d3",
+        "title": "t3",
         "type": "string"
       }
     ]

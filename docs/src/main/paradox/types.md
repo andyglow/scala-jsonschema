@@ -5,31 +5,67 @@
 | Scala type                                                                  | JSON Schema                                     |
 |-----------------------------------------------------------------------------|-------------------------------------------------|
 | `String`, `Char`, `java.lang.Character`                                     | `string` (`Char`: exactly one character)        |
-| `Boolean`                                                                   | `boolean`                                       |
-| `Int`                                                                       | `integer`                                       |
+| `Boolean`, `java.lang.Boolean`                                              | `boolean`                                       |
+| `Int`, `java.lang.Integer`                                                  | `integer`                                       |
 | `Byte`, `Short`, `Long`, `BigInt`, `Float`, `Double`, `BigDecimal`          | `number`                                        |
-| `java.time.Instant`, `LocalDateTime`, `ZonedDateTime`, `java.util.Date`, `java.sql.Timestamp` | `string`, format `date-time`  |
+| `java.lang.Byte`/`Short`/`Long`/`Float`/`Double`, `java.math.BigInteger`/`BigDecimal` | `number` (as the Scala type)          |
+| `java.time.Instant`, `LocalDateTime`, `ZonedDateTime`, `OffsetDateTime`, `java.util.Date`, `java.sql.Timestamp` | `string`, format `date-time` |
 | `java.time.LocalDate`, `java.sql.Date`                                      | `string`, format `date`                         |
-| `java.time.LocalTime`, `java.sql.Time`                                      | `string`, format `time`                         |
-| `java.time.Duration`, `scala.concurrent.duration.Duration`                  | `string`, format `duration`                     |
+| `java.time.LocalTime`, `OffsetTime`, `java.sql.Time`                        | `string`, format `time`                         |
+| `java.time.Duration`, `scala.concurrent.duration.Duration`, `FiniteDuration` | `string`, format `duration`                    |
+| `java.time.Period`, `Year`, `YearMonth`, `MonthDay`, `ZoneOffset`           | `string` with a pattern of the text java.time writes (`P1Y-2M3D`, `2024`, `2024-03`, `--12-03`, `+01:00`) |
+| `java.time.ZoneId`                                                          | `string`                                        |
 | `java.util.UUID`                                                            | `string`, format `uuid`                         |
 | `java.net.URI`, `java.net.URL`                                              | `string`, format `uri`                          |
+| `java.util.regex.Pattern`, `scala.util.matching.Regex`                      | `string`, format `regex`                        |
+| `java.net.Inet4Address`, `java.net.Inet6Address`                            | `string`, format `ipv4` / `ipv6`                |
+| `java.util.Currency`                                                        | `string`, pattern of an ISO 4217 code (`USD`)   |
+| `java.nio.charset.Charset`                                                  | `string`, pattern of a charset name (`UTF-8`)   |
+| `java.util.Locale`, `java.net.InetAddress`, `java.nio.file.Path`, `java.io.File` | `string`                                   |
 | `Option[T]`                                                                 | `T` or `null`; a field is not required (@ref:[more](rendering.md#option)) |
+| `java.util.Optional[T]`                                                     | the same as `Option[T]`, under every profile    |
 | `Iterable[T]` (`List`, `Seq`, `Vector`, `Set`, `Array`, ...)                | `array` (`Set`: `uniqueItems`)                  |
-| `Map[String, V]`, `Map[Int, V]`, ...                                        | `object` with `patternProperties`               |
-| case class                                                                  | `object`                                        |
+| `java.util.Collection[T]` (`List`, `Set`, `ArrayList`, `EnumSet`, ...)       | `array` (`java.util.Set`: `uniqueItems`)        |
+| `Map[String, V]`, `Map[Int, V]`, ...                                        | `object` with `patternProperties` (keys enforced) |
+| `java.util.Map[K, V]` (`HashMap`, `TreeMap`, `EnumMap`, ...)                | the same as `Map[K, V]`                         |
+| case class, tuple                                                           | `object`, `properties` in declaration order     |
 | value class                                                                 | its underlying type                             |
 
-A `Map` key needs a known pattern: `String`, `Char`, `Byte`, `Short`, `Int`, `Long` and enums have one. For another
-key type, provide one:
+A `Map` key needs a known pattern (a `KeyPattern`): `String`, `Char`, `Byte`, `Short`, `Int`, `Long` (negative keys
+included; also their `java.lang` boxes), `java.util.UUID`, `Boolean`, value classes of these and enums have one. For
+another key type, provide one (one in scope also replaces a built-in one):
 
 ```scala mdoc:compile-only
 import json.Schema.dictionary.KeyPattern
 
-implicit val uuidKey: KeyPattern[java.util.UUID] = KeyPattern.mk[java.util.UUID]("^[0-9a-f-]{36}$")
+implicit val dateKey: KeyPattern[java.time.LocalDate] = KeyPattern.mk[java.time.LocalDate]("^[0-9]{4}-[0-9]{2}-[0-9]{2}$")
 
-json.Json.schema[Map[java.util.UUID, String]]
+json.Json.schema[Map[java.time.LocalDate, String]]
 ```
+
+The pattern is the `patternProperties` key, and it is enforced: a key that doesn't match it is rejected
+(`propertyNames` from draft 06 on, `additionalProperties: false` on draft 04). `Map[String, V]` accepts any key.
+play-json writes a `Map[UUID, V]` as an array of pairs (it has no `KeyWrites[UUID]`), which this object schema doesn't
+describe: give play a `KeyWrites`/`KeyReads` for the key, or give the map type a `Predef`.
+
+`Array[Byte]` is an `array` of numbers, which is how circe, play-json, upickle, spray-json and json4s write it. Jackson
+writes a base64 string instead; for that, use `Predef.bytesAsBase64` (`{"type": "string", "contentEncoding":
+"base64", "pattern": ...}`):
+
+```scala mdoc:compile-only
+implicit val bytes: json.schema.Predef[Array[Byte]] = json.schema.Predef.bytesAsBase64
+
+case class Blob(data: Array[Byte])
+
+json.Json.schema[Blob]
+```
+
+### A null schema
+
+`json.Schema.`null`` is `{"type": "null"}`. A field of type `Null` needs it as a `Predef`:
+`implicit val n: json.schema.Predef[Null] = json.schema.Predef(json.Schema.`null`)`. For a JSON library's own null
+(e.g. a field that is always `null`), the bridges have one, opt-in: `import com.github.andyglow.jsonschema.AsPlay.predef._`
+(`JsNull`), `AsSpray.predef._` (`JsNull`), `AsJson4s.predef._` (`JNull`), `AsU.predef._` (`ujson.Null`).
 
 ## Sum types and enums
 
@@ -55,6 +91,9 @@ Json.schema[Shape] // {"oneOf": [{"properties": {"radius": ...}, ...}, {"propert
 - A sealed family of case objects is a string enum of their names.
 - A sealed family with case classes is a `oneOf` of its members' schemas (case objects among them are merged into
   one enum member).
+- When one document could match two members (the same fields, or one member's fields plus optional ones), the
+  family is an `anyOf` instead, because a `oneOf` would reject that document. Members with identical schemas appear
+  once. A family whose members are told apart by a tag (a discriminator, a wrapper object) is always a `oneOf`.
 - `scala.Enumeration` values and Java enums (`java.time.DayOfWeek`, ...) are string enums of their names.
 - Scala 3 `enum`s follow the same rules: only singleton cases give a string enum, cases with parameters a `oneOf`.
 
@@ -62,8 +101,8 @@ Json.schema[Shape] // {"oneOf": [{"properties": {"radius": ...}, ...}, {"propert
 // Scala 3
 enum Status { case Active, Suspended }                 // {"type": "string", "enum": ["Active", "Suspended"]}
 
-enum Event {                                           // {"oneOf": [{"additionalProperties": false, "properties": {"id": ...}, ...}, ...]}
-  case Created(id: String)
+enum Event {                                           // {"type": "object", "anyOf": [{"additionalProperties": false, "properties": {"id": ...}, ...}, ...]}
+  case Created(id: String)                             // {"id": "x"} is a Created and a Deleted: anyOf
   case Deleted(id: String, reason: Option[String])
 }
 ```
@@ -72,10 +111,14 @@ If an implicit `ToValue` for the enum type is in scope (e.g. from a JSON-library
 values are the codec's output. Their schema is your `@typeHint[T]` if you give one; otherwise it comes from the
 values themselves when the schema is rendered: strings make a string enum, any other value is a `const` of it.
 
-These are the default shapes. The derived `family` lists the members in declaration order; a rendered `oneOf` or
-`enum` keeps that order up to 4 entries (with more, the order is fixed, but it is hash order). To match how a JSON library writes sealed families
-(play's `_type`, circe's wrapper object, ...), render with that library's profile: see
-@ref:[Library profiles](rendering.md#library-profiles).
+These are the default shapes. The derived `family` lists the members in declaration order (on Scala 2, a family
+compiled in another module is in name order: its class files have no source positions). A rendered `oneOf` or
+`anyOf` keeps that order, including the `oneOf` of `const`s that `Flag.EnumsAsOneOf` makes (so do
+`Schema.oneof.of(...)`, `allof.of(...)` and `anyof.of(...)`; a `oneof(Set(...))` you build yourself has its `Set`'s
+order). A rendered `enum` keeps it whatever its size. An `enum` you build yourself keeps your order when you use
+`Schema.enum.of(...)` or pass a `ListSet`; a plain `Set` of 5 or more values iterates in hash order.
+To match how a JSON library writes sealed families (play's `_type`, circe's wrapper object, ...), render with that
+library's profile: see @ref:[Library profiles](rendering.md#library-profiles).
 
 ## Discriminators
 

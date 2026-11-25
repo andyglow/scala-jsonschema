@@ -5,6 +5,7 @@ import json.Schema._
 import json.schema.{validation => V}
 import com.github.andyglow.json.Value._
 import json.Schema.`object`.Field.RWMode
+import json.Schema.`dictionary`.KeyPattern.StringKeyPattern
 
 import scala.collection.mutable.ListBuffer
 
@@ -54,15 +55,26 @@ trait AsDraftSupport {
     val validationList = inferValidations(x)
     val specifics      = inferSpecifics.lift((validationList, x, parent, isRoot)) getOrElse obj.empty
     val base           = x match {
-      case _: `def`[_] | _: `allof`[_] | _: `oneof`[_] | _: `ref`[_] => obj.empty
-      case _: `const`[_]                                             => obj.empty // its value implies the type ("type": "const" before, in a mixed oneOf)
-      case `value-class`(x) if includeType                           => obj("type" -> x.jsonType)
-      case _ if includeType                                          => obj("type" -> x.jsonType)
-      case _                                                         => obj.empty
+      case _: `def`[_] | _: `allof`[_] | _: `oneof`[_] | _: `anyof`[_] | _: `ref`[_] => obj.empty
+      case _: `const`[_]                                                             => obj.empty // its value implies the type ("type": "const" before, in a mixed oneOf)
+      case t if `any`.admitsEverything(t)                                            => obj.empty // `{}` (an `any`, or a value class of one): no type
+      case `enum`(t, _) if `any`.admitsEverything(t)                                 => obj.empty // values of any type (hand-built): no "type": "enum"
+      case `value-class`(x) if includeType                                           => obj("type" -> x.jsonType)
+      case _ if includeType                                                          => obj("type" -> x.jsonType)
+      case _                                                                         => obj.empty
     }
 
-    base ++ validationList.json ++ specifics
+    // the node's own texts go before the specifics (where objects and consts always had them, so their output keeps its key order) and win over texts the specifics bring from an inner node (a value
+    // class's underlying type, the X of a nullable X)
+    val own = texts(x)
+    base ++ validationList.json ++ own ++ specifics ++ own ++ deprecation(x)
   }
+
+  /** `description` and `title` of `x` itself; every kind of node has them. */
+  protected def texts(x: json.Schema[_]): obj = obj(("description", x.description), ("title", x.title))
+
+  /** `"deprecated": true` for a schema marked deprecated, from draft 2019-09 on (the keyword doesn't exist before) and in Raw. */
+  private def deprecation(x: json.Schema[_]): obj = if (x.deprecated && this.isInstanceOf[Post09]) obj("deprecated" -> true) else obj.empty
 
   def mkStr(vl: ValidationList, x: `string`[_], par: ParentSchema): obj
 
@@ -85,8 +97,8 @@ trait AsDraftSupport {
         tpe ++
         rw ++
         description)
-    }.toMap ++ {
-      // discrimination logic
+    } ++ {
+      // discrimination logic: the discriminator comes last, or replaces a field of its name (`phantom = false`) in place
       discriminatorField.flatMap { df =>
         for { dk <- x.discriminationKey } yield {
           df -> obj("enum" -> arr(dk))
@@ -101,24 +113,29 @@ trait AsDraftSupport {
     val canHaveAdditionalProperties = x.isInstanceOf[`object`.Free]
 
     obj(
-      ("description", x.description),
-      ("title", x.title),
       ("additionalProperties", canHaveAdditionalProperties),
-      ("properties", if (props.isEmpty) None else Some(obj(props))),
+      ("properties", if (props.isEmpty) None else Some(obj.ordered(props))),
       ("required", if (required.isEmpty) None else Some(arr(required.distinct)))
     )
   }
 
+  /** A dictionary's key pattern: the given one, else `StringKeyPattern`'s (any key). A pattern that matches any key (that one, or `^.*$` from before #466: schemas parsed back, user `KeyPattern`s) is
+    * not enforced; any other is, with [[keyRestriction]].
+    */
   def mkDict(vl: ValidationList, comp: Schema[_], par: ParentSchema): obj = {
     val pattern = vl.extract(_.validation == V.Instance.`patternProperties`) map {
       _.json.asInstanceOf[str].value
-    } getOrElse "^.*$"
-    obj(
+    } getOrElse StringKeyPattern.pattern
+    val props = obj(
       "patternProperties" -> obj(
         pattern -> apply(comp, Some(comp), includeType = true, isRoot = false)
       )
     )
+    if (pattern == StringKeyPattern.pattern || pattern == "^.*$") props else props ++ keyRestriction(pattern)
   }
+
+  /** Every key of a dictionary must match `pattern` (#466): `propertyNames`, from draft 06 on. */
+  protected def keyRestriction(pattern: String): obj = obj("propertyNames" -> obj("pattern" -> pattern))
 
   def mkArr(vl: ValidationList, comp: Schema[_], unique: Boolean, par: ParentSchema): obj = {
     obj(
@@ -128,11 +145,19 @@ trait AsDraftSupport {
   }
 
   def mkEnum(vl: ValidationList, x: `enum`[_], par: ParentSchema): obj = {
-    obj("type" -> x.tpe.jsonType, "enum" -> arr(x.values.toSeq))
+    if (`any`.admitsEverything(x.tpe)) obj("enum" -> arr(x.values.toSeq)) // values of any type: no "type": "any"
+    else obj("type"                               -> x.tpe.jsonType, "enum" -> arr(x.values.toSeq))
   }
 
   def mkOneOf(vl: ValidationList, x: `oneof`[_], isRoot: Boolean, par: ParentSchema): obj =
     if (x.subTypes.exists(_.isInstanceOf[`null`])) mkNullable(x) else mkPlainOneOf(x, isRoot)
+
+  // a hand-built `oneof{X, null}` where X admits every value already (the profiles' lowering never makes one): X alone, as `oneOf[{}, null]` would reject `null`
+  private def anyOrNull(x: `oneof`[_]): Option[Schema[_]] = x.subTypes.toList match {
+    case List(a, _: `null`) if `any`.admitsEverything(a) => Some(a)
+    case List(_: `null`, a) if `any`.admitsEverything(a) => Some(a)
+    case _                                               => None
+  }
 
   /** `oneof{X, null}`, which is what a profile makes of `Option[X]`: X's keywords with `"type": [X, "null"]` when X has a single JSON type (type arrays are valid from draft-04 on), otherwise
     * `oneOf[X, {"type": "null"}]` with each member keeping its own type: an `enum` must not take `null` from a type array, and keywords next to a `$ref` are ignored before 2019-09.
@@ -145,6 +170,8 @@ trait AsDraftSupport {
     }
     val subTypesSeq = x.subTypes.toSeq.sortBy(_.isInstanceOf[`null`]) // `null` last
     subTypesSeq match {
+      case _ if anyOrNull(x).isDefined =>
+        apply(anyOrNull(x).get, Some(x), includeType = true, isRoot = false)
       case Seq(t, _: `null`) if singleType(t) =>
         obj("type" -> `arr`(`str`(t.jsonType), `str`("null"))) ++ apply(t, Some(x), includeType = false, isRoot = false)
       case _ =>
@@ -164,30 +191,42 @@ trait AsDraftSupport {
     case t          => t.jsonType
   }
 
-  private def mkPlainOneOf(x: `oneof`[_], isRoot: Boolean): obj = {
-    val subTypesSeq = x.subTypes.toSeq
-    // each member's JSON type: a definition has its body's; a `$ref` to a definition elsewhere has none known here, so it doesn't count (asking either for `jsonType` threw before)
-    val known = subTypesSeq collect {
-      case d: `def`[_]                    => bodyType(d)
-      case t if !t.isInstanceOf[`ref`[_]] => memberType(t)
+  // a type all members share is stated once, next to `oneOf`, but not at the root (as in 0.7)
+  private def mkPlainOneOf(x: `oneof`[_], isRoot: Boolean): obj = mkAlternatives("oneOf", x, x.subTypes.toSeq, omitRootType = isRoot)
+
+  /** `anyOf`: like a `oneOf`, but it states its type at the root too. A document of another JSON type satisfies every object member: a `oneOf` of two or more of them rejects it by accident (more than
+    * one matches), an `anyOf` wouldn't.
+    */
+  def mkAnyOf(vl: ValidationList, x: `anyof`[_], par: ParentSchema): obj = mkAlternatives("anyOf", x, x.subTypes.toSeq, omitRootType = false)
+
+  // the members under `keyword`: a type all of them share is stated once, next to it (unless `omitRootType`), otherwise each member states its own
+  private def mkAlternatives(keyword: String, x: json.Schema[_], subTypesSeq: Seq[json.Schema[_]], omitRootType: Boolean): obj = {
+    // each member's JSON type: a definition has its body's; a `$ref` to a definition elsewhere has none known here (None), so the members share no type: stating
+    // one would reject every document of the `$ref` (asking either for `jsonType` threw before)
+    val known = subTypesSeq map {
+      case d: `def`[_] => Some(bodyType(d))
+      case `ref`(_)    => None
+      case t           => Some(memberType(t))
     }
-    // the type a same-typed oneOf states: the first member's that isn't a definition or a $ref, as in 0.7 (only definitions: none)
+    // the type a same-typed oneOf states: the first member's that isn't a definition or a $ref, as in 0.7 (only definitions: none). An `any` states none, but it stays in `known` as "any",
+    // a type equal to no other: `oneof{string, any}` isn't same-typed, so each member keeps its own type (else `{"type": "string", "oneOf": [{}, {}]}`)
     val tpe = subTypesSeq.find {
-      case `def`(_, _) | `ref`(_) => false
-      case _                      => true
+      case `def`(_, _) | `ref`(_)         => false
+      case t if `any`.admitsEverything(t) => false
+      case _                              => true
     }.map(memberType)
-    val sameType = tpe.isDefined && known.forall(_ == tpe.get)
-    def rootType = tpe filter { _ => !isRoot } map { t => obj("type" -> `str`(t)) } getOrElse obj()
+    val sameType = tpe.isDefined && known.forall(_ == tpe)
+    def rootType = tpe filter { _ => !omitRootType } map { t => obj("type" -> `str`(t)) } getOrElse obj()
     if (sameType) {
       rootType ++ obj(
-        "oneOf" -> `arr`(
+        keyword -> `arr`(
           apply(subTypesSeq.head, Some(x), includeType = false, isRoot = false),
           subTypesSeq.tail.map(t => apply(t, Some(x), includeType = false, isRoot = false)): _*
         )
       )
     } else
       obj(
-        "oneOf" -> `arr`(
+        keyword -> `arr`(
           apply(subTypesSeq.head, Some(x), includeType = true, isRoot = false),
           subTypesSeq.tail.map(apply(_, Some(x), includeType = true, isRoot = false)): _*
         )
@@ -197,9 +236,9 @@ trait AsDraftSupport {
   def mkAllOf(vl: ValidationList, x: `allof`[_], isRoot: Boolean, par: ParentSchema): obj = {
     val subTypesSeq                  = x.subTypes.toSeq
     def isRef(s: Schema[_]): Boolean = s.isInstanceOf[`def`[_]] || s.isInstanceOf[`ref`[_]]
-    val typed                        = subTypesSeq.filterNot(isRef) // a `$ref` has no type of its own (asking it threw before)
-    val tpe                          = typed.headOption.fold("")(_.jsonType)
-    val sameType                     = typed.nonEmpty && typed.forall(_.jsonType == tpe)
+    val typed    = subTypesSeq.filterNot(s => isRef(s) || `any`.admitsEverything(s)) // a `$ref` has no type of its own (asking it threw before); an `any` adds none to an intersection
+    val tpe      = typed.headOption.fold("")(_.jsonType)
+    val sameType = typed.nonEmpty && typed.forall(_.jsonType == tpe)
     if (sameType) {
       obj(
         "type"  -> (if (!isRoot) Some(`str`(tpe)) else None),
@@ -232,17 +271,13 @@ trait AsDraftSupport {
   }
 
   def mkConst(vl: ValidationList, x: `const`[_], par: ParentSchema): obj = {
-    obj(
-      ("description", x.description),
-      ("title", x.title),
-      ("const", x.value)
-    )
+    obj("const" -> x.value)
   }
 
   def buildRef(ref: String): String = s"#/definitions/$ref"
 
   def mkValueClass(vl: ValidationList, x: `value-class`[_, _], par: ParentSchema): obj = {
-    inferSpecifics.lift((vl, x.tpe, par, false)) getOrElse obj()
+    (inferSpecifics.lift((vl, x.tpe, par, false)) getOrElse obj()) ++ texts(x.tpe) // the value class's own texts (added by `apply`) win over its underlying type's
   }
 
   val inferSpecifics: PartialFunction[(ValidationList, json.Schema[_], ParentSchema, Boolean), obj] = {
@@ -253,6 +288,7 @@ trait AsDraftSupport {
     case (vv, x: `enum`[_], par, _)           => mkEnum(vv, x, par)
     case (vv, x: `oneof`[_], par, isRoot)     => mkOneOf(vv, x, isRoot, par)
     case (vv, x: `allof`[_], par, isRoot)     => mkAllOf(vv, x, isRoot, par)
+    case (vv, x: `anyof`[_], par, _)          => mkAnyOf(vv, x, par)
     case (vv, x: `not`[_], par, _)            => mkNot(vv, x, par)
     case (vv, x: `def`[_], par, _)            => mkDef(vv, x, par)
     case (vv, x: `ref`[_], par, _)            => mkRef(vv, x, par)
@@ -280,9 +316,7 @@ trait AsDraftSupport {
       res
     }
 
-    def json: obj = obj {
-      elements.map { d => d.validation.name -> d.json }.toMap
-    }
+    def json: obj = obj.ordered(elements.map { d => d.validation.name -> d.json })
   }
 
   def inferValidations(x: json.Schema[_]): ValidationList = {
@@ -311,14 +345,13 @@ trait AsDraftSupport {
         extractDefs(x.tpe.withValidationsAddedFrom(x), par) :+ inferDefinition(x, par)
       case x: `allof`[_]         => x.subTypes.toSeq flatMap { extractDefs(_, Some(x)) }
       case x: `oneof`[_]         => x.subTypes.toSeq flatMap { extractDefs(_, Some(x)) }
+      case x: `anyof`[_]         => x.subTypes.toSeq flatMap { extractDefs(_, Some(x)) }
       case x @ `array`(ref, _)   => extractDefs(ref, Some(x))
       case x @ `dictionary`(ref) => extractDefs(ref, Some(x))
       case x @ `object`(fields)  => fields.toSeq map { _.tpe } flatMap { extractDefs(_, Some(x)) }
       case _                     => Seq.empty
     }
 
-    obj {
-      extractDefs(x, None).toMap
-    }
+    obj.ordered(extractDefs(x, None))
   }
 }

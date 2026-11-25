@@ -27,7 +27,9 @@ final class Derivation(val mode: Mode, val objectSchemaDecorations: List[(String
     with Sums
     with Enums
     with FamilyEmit
-    with Collections {
+    with Collections
+    with Tuples
+    with Errors {
   import q.reflect.*
 
   /** The IR of `T`, after the IR -> IR passes. */
@@ -37,11 +39,14 @@ final class Derivation(val mode: Mode, val objectSchemaDecorations: List[(String
     // Scala 2 `deriveInternal`: the root's title and description come from its type's annotations/scaladoc, replacing whatever the node had (R8: nested types don't get them).
     // That applies to a root from an implicit Schema/Predef too (lead decision 2026-11-20: parity). There, the scaladoc counts only for a type compiled in this run, which is all Scala 2
     // can see: with -Yread-docs a library type's own scaladoc (cats' NonEmptyList) would otherwise become the description of Json.schema[NonEmptyList[String]].
-    val ta = node match {
-      case _: FromImplicit => typeAnnotations(tpe, docsFromClasspath = false)
-      case _               => typeAnnotations(tpe)
+    // a `*:` root reads them from its TupleN (not the library's `*:` scaladoc); a chain longer than 22 has none
+    val ta = rootTextsType(tpe) map { t =>
+      node match {
+        case _: FromImplicit => typeAnnotations(t, docsFromClasspath = false)
+        case _               => typeAnnotations(t)
+      }
     }
-    val root = node.withExtra(node.extra.copy(title = ta.title, description = ta.description))
+    val root = node.withExtra(node.extra.copy(title = ta.flatMap(_.title), description = ta.flatMap(_.description), deprecated = node.extra.deprecated || ta.exists(_.deprecated)))
     if (mode == Mode.Derived) derivedDefinition(tpe.dealias, root) else root
   }
 
@@ -89,13 +94,15 @@ object Derivation {
   def deriveObject[T: Type](decorations: Expr[Seq[(String, String)]])(using Quotes): Expr[Schema.`object`[T]] = {
     import quotes.reflect.*
     val ObjectSchema = "Json.objectSchema"
+    val d            = new Derivation(Mode.ObjectSchema, decorationsOf(decorations))
     val sym          = TypeRepr.of[T].dealias.typeSymbol
-    if (!sym.isClassDef) report.errorAndAbort(s"$ObjectSchema: can be used only against case classes")
+    // a `*:` chain of known arity is a tuple, i.e. a case class (`TupleN`), or the same object beyond 22 (Tuples.scala)
+    if (d.isKnownTuple[T]) ()
+    else if (!sym.isClassDef) report.errorAndAbort(s"$ObjectSchema: can be used only against case classes")
     // a case object passes (Scala 2: its module class is a case class) and fails in the derivation: "is not supported"
     else if (!sym.flags.is(Flags.Case)) report.errorAndAbort(s"$ObjectSchema: can't be used against non-case classes")
     else if (TypeRepr.of[T] <:< TypeRepr.of[AnyVal]) report.errorAndAbort(s"$ObjectSchema: can't be used against value classes")
 
-    val d    = new Derivation(Mode.ObjectSchema, decorationsOf(decorations))
     val node = d.build[T]
     node match {
       case _: d.Obj => ()

@@ -11,6 +11,36 @@ class AsDraft12Spec extends AnyWordSpec {
 
   "AsValue.schema" should {
 
+    "emit title and description on any schema (#268)" in {
+      val a = `array`[String, List](`string`[String](None).withTitle("Item").withDescription("an item")).withTitle("Items").withDescription("the items")
+
+      AsValue.schema(a, Draft12(id = "http://example.com/foobarbaz.json")) should beStructurallyEqualTo(
+        obj(
+          f"$$schema"   -> "https://json-schema.org/draft/2020-12/schema",
+          f"$$id"       -> "http://example.com/foobarbaz.json",
+          "type"        -> "array",
+          "title"       -> "Items",
+          "description" -> "the items",
+          "items"       -> obj("type" -> "string", "title" -> "Item", "description" -> "an item")
+        )
+      )
+    }
+
+    "emit anyOf, its shared type stated at the root too (B3)" in {
+      val created = `object`[Any](`object`.Field("id", `string`)).withDescription("created")
+      AsValue.schema(`anyof`.of[Any](created, created.withDescription("deleted")), json.schema.Version.Draft12(id = "http://example.com/foobarbaz.json")) should beStructurallyEqualTo(
+        obj(
+          f"$$schema" -> "https://json-schema.org/draft/2020-12/schema",
+          f"$$id"     -> "http://example.com/foobarbaz.json",
+          "type"      -> "object",
+          "anyOf"     -> arr(
+            obj("description" -> "created", "additionalProperties" -> false, "properties" -> obj("id" -> obj("type" -> "string")), "required" -> arr("id")),
+            obj("description" -> "deleted", "additionalProperties" -> false, "properties" -> obj("id" -> obj("type" -> "string")), "required" -> arr("id"))
+          )
+        )
+      )
+    }
+
     "emit const" in {
 
       val a = `oneof`.of(

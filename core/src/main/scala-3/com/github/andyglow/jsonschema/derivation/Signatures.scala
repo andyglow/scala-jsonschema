@@ -43,7 +43,7 @@ trait Signatures { this: Derivation =>
   }
 
   private def unsupported(t: TypeRepr): Nothing =
-    report.errorAndAbort(s"schema for ${t.show} is not supported: a definition can't be named after this type (a structural or other unnamed type). Use a named type, e.g. a case class")
+    report.errorAndAbort(s"schema for ${showType(t)} is not supported: a definition can't be named after this type (a structural or other unnamed type). Use a named type, e.g. a case class")
 
   private def tyconName(tc: TypeRepr, mapAlias: Boolean, spelled: Boolean): String = tc match {
     case t: TypeRef =>

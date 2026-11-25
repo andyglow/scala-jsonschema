@@ -3,7 +3,6 @@ package com.github.andyglow.jsonschema
 import com.github.andyglow.json._
 import com.github.andyglow.json.Value._
 import json.Schema
-import com.github.andyglow.scalamigration._
 import json.schema.Version
 import upickle.default._
 
@@ -73,7 +72,7 @@ object AsU {
     implicit val arrAdapter: Aux[arr, ujson.Arr] =
       make(x => x.value map { adapt(_) }, x => arr { x.value map { unadapt(_) } })
     implicit val objAdapter: Aux[obj, ujson.Obj] =
-      make(x => x.value.toMap mapV { adapt(_) }, x => obj { x.value.toMap mapV { unadapt(_) } })
+      make(x => ujson.Obj.from(x.fields map { case (k, v) => (k, adapt(v)) }), x => obj.ordered(x.value.toSeq map { case (k, v) => (k, unadapt(v)) }))
   }
 
   implicit def toValue[T](implicit w: Writer[T]): ToValue[T] = new ToValue[T] {
@@ -81,5 +80,23 @@ object AsU {
       val js = writeJs(x)
       Adapter.unadapt(js)
     }
+  }
+
+  /** `import com.github.andyglow.jsonschema.AsU.predef._` (Scala 3: `.*`): inlined schemas for ujson's AST types. `ujson.Value` is any JSON value (`{}`), `ujson.Obj` a free object, `ujson.Arr` an
+    * array of any values. Opt-in: these next to a `Predef[ujson.Obj]` of your own would be ambiguous.
+    */
+  object predef {
+    import _root_.json.schema.Predef
+    import _root_.json.{Schema => S}
+
+    implicit val ujsonValuePredef: Predef[ujson.Value] = Predef(S.`any`[ujson.Value]())
+    implicit val ujsonObjPredef: Predef[ujson.Obj]     = Predef(S.`object`.Free[ujson.Obj]())
+    implicit val ujsonArrPredef: Predef[ujson.Arr]     = Predef(S.`array`[ujson.Value, Seq](S.`any`[ujson.Value]()).asInstanceOf[S[ujson.Arr]])
+    implicit val ujsonStrPredef: Predef[ujson.Str]     = Predef(S.`string`[ujson.Str])
+    implicit val ujsonNumPredef: Predef[ujson.Num]     = Predef(S.`number`[Double].asInstanceOf[S[ujson.Num]])
+    implicit val ujsonBoolPredef: Predef[ujson.Bool]   = Predef(S.`boolean`.asInstanceOf[S[ujson.Bool]])
+
+    /** `ujson.Null` (e.g. a field that is always `null`): `{"type": "null"}`. */
+    implicit val ujsonNullPredef: Predef[ujson.Null.type] = Predef(S.`null`.asInstanceOf[S[ujson.Null.type]])
   }
 }

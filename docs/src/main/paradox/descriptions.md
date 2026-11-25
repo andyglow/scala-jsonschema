@@ -44,6 +44,13 @@ All three give
 When several sources are present, the order is: decorations, then annotations, then scaladoc. Decorations suit
 models defined in another module or library. `.withTitle`/`.withDescription` work on any schema.
 
+`title` and `description` render on every kind of schema: objects, strings, numbers, arrays, maps, enums, `oneOf`s,
+value classes. A definition's, and a field's `@title`/`@description` on a field whose type is a definition, sit next to
+its `$ref` (before draft 2019-09 validators ignore keywords next to a `$ref`, so there they are for documentation
+tools). A type's own annotations and scaladoc apply where it is the root, or where it is given as an implicit
+`Schema` (a definition), and on the members of a sealed family; a type derived inline as a field's (or an element's)
+type doesn't get them.
+
 ## Scaladoc
 
 The doc comment right before a class (annotations, modifiers and ordinary comments may sit in between) gives its
@@ -75,13 +82,16 @@ Package `json.schema`:
 
 | annotation                                    | on                      | effect                                                    |
 |-----------------------------------------------|-------------------------|-----------------------------------------------------------|
-| `@title("...")`                               | type, enum value        | `title`                                                   |
+| `@title("...")`                               | type, field, enum value | `title`                                                   |
 | `@description("...")`                         | type, field, enum value | `description`                                             |
 | `@readOnly`                                   | field                   | `"readOnly": true`                                        |
 | `@writeOnly`                                  | field                   | `"writeOnly": true`                                       |
+| `@deprecated` (Scala's, or Java's `@Deprecated`) | field, type          | `"deprecated": true` (draft 2019-09 and 2020-12; not under the Legacy profile) |
 | `@discriminator(field = "type", phantom = true)` | sealed root          | adds a discriminator field to each `oneOf` member         |
 | `@discriminatorKey("key")`                    | sealed member           | the member's discriminator value (default: its full name) |
 | `@definition` / `@definition("name")`         | sealed member           | makes it a definition                                     |
 | `@typeHint[T]`                                | sealed root, member     | the JSON type of enum values that come from a `ToValue`   |
 
-On Scala 2, a field annotation can also target the underlying field: `@(description @field)("...")`.
+A type's `@title`/`@description` apply where it is the root, a type given as an implicit `Schema`, or a member of a
+sealed family. On Scala 2, a
+field annotation can also target the underlying field: `@(description @field)("...")`.

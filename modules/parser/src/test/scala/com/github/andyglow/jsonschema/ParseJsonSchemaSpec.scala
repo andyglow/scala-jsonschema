@@ -195,7 +195,7 @@ class ParseJsonSchemaSpec extends AnyFunSuite {
     parseType {
       """{
         | "type": "object",
-        | "properties": { "a": { "title": "no type" } }
+        | "properties": { "a": { "title": "no type", "minimum": 1 } }
         |}
       """.stripMargin
     }.isFailure shouldBe true
@@ -241,6 +241,44 @@ class ParseJsonSchemaSpec extends AnyFunSuite {
 
   test("apply: rejects invalid json") {
     ParseJsonSchema("""{ "type": "string", }""").isFailure shouldBe true
+  }
+
+  test("enum: values keep the order of the input array") {
+    val parsed = parseType("""{ "type": "string", "enum": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] }""").value
+    parsed match {
+      case e: `enum`[_] => e.values.toList shouldBe List("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun").map(Value.str(_))
+      case other        => fail(other.toString)
+    }
+  }
+
+  test("patternProperties: parsed back and rendered, ^.*$ (any key, before #466) isn't enforced, another pattern is") {
+    def rendered(pattern: String): Value.obj = {
+      val s = parseType(s"""{ "type": "object", "patternProperties": { "$pattern": { "type": "string" } } }""").value
+      s shouldBe `dictionary`[Any, Any, Map](`string`).withValidation(json.schema.validation.Instance.`patternProperties` := pattern)
+      AsValue.schema(s, json.schema.Version.Draft07("x"))
+    }
+    val any = rendered("^.*$").value
+    any.contains("propertyNames") shouldBe false
+    any.contains("additionalProperties") shouldBe false
+    rendered("^-?[0-9]+$").value("propertyNames") shouldBe Value.obj("pattern" -> "^-?[0-9]+$")
+  }
+
+  test("any value: {} and an annotations-only object") {
+    parseType("{}").value shouldBe `any`[Any]()
+    parseType("""{ "title": "t", "description": "d", "default": 1, "examples": [1] }""").value shouldBe `any`[Any]().withTitle("t")
+    ParseJsonSchema("""{ "$schema": "http://json-schema.org/draft-04/schema#" }""").value shouldBe `any`[Any]()
+    parseType("""{ "minimum": 1 }""").isFailure shouldBe true // a keyword the parser doesn't read, without "type": still an error
+    ParseJsonSchema("true").isFailure shouldBe true           // the root must be an object
+  }
+
+  test("any value: boolean schemas in items and properties") {
+    parseType("""{ "type": "array", "items": true }""").value shouldBe `array`[Any, List](`any`[Any]())
+    parseType("""{ "type": "array", "items": {} }""").value shouldBe `array`[Any, List](`any`[Any]())
+    parseType("""{ "type": "object", "properties": { "a": true, "b": false, "c": {} }, "required": ["a"] }""").value shouldBe `object`[Any](
+      `object`.Field("a", `any`[Any](), required = true),
+      `object`.Field("b", Schema.`not`[Any](`any`[Any]()), required = false),
+      `object`.Field("c", `any`[Any](), required = false)
+    )
   }
 
   def parseType(x: String): Try[Schema[_]] =

@@ -5,7 +5,6 @@ import com.github.andyglow.json._
 import json.Schema
 import json.schema.Version
 import org.json4s.JsonAST._
-import com.github.andyglow.scalamigration._
 import org.json4s.Writer
 
 object AsJson4s {
@@ -76,14 +75,14 @@ object AsJson4s {
       make(x => JArray { x.value.toList map { adapt(_) } }, x => arr { x.arr map { unadapt(_) } })
     implicit val objAdapter: Aux[obj, JObject] = make(
       { x =>
-        val fields = x.value.toList.map { case (k, v) =>
+        val fields = x.fields.toList.map { case (k, v) =>
           JField(k, AsJson4s.apply(v))
         }
 
         JObject(fields)
       },
       { x =>
-        obj { x.obj.toMap mapV { unadapt(_) } }
+        obj.ordered(x.obj map { case (k, v) => (k, unadapt(v)) })
       }
     )
   }
@@ -93,5 +92,30 @@ object AsJson4s {
       val js = w.write(x)
       Adapter.unadapt(js)
     }
+  }
+
+  /** `import com.github.andyglow.jsonschema.AsJson4s.predef._` (Scala 3: `.*`): inlined schemas for json4s' AST types. `JValue` is any JSON value (`{}`), `JObject` a free object, `JArray` an array of
+    * any values (`JSet`: unique). Without it, json4s' AST derives as a family of its case classes, which no JSON json4s writes matches. Opt-in: these next to a `Predef[JObject]` of your own would be
+    * ambiguous. json4s omits a field whose value is `JNothing`: make such a field optional or give it a default.
+    */
+  object predef {
+    import _root_.json.schema.Predef
+    import _root_.json.{Schema => S}
+    import org.json4s
+
+    implicit val json4sJValuePredef: Predef[json4s.JValue]     = Predef(S.`any`[json4s.JValue]())
+    implicit val json4sJObjectPredef: Predef[json4s.JObject]   = Predef(S.`object`.Free[json4s.JObject]())
+    implicit val json4sJArrayPredef: Predef[json4s.JArray]     = Predef(S.`array`[json4s.JValue, List](S.`any`[json4s.JValue]()).asInstanceOf[S[json4s.JArray]])
+    implicit val json4sJSetPredef: Predef[json4s.JSet]         = Predef(S.`array`[json4s.JValue, Set](S.`any`[json4s.JValue](), unique = true).asInstanceOf[S[json4s.JSet]])
+    implicit val json4sJStringPredef: Predef[json4s.JString]   = Predef(S.`string`[json4s.JString])
+    implicit val json4sJNumberPredef: Predef[json4s.JNumber]   = Predef(S.`number`[BigDecimal].asInstanceOf[S[json4s.JNumber]])
+    implicit val json4sJDoublePredef: Predef[json4s.JDouble]   = Predef(S.`number`[Double].asInstanceOf[S[json4s.JDouble]])
+    implicit val json4sJDecimalPredef: Predef[json4s.JDecimal] = Predef(S.`number`[BigDecimal].asInstanceOf[S[json4s.JDecimal]])
+    implicit val json4sJLongPredef: Predef[json4s.JLong]       = Predef(S.`number`[Long].asInstanceOf[S[json4s.JLong]])
+    implicit val json4sJIntPredef: Predef[json4s.JInt]         = Predef(S.`number`[BigInt].asInstanceOf[S[json4s.JInt]])
+    implicit val json4sJBoolPredef: Predef[json4s.JBool]       = Predef(S.`boolean`.asInstanceOf[S[json4s.JBool]])
+
+    /** `JNull` (e.g. a field that is always `null`): `{"type": "null"}`. */
+    implicit val jNullPredef: Predef[JNull.type] = Predef(S.`null`.asInstanceOf[S[JNull.type]])
   }
 }

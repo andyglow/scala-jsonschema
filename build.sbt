@@ -164,6 +164,7 @@ lazy val macros = crossModule(crossProject(JSPlatform, JVMPlatform))
 // with -Yread-docs. Not published.
 lazy val `test-models` = crossModule(crossProject(JSPlatform, JVMPlatform))
   .in(file("modules/test-models"))
+  .dependsOn(core) // the json.schema annotations, for models with annotations read from the classfile / TASTy
   .enablePlugins(ScaladocPlugin)
   .settings(
     name           := "scala-jsonschema-test-models",

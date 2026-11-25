@@ -40,9 +40,10 @@ trait Annotations { this: Derivation =>
     definition: Option[Arg[String]],
     discriminator: Option[TypeAnnotations.Discriminator],
     discriminatorKey: Option[String],
-    typeHint: Option[TypeRepr]
+    typeHint: Option[TypeRepr],
+    deprecated: Boolean
   ) {
-    def texts: Extra = Extra(title = title, description = description)
+    def texts: Extra = Extra(title = title, description = description, deprecated = deprecated)
   }
   object TypeAnnotations {
     final case class Discriminator(field: Arg[String], phantom: Arg[Boolean])
@@ -74,9 +75,13 @@ trait Annotations { this: Derivation =>
         TypeAnnotations.Discriminator(stringArg(a, "field", 0), boolArg(a, "phantom", 1))
       },
       discriminatorKey = findAnnotation[json.schema.discriminatorKey](annots).flatMap(a => stringArg(a, "label", 0).toOption),
-      typeHint = findAnnotation[json.schema.typeHint[?]](annots).flatMap(_.tpe.typeArgs.headOption)
+      typeHint = findAnnotation[json.schema.typeHint[?]](annots).flatMap(_.tpe.typeArgs.headOption),
+      deprecated = isDeprecated(annots)
     )
   }
+
+  /** `@scala.deprecated` or `@java.lang.Deprecated` among `annots` (rendered as `"deprecated": true` from 2019-09). */
+  def isDeprecated(annots: List[Term]): Boolean = hasAnnotation[scala.deprecated](annots) || hasAnnotation[java.lang.Deprecated](annots)
 
   // ---- annotations
 

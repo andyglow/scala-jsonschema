@@ -4,7 +4,6 @@ import com.github.andyglow.json._
 import com.github.andyglow.json.Value._
 import json.Schema
 import play.api.libs.json._
-import com.github.andyglow.scalamigration._
 import json.schema.Version
 
 object AsPlay {
@@ -73,8 +72,8 @@ object AsPlay {
     implicit val arrAdapter: Aux[arr, JsArray]              =
       make(x => JsArray { x.value.toSeq map { adapt(_) } }, x => arr { x.value map { unadapt(_) } })
     implicit val objAdapter: Aux[obj, JsObject] = make(
-      x => JsObject { x.value.toMap mapV { adapt(_) } },
-      x => obj { x.value.toMap mapV { unadapt(_) } }
+      x => JsObject(x.fields map { case (k, v) => (k, adapt(v)) }),
+      x => obj.ordered(x.fields map { case (k, v) => (k, unadapt(v)) })
     )
   }
 
@@ -83,5 +82,23 @@ object AsPlay {
       val js = w.writes(x)
       Adapter.unadapt(js)
     }
+  }
+
+  /** `import com.github.andyglow.jsonschema.AsPlay.predef._` (Scala 3: `.*`): inlined schemas for play-json's own AST types. `JsValue` is any JSON value (`{}`), `JsObject` a free object, `JsArray` an
+    * array of any values. Opt-in: these next to a `Predef[JsObject]` of your own would be ambiguous.
+    */
+  object predef {
+    import _root_.json.schema.Predef
+    import _root_.json.{Schema => S}
+
+    implicit val playJsValuePredef: Predef[JsValue]     = Predef(S.`any`[JsValue]())
+    implicit val playJsObjectPredef: Predef[JsObject]   = Predef(S.`object`.Free[JsObject]())
+    implicit val playJsArrayPredef: Predef[JsArray]     = Predef(S.`array`[JsValue, IndexedSeq](S.`any`[JsValue]()).asInstanceOf[S[JsArray]])
+    implicit val playJsStringPredef: Predef[JsString]   = Predef(S.`string`[JsString])
+    implicit val playJsNumberPredef: Predef[JsNumber]   = Predef(S.`number`[BigDecimal].asInstanceOf[S[JsNumber]])
+    implicit val playJsBooleanPredef: Predef[JsBoolean] = Predef(S.`boolean`.asInstanceOf[S[JsBoolean]])
+
+    /** `JsNull` (e.g. a field that is always `null`): `{"type": "null"}`. */
+    implicit val jsNullPredef: Predef[JsNull.type] = Predef(S.`null`.asInstanceOf[S[JsNull.type]])
   }
 }

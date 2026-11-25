@@ -17,6 +17,7 @@ trait LowPriorityCatsSupport extends ScalaVersionSpecificLowPriorityCatsSupport 
   implicit def nevVB[X]: Magnet[NonEmptyVector[X], Iterable[_]]     = mk[NonEmptyVector[X], Iterable[_]]
   implicit def nesVB[X]: Magnet[NonEmptySet[X], Iterable[_]]        = mk[NonEmptySet[X], Iterable[_]]
   implicit def necVB[X]: Magnet[NonEmptyChain[X], Iterable[_]]      = mk[NonEmptyChain[X], Iterable[_]]
+  implicit def neSeqVB[X]: Magnet[NonEmptySeq[X], Iterable[_]]      = mk[NonEmptySeq[X], Iterable[_]]
   implicit def nemStrVB[K, V]: Magnet[NonEmptyMap[K, V], Map[_, _]] =
     mk[NonEmptyMap[K, V], Map[_, _]]
   implicit def oneAndVB[F[_], X]: Magnet[OneAnd[F, X], Iterable[_]] = mk[OneAnd[F, X], Iterable[_]]
@@ -60,6 +61,9 @@ trait LowPriorityCatsSupport extends ScalaVersionSpecificLowPriorityCatsSupport 
   implicit def necSchemaFromPredef[T](implicit p: Predef[T]): Predef[NonEmptyChain[T]] =
     mkNEx[T, NonEmptyChain](p.schema)
 
+  implicit def neSeqSchemaFromPredef[T](implicit p: Predef[T]): Predef[NonEmptySeq[T]] =
+    mkNEx[T, NonEmptySeq](p.schema)
+
   implicit def nemStrSchemaFromPredef[K, V](implicit
     p: Predef[V],
     keyP: KeyPattern[K]
@@ -88,6 +92,9 @@ object CatsSupport extends LowPriorityCatsSupport with ScalaVersionSpecificCatsS
 
   implicit def necSchema[T](implicit ss: Schema[T]): Predef[NonEmptyChain[T]] =
     mkNEx[T, NonEmptyChain](ss)
+
+  implicit def neSeqSchema[T](implicit ss: Schema[T]): Predef[NonEmptySeq[T]] =
+    mkNEx[T, NonEmptySeq](ss)
 
   implicit def nemStrSchema[K, V](implicit
     ss: Schema[V],

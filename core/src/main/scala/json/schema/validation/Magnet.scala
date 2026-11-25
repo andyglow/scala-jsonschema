@@ -23,6 +23,9 @@ trait LowPriorityMagnet {
 // ambiguous ("listMagnet vs iterableMagnet"). Scala 2 fixes `TT = T` before the search, so there only one of them ever matches.
 trait IterableMagnet extends LowPriorityMagnet {
   implicit def iterableMagnet[X]: Magnet[Iterable[X], Iterable[_]] = Magnet.mk[Iterable[X], Iterable[_]]
+
+  // the same levels for java collections: `java.util.List`/`Set` (in `object Magnet`) > `java.util.Collection`
+  implicit def javaCollectionMagnet[X]: Magnet[java.util.Collection[X], Iterable[_]] = Magnet.mk[java.util.Collection[X], Iterable[_]]
 }
 
 trait SeqMagnet extends IterableMagnet {
@@ -45,7 +48,33 @@ object Magnet extends SeqMagnet {
   implicit def vectorMagnet[X]: Magnet[Vector[X], Iterable[_]] = mk[Vector[X], Iterable[_]]
   implicit def setMagnet[X]: Magnet[Set[X], Iterable[_]]       = mk[Set[X], Iterable[_]]
 
+  // Java's boxed numbers and java.math have no `Numeric`. One magnet per type: a generic `X <: java.lang.Number` would be
+  // ambiguous with `numericMagnet` for `scala.BigDecimal` / `BigInt`, which extend `java.lang.Number`.
+  implicit def jIntegerMagnet: Magnet[java.lang.Integer, Number]       = mk[java.lang.Integer, Number]
+  implicit def jLongMagnet: Magnet[java.lang.Long, Number]             = mk[java.lang.Long, Number]
+  implicit def jShortMagnet: Magnet[java.lang.Short, Number]           = mk[java.lang.Short, Number]
+  implicit def jByteMagnet: Magnet[java.lang.Byte, Number]             = mk[java.lang.Byte, Number]
+  implicit def jFloatMagnet: Magnet[java.lang.Float, Number]           = mk[java.lang.Float, Number]
+  implicit def jDoubleMagnet: Magnet[java.lang.Double, Number]         = mk[java.lang.Double, Number]
+  implicit def jBigDecimalMagnet: Magnet[java.math.BigDecimal, Number] = mk[java.math.BigDecimal, Number]
+  implicit def jBigIntegerMagnet: Magnet[java.math.BigInteger, Number] = mk[java.math.BigInteger, Number]
+
+  implicit def javaListMagnet[X]: Magnet[java.util.List[X], Iterable[_]]   = mk[java.util.List[X], Iterable[_]]
+  implicit def javaSetMagnet[X]: Magnet[java.util.Set[X], Iterable[_]]     = mk[java.util.Set[X], Iterable[_]]
+  implicit def javaMapMagnet[K, V]: Magnet[java.util.Map[K, V], Map[_, _]] = mk[java.util.Map[K, V], Map[_, _]]
+
   implicit def chrMagnet: Magnet[Char, String]            = mk[Char, String]
   implicit def characterMagnet: Magnet[Character, String] = mk[Character, String]
   implicit def uuidMagnet: Magnet[java.util.UUID, String] = mk[java.util.UUID, String]
+
+  // java.time types whose Predef is a string with a pattern (#474)
+  implicit def periodMagnet: Magnet[java.time.Period, String]         = mk[java.time.Period, String]
+  implicit def yearMagnet: Magnet[java.time.Year, String]             = mk[java.time.Year, String]
+  implicit def yearMonthMagnet: Magnet[java.time.YearMonth, String]   = mk[java.time.YearMonth, String]
+  implicit def monthDayMagnet: Magnet[java.time.MonthDay, String]     = mk[java.time.MonthDay, String]
+  implicit def zoneOffsetMagnet: Magnet[java.time.ZoneOffset, String] = mk[java.time.ZoneOffset, String]
+
+  // string-likes (#475): only where a core Predef attaches a validation
+  implicit def currencyMagnet: Magnet[java.util.Currency, String]      = mk[java.util.Currency, String]
+  implicit def charsetMagnet: Magnet[java.nio.charset.Charset, String] = mk[java.nio.charset.Charset, String]
 }

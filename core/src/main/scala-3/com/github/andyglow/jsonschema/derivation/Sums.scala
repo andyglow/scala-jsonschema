@@ -107,7 +107,7 @@ trait Sums { this: Derivation =>
     Option.when(isSealed(tpe)) {
       val ta      = typeAnnotations(tpe)
       val root    = RootSettings(tpe, toValueOf(tpe), ta.typeHint)
-      val members = sealedChildren(tpe).map(member(_, root, ctx.descend(tpe)))
+      val members = sealedChildren(tpe, ctx).map(member(_, root, ctx.descend(tpe)))
       val kind    = if (classSymbol(tpe) == TypeRepr.of[Either[Any, Any]].typeSymbol) SumKind.Either else SumKind.Sealed
       val sum     = Sum(tpe, kind, members, ta.discriminator, ta.typeHint, hasFlag[json.schema.Flag.EnumsAsOneOf])
       ta.discriminator.foreach(validateDiscriminator(_, sum.leaves))
@@ -121,7 +121,7 @@ trait Sums { this: Derivation =>
     val name = c.sym.name
     val sig  = signature(c.tpe, dealiased = true)
     if (c.singleton) {
-      if (!isCaseSingleton(c.sym)) unsupportedLeaf(c.sym, root.tpe)
+      if (!isCaseSingleton(c.sym)) unsupportedLeaf(c.sym, root.tpe, ctx)
       val item   = singletonItem(c, root.tpe, root.toValue)
       val ta     = symbolAnnotations(List(c.sym, c.sym.moduleClass).filterNot(_.isNoSymbol).distinct)
       val schema = lookupImplicit(c.tpe) getOrElse Singleton(c.tpe, root.tpe, item, valueSchemaOf(item, root.typeHint, ctx))
@@ -129,7 +129,7 @@ trait Sums { this: Derivation =>
       SumMember(name, sig, kind, c.tpe, Some(item.ref), item.texts, item.discriminatorKey, ta.definition, schema)
     } else if (isSealed(c.tpe)) {
       val ta     = typeAnnotations(c.tpe)
-      val nested = Sum(c.tpe, SumKind.Sealed, sealedChildren(c.tpe).map(member(_, root, ctx)), ta.discriminator, ta.typeHint, hasFlag[json.schema.Flag.EnumsAsOneOf])
+      val nested = Sum(c.tpe, SumKind.Sealed, sealedChildren(c.tpe, outer(ctx)).map(member(_, root, ctx)), ta.discriminator, ta.typeHint, hasFlag[json.schema.Flag.EnumsAsOneOf])
       SumMember(name, sig, MemberKind.NestedFamily, c.tpe, None, ta.texts, ta.discriminatorKey, ta.definition, nested)
     } else if (classSymbol(c.tpe).flags.is(Flags.Case)) {
       val ta      = typeAnnotations(c.tpe)
@@ -140,17 +140,20 @@ trait Sums { this: Derivation =>
         else MemberKind.CaseClass
       val schema = derived getOrElse product(c.tpe, ctx)
       SumMember(name, sig, kind, c.tpe, None, ta.texts, ta.discriminatorKey, ta.definition, schema)
-    } else unsupportedLeaf(c.sym, root.tpe)
+    } else unsupportedLeaf(c.sym, root.tpe, ctx)
   }
 
   private def isCaseSingleton(sym: Symbol): Boolean =
     sym.flags.is(Flags.Case) || sym.flags.is(Flags.Enum) || (!sym.moduleClass.isNoSymbol && sym.moduleClass.flags.is(Flags.Case))
 
-  private def unsupportedLeaf(sym: Symbol, root: TypeRepr): Nothing =
+  /** `ctx`: the members' context (the root on top). */
+  private def unsupportedLeaf(sym: Symbol, root: TypeRepr, ctx: Ctx): Nothing = {
+    val r = showType(root)
     report.errorAndAbort(
-      s"schema for ${root.show} is not supported: only Scala case classes/objects are supported for Sum Type leaves.\nActual: ${sym.fullName}.\n" +
-        s"Please consider using of them for Sum Types with base '${root.show}' or provide a custom implicitly accessible json.Schema for the Sum Type."
+      s"schema for $r is not supported${pathOf(outer(ctx))}: only case classes and case objects are supported as members of a sealed family, and ${fullName(sym)} is neither. " +
+        s"Make it one, or provide a json.schema.Predef or json.Schema for $r"
     )
+  }
 
   private val DiscriminatorOrder = "@discriminator annotation: please even if using call-by-name, use it in specified order. aka [field, phantom]"
 
@@ -238,23 +241,27 @@ trait Sums { this: Derivation =>
   /** A direct child of a sealed type. A singleton (case object, Scala 3 enum singleton case) is its term symbol and `TermRef`; a class has its type arguments bound from the parent's. */
   final case class SealedChild(sym: Symbol, tpe: TypeRepr, singleton: Boolean)
 
+  /** Not for the library's sealed tuple classes (`Tuple`, `NonEmptyTuple`, `*:`): they have no subclasses to derive from (see [[Tuples]]). */
   def isSealed(tpe: TypeRepr): Boolean = {
     val s = classSymbol(tpe)
-    s.isClassDef && s.flags.is(Flags.Sealed)
+    s.isClassDef && s.flags.is(Flags.Sealed) && !isStdTuple(tpe)
   }
 
   /** The direct children of a sealed type, in declaration order.
     *
     * Scala 3 lists a subclass that is local to a block or anonymous (`new Root {}`, the `sealed abstract case class X private (..)` + `new X(v) {}` smart-constructor idiom) as the sealed class
     * ITSELF, so it can't be recovered: that is a compile error (Scala 2 rejects the anonymous ones too, but derives a local case class).
+    * @param ctx
+    *   the context of `tpe` (without `tpe`), for the error's path
     */
-  def sealedChildren(tpe: TypeRepr): List[SealedChild] = classSymbol(tpe).children map { c =>
-    if (c == classSymbol(tpe))
+  def sealedChildren(tpe: TypeRepr, ctx: Ctx): List[SealedChild] = classSymbol(tpe).children map { c =>
+    if (c == classSymbol(tpe)) {
+      val t = showType(tpe)
       report.errorAndAbort(
-        s"schema for ${tpe.show} is not supported: it has a subclass that is local to a block or anonymous (e.g. `new ${c.name} {}`), which Scala 3 can't list. " +
-          s"Declare the subclasses at the top level or in an object, or provide an implicit json.Schema for ${tpe.show}"
+        s"schema for $t is not supported${pathOf(ctx)}: it has a subclass that is local to a block or anonymous (e.g. `new ${c.name} {}`), which can't be a member of a derived family. " +
+          s"Declare the subclasses at the top level or in an object, or provide an implicit json.Schema for $t"
       )
-    else if (c.isTerm) SealedChild(c, c.termRef, singleton = true)
+    } else if (c.isTerm) SealedChild(c, c.termRef, singleton = true)
     else if (c.flags.is(Flags.Module)) {
       val m = c.companionModule
       SealedChild(m, m.termRef, singleton = true)

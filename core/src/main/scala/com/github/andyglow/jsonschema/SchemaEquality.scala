@@ -124,6 +124,12 @@ object SchemaEquality {
 
       if (leftMisses.nonEmpty || rightMisses.nonEmpty) UnEqual(MissingVariants(path :+ Segment.Schema("allof"), leftMisses, rightMisses)) else Equal
 
+    case (l: Schema.`anyof`[_], r: Schema.`anyof`[_]) =>
+      val leftMisses  = r.subTypes -- l.subTypes
+      val rightMisses = l.subTypes -- r.subTypes
+
+      if (leftMisses.nonEmpty || rightMisses.nonEmpty) UnEqual(MissingVariants(path :+ Segment.Schema("anyof"), leftMisses, rightMisses)) else Equal
+
     case (l, r) =>
       if (l == r) Equal else UnEqual(ClashingSchemas(path, l, r))
   }

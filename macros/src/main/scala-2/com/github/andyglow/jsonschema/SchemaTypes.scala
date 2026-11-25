@@ -18,7 +18,8 @@ private[jsonschema] trait SchemaTypes {
         extra.copy(
           title = extra.title orElse x.texts.flatMap(_.title),
           description = extra.description orElse x.texts.flatMap(_.description),
-          discriminationKey = extra.discriminationKey orElse x.discriminatorKey.map(_.value)
+          discriminationKey = extra.discriminationKey orElse x.discriminatorKey.map(_.value),
+          deprecated = extra.deprecated || x.deprecated
         )
       )
     }
@@ -42,7 +43,7 @@ private[jsonschema] trait SchemaTypes {
         q"$withDescription.withDiscriminationKey($x)"
       }
 
-      withDiscriminationKey
+      if (extra.deprecated) q"$withDiscriminationKey.withDeprecated(true)" else withDiscriminationKey
     }
 
     // combination of hashCode/equal id used in
@@ -59,8 +60,16 @@ private[jsonschema] trait SchemaTypes {
       validations: Seq[Tree] = Seq.empty,
       title: Option[String] = None,
       description: Option[String] = None,
-      discriminationKey: Option[String] = None
+      discriminationKey: Option[String] = None,
+      deprecated: Boolean = false
     )
+
+    /** `schema` (built for another type: a java collection with a canonical container, `java.util.Optional` as an `option`) as a `Schema[tpe]`. The type parameter is phantom. */
+    case class Cast(tpe: Type, schema: SchemaType, extra: Extra = Extra()) extends SchemaType {
+      type Self = Cast;
+      def prefix                         = q"${schema.tree}.asInstanceOf[${tq"_root_.json.Schema[$tpe]"}]";
+      def withExtra(x: SchemaType.Extra) = copy(extra = x)
+    }
 
     case class Bool(extra: Extra = Extra()) extends SchemaType {
       type Self = Bool; def prefix = q"${N.Schema}.`boolean`()"; val tpe = typeOf[Boolean];
@@ -104,7 +113,8 @@ private[jsonschema] trait SchemaTypes {
       // the key pattern is a `Map[_, _]` validation; for a container other than Map itself (SortedMap, ListMap) the magnet
       // would be searched for `C[K, V]`, and there is none
       override protected def validationTypeArgs: List[Tree] =
-        List(tq"_root_.scala.collection.immutable.Map[$keyTpe, $valueTpe]", tq"_root_.scala.collection.immutable.Map[_, _]")
+        if (containerTpe.typeSymbol == T.jMap.typeSymbol) List(tq"_root_.java.util.Map[$keyTpe, $valueTpe]", tq"_root_.scala.collection.immutable.Map[_, _]")
+        else List(tq"_root_.scala.collection.immutable.Map[$keyTpe, $valueTpe]", tq"_root_.scala.collection.immutable.Map[_, _]")
       val tpe                            = appliedType(containerTpe, List(keyTpe, valueTpe));
       def withExtra(x: SchemaType.Extra) = copy(extra = x)
     }

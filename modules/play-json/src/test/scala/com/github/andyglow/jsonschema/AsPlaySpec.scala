@@ -30,6 +30,15 @@ class AsPlaySpec extends AnyPropSpec {
     forAll(examples) { (internal, play) => AsPlay(internal) shouldEqual play }
   }
 
+  property("AsPlay keeps key order") {
+    Json.stringify(AsPlay(obj("k1" -> 1, "k2" -> 2, "k3" -> 3, "k4" -> 4, "k5" -> 5, "k6" -> 6))) shouldBe """{"k1":1,"k2":2,"k3":3,"k4":4,"k5":5,"k6":6}"""
+  }
+
+  property("AsPlay.toValue keeps key order (a case-class default)") {
+    val props = AsValue.schema(withObjDefault, Draft04()).value("properties").asInstanceOf[obj]
+    props.value("s").asInstanceOf[obj].value("default").asInstanceOf[obj].fields.map(_._1).toList shouldBe List("a1", "a2", "a3", "a4", "a5", "a6")
+  }
+
   property("AsPlay escapes") {
     val jobj = AsPlay(obj(""""quoted-key"""" -> "\n\t'val\""))
     Json.stringify(jobj) shouldBe """{"\"quoted-key\"":"\n\t'val\""}"""
@@ -151,9 +160,30 @@ class AsPlaySpec extends AnyPropSpec {
       "required" -> Json.arr("id", "name", "metadata")
     )
   }
+
+  property("boxed and java.math defaults: play's Writes where it has one (BigInteger), else core's ToValue (Integer)") {
+    import AsPlay._
+
+    json.Json.schema[JavaDefaults] match {
+      case o: json.Schema.`object`[_] =>
+        o.fields.toList.map(f => f.name -> f.default) shouldEqual List("i" -> Some(num(5)), "bi" -> Some(num(BigInt("123456789012345678901234567890"))))
+      case other => fail(s"not an object: $other")
+    }
+  }
 }
 
 object AsPlaySpec {
+
+  // key order through `toValue`: a case-class default, encoded by play-json
+  final case class Six(a1: Int, a2: Int, a3: Int, a4: Int, a5: Int, a6: Int)
+  final case class WithObjDefault(s: Six = Six(1, 2, 3, 4, 5, 6))
+  implicit val sixWrites: Writes[Six]                         = Writes[Six] { s => Json.obj("a1" -> s.a1, "a2" -> s.a2, "a3" -> s.a3, "a4" -> s.a4, "a5" -> s.a5, "a6" -> s.a6) }
+  lazy val withObjDefault: _root_.json.Schema[WithObjDefault] = {
+    import AsPlay.toValue
+    _root_.json.Json.schema[WithObjDefault]
+  }
+  // E4: play-json has a Writes for java.math.BigInteger, none for the boxed java.lang types
+  case class JavaDefaults(i: java.lang.Integer = 5, bi: java.math.BigInteger = new java.math.BigInteger("123456789012345678901234567890"))
 
   implicit val jsValEq: Equality[JsValue] = new Equality[JsValue] {
     override def areEqual(a: JsValue, b: Any): Boolean = a match {

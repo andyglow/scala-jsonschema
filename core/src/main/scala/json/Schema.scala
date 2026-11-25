@@ -6,12 +6,15 @@ import com.github.andyglow.jsonschema.AsTree
 import json.Schema.`object`.Field.RWMode
 import json.schema.{validation => V}
 
+import scala.collection.immutable.ListSet
+
 sealed trait Schema[+T] {
   type Self <: Schema[T]
 
   private var _title: Option[String]                    = None
   private var _description: Option[String]              = None
   private var _discriminationKey: Option[String]        = None
+  private var _deprecated: Boolean                      = false
   private var _validations: collection.Seq[V.Def[_, _]] = Seq.empty
   def jsonType: String
   def withValidation[TT >: T, B](v: V.Def[B, _], vs: V.Def[B, _]*)(implicit
@@ -26,6 +29,9 @@ sealed trait Schema[+T] {
   def description: Option[String]       = _description
   def title: Option[String]             = _title
   def discriminationKey: Option[String] = _discriminationKey
+
+  /** Whether the schema is marked deprecated (`@deprecated` on a field or a type). Rendered as `"deprecated": true` from draft 2019-09 on. */
+  def deprecated: Boolean = _deprecated
 
   // NOTE: `.toSeq` is required for scala 2.13
   // otherwise we'll see
@@ -46,6 +52,7 @@ sealed trait Schema[+T] {
       _description foreach { x => sb.append(" description=`").append(x).append('`') }
       _title foreach { x => sb.append(" title=`").append(x).append('`') }
       _discriminationKey foreach { x => sb.append(" discriminationKey=`").append(x).append('`') }
+      if (_deprecated) sb.append(" deprecated")
     }
     def writeValidations(sb: StringBuilder): Unit = {
       if (validations.nonEmpty) {
@@ -76,6 +83,7 @@ sealed trait Schema[+T] {
     copy._discriminationKey = discriminationKey
     copy._description = description
     copy._title = title
+    copy._deprecated = this._deprecated
 
     copy
   }
@@ -85,6 +93,18 @@ sealed trait Schema[+T] {
     copy._description = x._description
     copy._title = x._title
     copy._discriminationKey = x._discriminationKey
+    copy._deprecated = x._deprecated
+
+    copy
+  }
+
+  /** A copy with `x`'s texts where `x` has them (else this schema's own) and this schema's validations followed by `x`'s: for a node that replaces `x` but keeps its own extras (an `Option` of an
+    * `any` lowered to the `any`).
+    */
+  private[json] def withExtraMergedFrom(x: Schema[_]): Self = {
+    val copy = duplicate(x._description orElse _description, x._title orElse _title, x._discriminationKey orElse _discriminationKey)
+    copy._validations = _validations ++ x._validations
+    copy._deprecated = _deprecated || x._deprecated
 
     copy
   }
@@ -101,15 +121,21 @@ sealed trait Schema[+T] {
       this.title == s.title &&
       this.description == s.description &&
       this.discriminationKey == s.discriminationKey &&
+      this.deprecated == s.deprecated &&
       // compare collections disregarding order
       this.validations.forall(s.validations.contains) &&
       s.validations.forall(this.validations.contains)
 
     case _ => false
   }
-  def withDescription(x: String): Self                     = duplicate(description = Some(x))
-  def withTitle(x: String): Self                           = duplicate(title = Some(x))
-  def withDiscriminationKey(x: String): Self               = duplicate(discriminationKey = Some(x))
+  def withDescription(x: String): Self       = duplicate(description = Some(x))
+  def withTitle(x: String): Self             = duplicate(title = Some(x))
+  def withDiscriminationKey(x: String): Self = duplicate(discriminationKey = Some(x))
+  def withDeprecated(x: Boolean): Self       = {
+    val copy = duplicate()
+    copy._deprecated = x
+    copy
+  }
   def toDefinition[TT >: T](sig: String): Schema.`def`[TT] = Schema.`def`(sig, this)
 
   /** This schema shaped by `profile` now (see [[json.schema.JsonSchemaProfile]]): its `option` nodes become plain JSON Schema. Idempotent, so a later render, under any profile, keeps this shape. */
@@ -201,6 +227,7 @@ object Schema extends SchemaCompanionPlatform {
       case object `ipv4`      extends Format // Internet host name, see RFC 1034, section 3.1.
       case object `ipv6`      extends Format // IPv6 address, as defined in RFC 2373, section 2.2.
       case object `uri`       extends Format // A universal resource identifier (URI), according to RFC3986.
+      case object `regex`     extends Format // A regular expression (ECMA 262), added in draft 07. Rendered on every draft, as `date`/`time` are.
 
       // added in 2019-09
       case object `duration`     extends Format // The duration format is from the ISO 8601 ABNF as given in Appendix A of RFC 3339
@@ -258,19 +285,48 @@ object Schema extends SchemaCompanionPlatform {
     }
   }
   object `dictionary` {
+
+    /** The keys a `Map[T, _]` can have, as a JSON Schema (ECMA-262) regex. It is rendered as the `patternProperties` key, and, unless it matches any string, enforced: `propertyNames` from draft 06
+      * on, `additionalProperties: false` on draft 04 (#466).
+      *
+      * Built-ins: `String` (any key), `Char` (one character), `Byte`/`Short`/`Int`/`Long` (an optional `-` and digits), `java.util.UUID`, `Boolean` (`true`/`false`). A `KeyPattern` in lexical scope
+      * takes priority over these.
+      */
     abstract class KeyPattern[T](val pattern: String)
     object KeyPattern {
-      def mk[T](pattern: String): KeyPattern[T]             = new KeyPattern[T](pattern) {}
+      def mk[T](pattern: String): KeyPattern[T] = new KeyPattern[T](pattern) {}
+
+      /** The names (sorted, regex-escaped) as alternatives: `^(?:A|B)$`. */
       def forEnum[T](vals: Iterable[String]): KeyPattern[T] = {
         require(vals.nonEmpty)
-        mk[T](vals.toList.distinct.sorted.mkString("^(?:", "|", ")$"))
+        mk[T](vals.toList.distinct.sorted.map(escape).mkString("^(?:", "|", ")$"))
       }
-      implicit object StringKeyPattern extends KeyPattern[String]("^.*$")
-      implicit object CharKeyPattern   extends KeyPattern[Char]("^.{1}$")
-      implicit object ByteKeyPattern   extends KeyPattern[Byte]("^[0-9]+$")
-      implicit object ShortKeyPattern  extends KeyPattern[Short]("^[0-9]+$")
-      implicit object IntKeyPattern    extends KeyPattern[Int]("^[0-9]+$")
-      implicit object LongKeyPattern   extends KeyPattern[Long]("^[0-9]+$")
+
+      /** `name` with the ECMA-262 regex syntax characters (`\ ^ $ . | ? * + ( ) [ ] { }`) backslash-escaped, so that it matches itself literally. */
+      def escape(name: String): String = {
+        val sb = new StringBuilder(name.length)
+        name foreach { c =>
+          if (RegexSyntaxChars.indexOf(c.toInt) >= 0) sb.append('\\')
+          sb.append(c)
+        }
+        sb.toString
+      }
+      private final val RegexSyntaxChars = "\\^$.|?*+()[]{}"
+
+      /** Any key (`[\s\S]`: `.` misses line terminators), so not enforced. */
+      implicit object StringKeyPattern  extends KeyPattern[String]("^[\\s\\S]*$")
+      implicit object CharKeyPattern    extends KeyPattern[Char]("^[\\s\\S]$")
+      implicit object ByteKeyPattern    extends KeyPattern[Byte]("^-?[0-9]+$")
+      implicit object ShortKeyPattern   extends KeyPattern[Short]("^-?[0-9]+$")
+      implicit object IntKeyPattern     extends KeyPattern[Int]("^-?[0-9]+$")
+      implicit object LongKeyPattern    extends KeyPattern[Long]("^-?[0-9]+$")
+      implicit object UUIDKeyPattern    extends KeyPattern[java.util.UUID]("^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$")
+      implicit object BooleanKeyPattern extends KeyPattern[Boolean]("^(?:true|false)$")
+      // Java's boxed integrals: the Scala type's pattern
+      implicit object JIntegerKeyPattern extends KeyPattern[java.lang.Integer](IntKeyPattern.pattern)
+      implicit object JLongKeyPattern    extends KeyPattern[java.lang.Long](LongKeyPattern.pattern)
+      implicit object JShortKeyPattern   extends KeyPattern[java.lang.Short](ShortKeyPattern.pattern)
+      implicit object JByteKeyPattern    extends KeyPattern[java.lang.Byte](ByteKeyPattern.pattern)
     }
   }
 
@@ -438,6 +494,9 @@ object Schema extends SchemaCompanionPlatform {
   // | Enum
   // +---------------
   //
+  /** A JSON `enum` of `values`, rendered in the order `values` iterates. `enum.of` and the derivation build an insertion-ordered `ListSet` (declaration order); build yours with `enum.of`, or pass a
+    * `ListSet`, to keep your order: a plain `Set` of 5 or more values iterates in hash order.
+    */
   final case class `enum`[T](tpe: Schema[_], values: Set[Value]) extends Schema[T] {
     type Self = `enum`[T]
     def mkCopy()                              = new `enum`[T](tpe, values)
@@ -460,9 +519,11 @@ object Schema extends SchemaCompanionPlatform {
     }
   }
   object `enum` {
-    def of[T](tpe: Schema[_], x: Value, xs: Value*): `enum`[T]                              = new `enum`[T](tpe, (x +: xs).toSet)
+
+    /** The values in the given order (an insertion-ordered `ListSet`; duplicates dropped). */
+    def of[T](tpe: Schema[_], x: Value, xs: Value*): `enum`[T]                              = new `enum`[T](tpe, ListSet((x +: xs): _*))
     def of[T](x: T, xs: T*)(implicit va: ValueAdapter[T], vs: ValueSchema[T]): `enum`[vs.S] = {
-      new `enum`[vs.S](vs.schema, (x +: xs).toSet.map { (x: T) => va.adapt(x) })
+      new `enum`[vs.S](vs.schema, ListSet((x +: xs).map { (x: T) => va.adapt(x) }: _*))
     }
   }
 
@@ -495,7 +556,9 @@ object Schema extends SchemaCompanionPlatform {
     def discriminatedBy(x: String): Self = new `oneof`[T](subTypes, Some(x))
   }
   object `oneof` {
-    def of[T](x: Schema[_], xs: Schema[_]*): `oneof`[T] = new `oneof`[T]((x +: xs).toSet, None)
+
+    /** Members in the given order (an insertion-ordered set). */
+    def of[T](x: Schema[_], xs: Schema[_]*): `oneof`[T] = new `oneof`[T](ListSet((x +: xs): _*), None)
   }
 
   // +------------
@@ -522,7 +585,41 @@ object Schema extends SchemaCompanionPlatform {
     }
   }
   object `allof` {
-    def of[T](x: Schema[_], xs: Schema[_]*): `allof`[T] = new `allof`[T]((x +: xs).toSet)
+
+    /** Members in the given order (an insertion-ordered set). */
+    def of[T](x: Schema[_], xs: Schema[_]*): `allof`[T] = new `allof`[T](ListSet((x +: xs): _*))
+  }
+
+  // +------------
+  // | AnyOf
+  // +---------------
+  //
+  /** At least one of the members matches (JSON Schema `anyOf`). A profile lowers a sealed family to it, instead of a `oneof`, when its members can't be told apart by the JSON (see
+    * [[json.schema.JsonSchemaProfile.overlappingMembers]]).
+    */
+  final case class `anyof`[T](subTypes: Set[Schema[_]]) extends Schema[T] {
+    type Self = `anyof`[T]
+    override def jsonType: String             = "anyof"
+    def mkCopy()                              = new `anyof`[T](subTypes)
+    override def canEqual(that: Any): Boolean = that.isInstanceOf[`anyof`[_]]
+    override def equals(obj: Any): Boolean    = obj match {
+      case `anyof`(s) => subTypes == s && super.equals(obj)
+      case _          => false
+    }
+    override def toString: String = ToString { sb =>
+      sb append "anyof("
+      subTypes foreach { tpe =>
+        sb append tpe
+        sb append ","
+      }
+      sb.setLength(sb.length - 1) // drop last comma
+      sb append ")"
+    }
+  }
+  object `anyof` {
+
+    /** Members in the given order (an insertion-ordered set). */
+    def of[T](x: Schema[_], xs: Schema[_]*): `anyof`[T] = new `anyof`[T](ListSet((x +: xs): _*))
   }
 
   // +------------
@@ -577,8 +674,9 @@ object Schema extends SchemaCompanionPlatform {
           case o: `object`[_]          => o.rebuild(o.fields.map { f => f.copy(tpe = deepCopy(f.tpe)) })
           case `array`(y, u)           => `array`(deepCopy(y), u)
           case `dictionary`(y)         => `dictionary`(deepCopy(y))
-          case `oneof`(ys, df)         => `oneof`(ys map deepCopy, df)
-          case `allof`(ys)             => `allof`(ys map deepCopy)
+          case `oneof`(ys, df)         => `oneof`(ListSet(ys.toSeq.map(deepCopy): _*), df)
+          case `allof`(ys)             => `allof`(ListSet(ys.toSeq.map(deepCopy): _*))
+          case `anyof`(ys)             => `anyof`(ListSet(ys.toSeq.map(deepCopy): _*))
           case `not`(y)                => `not`(deepCopy(y))
           case `value-class`(y)        => `value-class`[Any, Any](deepCopy(y).asInstanceOf[Schema[Any]])
           case `option`(y)             => `option`[Any](deepCopy(y).asInstanceOf[Schema[Any]])
@@ -595,11 +693,17 @@ object Schema extends SchemaCompanionPlatform {
   }
 
   object `def` {
+
+    /** `tpe` as a definition (an implicit `Schema` the macros found). A definition keeps its own title and description (they render next to its `$ref`); a value class's become its definition's, over
+      * its underlying type's.
+      */
     def adapt[T](tpe: Schema[_], sig: => String): `def`[T] = {
       tpe match {
-        case `def`(originalSig, innerTpe) => `def`(originalSig, innerTpe)
-        case `value-class`(innerTpe)      => `def`(sig, innerTpe)
-        case _                            => `def`(sig, tpe)
+        case d @ `def`(originalSig, innerTpe) => `def`[T](originalSig, innerTpe).duplicate(title = d.title, description = d.description).withDeprecated(d.deprecated)
+        case vc @ `value-class`(innerTpe)     =>
+          val inner = innerTpe.duplicate(title = vc.title orElse innerTpe.title, description = vc.description orElse innerTpe.description)
+          `def`(sig, if (vc.deprecated) inner.withDeprecated(true) else inner)
+        case _ => `def`(sig, tpe)
       }
     }
   }
@@ -686,6 +790,37 @@ object Schema extends SchemaCompanionPlatform {
     override def toString: String             = ToString(_ append "null")
   }
   object `null` extends `null`
+
+  // +------------
+  // | Any
+  // +---------------
+  // Any JSON value: `{}`, valid in every draft from 04 on (the boolean schema `true` only from 06), under every profile. For a field that holds
+  // arbitrary JSON (`JsValue`, `io.circe.Json`, a typesafe-config `ConfigValue`, ...): `Predef(Schema.`any`[JsValue]())`. Our own
+  // `com.github.andyglow.json.Value` has one built in; the bridges ship theirs in `AsX.predef`. `not(any)` is the schema nothing matches.
+  //
+  final case class `any`[T]() extends Schema[T] {
+    type Self = `any`[T]
+    def mkCopy()                              = `any`[T]()
+    override def canEqual(that: Any): Boolean = that.isInstanceOf[`any`[_]]
+    override def equals(obj: Any): Boolean    = obj match {
+      case `any`() => super.equals(obj)
+      case _       => false
+    }
+    override def hashCode: Int    = "any".hashCode
+    override def jsonType: String = "any" // never rendered: `{}` has no "type"
+    override def toString: String = ToString(_ append "any")
+  }
+
+  object `any` {
+
+    /** Whether `s` admits every JSON value: an `any`, or a value class or definition of one (a `ref`'s body is elsewhere: not known here). */
+    def admitsEverything(s: Schema[_]): Boolean = s match {
+      case `any`()          => true
+      case `value-class`(t) => admitsEverything(t)
+      case `def`(_, t)      => admitsEverything(t)
+      case _                => false
+    }
+  }
 
   // +------------
   // | Option

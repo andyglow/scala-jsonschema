@@ -42,6 +42,11 @@ class Json4sAcceptanceSpec extends AnyWordSpec {
     "ignore @discriminator (R4B)" in assertValid(rendered(Schemas.shape), written(Samples.shapes))
     "a member that has an implicit Schema of its own" in assertValid(rendered(Schemas.payment), written(Samples.payments))
     "value class members" in assertValid(rendered(Schemas.badge), written(Samples.badges))
+    "Map keys: negative Int and Long keys; json4s has no key serializer for UUID, Boolean or Char (#466)" in {
+      written(List(Samples.intStock)) shouldBe List("""{"byId":{"-1":1,"0":2,"42":3},"byLong":{"-4294967296":1}}""")
+      assertValid(rendered(Schemas.intStock), written(List(Samples.intStock)))
+      assertBadKeysRejected(rendered(_))
+    }
     "be the cross-check row of json4s" in {
       crossCheckRow(rendered(Schemas.pet)) shouldBe List(
         "circe semiauto"   -> 0,

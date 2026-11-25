@@ -105,11 +105,16 @@ class SchemaEqualsHashCodeSpec extends AnyWordSpec {
       assertEqualAndSameHash(`enum`.of[String](`string`, str("a"), str("b")), `enum`.of[String](`string`, str("b"), str("a")))
       assertEqualAndSameHash(`oneof`.of[Any](`string`, `integer`), `oneof`.of[Any](new `integer`, `string`))
       assertEqualAndSameHash(`allof`.of[Any](`string`, `integer`), `allof`.of[Any](new `integer`, `string`))
+      assertEqualAndSameHash(`anyof`.of[Any](`string`, `integer`), `anyof`.of[Any](new `integer`, `string`))
+      (`anyof`.of[Any](`string`, `integer`): Schema[_]) == `oneof`.of[Any](`string`, `integer`) shouldBe false
+      (`anyof`.of[Any](`string`, `integer`): Schema[_]) == `allof`.of[Any](`string`, `integer`) shouldBe false
       assertEqualAndSameHash(Schema.`not`[Int](`integer`), Schema.`not`[Int](new `integer`))
       assertEqualAndSameHash(`def`[Any]("x", `integer`), `def`[Any]("x", new `integer`))
       assertEqualAndSameHash(`value-class`[Any, Int](`integer`), `value-class`[Any, Int](new `integer`))
       assertEqualAndSameHash(`const`[Any](str("x")), `const`[Any](str("x")))
       assertEqualAndSameHash(Schema.`null`, new Schema.`null`)
+      assertEqualAndSameHash(`any`[Int](), `any`[String]())
+      assertEqualAndSameHash(`any`[Int]().withTitle("t"), `any`[Int]().withTitle("t"))
       assertEqualAndSameHash(`option`[Int](`integer`), `option`[Int](new `integer`))
       assertEqualAndSameHash(fam(`integer`), fam(new `integer`))
     }
@@ -121,6 +126,9 @@ class SchemaEqualsHashCodeSpec extends AnyWordSpec {
       assertNotEqual(`option`[Int](`integer`), `option`[String](`string`))
       assertNotEqual(`option`[Int](`integer`), `integer`)
       assertNotEqual(Schema.`null`, `string`)
+      assertNotEqual(`any`[Int](), `any`[Int]().withDescription("d"))
+      assertNotEqual(`any`[Any](), `object`.Free[Any]())
+      assertNotEqual(`any`[Any](), Schema.`null`)
       assertNotEqual(fam(`integer`), fam(`string`))
       assertNotEqual(fam(`integer`), `family`[Any](List(member(`integer`).copy(name = "B"))))
       assertNotEqual(fam(`integer`), fam(`integer`).copy(enumsAsOneOf = true))

@@ -1,0 +1,182 @@
+{
+  "schema": {
+    "kind": "object",
+    "fields": [
+      {
+        "name": "id",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "string"
+        }
+      },
+      {
+        "name": "data",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "any"
+        }
+      },
+      {
+        "name": "opt",
+        "required": false,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "any"
+        }
+      },
+      {
+        "name": "meta",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "object",
+          "free": true,
+          "fields": []
+        }
+      },
+      {
+        "name": "list",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "array",
+          "unique": false,
+          "items": {
+            "kind": "any"
+          }
+        }
+      },
+      {
+        "name": "map",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "dictionary",
+          "values": {
+            "kind": "any"
+          }
+        }
+      },
+      {
+        "name": "wrapped",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "value-class",
+          "schema": {
+            "kind": "any"
+          }
+        }
+      }
+    ]
+  },
+  "draft-04": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "additionalProperties": false,
+    "properties": {
+      "data": {},
+      "id": {
+        "type": "string"
+      },
+      "list": {
+        "items": {},
+        "type": "array"
+      },
+      "map": {
+        "patternProperties": {
+          "^[\\s\\S]*$": {}
+        },
+        "type": "object"
+      },
+      "meta": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "opt": {},
+      "wrapped": {}
+    },
+    "required": [
+      "data",
+      "id",
+      "list",
+      "map",
+      "meta",
+      "wrapped"
+    ],
+    "type": "object"
+  },
+  "draft-07": {
+    "$id": "golden",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "additionalProperties": false,
+    "properties": {
+      "data": {},
+      "id": {
+        "type": "string"
+      },
+      "list": {
+        "items": {},
+        "type": "array"
+      },
+      "map": {
+        "patternProperties": {
+          "^[\\s\\S]*$": {}
+        },
+        "type": "object"
+      },
+      "meta": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "opt": {},
+      "wrapped": {}
+    },
+    "required": [
+      "data",
+      "id",
+      "list",
+      "map",
+      "meta",
+      "wrapped"
+    ],
+    "type": "object"
+  },
+  "draft-2020-12": {
+    "$id": "golden",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "data": {},
+      "id": {
+        "type": "string"
+      },
+      "list": {
+        "items": {},
+        "type": "array"
+      },
+      "map": {
+        "patternProperties": {
+          "^[\\s\\S]*$": {}
+        },
+        "type": "object"
+      },
+      "meta": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "opt": {},
+      "wrapped": {}
+    },
+    "required": [
+      "data",
+      "id",
+      "list",
+      "map",
+      "meta",
+      "wrapped"
+    ],
+    "type": "object"
+  }
+}
