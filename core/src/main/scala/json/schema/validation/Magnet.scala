@@ -45,6 +45,17 @@ object Magnet extends SeqMagnet {
   implicit def vectorMagnet[X]: Magnet[Vector[X], Iterable[_]] = mk[Vector[X], Iterable[_]]
   implicit def setMagnet[X]: Magnet[Set[X], Iterable[_]]       = mk[Set[X], Iterable[_]]
 
+  // Java's boxed numbers and java.math have no `Numeric`. One magnet per type: a generic `X <: java.lang.Number` would be
+  // ambiguous with `numericMagnet` for `scala.BigDecimal` / `BigInt`, which extend `java.lang.Number`.
+  implicit def jIntegerMagnet: Magnet[java.lang.Integer, Number]       = mk[java.lang.Integer, Number]
+  implicit def jLongMagnet: Magnet[java.lang.Long, Number]             = mk[java.lang.Long, Number]
+  implicit def jShortMagnet: Magnet[java.lang.Short, Number]           = mk[java.lang.Short, Number]
+  implicit def jByteMagnet: Magnet[java.lang.Byte, Number]             = mk[java.lang.Byte, Number]
+  implicit def jFloatMagnet: Magnet[java.lang.Float, Number]           = mk[java.lang.Float, Number]
+  implicit def jDoubleMagnet: Magnet[java.lang.Double, Number]         = mk[java.lang.Double, Number]
+  implicit def jBigDecimalMagnet: Magnet[java.math.BigDecimal, Number] = mk[java.math.BigDecimal, Number]
+  implicit def jBigIntegerMagnet: Magnet[java.math.BigInteger, Number] = mk[java.math.BigInteger, Number]
+
   implicit def chrMagnet: Magnet[Char, String]            = mk[Char, String]
   implicit def characterMagnet: Magnet[Character, String] = mk[Character, String]
   implicit def uuidMagnet: Magnet[java.util.UUID, String] = mk[java.util.UUID, String]

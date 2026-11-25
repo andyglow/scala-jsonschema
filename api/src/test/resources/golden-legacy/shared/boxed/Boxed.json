@@ -1,0 +1,193 @@
+{
+  "schema": {
+    "kind": "object",
+    "fields": [
+      {
+        "name": "i",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "integer"
+        }
+      },
+      {
+        "name": "l",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "number"
+        }
+      },
+      {
+        "name": "d",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "number"
+        }
+      },
+      {
+        "name": "f",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "number"
+        }
+      },
+      {
+        "name": "s",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "number"
+        }
+      },
+      {
+        "name": "b",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "number"
+        }
+      },
+      {
+        "name": "z",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "boolean"
+        }
+      },
+      {
+        "name": "oi",
+        "required": false,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "integer"
+        }
+      }
+    ]
+  },
+  "draft-04": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "additionalProperties": false,
+    "properties": {
+      "b": {
+        "type": "number"
+      },
+      "d": {
+        "type": "number"
+      },
+      "f": {
+        "type": "number"
+      },
+      "i": {
+        "type": "integer"
+      },
+      "l": {
+        "type": "number"
+      },
+      "oi": {
+        "type": "integer"
+      },
+      "s": {
+        "type": "number"
+      },
+      "z": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "b",
+      "d",
+      "f",
+      "i",
+      "l",
+      "s",
+      "z"
+    ],
+    "type": "object"
+  },
+  "draft-07": {
+    "$id": "golden",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "additionalProperties": false,
+    "properties": {
+      "b": {
+        "type": "number"
+      },
+      "d": {
+        "type": "number"
+      },
+      "f": {
+        "type": "number"
+      },
+      "i": {
+        "type": "integer"
+      },
+      "l": {
+        "type": "number"
+      },
+      "oi": {
+        "type": "integer"
+      },
+      "s": {
+        "type": "number"
+      },
+      "z": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "b",
+      "d",
+      "f",
+      "i",
+      "l",
+      "s",
+      "z"
+    ],
+    "type": "object"
+  },
+  "draft-2020-12": {
+    "$id": "golden",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "b": {
+        "type": "number"
+      },
+      "d": {
+        "type": "number"
+      },
+      "f": {
+        "type": "number"
+      },
+      "i": {
+        "type": "integer"
+      },
+      "l": {
+        "type": "number"
+      },
+      "oi": {
+        "type": "integer"
+      },
+      "s": {
+        "type": "number"
+      },
+      "z": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "b",
+      "d",
+      "f",
+      "i",
+      "l",
+      "s",
+      "z"
+    ],
+    "type": "object"
+  }
+}

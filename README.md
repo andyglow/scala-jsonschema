@@ -315,9 +315,10 @@ Recursive types (`case class Node(children: List[Node])`) become a definition au
 | Scala type                                                                  | JSON Schema                                     |
 |-----------------------------------------------------------------------------|-------------------------------------------------|
 | `String`, `Char`, `java.lang.Character`                                     | `string` (`Char`: exactly one character)        |
-| `Boolean`                                                                   | `boolean`                                       |
-| `Int`                                                                       | `integer`                                       |
+| `Boolean`, `java.lang.Boolean`                                              | `boolean`                                       |
+| `Int`, `java.lang.Integer`                                                  | `integer`                                       |
 | `Byte`, `Short`, `Long`, `BigInt`, `Float`, `Double`, `BigDecimal`          | `number`                                        |
+| `java.lang.Byte`/`Short`/`Long`/`Float`/`Double`, `java.math.BigInteger`/`BigDecimal` | `number` (as the Scala type)          |
 | `java.time.Instant`, `LocalDateTime`, `ZonedDateTime`, `OffsetDateTime`, `java.util.Date`, `java.sql.Timestamp` | `string`, format `date-time` |
 | `java.time.LocalDate`, `java.sql.Date`                                      | `string`, format `date`                         |
 | `java.time.LocalTime`, `OffsetTime`, `java.sql.Time`                        | `string`, format `time`                         |
@@ -334,8 +335,8 @@ Recursive types (`case class Node(children: List[Node])`) become a definition au
 | sealed family, `enum`, `Enumeration`, Java enum                             | see [below](#sum-types-and-enums)               |
 
 A `Map` key needs a known pattern (a `KeyPattern`): `String`, `Char`, `Byte`, `Short`, `Int`, `Long` (negative keys
-included), `java.util.UUID`, `Boolean`, value classes of these and enums have one. For another key type, provide one
-(one in scope also replaces a built-in one):
+included; also their `java.lang` boxes), `java.util.UUID`, `Boolean`, value classes of these and enums have one. For
+another key type, provide one (one in scope also replaces a built-in one):
 
 ```scala
 import json.Schema.dictionary.KeyPattern
