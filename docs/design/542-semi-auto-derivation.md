@@ -348,6 +348,36 @@ The owner accepted all four recommendations:
 - #482 / PR #488 (cats collections) becomes: the two cats fixes (`nesSchema` without `uniqueItems`, `Chain` with `minItems`), the cats docs, and tests of the
   three cases on top of this change.
 
+## Implementation notes (2026-11-25)
+
+**Spike results:**
+- **(a)** Scala 2 expands a nested blackbox implicit macro during the outer `c.inferImplicitValue`. So a ThreadLocal "searching" flag around the derivation's
+  lookups is what tells `auto.derived` to give the hole. On Scala 3, `Json.schema`, `objectSchema` and `derives` search after typer and get expanded holes;
+  `DerivedSchema` searches in typer and gets the unexpanded `auto.derived[X]` call. Both are treated as holes.
+- **(b)** Scala 2 substitution: each hole becomes a fresh `Ident`, the tree is untypechecked, and the shape is typechecked with a stub
+  (`null.asInstanceOf[T]`, because `Exported` is a value class). Package qualifiers are rewritten to `_root_` paths after `untypecheck`.
+- **(c)** Scala 3: a `TreeMap` with `changeOwner` works in both phases, under `-Xcheck-macros`.
+- **(d)** The marker splice is needed on both versions. It is done in every expansion where the marker resolves, not only in auto mode. Otherwise
+  `Json.schema[Int]` with `import Json.auto._` in scope (auto never needed) reports the import unused.
+
+**Deviations from the design:**
+- **Core's own collection constructors** (`listS`, `setS`, `vectorS`, `arrayS`, `dictS`) found with a hole use the native node, instead of filling the hole.
+  The output stays exactly as before: `dictS` would give `Map[String, X]` no key pattern, where the native node gives `^[\s\S]*$`. Holes are filled for
+  everything else: cats, a user's Predef constructors, a generic `implicit def ...: Schema[Box[T]]`.
+- **Holes are resolved in the same context** as the type that holds them; the container is not pushed on the stack.
+- **No `Schema.building` when the root itself came from an implicit.** Otherwise `Json.schema[Inner]` with an implicit `Schema[Inner]` would be a `lazy-ref`.
+- **Warnings:** Scala 3 reports only one diagnostic per position, so it gives one warning per expansion, with one prefixed line per gated type. Scala 2 gives
+  one warning per type.
+- **No warning-capture test:** there is no ToolBox or compiler API on the test classpath. The warnings were checked by hand with the `-Wconf` silencer removed.
+
+**Open problem (owner decision):** on Scala 2, `{ import Json.auto._; implicitly[Predef[Unsupported]] }` now fails with scalac's plain "could not find
+implicit value for parameter p: json.schema.Predef[Unsupported]", without the derivation's reason.
+- Why: `auto.derived` is now the argument of the bridge, so scalac expands it while the user's own search is still choosing. A failed expansion only makes
+  `importedPredef` inapplicable, and Scala 2 doesn't report why a nested implicit failed.
+- `Json.schema[Unsupported]` (the macro path) still gives the full reason, and Scala 3 is unaffected.
+- The existing `AutoDerivationSpec` test "auto: a type it can't derive is a compile error that says why" fails on 2.12 and 2.13 because of this. It is left
+  unchanged, pending the owner's decision.
+
 ## Review log
 Round 1 (independent reviewer, 2026-11-24, against `5b24a80b`):
 - S-R1 (must) auto through the bridge reaches every Predef constructor's element (`listS` etc. are Predef constructors, `Predef.scala:143-155`); recursion would

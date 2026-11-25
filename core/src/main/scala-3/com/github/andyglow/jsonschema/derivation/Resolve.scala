@@ -79,11 +79,17 @@ trait Resolve { this: Derivation =>
 
   /** A nested type of a gated kind without an implicit `Schema` or `Predef`: derived here (auto) or with the phase-1 warning, or the error under `Flag.SemiAuto`. */
   private def semiAutoGate(tpe: TypeRepr, ctx: Ctx): Unit =
-    if (mode != Mode.Auto && !isAutoAvailable(tpe) && isGatedKind(tpe)) {
+    if (mode != Mode.Auto && !isCaseOfFamilyOnStack(tpe, ctx) && !isAutoAvailable(tpe) && isGatedKind(tpe)) {
       if (semiAutoNow) semiAutoError(tpe, ctx)
       // the warning only from an expansion that isn't inside an implicit search: `DerivedSchema` always is (typer), an inline given expanded by another derivation's search is too
       else if (mode != Mode.DerivedSchema && !AutoGuard.isSearching && !warned.exists(_._1 =:= tpe)) warned = warned :+ (tpe -> semiAutoWarning(tpe, ctx))
     }
+
+  /** A case of a sealed family being derived, met as a field type (`Group(items: List[Circle])` inside `Shape`): part of the family, so part of `T` itself, as on Scala 2 (`USemiAuto`). */
+  private def isCaseOfFamilyOnStack(tpe: TypeRepr, ctx: Ctx): Boolean = {
+    val bases = tpe.baseClasses.drop(1).toSet
+    ctx.stack.exists(s => isSealed(s) && bases.contains(classSymbol(s)))
+  }
 
   private var warned: List[(TypeRepr, String)] = Nil
 

@@ -92,14 +92,14 @@ class AutoSpec extends AnyFunSuite {
 
   private def rendered(s: Schema[_]): String = AsValue.schema(s, Version.Draft07("x")).toString
 
-  test("recursion through List: a definition and a $ref, as without the import") {
+  test("recursion through List: a definition and a ref, as without the import") {
     Auto.node shouldEqual nodeDef(`array`[Node, List](`ref`[Node](nodeSig)))
     Auto.node shouldEqual Plain.node
   }
 
-  test("a type that only contains a recursive one (Forest(trees: List[Node])): as without the import, and it renders with a $ref") {
+  test("a type that only contains a recursive one (Forest(trees: List[Node])): as without the import, and it renders with a ref") {
     Auto.forest shouldEqual Plain.forest
-    rendered(Auto.forest) should include("$ref")
+    rendered(Auto.forest) should include(f"$$ref")
   }
 
   test("recursion through Map, Array and Option") {
@@ -126,11 +126,11 @@ class AutoSpec extends AnyFunSuite {
     Auto.hasBox shouldEqual `object`[HasBox](Field("foos", `array`[Foo, List](fooSchema)))
   }
 
-  test("recursion through a container with a Predef constructor: a definition and a $ref") {
+  test("recursion through a container with a Predef constructor: a definition and a ref") {
     Auto.bnode shouldEqual `def`[BNode](bnodeSig, `object`[BNode](Field("name", `string`), Field("children", `array`[BNode, List](`ref`[BNode](bnodeSig)))))
     // a type that only contains the recursive one: Box[BNode] is an array (no `items` field of Box's own), and it renders with a $ref
     Auto.bforest.toString shouldNot include("items:")
-    rendered(Auto.bforest) should include("$ref")
+    rendered(Auto.bforest) should include(f"$$ref")
   }
 
   test("an element that can't be derived, inside List and inside a Predef constructor: a compile error that names it") {
