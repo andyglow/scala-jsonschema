@@ -1,5 +1,5 @@
 # Semi-auto derivation by default, deep derivation opt-in via `Json.auto`  (issue #542)
-Status: approved (independent reviewer, 2026-11-24, 4 rounds); open questions for the owner below (owner direction 2026-11-24: "design it similarly to circe/pureconfig")
+Status: approved (independent reviewer, 2026-11-24, 4 rounds; owner decisions 2026-11-24); being implemented (owner direction 2026-11-24: "design it similarly to circe/pureconfig")
 
 ## Problem
 `Json.schema[T]` derives every nested type that has no implicit `Schema` or `Predef`, from its structure, at any depth (Scala 2 `Macroses.scala` `genTree`;
@@ -225,11 +225,11 @@ final class `lazy-ref`[T] private (val sig: String, body: => Schema[_]) extends 
 - **Phase 1 (0.10.0), recommended:**
   - Semi-auto is the documented model; `Exported` auto and the precedence fixes ship.
   - A gated nested type without an instance is still derived in place, with a warning. The warning has a stable prefix that `-Wconf:msg=` can match (macros can't
-    set a category): `[json-schema:semi-auto] schema for X is derived implicitly (in ...); this becomes an error in a future release. <the two fixes>`.
+    set a category): `[json-schema-semi-auto] schema for X is derived implicitly (in ...); this becomes an error in a future release. <the two fixes>`.
   - Opt in early with `Flag.SemiAuto`, which gives the error now. Flags are read with one implicit `Flag` search (`UFlags.scala:11`, `Implicits.scala:138`), so
     several flags combine in one value: `implicit val flags: Flag with Flag.EnumsAsOneOf with Flag.SemiAuto = null`. Two separate flag vals are ambiguous, so
     both would silently turn off; this is documented.
-  - Users on `-Werror` see errors at once. The release notes say so, and give `-Wconf:msg=\[json-schema:semi-auto\]:s` as the way to keep phase 1 silent.
+  - Users on `-Werror` see errors at once. The release notes say so, and give `-Wconf:msg=json-schema-semi-auto:s` as the way to keep phase 1 silent.
   - Macros run inside implicit searches can lose or duplicate warnings for discarded candidates: Scala 2's whitebox `DerivedSchema`, Scala 3's transparent
     `DerivedSchema`, and Scala 3 auto expanding during a search. The warning is emitted only from the outermost expansion, the one not inside a search.
   - So `DerivedSchema`, which always expands inside a search, gets no phase-1 warning. Its users go straight from silence to phase 2's error, which is the terse
@@ -271,7 +271,7 @@ final class `lazy-ref`[T] private (val sig: String, body: => Schema[_]) extends 
 6. **Tests:**
    - The existing suites, about 1,150 `Json.schema`/`objectSchema` call sites in about 100 test files, rely on deep derivation, and must keep testing what they
      test now. So no auto import is added to them; that would silently turn them into auto-mode tests (S-R6). Instead, Test scopes silence the phase-1 warning
-     with `-Wconf:msg=\[json-schema:semi-auto\]:s` in build.sbt. Goldens must not change: run the full matrix before and after.
+     with `-Wconf:msg=json-schema-semi-auto:s` in build.sbt. Goldens must not change: run the full matrix before and after.
    - `SemiAutoSpec` (api, shared, with `Flag.SemiAuto`):
      - the error for each gated kind, nested directly and in `Option`, `List`, `Map` values, tuples and `Either`;
      - native types without instances;
@@ -328,7 +328,14 @@ final class `lazy-ref`[T] private (val sig: String, body: => Schema[_]) extends 
 - **Legacy profile:** not affected (rendering only).
 - **Core rule:** gains step 5 (gated kinds: semi-auto → error, auto → derive). Steps 1 to 4 are unchanged.
 
-## Open questions for the owner
+## Owner decisions (2026-11-24)
+The owner accepted all four recommendations:
+- **Rollout:** a phase-1 warning in 0.10.0; the error in the next breaking release.
+- **Mutual recursion:** the `lazy-ref` node.
+- **Gated kinds:** only case classes and sealed families with a case-class case. Value classes, case-object enums and Scala 3 enums stay native.
+- **Names:** `Flag.SemiAuto`, `Exported`, `lazy-ref`.
+
+## Open questions for the owner (as asked; answered above)
 1. **Rollout:** warning first (phase 1, recommended), or the error in 0.10.0.
 2. **Mutual recursion:** the `lazy-ref` node (recommended), or documentation only.
 3. **Which nested kinds are gated.** Value classes, all-case-object families and Scala 3 `enum`s are as common nested as case classes. Gating them is
