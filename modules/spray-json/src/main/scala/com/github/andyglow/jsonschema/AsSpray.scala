@@ -4,8 +4,8 @@ import com.github.andyglow.json._
 import com.github.andyglow.json.Value._
 import json.Schema
 import spray.json._
-import com.github.andyglow.scalamigration._
 import json.schema.Version
+import scala.collection.immutable.ListMap
 
 object AsSpray {
 
@@ -73,8 +73,9 @@ object AsSpray {
       x => arr { x.elements map { unadapt(_) } }
     )
     implicit val objAdapter: Aux[obj, JsObject] = make(
-      x => JsObject { x.value.toMap mapV { adapt(_) } },
-      x => obj { x.fields.toMap mapV { unadapt(_) } }
+      // spray's JsObject is a Map; a ListMap keeps the order (its varargs constructor builds a HashMap)
+      x => JsObject(ListMap(x.fields.toList map { case (k, v) => (k, adapt(v)) }: _*)),
+      x => obj.ordered(x.fields.toList map { case (k, v) => (k, unadapt(v)) }) // toList: on 2.12, `Map.map` builds a HashMap even from a ListMap
     )
   }
 

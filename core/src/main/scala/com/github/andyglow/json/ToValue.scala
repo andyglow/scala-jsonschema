@@ -32,16 +32,14 @@ trait LowPriorityMapImplicits { this: LowPriorityPrimitiveImplicits =>
   implicit def StrMapV[T](implicit to: ToValue[T]): ToValue[Map[String, T]] = {
 
     mk { items =>
-      val v = items map { case (k, v) => (k, to(v)) }
-      obj(v.toMap)
+      obj.ordered(items.toSeq map { case (k, v) => (k, to(v)) })
     }
   }
 
   implicit def IntMapV[T](implicit to: ToValue[T]): ToValue[Map[Int, T]] = {
 
     mk { items =>
-      val v = items map { case (k, v) => (k.toString, to(v)) }
-      obj(v.toMap)
+      obj.ordered(items.toSeq map { case (k, v) => (k.toString, to(v)) })
     }
   }
 }

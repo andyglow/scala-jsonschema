@@ -5,7 +5,6 @@ import com.github.andyglow.json._
 import json.Schema
 import json.schema.Version
 import org.json4s.JsonAST._
-import com.github.andyglow.scalamigration._
 import org.json4s.Writer
 
 object AsJson4s {
@@ -76,14 +75,14 @@ object AsJson4s {
       make(x => JArray { x.value.toList map { adapt(_) } }, x => arr { x.arr map { unadapt(_) } })
     implicit val objAdapter: Aux[obj, JObject] = make(
       { x =>
-        val fields = x.value.toList.map { case (k, v) =>
+        val fields = x.fields.toList.map { case (k, v) =>
           JField(k, AsJson4s.apply(v))
         }
 
         JObject(fields)
       },
       { x =>
-        obj { x.obj.toMap mapV { unadapt(_) } }
+        obj.ordered(x.obj map { case (k, v) => (k, unadapt(v)) })
       }
     )
   }
