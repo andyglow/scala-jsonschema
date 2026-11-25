@@ -48,4 +48,11 @@ object Magnet extends SeqMagnet {
   implicit def chrMagnet: Magnet[Char, String]            = mk[Char, String]
   implicit def characterMagnet: Magnet[Character, String] = mk[Character, String]
   implicit def uuidMagnet: Magnet[java.util.UUID, String] = mk[java.util.UUID, String]
+
+  // java.time types whose Predef is a string with a pattern (#474)
+  implicit def periodMagnet: Magnet[java.time.Period, String]         = mk[java.time.Period, String]
+  implicit def yearMagnet: Magnet[java.time.Year, String]             = mk[java.time.Year, String]
+  implicit def yearMonthMagnet: Magnet[java.time.YearMonth, String]   = mk[java.time.YearMonth, String]
+  implicit def monthDayMagnet: Magnet[java.time.MonthDay, String]     = mk[java.time.MonthDay, String]
+  implicit def zoneOffsetMagnet: Magnet[java.time.ZoneOffset, String] = mk[java.time.ZoneOffset, String]
 }
