@@ -79,6 +79,18 @@ class EnumeratumSupportSpec extends AnyWordSpec {
         `string`
       ).withValidation(`patternProperties` := "^(?:q|z)$")
     }
+
+    // B7: with more than 4 values a Set iterates in hash order; the values must come out as declared
+    "keep declaration order of EnumEntry values" in {
+      def values(s: Schema[_]): List[Any] = s match {
+        case e: `enum`[_] => e.values.toList
+        case other        => fail(other.toString)
+      }
+      values(Json.schema[E6]) shouldBe List("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun").map(com.github.andyglow.json.Value.str(_))
+      values(Json.schema[IntV6]) shouldBe List(7, 6, 5, 4, 3, 2).map(com.github.andyglow.json.Value.num(_))
+      // the aliases (extraNamesToValuesMap) after the declared names, by name
+      values(Json.schema[EAlias]) shouldBe List("A", "B", "a1", "a2", "b1", "b2", "b3").map(com.github.andyglow.json.Value.str(_))
+    }
   }
 }
 
@@ -105,6 +117,37 @@ object EnumeratumSupportSpec {
     case object AaAa extends E2
     case object BbBb extends E2
     case object CcCc extends E2
+    override def values = findValues
+  }
+
+  sealed trait E6 extends EnumEntry
+  object E6       extends Enum[E6] {
+    case object Mon extends E6
+    case object Tue extends E6
+    case object Wed extends E6
+    case object Thu extends E6
+    case object Fri extends E6
+    case object Sat extends E6
+    case object Sun extends E6
+    override def values = findValues
+  }
+
+  sealed trait EAlias extends EnumEntry
+  object EAlias       extends Enum[EAlias] {
+    case object A extends EAlias
+    case object B extends EAlias
+    override def values                                     = findValues
+    override def extraNamesToValuesMap: Map[String, EAlias] = Map("b3" -> B, "a2" -> A, "b1" -> B, "a1" -> A, "b2" -> B)
+  }
+
+  sealed abstract class IntV6(val value: Int) extends IntEnumEntry
+  object IntV6                                extends IntEnum[IntV6] {
+    case object A extends IntV6(7)
+    case object B extends IntV6(6)
+    case object C extends IntV6(5)
+    case object D extends IntV6(4)
+    case object E extends IntV6(3)
+    case object F extends IntV6(2)
     override def values = findValues
   }
 

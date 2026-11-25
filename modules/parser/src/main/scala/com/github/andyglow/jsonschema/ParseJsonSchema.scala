@@ -56,11 +56,12 @@ object ParseJsonSchema {
     def makeStrOrEnum = x.value.arr("enum") match {
       case None      => makeStr
       case Some(arr) =>
+        val values = immutable.ListSet(arr.toSeq: _*) // the input's order
         tpe.map(_.toLowerCase) match {
-          case None | Some("string") => Success { `enum`(`string`, arr.toSet) }
-          case Some("integer")       => Success { `enum`(`integer`, arr.toSet) }
-          case Some("boolean")       => Success { `enum`(`boolean`, arr.toSet) }
-          case Some("number")        => Success { `enum`(`number`[Double], arr.toSet) }
+          case None | Some("string") => Success { `enum`(`string`, values) }
+          case Some("integer")       => Success { `enum`(`integer`, values) }
+          case Some("boolean")       => Success { `enum`(`boolean`, values) }
+          case Some("number")        => Success { `enum`(`number`[Double], values) }
           case Some(x)               => Failure { InvalidEnumType(x) }
         }
     }

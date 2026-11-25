@@ -218,7 +218,8 @@ object JsonSchemaProfile {
 
     // ---- sealed families
     //
-    // Under Neutral and Legacy this reproduces what the 0.7 macro derived, in the same member order (`oneof` and `enum` hold Sets: built in the same insertion order, they iterate the same way):
+    // Under Neutral and Legacy this reproduces what the 0.7 macro derived, in the same member order (`oneof` holds a Set: built in the same insertion order, it iterates the same way; an `enum`'s
+    // values keep the members' order, which 0.7 lost from 5 values on):
     //   - a case class / value class member gets the member's title, description and `@discriminatorKey` where it has none of its own; with `@discriminator`, its key is set to
     //     `@discriminatorKey`, else the signature; then `@definition` wraps it. A member from an implicit Schema/Predef is used as it is;
     //   - singletons with equal value schemas merge into one `enum` (moved to the end at every merge), their texts dropped; with `enumsAsOneOf`, a `const` each, with its texts and key;
@@ -339,7 +340,7 @@ object JsonSchemaProfile {
       }
       val schemas = entries.toList map {
         case Single(s)          => s
-        case Merged(vs, values) => `enum`[Any](vs, values.toSet)
+        case Merged(vs, values) => `enum`.of[Any](vs, values.head, values.tail: _*) // never empty; `of` keeps the members' order
       }
 
       val singletonsOnly = asString && f.members.nonEmpty && f.members.forall(_.kind == `family`.Kind.Singleton)

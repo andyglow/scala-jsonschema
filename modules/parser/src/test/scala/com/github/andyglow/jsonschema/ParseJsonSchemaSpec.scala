@@ -243,6 +243,14 @@ class ParseJsonSchemaSpec extends AnyFunSuite {
     ParseJsonSchema("""{ "type": "string", }""").isFailure shouldBe true
   }
 
+  test("enum: values keep the order of the input array") {
+    val parsed = parseType("""{ "type": "string", "enum": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] }""").value
+    parsed match {
+      case e: `enum`[_] => e.values.toList shouldBe List("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun").map(Value.str(_))
+      case other        => fail(other.toString)
+    }
+  }
+
   def parseType(x: String): Try[Schema[_]] =
     ParseJson(x) find { case e: Value.obj => e } flatMap ParseJsonSchema.makeType
 }
