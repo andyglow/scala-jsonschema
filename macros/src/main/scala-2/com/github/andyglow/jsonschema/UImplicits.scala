@@ -119,9 +119,28 @@ private[jsonschema] trait UImplicits { this: UContext with UCommons with USignat
       lookupSchema match {
         case NotFound      => None
         case FromPredef(x) => Some(U.`-from-tree-`(tpe, x))
+        // no compile-time name is right for every instantiation of an abstract type: a `def`/`ref` instance keeps its own name, anything else is inlined (#297; Scala 3: `FromImplicit` with no sig)
+        case FromSchema(x) if mentionsAbstractType(tpe) => Some(U.`-from-tree-`(tpe, x))
+        // a generic implicit named its definition for its own type parameters (`pkg.Tree[pkg.M.A]`): rename it and its refs to this type (#297; Scala 3: `FromImplicit.generic`)
+        case FromSchema(x) if isGenericImplicit(x) =>
+          val sig     = signature(tpe)
+          val renamed = q"""$x match {
+            case d: ${N.Schema}.`def`[_] => d.asInstanceOf[${N.Schema}.`def`[$tpe]].toDefinition[$tpe]($sig)
+            case o                       => ${N.Schema}.`def`.adapt[$tpe](o, $sig)
+          }"""
+          Some(U.`-from-tree-`(tpe, renamed))
         case FromSchema(x) =>
           Some(U.`-from-tree-`(tpe, q"""${N.Schema}.`def`.adapt[$tpe]($x, ${signature(tpe)})"""))
       }
+    }
+
+    /** The found implicit is a method applied to type arguments (`jsonSchemaFoo[Bar](..)`). Scala 3: `Implicits.isGenericImplicit`. */
+    private def isGenericImplicit(x: Tree): Boolean = x match {
+      case Typed(e, _)     => isGenericImplicit(e)
+      case Block(Nil, e)   => isGenericImplicit(e)
+      case Apply(f, _)     => isGenericImplicit(f)
+      case TypeApply(_, _) => true
+      case _               => false
     }
 
     def getOrElse(tpe: Type, gen: => SchemaType): SchemaType = get(tpe) getOrElse gen
