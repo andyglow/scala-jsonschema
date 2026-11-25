@@ -39,7 +39,11 @@ private[jsonschema] trait USemiAuto { this: UContext with UCommons with UFlags w
     stack.exists(s => isSealed(s) && bases.contains(s.typeSymbol))
   }
 
-  private def lowerFirst(s: String): String = if (s.isEmpty) s else s"${s.head.toLower}${s.tail}"
+  /** `addressSchema` for `Address` (Scala 3: `Errors.valName`). */
+  private def valName(tpe: Type): String = {
+    val n = tpe.dealias.typeSymbol.name.decodedName.toString.filter(_.isLetterOrDigit)
+    (if (n.isEmpty) "x" else s"${n.head.toLower}${n.tail}") + "Schema"
+  }
 
   /** `Address`, `Box[P]`: as the user would write it with the type imported. */
   private def shortType(tpe: Type): String = tpe.dealias match {
@@ -48,10 +52,11 @@ private[jsonschema] trait USemiAuto { this: UContext with UCommons with UFlags w
     case other                 => other.toString
   }
 
+  // the same texts as Scala 3's `Errors.semiAutoFixes`
   private def fixes(tpe: Type): String = {
     val short = shortType(tpe)
-    s"Define one: `implicit val ${lowerFirst(tpe.typeSymbol.name.decodedName.toString)}Schema: json.Schema[$short] = json.Json.schema[$short]` (a definition + $$ref; for a generic type " +
-      "`implicit def boxSchema[T](implicit p: json.schema.Predef[T]): json.Schema[Box[T]] = json.Json.schema[Box[T]]`), " +
+    s"Define one: `implicit val ${valName(tpe)}: json.Schema[$short] = json.Json.schema[$short]` (a definition + $$ref; for a generic type " +
+      "`implicit def boxSchema[T](implicit p: json.schema.Predef[T]): json.Schema[Box[T]] = json.Json.schema[Box[T]]`),\n" +
       "or derive nested types automatically: `import json.Json.auto._` (Scala 3: `import json.Json.auto.given`)"
   }
 
@@ -62,14 +67,13 @@ private[jsonschema] trait USemiAuto { this: UContext with UCommons with UFlags w
     if (flags.semiAuto)
       c.abort(
         c.enclosingPosition,
-        s"schema for ${showType(tpe)} is not supported${pathOf(stack)}: no implicit json.Schema or json.schema.Predef for it. ${fixes(tpe)}"
+        s"schema for ${showType(tpe)} is not supported${pathOf(stack)}: no implicit json.Schema or json.schema.Predef for it.\n${fixes(tpe)}"
       )
     else if (!insideImplicitSearch && !warned.exists(_ =:= tpe)) {
       warned = tpe :: warned
       c.warning(
         c.enclosingPosition,
-        s"[json-schema-semi-auto] schema for ${showType(tpe)} is derived implicitly${pathOf(stack)}; this becomes an error in a future release. " +
-          s"There is no implicit json.Schema or json.schema.Predef for it. ${fixes(tpe)}"
+        s"[json-schema-semi-auto] schema for ${showType(tpe)} is derived implicitly${pathOf(stack)}; this becomes an error in a future release. ${fixes(tpe)}"
       )
     }
 

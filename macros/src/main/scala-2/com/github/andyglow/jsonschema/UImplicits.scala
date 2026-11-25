@@ -217,7 +217,7 @@ private[jsonschema] trait UImplicits { this: UContext with UCommons with USignat
             showType(tpe)
         )
       }
-      (untyped, holes map { h => h.copy(schema = resolve(h.tpe, ctx :+ tpe)) })
+      (untyped, holes map { h => h.copy(schema = resolve(h.tpe, ctx)) }) // in the same context, as on Scala 3
     }
 
     /** A package or a static object referred to as `pkg.this` (how a search refers to implicit-scope members) becomes its full path: after `untypecheck`, `schema.this.Predef` would be looked up in
@@ -230,7 +230,7 @@ private[jsonschema] trait UImplicits { this: UContext with UCommons with USignat
         path.foldLeft[Tree](Ident(termNames.ROOTPKG)) { (q, s) => Select(q, s.name.toTermName) }
       }
       // the empty package has no path: left as it is
-      private def hasPath(sym: Symbol): Boolean = !Iterator.iterate(sym)(_.owner).takeWhile(_ != NoSymbol).exists(_.isEmptyPackageClass)
+      private def hasPath(sym: Symbol): Boolean = !Iterator.iterate(sym)(_.owner).takeWhile(_ != NoSymbol).exists(_ == c.mirror.EmptyPackageClass)
       override def transform(t: Tree): Tree     = t match {
         case th @ This(_) if th.symbol != null && th.symbol.isPackageClass && hasPath(th.symbol)                      => fullPath(th.symbol)
         case th @ This(_) if th.symbol != null && th.symbol.isModuleClass && th.symbol.isStatic && hasPath(th.symbol) => fullPath(th.symbol)
