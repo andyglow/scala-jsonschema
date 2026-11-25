@@ -30,5 +30,10 @@ trait Options { this: Derivation =>
 
   def deriveOption(tpe: TypeRepr, ctx: Ctx): Option[Node] =
     if (classSymbol(tpe) == TypeRepr.of[Option[Any]].typeSymbol) optionElement(tpe).map(e => Opt(tpe, resolve(e, ctx.descend(tpe))))
-    else None
+    // `java.util.Optional[X]`: the same `option` node, as a `Schema[Optional[X]]`
+    else javaOptionalElement(tpe).map(e => Cast(tpe, Opt(optionOf(e), resolve(e, ctx.descend(tpe)))))
+
+  /** `X` of a `java.util.Optional[X]`. Like `Option`, it is an `option` node (a field: not required); unlike `Option`, its default isn't checked for `empty` (it needs a `ToValue`). */
+  def javaOptionalElement(tpe: TypeRepr): Option[TypeRepr] =
+    if (classSymbol(tpe) == TypeRepr.of[java.util.Optional[Any]].typeSymbol) tpe.typeArgs.headOption else None
 }

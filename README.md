@@ -336,8 +336,11 @@ Recursive types (`case class Node(children: List[Node])`) become a definition au
 | `java.nio.charset.Charset`                                                  | `string`, pattern of a charset name (`UTF-8`)   |
 | `java.util.Locale`, `java.net.InetAddress`, `java.nio.file.Path`, `java.io.File` | `string`                                   |
 | `Option[T]`                                                                 | `T` or `null`; a field is not required ([more](#option)) |
+| `java.util.Optional[T]`                                                     | the same as `Option[T]`, under every profile    |
 | `Iterable[T]` (`List`, `Seq`, `Vector`, `Set`, `Array`, ...)                | `array` (`Set`: `uniqueItems`)                  |
+| `java.util.Collection[T]` (`List`, `Set`, `ArrayList`, `EnumSet`, ...)       | `array` (`java.util.Set`: `uniqueItems`)        |
 | `Map[String, V]`, `Map[Int, V]`, ...                                        | `object` with `patternProperties` (keys enforced) |
+| `java.util.Map[K, V]` (`HashMap`, `TreeMap`, `EnumMap`, ...)                | the same as `Map[K, V]`                         |
 | case class, tuple                                                           | `object`, `properties` in declaration order     |
 | value class                                                                 | its underlying type                             |
 | sealed family, `enum`, `Enumeration`, Java enum                             | see [below](#sum-types-and-enums)               |
@@ -356,6 +359,21 @@ The pattern is the `patternProperties` key, and it is enforced: a key that doesn
 (`propertyNames` from draft 06 on, `additionalProperties: false` on draft 04). `Map[String, V]` accepts any key.
 play-json writes a `Map[UUID, V]` as an array of pairs (it has no `KeyWrites[UUID]`), which this object schema doesn't
 describe: give play a `KeyWrites`/`KeyReads` for the key, or give the map type a `Predef`.
+
+`Array[Byte]` is an `array` of numbers, which is how circe, play-json, upickle, spray-json and json4s write it. Jackson
+writes a base64 string instead; for that, use `Predef.bytesAsBase64` (`{"type": "string", "contentEncoding":
+"base64", "pattern": ...}`):
+
+```scala
+implicit val bytes: json.schema.Predef[Array[Byte]] = json.schema.Predef.bytesAsBase64
+```
+
+### A `null` schema
+
+`json.Schema.`null`` is `{"type": "null"}`. A field of type `Null` needs it as a `Predef`:
+`implicit val n: json.schema.Predef[Null] = json.schema.Predef(json.Schema.`null`)`. For a JSON library's own null
+(e.g. a field that is always `null`), the bridges have one, opt-in: `import com.github.andyglow.jsonschema.AsPlay.predef._`
+(`JsNull`), `AsSpray.predef._` (`JsNull`), `AsJson4s.predef._` (`JNull`), `AsU.predef._` (`ujson.Null`).
 
 ## Sum types and enums
 
@@ -555,6 +573,7 @@ Package `json.schema`:
 | `@description("...")`                         | type, field, enum value | `description`                                               |
 | `@readOnly`                                   | field                 | `"readOnly": true`                                            |
 | `@writeOnly`                                  | field                 | `"writeOnly": true`                                           |
+| `@deprecated` (Scala's, or Java's `@Deprecated`) | field, type        | `"deprecated": true` (draft 2019-09 and 2020-12; not under the Legacy profile) |
 | `@discriminator(field = "type", phantom = true)` | sealed root        | adds a discriminator field to each `oneOf` member             |
 | `@discriminatorKey("key")`                    | sealed member         | the member's discriminator value (default: its full name)     |
 | `@definition` / `@definition("name")`         | sealed member         | makes it a definition                                         |
@@ -809,6 +828,7 @@ knobs; each `with...` keeps the others:
 | `withHonorsSchemaAnnotations` | `true`, `false` | whether `@discriminator`/`@discriminatorKey` apply |
 | `withOption` | `OptionStyle.Nullable`, `Legacy` | `Option` as "X or null", or the 0.7 shapes |
 | `withOverlappingMembers` | `OverlappingMembers.AnyOf`, `OneOf` | an untagged family where one document could match two members: `anyOf`, or `oneOf` anyway (it then rejects that document) |
+| `withDeprecatedKeyword` | `true`, `false` | whether `@deprecated` renders `"deprecated": true` (`false` only for `Legacy`) |
 
 ```scala
 import json.schema.JsonSchemaProfile
@@ -862,7 +882,7 @@ case class Team(members: NonEmptyList[String], scores: NonEmptyMap[String, Int])
 Json.schema[Team] // members: array with "minItems": 1; scores: object with "minProperties": 1
 ```
 
-Supported: `NonEmptyList`, `NonEmptyVector`, `NonEmptySet`, `NonEmptyChain`, `NonEmptyMap`, `OneAnd`,
+Supported: `NonEmptyList`, `NonEmptyVector`, `NonEmptySet`, `NonEmptyChain`, `NonEmptySeq`, `NonEmptyMap`, `OneAnd`,
 `NonEmptyLazyList` (2.13, 3) / `NonEmptyStream` (2.12), `Chain`.
 
 ### Enumeratum
@@ -881,7 +901,8 @@ import com.github.andyglow.jsonschema.JodaTimeSupport._
 ```
 
 Adds `org.joda.time.Instant`, `DateTime`, `LocalDateTime` (format `date-time`), `LocalDate` (`date`), `LocalTime`
-(`time`) and `Duration` (`duration`). They are implicit `Schema`s, so they appear as definitions. To inline them
+(`time`), `Duration` (`duration`), `Period` (`string` with a `pattern` for its `toString` form, e.g. `P1Y2W3DT-4H5.5S`),
+`DateTimeZone` and `Interval` (`string`). They are implicit `Schema`s, so they appear as definitions. To inline them
 instead, import the `Predef`s: `import com.github.andyglow.jsonschema.JodaTimeSupport.predef._`.
 
 ### DerivedSchema

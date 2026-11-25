@@ -1,0 +1,78 @@
+{
+  "schema": {
+    "kind": "object",
+    "fields": [
+      {
+        "name": "a",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "integer",
+          "deprecated": true
+        }
+      },
+      {
+        "name": "b",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "integer"
+        }
+      }
+    ]
+  },
+  "draft-04": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "additionalProperties": false,
+    "properties": {
+      "a": {
+        "type": "integer"
+      },
+      "b": {
+        "type": "integer"
+      }
+    },
+    "required": [
+      "a",
+      "b"
+    ],
+    "type": "object"
+  },
+  "draft-07": {
+    "$id": "golden",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "additionalProperties": false,
+    "properties": {
+      "a": {
+        "type": "integer"
+      },
+      "b": {
+        "type": "integer"
+      }
+    },
+    "required": [
+      "a",
+      "b"
+    ],
+    "type": "object"
+  },
+  "draft-2020-12": {
+    "$id": "golden",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "a": {
+        "deprecated": true,
+        "type": "integer"
+      },
+      "b": {
+        "type": "integer"
+      }
+    },
+    "required": [
+      "a",
+      "b"
+    ],
+    "type": "object"
+  }
+}

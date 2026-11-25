@@ -1,0 +1,304 @@
+{
+  "schema": {
+    "kind": "object",
+    "fields": [
+      {
+        "name": "list",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "array",
+          "unique": false,
+          "items": {
+            "kind": "integer"
+          }
+        }
+      },
+      {
+        "name": "set",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "array",
+          "unique": true,
+          "items": {
+            "kind": "string"
+          }
+        }
+      },
+      {
+        "name": "users",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "array",
+          "unique": false,
+          "items": {
+            "kind": "object",
+            "fields": [
+              {
+                "name": "name",
+                "required": true,
+                "rwMode": "ReadWrite",
+                "schema": {
+                  "kind": "string"
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "name": "map",
+        "required": true,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "dictionary",
+          "values": {
+            "kind": "object",
+            "fields": [
+              {
+                "name": "name",
+                "required": true,
+                "rwMode": "ReadWrite",
+                "schema": {
+                  "kind": "string"
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "name": "opt",
+        "required": false,
+        "rwMode": "ReadWrite",
+        "schema": {
+          "kind": "object",
+          "fields": [
+            {
+              "name": "name",
+              "required": true,
+              "rwMode": "ReadWrite",
+              "schema": {
+                "kind": "string"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "draft-04": {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "additionalProperties": false,
+    "properties": {
+      "list": {
+        "items": {
+          "type": "integer"
+        },
+        "type": "array"
+      },
+      "map": {
+        "patternProperties": {
+          "^.*$": {
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "opt": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "set": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array",
+        "uniqueItems": true
+      },
+      "users": {
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "list",
+      "map",
+      "set",
+      "users"
+    ],
+    "type": "object"
+  },
+  "draft-07": {
+    "$id": "golden",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "additionalProperties": false,
+    "properties": {
+      "list": {
+        "items": {
+          "type": "integer"
+        },
+        "type": "array"
+      },
+      "map": {
+        "patternProperties": {
+          "^.*$": {
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "opt": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "set": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array",
+        "uniqueItems": true
+      },
+      "users": {
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "list",
+      "map",
+      "set",
+      "users"
+    ],
+    "type": "object"
+  },
+  "draft-2020-12": {
+    "$id": "golden",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "list": {
+        "items": {
+          "type": "integer"
+        },
+        "type": "array"
+      },
+      "map": {
+        "patternProperties": {
+          "^.*$": {
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "opt": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "set": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array",
+        "uniqueItems": true
+      },
+      "users": {
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "list",
+      "map",
+      "set",
+      "users"
+    ],
+    "type": "object"
+  }
+}

@@ -9,6 +9,13 @@ import scala.collection.immutable.ListMap
 
 object AsSpray {
 
+  /** Schemas of spray-json's own types, opt-in: `import AsSpray.predef._` (an implicit here, in `AsSpray`, would clash with a user's own Predef of the same type). */
+  object predef {
+
+    /** `JsNull` (e.g. a field that is always `null`): `{"type": "null"}`. */
+    implicit val jsNullPredef: _root_.json.schema.Predef[JsNull.type] = _root_.json.schema.Predef(Schema.`null`.asInstanceOf[Schema[JsNull.type]])
+  }
+
   def apply[T](value: T)(implicit a: Adapter[T]): a.P = a.adapt(value)
 
   implicit class SpraySchemaOps[T](val x: Schema[T]) extends AnyVal {

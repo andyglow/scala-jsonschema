@@ -97,7 +97,8 @@ trait MacroCake
       st.withExtra(
         st.extra.copy(
           title = typeDeco.texts.flatMap(_.title),
-          description = typeDeco.texts.flatMap(_.description)
+          description = typeDeco.texts.flatMap(_.description),
+          deprecated = st.extra.deprecated || typeDeco.deprecated
         )
       )
 
@@ -138,6 +139,10 @@ trait MacroCake
         case t if t.typeSymbol == T.option.typeSymbol && t.typeArgs.size == 1 =>
           val x = t.typeArgs.head
           U.Opt(t, x, resolve(x, ctx :+ t))
+        // `java.util.Optional[X]`: the same `option` node, as a `Schema[Optional[X]]`
+        case t if t.typeSymbol == T.jOptional.typeSymbol && t.typeArgs.size == 1 =>
+          val x = t.typeArgs.head
+          U.Cast(t, U.Opt(appliedType(T.option.typeConstructor, List(x)), x, resolve(x, ctx :+ t)))
         case Dict(x)       => x
         case Arr(x)        => x
         case Enum(x)       => x
