@@ -1,5 +1,5 @@
 # Semi-auto derivation by default, deep derivation opt-in via `Json.auto`  (issue #542)
-Status: approved (independent reviewer, 2026-11-24, 4 rounds; owner decisions 2026-11-24); being implemented (owner direction 2026-11-24: "design it similarly to circe/pureconfig")
+Status: approved (independent reviewer, 2026-11-24, 4 rounds; owner decisions 2026-11-24); implemented in PR #543; Expectations reviewed 2026-11-25, open problems P1–P8 await the owner (owner direction 2026-11-24: "design it similarly to circe/pureconfig")
 
 ## Problem
 `Json.schema[T]` derives every nested type that has no implicit `Schema` or `Predef`, from its structure, at any depth (Scala 2 `Macroses.scala` `genTree`;
@@ -35,7 +35,9 @@ Studied: circe core and generic for Scala 3, circe-derivation (Scala 2, pure mac
   - circe-derivation (Scala 2) looks up each member with `c.inferImplicitValue(Encoder[F])`, and on failure:
     `c.abort(c.enclosingPosition, s"Could not find $tc instance for $tpe")`.
   - circe (Scala 3): `summonFrom { case e: Encoder[A] => e; case _: Mirror.Of[A] => error("Failed to find an instance of Encoder[" + typeName[A] + "]") }`.
-  - The only exception is the cases of a sealed family, which are derived as part of it (`derivingForSum`).
+  - Sealed families differ between the two:
+    - circe for Scala 3 derives the cases of a sealed family as part of it (`derivingForSum`).
+    - circe-derivation asks for an instance of every leaf case, after flattening sub-families.
 - **Auto is an explicit import that returns `Exported[TC[A]]`.**
   ```scala
   case class Exported[+T](instance: T) extends AnyVal                     // circe core; pureconfig core has the same
@@ -98,8 +100,616 @@ or derive nested types automatically: `import json.Json.auto._` (Scala 3: `impor
 ```
 
 For #482, `Holder(xs: NonEmptyList[P])` fails naming `NonEmptyList[P]` (in `Holder`). It has no instance, because the search for `Predef[NonEmptyList[P]]`
-failed on `P`, and it is a gated kind (a case class). Scala 3 adds the reason it got from the search, so `P` is named too. Scala 2's silent search gives no
-reason (S2-R6). With auto, `xs` is an array. Nothing in the macros knows about cats.
+failed on `P`, and it is a gated kind (a case class). Neither version names `P` today: the design expected Scala 3 to add the search's reason, but it doesn't
+(Expectations S18, open problem P3). With auto, `xs` is an array. Nothing in the macros knows about cats.
+
+## Expectations
+What a user sees in 0.10.0, scenario by scenario, on both Scala 2 and 3 unless a remark says otherwise. Every scenario was compiled and run on 2.13.18 and
+3.3.9, with the phase-1 warning visible (2026-11-25, branch `gap/semi-auto-derivation`). 2.12 ran the full test suite, but not these scenarios.
+Scenarios marked **known problem** behave as described today, and are listed under "Open problems found by the Expectations review".
+
+Terms used in the remarks:
+- **inlined:** the nested type's schema is written in place, as in 0.9.
+- **a definition + `$ref`:** the type goes to `definitions` (`$defs`), and the field refers to it.
+- **the warning:** the phase-1 deprecation warning, `[json-schema-semi-auto] schema for X is derived implicitly (in Y); this becomes an error in a future
+  release. Define one: ... or derive nested types automatically: import json.Json.auto._`. The type is still derived in place, and the output is the same as in
+  0.9.
+- **the error:** the same text as a compile error, `schema for X is not supported (in Y): no implicit json.Schema or json.schema.Predef for it. Define one: ...`.
+  It is what the warning becomes in the next breaking release (phase 2), and what you get now with `Flag.SemiAuto`.
+
+The snippets share this model, and `import json._, json.schema._`:
+```scala
+case class Address(city: String)
+case class Person(name: String, address: Address)
+```
+
+### Semi-auto, the default
+
+**S1. A type whose fields are all built-ins.** Positive.
+```scala
+case class Flat(name: String, age: Int)
+Json.schema[Flat]
+```
+- No warning, and the output is the same as 0.9.
+- Built-ins (`String`, numbers, `java.time`, `UUID`, ...) are `Predef`s, so they are always found.
+
+**S2. A nested case class without an instance.** Negative.
+```scala
+Json.schema[Person]
+```
+- 0.10: compiles with the warning for `Address` (in `Person`). `address` is inlined, as in 0.9.
+- With `Flag.SemiAuto`, or in phase 2: the error for `Address`. It suggests `implicit val addressSchema: json.Schema[Address] = json.Json.schema[Address]` or
+  `import json.Json.auto._`.
+- `Json.objectSchema[Person]()` behaves the same.
+
+**S3. Fix: an implicit `Schema` in the companion.** Positive.
+```scala
+case class City(name: String)
+object City { implicit val citySchema: Schema[City] = Json.schema[City] }
+case class Trip(from: City, to: City)
+
+Json.schema[Trip]
+```
+- No warning.
+- `City` is a definition + `$ref`, shared by `from` and `to`.
+- The output differs from 0.9, where `City` was inlined twice.
+- `Json.schema[City]` inside `City`'s own instance doesn't find that instance directly. It can find it through a container, `listS(citySchema)`, which a
+  `Schema` handles with `lazy-ref`, but a `Predef` doesn't (S4).
+
+**S4. Fix: an implicit `Predef`, to keep the 0.9 output.** Positive.
+```scala
+implicit val addressPredef: Predef[Address] = Predef(Json.schema[Address])
+Json.schema[Person]
+```
+- No warning.
+- `address` is inlined, so the output is the same as 0.9.
+- This is the migration for users who want no definitions, but not for a recursive type (S16). **Known problem P4:**
+  - `implicit lazy val treeP: Predef[Tree] = Predef(Json.schema[Tree])` throws `StackOverflowError` when it is first used.
+  - `implicit val` gives `kids: array(null)`.
+  - The derivation of `Tree` finds `treeP` itself, through `listS(treeP)`. It was the same in 0.9.
+  - A recursive type needs a `Schema` (S5) or auto.
+
+**S5. Fix: a local instance next to the use.** Positive.
+```scala
+implicit val addressSchema: Schema[Address] = Json.schema[Address]
+Json.schema[Person]
+```
+- No warning; `address` is a definition + `$ref`.
+- The local `val` doesn't find itself while it is being initialized.
+
+**S6. A chain of nested types without instances.** Negative.
+```scala
+case class Deep(person: Person)
+Json.schema[Deep]
+```
+- Error (`Flag.SemiAuto`): names `Person` (in `Deep`), the outermost type without an instance.
+- Once `Person` has an instance, deriving `Person` reports `Address`.
+- Warning (0.10):
+  - Scala 2 warns for `Person` only.
+  - Scala 3 warns for `Person` and for `Address` inside it, in one warning with a line per type.
+
+**S7. Nested inside containers.** Negative.
+```scala
+case class InOption(address: Option[Address])
+case class InList(addresses: List[Address])
+case class InMap(addresses: Map[String, Address])
+case class InTuple(pair: (Int, Address))
+case class InEither(either: Either[String, Address])
+```
+- Each gets the warning, or the error, for `Address`.
+- The containers themselves (`Option`, collections, maps, tuples, `Either`) are native and never need an instance. Their elements are resolved by the same rule.
+
+**S8. Native kinds: no instance needed.** Positive.
+```scala
+sealed trait Color; case object Red extends Color; case object Blue extends Color
+case class UserId(value: String) extends AnyVal
+case class Natives(
+  color: Color,                 // all-case-object sealed family: an enum
+  id: UserId,                   // value class
+  day: java.time.DayOfWeek,     // Java enum
+  keyed: Map[Color, Int],       // enum map key: patternProperties ^(?:Red|Blue)$
+  t: (Int, String),
+  e: Either[String, Int],
+  l: List[Int],
+  o: Option[Double]
+)
+Json.schema[Natives]
+```
+- No warning, and the output is the same as 0.9.
+- `scala.Enumeration` values and Scala 3 enums without a parameterized case (S15) are native too.
+
+**S9. A value class that wraps a case class.** Negative.
+```scala
+case class Wrap(a: Address) extends AnyVal
+case class HasWrap(w: Wrap)
+Json.schema[HasWrap]
+```
+- The value class is native, but its underlying type is resolved.
+- So: the warning, or the error, for `Address` (in `HasWrap :: Wrap`).
+
+**S10. A generic case class.** Negative, then positive.
+```scala
+case class Pair[A](a: A, b: A)
+case class HasPair(p: Pair[Int])
+Json.schema[HasPair]                    // the warning / the error for Pair[scala.Int]
+
+implicit def pairSchema[A](implicit p: Predef[A]): Schema[Pair[A]] = Json.schema[Pair[A]]
+Json.schema[HasPair]                    // ok
+```
+- The error suggests the generic `implicit def` form.
+- With it, `p` is a definition + `$ref`, named for the instantiated type, `...Pair[scala.Int]` (#297).
+- **Known problem P1:** the hint takes a `Predef[A]`. So `Pair[Address]` with an `implicit val addressSchema: Schema[Address]` still fails, and the error repeats
+  the same hint. A `Schema` is not a `Predef`.
+
+**S11. A type alias.** Negative.
+```scala
+type Addr = Address
+case class HasAlias(a: Addr)
+Json.schema[HasAlias]
+```
+- The warning, or the error, names `Address`, the dealiased type. An instance for `Address` fixes it.
+
+**S12. A class that isn't a case class.** Negative, unchanged from 0.9.
+```scala
+class Plain(val x: Int)
+case class HasPlain(p: Plain)
+Json.schema[HasPlain]
+```
+- Error, as in 0.9: `schema for Plain is not supported (in HasPlain). Provide a json.schema.Predef or json.Schema for it`.
+- `import Json.auto._` doesn't change it: auto derives only what the macros can derive.
+
+**S13. A sealed family at the root.** Positive, with one negative inside.
+```scala
+case class Point(x: Int, y: Int)
+sealed trait Shape
+object Shape {
+  case class Circle(r: Double, center: Point)         extends Shape
+  case class Group(items: List[Shape], main: Circle) extends Shape
+  sealed trait Poly                                   extends Shape
+  case class Square(side: Double)                     extends Poly
+  case object Empty                                   extends Shape
+}
+Json.schema[Shape]
+```
+- The family's cases are part of `T` itself, as in circe for Scala 3 (circe-derivation asks for an instance per case): case classes, case objects, and the
+  sub-family `Poly` with its cases. None needs an instance.
+- A case used as a field type of another case (`Group.main: Circle`) is part of the family too. This goes beyond circe for Scala 3, which asks for an instance
+  of a product's fields (`derivingForSum = false`). It is exempt because it is part of the type being derived, and the exemption holds at any depth.
+- A case with an instance of its own (`object Circle { implicit val s: Schema[Circle] = ... }`) is used, and becomes a definition + `$ref` inside the family.
+- Recursion to the root (`items: List[Shape]`) is a `$ref`. `Shape` is the only definition.
+- The fields of the cases are resolved: `center: Point` gets the warning, or the error, for `Point` (in `Shape :: Circle`).
+
+**S14. A sealed family as a field.** Negative.
+```scala
+sealed trait Status; case object Active extends Status; case class Banned(reason: String) extends Status
+case class Account(color: Color, status: Status)   // Color from S8
+case class Drawing(shape: Shape)                   // Shape from S13
+case class Painting(poly: Shape.Poly)
+```
+- `Account`: the warning, or the error, for `Status`. A family with a case-class case is gated. `color` is not: an all-case-object family is an enum.
+- `Drawing`: the warning, or the error, for `Shape`.
+- `Painting`: for `Shape.Poly`. A sub-family is part of `Shape` only while `Shape` is being derived.
+- The same goes for a case used outside its family, `case class HasCircle(c: Shape.Circle)`: the warning, or the error, for `Circle`.
+
+**S15. Scala 3 enums.** Scala 3 only.
+```scala
+enum Level   { case Low, High }
+enum Payment { case Cash; case Card(number: String) }
+case class Order(level: Level, payment: Payment)
+Json.schema[Order]
+```
+- `level` is native, with no warning.
+- `payment` gets the warning, or the error, for `Payment`: a parameterized case makes it a sealed family with a case-class case.
+
+**S16. Recursion to the root.** Positive.
+```scala
+case class Tree(value: Int, kids: List[Tree], parent: Option[Tree])
+Json.schema[Tree]
+```
+- No warning: a type on the recursion stack is never gated.
+- `Tree` is a definition, and `kids` and `parent` are `$ref`s, as in 0.9.
+- This goes beyond circe, where `deriveEncoder[Tree]` works only if the result is itself the implicit instance that `List[Tree]` finds.
+
+**S17. The root has its own instance in scope.** Positive, a corner case.
+```scala
+implicit val addressSchema: Schema[Address] = Json.schema[Address]
+Json.schema[Address]
+```
+- The root's search finds the instance, so the result is it: a definition of `Address`, not a plain object.
+- circe's `deriveEncoder` never returns an existing instance for the root. Here this is behaviour from before #542, kept as it was.
+
+**S18. A container instance whose element has no instance (cats `NonEmptyList`, any user `Predef` constructor).** Negative.
+```scala
+case class Box[A](a: A)
+object Box { implicit def boxPredef[A](implicit p: Predef[A]): Predef[Box[A]] = ??? /* an array of A */ }
+case class Boxed(box: Box[Address])
+Json.schema[Boxed]
+```
+- `boxPredef` needs a `Predef[Address]`, which doesn't exist, so `Box[Address]` has no instance either. `Box` is a case class, so it is gated.
+- 0.10:
+  - the warning for `Box[Address]` (Scala 3 also for `Address`);
+  - `box` is still derived from `Box`'s fields, `{a: {city}}`, as in 0.9. This is #482, now with a warning.
+- The error (`Flag.SemiAuto`) names `Box[Address]` (in `Boxed`), on both versions, and not `Address`. **Known problem P3:**
+  - It suggests `implicit val boxSchema: json.Schema[Box[Address]] = json.Json.schema[Box[Address]]`, or the generic form.
+  - Both derive `Box` from its fields, the wrong schema of #482, and silence the warning.
+- The fixes that work: an implicit `Predef[Address]` (S4), or auto (A5).
+- An implicit `Schema[Address]` (S3) does **not** fix it: `boxPredef` asks for a `Predef`. **Known problem P1.** Under auto it does work, because the macro
+  fills the element itself, and looks for a `Schema` first.
+- PR #488 has the same tests for every cats type.
+
+**S19. Scala 3 `derives`.** Scala 3 only.
+```scala
+case class Address(city: String) derives Schema
+case class Person(name: String, address: Address) derives Schema
+case class Street(n: String)
+case class Home(street: Street) derives Schema
+```
+- `Person`: `address` is a definition + `$ref`, from `Address`'s derived given. No warning.
+- `Home`: the warning for `Street` (in `Home`), at the `derives` clause. `derives` is semi-auto like `Json.schema`.
+- **Known problem P5, a generic class:** `case class GP[A](a: A) derives Schema` gets a given that asks for `Schema[A]`; the compiler generates it so.
+  - So `GP[Int]` has no instance, with or without the flag, because `Int` has only a `Predef`.
+  - The error then says "no implicit json.Schema", although the `derives` given exists.
+  - For a parameter that has a `Schema`, the given unwraps it and inlines it.
+  - Same as 0.9. For a generic type, use an `implicit def` with `Json.schema` (S10).
+
+**S20. `DerivedSchema` (module `derived`).** Negative, a corner case.
+```scala
+implicitly[DerivedSchema[Person]]
+```
+- 0.10: compiles with **no** warning. `DerivedSchema` always expands inside an implicit search, where warnings are dropped.
+- The output is the same as 0.9.
+- With `Flag.SemiAuto`, or in phase 2, the error is the compiler's, not ours:
+  - Scala 2: `could not find implicit value for parameter e: DerivedSchema[Person]`.
+  - Scala 3: `No given instance of type DerivedSchema[Person] ... But macro expansion was stopped`.
+- `Json.schema[Person]` at the same place shows the real reason.
+
+**S21. Mutual recursion through instances.** Positive (0.9: a `null` inside the schema, or a deadlock on Scala 3).
+```scala
+case class A(b: Option[B]); case class B(a: Option[A])
+object Schemas {
+  implicit val aS: Schema[A] = Json.schema[A]
+  implicit val bS: Schema[B] = Json.schema[B]
+}
+```
+- Both render with two definitions, `A` and `B`, each referring to the other.
+- In the Scala value, the reference that closes the cycle is a `lazy-ref` (see "New entities").
+- `implicit lazy val`, `given`, `implicit def` and Scala 3 `A derives Schema` / `B derives Schema` work the same.
+- Equality, `hashCode` and `toString` are finite.
+
+**S22. An instance used before it is initialized.** Positive (0.9: `def(sig, null)`, which fails when rendered).
+```scala
+object Schemas {
+  implicit val personS: Schema[Person]   = Json.schema[Person]    // refers to addressS, still null here
+  implicit val addressS: Schema[Address] = Json.schema[Address]
+}
+```
+- `personS.address` is `lazy-ref(Address)`.
+- It renders as a definition + `$ref`, the same as with the vals in the other order.
+
+### Flags and the rollout
+
+**F1. Opt into phase 2 now.**
+```scala
+implicit val jsonSchemaFlags: Flag with Flag.SemiAuto = null
+```
+- Every warning above becomes the error, in the scope of the implicit.
+
+**F2. Several flags: one value.** Positive.
+```scala
+implicit val jsonSchemaFlags: Flag with Flag.EnumsAsOneOf with Flag.SemiAuto = null
+```
+- Both flags apply.
+
+**F3. Several flags: separate vals.** Negative, and the versions differ.
+```scala
+implicit val f1: Flag.SemiAuto     = null
+implicit val f2: Flag.EnumsAsOneOf = null
+Json.schema[Person]
+```
+- Scala 2: a compile error, `ambiguous implicit values: both value f2 ... and value f1 ... match expected type json.schema.Flag`.
+- Scala 3: compiles, and **neither** flag applies; `Person` gets the warning.
+- Use F2.
+
+**F4. Keep phase 1 silent, for example under `-Werror`.**
+```scala
+// build.sbt
+scalacOptions += "-Wconf:msg=json-schema-semi-auto:s"
+```
+- The warning has no category (macros can't set one), so it is matched by its prefix.
+- With `-Werror` and without the silencer, every warning above fails the build at once.
+
+### Auto, opt-in
+
+**A1. Zero-change migration.** Positive.
+```scala
+import json.Json.auto._          // both versions; on Scala 3 `import json.Json.auto.given` works too
+Json.schema[Person]
+```
+- No warning; every nested type is derived in place.
+- Every scenario above without an explicit instance compiles, with the 0.9 output. Exceptions: S12 still fails, and container instances change on Scala 3 (A5).
+- Scenarios with an explicit instance (S3, S5, S10, S17, S19, S21, S22) keep the output they have without the import.
+
+**A2. The import with nothing to derive.** Positive, a corner case.
+```scala
+import json.Json.auto._
+Json.schema[Int]
+```
+- No unused-import warning, with `-Wunused:imports` / `-Ywarn-unused:imports` and `-Werror`.
+
+**A3. Your instances beat auto.** Positive.
+```scala
+case class Money(cents: Long)
+object Money { implicit val moneyPredef: Predef[Money] = Predef(Schema.`string`[Money]) }
+case class Price(amount: Money, tax: Address)
+
+import json.Json.auto._
+Json.schema[Price]
+```
+- `amount` is the companion's `string`; `tax` is derived by auto.
+- The same holds for these instances:
+  - built-ins;
+  - a local instance;
+  - an imported instance;
+  - an instance inherited by the companion from a trait;
+  - a generic companion instance;
+  - an implicit `Schema`, which gives a definition + `$ref`;
+  - Scala 3 givens and `derives` givens, also on 3.6+.
+- Auto is an `Exported`, reached only through the lowest-priority bridge.
+
+**A4. Recursion under auto.** Positive.
+```scala
+case class Node(name: String, children: List[Node])
+case class Forest(trees: List[Node])
+import json.Json.auto._
+Json.schema[Forest]
+```
+- `Node` is a definition, and `children` refers to it, as in 0.9.
+- The same through `Map`, `Array`, `Option`, and container instances (A5).
+
+**A5. A container instance whose element is derived (the #482 fix).** Positive; on Scala 3 the output changes.
+```scala
+import json.Json.auto._
+Json.schema[Boxed]                                    // Boxed from S18
+case class BNode(name: String, children: Box[BNode])
+Json.schema[BNode]
+```
+- `box` is `boxPredef`'s array of the derived `Address`, never `Box`'s fields.
+- `BNode.children` is an array of `$ref`s to `BNode`.
+- Scala 2 gave the same in 0.9. Scala 3 gave `{a: ...}` in 0.9 (#482), so the output changes there.
+- cats: `NonEmptyList[P]` etc. become arrays with `minItems: 1` on both versions (PR #488).
+
+**A6. Built-in collections under auto.** Positive.
+```scala
+import json.Json.auto._
+Json.schema[Map[Int, Address]]
+```
+- The output is the same as without the import, `patternProperties` included.
+- The same holds for `List`, `Set`, `Vector`, `Array` and `Map[String, _]`. The macro keeps its native handling for core's own collection instances.
+
+**A7. A generic implicit `Schema` whose element comes from auto.** Positive.
+```scala
+case class Wrapper[A](data: A)
+implicit def wrapperSchema[A](implicit p: Predef[A]): Schema[Wrapper[A]] = Json.schema[Wrapper[A]]
+case class HasWrapper(w: Wrapper[Address])
+
+import json.Json.auto._
+Json.schema[HasWrapper]
+```
+- `w` is a definition named `...Wrapper[...Address]`, and `data` is the derived `Address`, inlined.
+
+**A8. Auto outside a derivation.** Positive.
+```scala
+import json.Json.auto._
+implicitly[Predef[Person]].schema               // through the bridge
+implicitly[Exported[Predef[Person]]].instance
+Json.auto.derived[Person].instance.schema       // explicit call: an Exported[Predef[Person]] now (0.9: a Predef[Person])
+```
+- All three are `Person` derived deeply, the same as `Json.schema[Person]` with the import.
+- Source change: an explicit `Json.auto.derived[T]` needs `.instance`.
+
+**A9. A type auto can't derive.** Negative.
+```scala
+import json.Json.auto._
+Json.schema[HasPlain]                      // HasPlain from S12
+implicitly[Predef[HasPlain]]
+```
+- `Json.schema`: the error names `Plain` (in `HasPlain`), on both versions. The same holds inside `List` and inside a container instance.
+- `implicitly`:
+  - Scala 3: the same error.
+  - Scala 2: only `could not find implicit value for parameter e: json.schema.Predef[HasPlain]`, without the reason. This is the open problem below.
+
+**A10. `DerivedSchema` under auto.** Positive.
+```scala
+import json.Json.auto._
+implicitly[DerivedSchema[Person]].schema
+```
+- `address` is inlined, as in 0.9.
+- On Scala 3, container instances get their element from auto too (A5).
+
+**A11. Auto gives a `Predef`, never a `Schema`.** A corner case.
+```scala
+case class MyList[T](items: List[T])
+object MyList { implicit def myListPredef[T](implicit s: Schema[T]): Predef[MyList[T]] = ??? }
+case class HasMyList(xs: MyList[Address])
+
+import json.Json.auto._
+implicitly[Schema[Person]]       // not found
+Json.schema[HasMyList]           // myListPredef doesn't apply: MyList is derived from its fields
+```
+- An instance constructor that asks for a `Schema` of its element never gets one from auto.
+- cats has a `Predef` variant of each constructor, so cats is not affected.
+- In circe, auto answers whatever type class is asked for. Here, a derived type has no definition to refer to, so auto gives the inlined kind.
+
+## New entities
+What #542 adds, why each piece is needed, and what it does. The public ones are user-facing API; the internal ones are referenced from macro output and
+are marked INTERNAL API in their scaladoc.
+
+| entity | where | visibility |
+|---|---|---|
+| `Exported[+T]` | core, `json.schema` | public |
+| `Predef.importedPredef` | core, `LowPriorityPredefs` | public (implicit) |
+| `Json.auto.derived[T]: Exported[Predef[T]]` | api | public (changed result type) |
+| `Flag.SemiAuto` | core, `json.schema.Flag` | public |
+| the `[json-schema-semi-auto]` warning | macros | public text (a stable prefix) |
+| `` Schema.`lazy-ref` `` | core, `json.Schema` | public node; constructed only by the library |
+| `Schema.building`, `` `def`.adaptOrLazy ``, `Schema.materialized` | core, `json.Schema` | internal API, public for macro output |
+| `AutoHole.hole[T]` | core, `com.github.andyglow.jsonschema.internal` | internal |
+| `AutoEnabled`, `Json.auto.jsonSchemaAutoEnabled` | core / api | internal |
+| `AutoSearch` (Scala 2), `AutoGuard.isSearching` (Scala 3, existed) | macros / core | internal, compile time only |
+
+**`Exported[+T]`** (`final case class Exported[+T](instance: T) extends AnyVal`).
+- Why: auto must never compete with a real instance.
+  - If `auto.derived[T]` were a `Predef[T]`, as in 0.9, it would be one more `Predef[T]` candidate.
+  - On Scala 3, a lexically imported candidate is preferred over the companion's, so auto would shadow `object Money { implicit val ... }`.
+  - On Scala 2, 0.9 needed a re-search to undo the shadowing (option D).
+- Role: an `Exported[Predef[T]]` is not a `Predef[T]`, so no search for a `Predef` sees it directly. The same type as circe's and pureconfig's.
+
+**`Predef.importedPredef`** (`implicit def importedPredef[T](implicit e: Exported[Predef[T]]): Predef[T] = e.instance`).
+- Why: something has to turn the `Exported` back into a `Predef`, at a priority below every real instance.
+- Role:
+  - It sits in `LowPriorityPredefs`, the lowest-priority parent of `object Predef`. It is the only way auto reaches a search, so a user's or a library's
+    instance wins (A3).
+  - It is also how container instances get their element: `boxPredef(importedPredef(auto.derived[Address]))` (A5). No cats knowledge is needed in the macros.
+  - circe's `importedEncoder`.
+
+**`Json.auto.derived[T]`, now `Exported[Predef[T]]`.**
+- Why: the result type has to be `Exported` (above).
+- Role:
+  - Called by user code, outside a derivation, it derives `T` deeply in one expansion (A8).
+  - Inside a derivation's implicit search, it gives a hole instead (next entry).
+
+**`AutoHole.hole[T]`** (internal, `def hole[T]: Predef[T]`, throws if evaluated).
+- Why: through the bridge, auto answers every `Predef[X]` the derivation searches for, also the element of `List[Node]` inside `Node`. If that nested
+  `auto.derived[Node]` ran a derivation of its own:
+  - it would loop on recursive types (the 0.7 StackOverflow);
+  - it would cost time exponential in the depth of the model;
+  - its schema would come from a second expansion with its own recursion stack, so a recursive `X` couldn't become a `$ref` to the outer definition.
+- Role: while a derivation searches, `auto.derived[X]` expands to `Exported(AutoHole.hole[X])`, which means "auto is available for `X` here".
+  - A hole at the root of the found tree means: derive `X` here, in the current expansion.
+  - A hole inside a found instance (`boxPredef(importedPredef(hole[X]))`) becomes a child of that node in the macro's IR. `X` is resolved in the same context,
+    so recursion gives `$ref`s, and the hole is replaced with that schema when the tree is emitted.
+  - For core's own `listS` / `setS` / `vectorS` / `arrayS` / `dictS` with a hole, the native collection node is used, to keep the output (A6).
+  - After emission, the macro checks that no hole is left and aborts if one is. Evaluating one at runtime would be a library bug, hence the exception.
+
+**`AutoSearch` (Scala 2) / `AutoGuard.isSearching` (Scala 3).** Internal, compile time only.
+- Why: `auto.derived[X]` has to know whether it is being expanded inside a derivation's search (give a hole) or by user code (derive).
+  - Scala 2 expands a nested implicit macro during the outer `c.inferImplicitValue` (spike a).
+  - `c.openMacros` can't tell: it also holds the derivation during its own silent `c.typecheck` and the `c.eval` of default values.
+- Role: a `ThreadLocal` counter, raised around every implicit search a derivation runs.
+  - `ThreadLocal`, because sbt runs several compilers in one JVM.
+  - Scala 3's `AutoGuard` existed and used to make auto decline; it now gives the hole.
+  - Scala 3's `DerivedSchema` runs in typer and gets the unexpanded `auto.derived[X]` call back; that is treated as a hole too.
+  - `AutoGuard.Allowed` (Scala 3) no longer does anything. It was kept so that `auto.derived`'s signature stays the same, but the result type changed anyway,
+    so it can go (open problem P7).
+
+**`AutoEnabled` and `Json.auto.jsonSchemaAutoEnabled`** (internal marker).
+- Why: when the root's hole is filled from the current expansion, the found tree is discarded, so nothing in the output refers to the import. The compilers would
+  then report `import json.Json.auto._` as unused, and break `-Werror` builds (spike d).
+- Role:
+  - `auto` carries an `implicit val jsonSchemaAutoEnabled: AutoEnabled`. Both `import auto._` and Scala 3's `import auto.given` bring it.
+  - Every expansion where that name resolves to the marker splices a reference to it, so the import counts as used (A2).
+  - "Every expansion" because Scala 2 counts only an import whose implicit the macro actually selected: `Json.schema[Int]` with the import would otherwise warn.
+  - It is spliced only after a silent typecheck shows that the name means the marker. An import of `auto.derived` alone, or a local of that name, gets
+    nothing, and no error.
+
+**`Flag.SemiAuto`.**
+- Why: phase 1 only warns. Users who want the phase-2 behaviour, the error, need a way to opt in now.
+- Role:
+  - A marker trait read by the same single `Flag` search as `Flag.EnumsAsOneOf`.
+  - It combines with other flags in one value (F2); separate vals don't (F3).
+  - In phase 2 it becomes a deprecated no-op.
+
+**The `[json-schema-semi-auto]` prefix.**
+- Why: a macro warning has no category, so `-Wconf:cat=...` can't match it.
+- Role: a stable prefix, matched by `-Wconf:msg=json-schema-semi-auto:s` (F4). Test scopes of this build use it, so that the existing suites, which rely on deep
+  derivation, stay as they are.
+
+**`` Schema.`lazy-ref`[T] ``** (a new node: `sig` plus a by-name body).
+- Why: under semi-auto, a model is a set of instances that refer to each other, and a cycle among them can't be built strictly.
+  - `implicit val aS = Json.schema[A]` reads `bS`, which reads `aS` while it is still `null`.
+  - With Scala 3 `derives` givens, which are lazy, the same cycle deadlocks.
+  - A val read before it is initialized gives `null` too (S22).
+  - In 0.9 all of these gave `def(sig, null)` or a deadlock (S21).
+- Role: a reference to the instance of `sig` that isn't available yet.
+  - Every existing traversal (`equals`, `hashCode`, `toString`, the definition passes) sees it as a leaf, so the tree stays finite.
+  - Equality is by `sig`.
+  - It appears only where a cycle or a `null` would have been. Everywhere else an implicit `Schema` is still the `def` node of 0.9.
+
+**`Schema.building(sig)`, `` `def`.adaptOrLazy(x, sig) ``, `Schema.materialized(x)`** (internal API, public for macro output).
+- Why: the library needs to know, at runtime, that an implicit `Schema` is part of a cycle, whatever its shape (`val`, `lazy val`, `given`, `def`), and then
+  turn the lazy references into ordinary definitions before rendering. A `Predef` in a cycle is not covered (S4, P4): it is inlined, so it has no definition to
+  refer to.
+- Role:
+  - `building(sig)(body)` wraps every derived root. It registers `sig` in a `ThreadLocal` set while `body` runs, and removes it in a `finally`.
+  - `adaptOrLazy` is what the macros now emit for a found implicit `Schema`, instead of `def.adapt`. It returns a `lazy-ref` without evaluating `x` when
+    `sig` is being built on this thread, or when `x` is `null`. Otherwise it is `def.adapt(x, sig)`, as in 0.9.
+  - `materialized` runs at the start of rendering (`JsonSchemaProfile.lower`): the first `lazy-ref` of a `sig` becomes its `def`, and later and recursive ones
+    become `ref`s. A tree without a `lazy-ref` is returned as is.
+
+**Inside the macros (no API):**
+- a mode per expansion: semi-auto for `Json.schema`, `objectSchema`, `derives` and `DerivedSchema`; auto when auto is the root or is imported and available for
+  the type;
+- the gate by kind (`isGatedKind`): non-tuple case classes, and sealed families with a case-class case, other than `Either`;
+- the exemption for cases of a family being derived (`isCaseOfFamilyOnStack`);
+- the leftover-hole check.
+
+## Open problems found by the Expectations review (2026-11-25, owner decision)
+The Expectations review compared the scenarios with circe's own macro derivation. It found the problems below. I reproduced P1, P2, P4 and P5, and P3 shows
+in the scenario runs. P1 to P5 share one root cause: circe has one type class, and we have two (`Schema`, a definition, and `Predef`, inlined) with no bridge
+from `Schema` to `Predef`.
+
+**P1. An element's `Schema` doesn't satisfy an instance that asks for a `Predef`** (S10, S18).
+- `boxPredef[A](implicit p: Predef[A])` and the generic hint `pairSchema[A](implicit p: Predef[A])` both ignore an `implicit val addressSchema: Schema[Address]`.
+- Under auto the same instance does count, because the macro fills the element itself, so the two modes disagree.
+- Options:
+  - (a) A low-priority bridge in `LowPriorityPredefs`, `implicit def predefFromSchema[T](implicit s: Schema[T]): Predef[T]`, giving a `Predef` that carries the
+    `def` node. When inlined, it still renders as a definition + `$ref`, so the core rule holds. It must rank above `importedPredef` and below every real
+    `Predef`. A spike checks ambiguity with the built-ins, and the `lazy-ref` handling for it.
+  - (b) Change the generic hint to ask for a `Schema[T]`. That fixes S10 only, and breaks for elements that have only a `Predef` (`Int`).
+- Recommended: (a). It also fixes P2, and cats with `Schema` elements.
+
+**P2. The generic hint in the error doesn't compose with the other fix it suggests.** Follow both pieces of advice (`Schema[Address]`, plus `pairSchema` with
+a `Predef[A]`), and the error comes back. P1 (a) fixes it.
+
+**P3. For a container instance whose element has no instance, the error names the container and suggests deriving it** (S18).
+- It suggests `json.Json.schema[Box[Address]]`, which is the wrong schema of #482, now without even a warning.
+- The design expected Scala 3 to add the reason from the search (naming `Address`). It doesn't: `Implicits.recordFailure` doesn't keep this failure.
+- Options:
+  - (a) Scala 3: keep that failure, and print "Box's instance `boxPredef` needs a `Predef[Address]`".
+  - (b) Both versions: when the type's companion has an implicit whose result type is `Predef[Box[_]]` or `Schema[Box[_]]`, say so, and suggest an instance for
+    the type arguments instead of for `Box`. This is a lookup of the companion's members, not a derivation, so it is not the rejected marker probe.
+  - (c) Leave the text as it is.
+- Recommended: (a) and (b).
+
+**P4. A recursive type with a `Predef` instance loops or gives `null`** (S4).
+- `implicit lazy val treeP: Predef[Tree] = Predef(Json.schema[Tree])` throws `StackOverflowError`; `implicit val` gives `array(null)`.
+- It is the same in 0.9, but S4 is now a documented migration.
+- An inlined schema of a recursive type can't exist, so a lazy reference is no fix here.
+- Options:
+  - (a) A compile error: while deriving `Tree` for the initializer of `treeP`, the found instance is `treeP` itself (Scala 2 `c.internal.enclosingOwner`,
+    Scala 3 `Symbol.spliceOwner`). The error says "a recursive type needs a `json.Schema` instance (a definition + `$ref`), not a `Predef`".
+  - (b) Document it only.
+- Recommended: (a).
+
+**P5. Generic `derives Schema` on Scala 3** (S19).
+- The compiler makes `derives` ask for `Schema[A]` for a type parameter, so `GP[Int]` has no instance, and a `Schema` parameter is unwrapped and inlined.
+- It is the same in 0.9.
+- Options:
+  - (a) Document that `derives` is for monomorphic types, and that generic types use an `implicit def` (S10).
+  - (b) Change the error for a type that has a `derives` given that failed, so it doesn't claim "no implicit json.Schema".
+- Recommended: (a) and (b).
+
+**P6. The Scala 3 import hint.** `import json.Json.auto._` works on Scala 3 too. The error's "(Scala 3: `import json.Json.auto.given`)" and the scaladoc of
+`Json.auto` suggest it doesn't. Recommended: drop the parenthetical and say that `_` works on both versions.
+
+**P7. `AutoGuard.Allowed` is dead weight** (New entities).
+- Options:
+  - (a) Remove it.
+  - (b) Replace it with a `Mirror.Of[T]` bound, as circe has, so auto answers only for derivable types. That would shrink S2-R7, holes that make candidates
+    apply which failed before. It applies to Scala 3 only.
+- Recommended: (a), and keep (b) as a follow-up.
+
+**P8.** The Scala 2 `implicitly` error under auto (A9) is the open problem already listed in "Implementation notes".
 
 ## Options
 
@@ -227,8 +837,8 @@ final class `lazy-ref`[T] private (val sig: String, body: => Schema[_]) extends 
   - A gated nested type without an instance is still derived in place, with a warning. The warning has a stable prefix that `-Wconf:msg=` can match (macros can't
     set a category): `[json-schema-semi-auto] schema for X is derived implicitly (in ...); this becomes an error in a future release. <the two fixes>`.
   - Opt in early with `Flag.SemiAuto`, which gives the error now. Flags are read with one implicit `Flag` search (`UFlags.scala:11`, `Implicits.scala:138`), so
-    several flags combine in one value: `implicit val flags: Flag with Flag.EnumsAsOneOf with Flag.SemiAuto = null`. Two separate flag vals are ambiguous, so
-    both would silently turn off; this is documented.
+    several flags combine in one value: `implicit val flags: Flag with Flag.EnumsAsOneOf with Flag.SemiAuto = null`. Two separate flag vals are ambiguous:
+    a compile error on Scala 2, and on Scala 3 neither applies (Expectations F3); this is documented.
   - Users on `-Werror` see errors at once. The release notes say so, and give `-Wconf:msg=json-schema-semi-auto:s` as the way to keep phase 1 silent.
   - Macros run inside implicit searches can lose or duplicate warnings for discarded candidates: Scala 2's whitebox `DerivedSchema`, Scala 3's transparent
     `DerivedSchema`, and Scala 3 auto expanding during a search. The warning is emitted only from the outermost expansion, the one not inside a search.
@@ -368,6 +978,7 @@ The owner accepted all four recommendations:
 - **No `Schema.building` when the root itself came from an implicit.** Otherwise `Json.schema[Inner]` with an implicit `Schema[Inner]` would be a `lazy-ref`.
 - **Warnings:** Scala 3 reports only one diagnostic per position, so it gives one warning per expansion, with one prefixed line per gated type. Scala 2 gives
   one warning per type.
+- **Two separate flag vals** (Expectations F3): Scala 2 reports the ambiguity as a compile error; Scala 3 silently applies neither. The design assumed "neither" on both.
 - **No warning-capture test:** there is no ToolBox or compiler API on the test classpath. The warnings were checked by hand with the `-Wconf` silencer removed.
 
 **Open problem (owner decision):** on Scala 2, `{ import Json.auto._; implicitly[Predef[Unsupported]] }` now fails with scalac's plain "could not find
@@ -423,3 +1034,20 @@ Round 3 (same reviewer):
 
 Round 4: **approved** (no musts). Nits folded in: `Schema.building` cleans up in `finally`; the signature is computed the same way on both sides, and types
 with an abstract type aren't registered.
+
+Round 5, the Expectations review (independent reviewer, 2026-11-25), against circe-derivation (`DerivationMacros.scala`) and circe for Scala 3 (`derivation`,
+`ConfiguredEncoder`, `Exported`, `importedEncoder`), with compiled probes:
+- Agrees with circe: `Exported` plus the lowest-priority bridge; precedence, also on 3.7.0; what is derived; sub-families inside the family; the error names the
+  missing type.
+- Differs on purpose, and justified: value classes and enums are native; `Flag.SemiAuto`; `AutoHole`, `AutoSearch` and `AutoEnabled`; `lazy-ref`.
+- musts, accepted as open problems P1 to P5 (above): an element's `Schema` doesn't satisfy a `Predef` constructor; the generic hint doesn't compose; the
+  container error suggests the wrong schema, and Scala 3 adds no reason; a recursive type with a `Predef` loops; generic `derives`.
+- shoulds, fixed in Expectations:
+  - "as in circe" corrected: circe-derivation asks for an instance per case, and the case-as-field exemption goes beyond circe for Scala 3;
+  - S16 and S17 labelled as differences from circe;
+  - the Scala 3 import style (P6 for the error text);
+  - the A1 claim;
+  - new cases: a case with its own instance (S13), a case outside its family (S14), auto never gives a `Schema` (A11);
+  - `AutoGuard.Allowed` (P7);
+  - 2.12 not run for the scenarios (preamble).
+- nits fixed: S21's snippet is in an object. The generic hint's fixed name `boxSchema`, and `gPSchema` for `GP`, are left for P3's rewrite of the text.

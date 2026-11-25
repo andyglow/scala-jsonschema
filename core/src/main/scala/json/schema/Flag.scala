@@ -1,7 +1,7 @@
 package json.schema
 
 /** Compile-time switches the derivation reads from one implicit `Flag` in scope. Several combine in one value, e.g. `implicit val flags: Flag with Flag.EnumsAsOneOf with Flag.SemiAuto = null`: two
-  * separate implicit flags are ambiguous, and then neither applies.
+  * separate implicit flags are ambiguous: a compile error on Scala 2, and on Scala 3 neither applies.
   */
 sealed trait Flag
 object Flag {
