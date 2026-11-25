@@ -96,6 +96,8 @@
         "title": "t5"
       },
       {
+        "description": "d3",
+        "title": "t3",
         "type": "string"
       }
     ]
@@ -143,6 +145,8 @@
         "title": "t5"
       },
       {
+        "description": "d3",
+        "title": "t3",
         "type": "string"
       }
     ]
@@ -190,6 +194,8 @@
         "title": "t5"
       },
       {
+        "description": "d3",
+        "title": "t3",
         "type": "string"
       }
     ]

@@ -212,6 +212,9 @@ private[jsonschema] trait UProductTypes {
         // a stale scaladoc @param is only a warning, the same for the root and for nested types
         scaladocFD.warnUnknown(tpe, resolvedFields)
 
+        // field titles (`@title` on a field): set on the field's schema
+        val titles = FieldDecorations.titlesFromFieldAnnotations(resolvedFields)
+
         // compute field trees
         val fields = resolvedFields map { f =>
           val name = f.name.decodedName.toString
@@ -219,7 +222,8 @@ private[jsonschema] trait UProductTypes {
           // resolve the field type schema; an `Option[X]` field keeps the Option as an `option` node around X
           val optTpe      = appliedType(T.option.typeConstructor, List(f.effectiveTpe))
           val valueSchema = resolve(f.effectiveTpe, ctx :+ tpe)
-          val fieldSchema = if (f.isOption) U.Opt(optTpe, f.effectiveTpe, valueSchema) else valueSchema
+          val typeSchema  = if (f.isOption) U.Opt(optTpe, f.effectiveTpe, valueSchema) else valueSchema
+          val fieldSchema = titles.get(name).fold[SchemaType](typeSchema)(t => typeSchema.withExtra(typeSchema.extra.copy(title = Some(t))))
           val fieldTpe    = if (f.isOption) optTpe else f.effectiveTpe
 
           // description
