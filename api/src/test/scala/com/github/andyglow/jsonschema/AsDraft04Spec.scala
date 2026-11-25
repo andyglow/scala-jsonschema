@@ -143,6 +143,8 @@ class AsDraft04Spec extends AnyWordSpec {
       asDraft04(`string`[String](F.`ipv4`)) shouldEqual obj("type" -> "string", "format" -> "ipv4")
 
       asDraft04(`string`[String](F.`ipv6`)) shouldEqual obj("type" -> "string", "format" -> "ipv6")
+
+      asDraft04(`string`[String](F.`regex`)) shouldEqual obj("type" -> "string", "format" -> "regex")
     }
 
     "emit String with Custom Format" in {

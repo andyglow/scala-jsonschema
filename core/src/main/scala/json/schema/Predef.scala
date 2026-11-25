@@ -109,6 +109,26 @@ object Predef extends LowPriorityPredefs {
   // a region id is any `Area/City` name, so no pattern; as a Predef it also keeps the macros from deriving the abstract class as a family
   implicit val zoneIdS: Predef[java.time.ZoneId] = Predef(`string`[java.time.ZoneId])
 
+  // string-likes (#475, docs/design/475-string-like.md): a standard format where one exists, a pattern where the text has a fixed shape, else a plain string
+  private val currencyPattern = "^[A-Z]{3}$"                     // ISO 4217 alphabetic code
+  private val charsetPattern  = "^[A-Za-z0-9][A-Za-z0-9+:_.-]*$" // the legal charset name rule of java.nio.charset.Charset
+
+  implicit val localeS: Predef[java.util.Locale]     = Predef(`string`[java.util.Locale]) // `en_US` (toString) or `en-US` (toLanguageTag): no pattern fits both
+  implicit val currencyS: Predef[java.util.Currency] = Predef(
+    `string`[java.util.Currency].withValidation(`pattern` := currencyPattern)
+  )
+  implicit val patternS: Predef[java.util.regex.Pattern] = Predef(`string`[java.util.regex.Pattern](Format.`regex`))
+  implicit val regexS: Predef[scala.util.matching.Regex] = Predef(`string`[scala.util.matching.Regex](Format.`regex`))
+  // either family member; `oneOf [ipv4, ipv6]` would reject every value where formats are annotations (2019-09+)
+  implicit val inetAddressS: Predef[java.net.InetAddress]   = Predef(`string`[java.net.InetAddress])
+  implicit val inet4AddressS: Predef[java.net.Inet4Address] = Predef(`string`[java.net.Inet4Address](Format.`ipv4`))
+  implicit val inet6AddressS: Predef[java.net.Inet6Address] = Predef(`string`[java.net.Inet6Address](Format.`ipv6`))
+  implicit val pathS: Predef[java.nio.file.Path]            = Predef(`string`[java.nio.file.Path])
+  implicit val fileS: Predef[java.io.File]                  = Predef(`string`[java.io.File])
+  implicit val charsetS: Predef[java.nio.charset.Charset]   = Predef(
+    `string`[java.nio.charset.Charset].withValidation(`pattern` := charsetPattern)
+  )
+
   implicit def arrayS[T](implicit p: Predef[T]): Predef[Array[T]] = Predef(
     `array`[T, Array](p.schema, unique = false)
   )

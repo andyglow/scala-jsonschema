@@ -17,6 +17,11 @@
 | `java.time.ZoneId`                                                          | `string`                                        |
 | `java.util.UUID`                                                            | `string`, format `uuid`                         |
 | `java.net.URI`, `java.net.URL`                                              | `string`, format `uri`                          |
+| `java.util.regex.Pattern`, `scala.util.matching.Regex`                      | `string`, format `regex`                        |
+| `java.net.Inet4Address`, `java.net.Inet6Address`                            | `string`, format `ipv4` / `ipv6`                |
+| `java.util.Currency`                                                        | `string`, pattern of an ISO 4217 code (`USD`)   |
+| `java.nio.charset.Charset`                                                  | `string`, pattern of a charset name (`UTF-8`)   |
+| `java.util.Locale`, `java.net.InetAddress`, `java.nio.file.Path`, `java.io.File` | `string`                                   |
 | `Option[T]`                                                                 | `T` or `null`; a field is not required (@ref:[more](rendering.md#option)) |
 | `Iterable[T]` (`List`, `Seq`, `Vector`, `Set`, `Array`, ...)                | `array` (`Set`: `uniqueItems`)                  |
 | `Map[String, V]`, `Map[Int, V]`, ...                                        | `object` with `patternProperties` (keys enforced) |
