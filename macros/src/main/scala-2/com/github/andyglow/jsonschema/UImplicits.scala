@@ -27,15 +27,12 @@ private[jsonschema] trait UImplicits { this: UContext with UCommons with USignat
       else Seq(s)
     }
 
-    // the simple names of the enclosing vals/defs (a field is named by its getter), to shadow them in a typechecked search
-    private lazy val selfNames: Seq[TermName] = selfSymbols.collect {
-      case s if s.isTerm && !s.isConstructor && !s.isModule && { val n = s.name.decodedName.toString; n.nonEmpty && !n.exists(ch => ch == ' ' || ch == '$' || ch == '<') } =>
-        s.name.toTermName
-    }
-
-    private def infer(pt: Type): Tree = ImplicitSearch.inferIgnoring(c)(pt, selfSymbols) match {
-      case Some(y) => unlessSelfWins(pt, y)
-      case None    => c.inferImplicitValue(pt)
+    // under `AutoSearch.searching`: a `Json.auto.derived[X]` expanded by this search is a placeholder (a hole), see `asHole`
+    private def infer(pt: Type): Tree = AutoSearch.searching {
+      ImplicitSearch.inferIgnoring(c)(pt, selfSymbols) match {
+        case Some(y) => unlessSelfWins(pt, y)
+        case None    => c.inferImplicitValue(pt)
+      }
     }
 
     // Today's winner without the self reference. The plain search finds the enclosing implicit (it is always in the lexical scope), and the macro declines it. A search
@@ -136,27 +133,125 @@ private[jsonschema] trait UImplicits { this: UContext with UCommons with USignat
       s != null && s != NoSymbol && s.isTerm && (enclosingSymbols.contains(s) || (s.asTerm.isGetter && enclosingSymbols.contains(s.asTerm.accessed)))
     }
 
-    // `Json.auto.derived[T]` is an implicit Predef[T] macro. A search for Predef[T] returns it unexpanded, and it expands when our output is typechecked: a derivation of T inside the
-    // derivation of T, forever (a scalac StackOverflowError in 0.7). It is also imported, so it shadows the built-in and companion Predefs (Predef[Int], ...).
-    // So when the search picks `auto.derived` itself, search again with `derived` shadowed by a local non-implicit name (an implicit is only eligible if it's accessible by its simple
-    // name), which finds the implicit the search would have found without the import. If that's `auto.derived` again (e.g. imported under another name), there's none: derive inline.
-    // Hence importing Json.auto never turns a type into a definition and never changes a schema derived without it.
-    // The ignoring search can't do this: it leaves `derived` out of the top-level candidates only, and nested searches expand it again (a StackOverflowError). The re-search
-    // also shadows the enclosing definitions' names, so it doesn't find (and warn about) the self reference, and its result is checked like the ignoring search's.
-    private def isAutoDerived(x: Tree): Boolean =
-      x.symbol != null && x.symbol != NoSymbol && x.symbol.isMethod && x.symbol.fullName == "json.Json.auto.derived"
+    // ---- `import json.Json.auto._` (issue #542). `auto.derived[X]` is an `Exported[Predef[X]]`, reached through the bridge `Predef.importedPredef`. scalac expands a nested blackbox implicit
+    // macro while the outer search is still choosing (spike 0(a): `importedPredef`'s implicit argument is expanded as soon as it is found), and under `AutoSearch.searching` the expansion is the
+    // placeholder `Exported(AutoHole.hole[X])`, so a found tree looks like `listS[X](importedPredef[X](Exported(AutoHole.hole[X])))`. An unexpanded `auto.derived[X]` counts the same. Either is a
+    // hole: a place where the instance takes a schema of `X` from auto, filled in from this expansion. The old re-search with `derived` shadowed is gone: an `Exported` never competes with a
+    // `Predef`, so the import can't shadow the built-in and companion instances, and the placeholder can't recurse.
 
-    private def inferPredef(pType: Type): Tree = infer(pType) match {
-      case x if isAutoDerived(x) =>
-        val shadows = (TermName("derived") +: selfNames).distinct.map(n => q"val $n = ()")
-        c.typecheck(q"{ ..$shadows; _root_.scala.Predef.implicitly[$pType] }", silent = true) match {
-          case Block(_, Apply(_, List(y))) if !isAutoDerived(y) => unlessSelfWins(pType, y)
-          case _                                                => EmptyTree
-        }
-      case x => x
+    private def symName(t: Tree): String = if (t.symbol == null || t.symbol == NoSymbol) "" else t.symbol.fullName
+
+    private def isAutoDerivedRef(t: Tree): Boolean = symName(refOf(t)) == "json.Json.auto.derived"
+    private def isHoleRef(t: Tree): Boolean        = symName(refOf(t)) == "com.github.andyglow.jsonschema.internal.AutoHole.hole"
+
+    private lazy val exportedSym = typeOf[json.schema.Exported[_]].typeSymbol
+
+    /** `t` is a hole: `(X, exported)`, `exported` if `t` is an `Exported[Predef[X]]` (else a `Predef[X]`). */
+    private def asHole(t: Tree): Option[(Type, Boolean)] =
+      if (t.tpe == null) None
+      else {
+        def predefArg(pt: Type): Option[Type] = pt.baseType(T.predefC.typeSymbol).typeArgs.headOption
+        val exported                          = t.tpe.baseType(exportedSym).typeArgs.headOption
+        val isHole                            = isAutoDerivedRef(t) || isHoleRef(t) || (exported.isDefined && containsHole(t))
+        if (!isHole) None
+        else
+          exported match {
+            case Some(pt) => predefArg(pt).map(_ -> true)
+            case None     => predefArg(t.tpe).map(_ -> false)
+          }
+      }
+
+    private def containsHole(t: Tree): Boolean = t.exists(x => x.tpe != null && (isAutoDerivedRef(x) || isHoleRef(x)))
+
+    /** Any hole or unexpanded `auto.derived` left in a tree the macro emits (a bug if so). */
+    def leftoverHole(t: Tree): Option[Tree] = t.find {
+      case x if x.symbol != null && x.symbol != NoSymbol => isAutoDerivedRef(x) || isHoleRef(x)
+      case Select(q, TermName("hole"))                   => q.toString.endsWith("AutoHole")
+      case _                                             => false
     }
 
-    def get(tpe: Type): Option[SchemaType] = {
+    private lazy val bridgeName = "json.schema.LowPriorityPredefs.importedPredef"
+
+    /** The found `Predef[X]` is `importedPredef(<hole of X>)` (or the hole itself): auto is available for `X`, which is derived in place. */
+    private def isRootHole(tpe: Type, x: Tree): Boolean = {
+      def holeOfTpe(t: Tree) = asHole(t).exists(_._1 =:= tpe)
+      holeOfTpe(x) || (x match {
+        case Apply(fun, List(arg)) if symName(refOf(fun)) == bridgeName => holeOfTpe(arg)
+        case _                                                          => false
+      })
+    }
+
+    // core's own Predef constructors for collections (`listS` etc.): with a hole inside, the native node, which renders the same (design S2-R8) and keeps today's output by construction
+    private lazy val coreConstructors = Set("arrayS", "setS", "listS", "vectorS", "dictS").map("json.schema.Predef." + _)
+
+    private def isCoreConstructorWithHole(x: Tree): Boolean = coreConstructors.contains(symName(refOf(x))) && containsHole(x)
+
+    /** The found `x` with every hole replaced by an `Ident` of a fresh name, untyped, with each hole's schema of `X` resolved in this expansion. The shape is checked with a stub for each hole: if it
+      * doesn't typecheck, it is a compile error (never a derivation of `tpe` from its structure, which would bring back #482).
+      */
+    private def withHoles(tpe: Type, x: Tree)(implicit ctx: ResolutionContext): (Tree, List[U.Hole]) = {
+      var holes   = List.empty[U.Hole]
+      val punched = new Transformer {
+        override def transform(t: Tree): Tree = asHole(t) match {
+          case Some((xTpe, exported)) =>
+            val name = TermName(c.freshName("jsonSchemaAuto"))
+            holes = holes :+ U.Hole(name, xTpe, exported, null)
+            Ident(name)
+          case None => super.transform(t)
+        }
+      }.transform(x)
+      val untyped = c.untypecheck(staticQualifiers(punched))
+      val stubs   = holes map { h =>
+        val holeTpe = if (h.exported) tq"_root_.json.schema.Exported[_root_.json.schema.Predef[${h.tpe}]]" else tq"_root_.json.schema.Predef[${h.tpe}]"
+        q"val ${h.name}: $holeTpe = null.asInstanceOf[$holeTpe]"
+      }
+      val problem = try {
+        val checked = c.typecheck(q"{ ..$stubs; ${untyped.duplicate} }")
+        leftoverHole(checked).map(h => s"a placeholder is left: ${showCode(h)}")
+      } catch { case e: scala.reflect.macros.TypecheckException => Some(e.msg) }
+      problem foreach { why =>
+        c.abort(
+          c.enclosingPosition,
+          s"schema for ${showType(tpe)} is not supported${pathOf(ctx.stack)}: the implicit found for it, `${showCode(x)}`, takes a schema of " +
+            holes.map(h => showType(h.tpe)).distinct.mkString(", ") + s" from `import json.Json.auto._`, and the derivation can't fill it in ($why). Provide a json.schema.Predef or json.Schema for " +
+            showType(tpe)
+        )
+      }
+      (untyped, holes map { h => h.copy(schema = resolve(h.tpe, ctx :+ tpe)) })
+    }
+
+    /** A package or a static object referred to as `pkg.this` (how a search refers to implicit-scope members) becomes its full path: after `untypecheck`, `schema.this.Predef` would be looked up in
+      * the call site's enclosing classes.
+      */
+    private def staticQualifiers(t: Tree): Tree = new Transformer {
+      // by the owners' own (encoded) names: `fullName` is decoded (`lazy-ref`)
+      private def fullPath(sym: Symbol): Tree = {
+        val path = Iterator.iterate(sym)(_.owner).takeWhile(s => s != NoSymbol && s != c.mirror.RootClass).toList.reverse
+        path.foldLeft[Tree](Ident(termNames.ROOTPKG)) { (q, s) => Select(q, s.name.toTermName) }
+      }
+      // the empty package has no path: left as it is
+      private def hasPath(sym: Symbol): Boolean = !Iterator.iterate(sym)(_.owner).takeWhile(_ != NoSymbol).exists(_.isEmptyPackageClass)
+      override def transform(t: Tree): Tree     = t match {
+        case th @ This(_) if th.symbol != null && th.symbol.isPackageClass && hasPath(th.symbol)                      => fullPath(th.symbol)
+        case th @ This(_) if th.symbol != null && th.symbol.isModuleClass && th.symbol.isStatic && hasPath(th.symbol) => fullPath(th.symbol)
+        case other                                                                                                    => super.transform(other)
+      }
+    }.transform(t)
+
+    sealed trait Lookup
+    object Lookup {
+
+      /** an implicit instance */
+      case class Found(st: SchemaType) extends Lookup
+
+      /** none, but `import json.Json.auto._` makes the type derivable here: derive it in place, in auto mode */
+      case object AutoAvailable extends Lookup
+
+      case object Missing extends Lookup
+    }
+
+    def lookup(tpe: Type)(implicit ctx: ResolutionContext): Lookup = {
+      import Lookup._
 
       val sType = appliedType(T.schemaC, tpe) // .dealias.widen
       val pType = appliedType(T.predefC, tpe) // .dealias.widen
@@ -170,10 +265,10 @@ private[jsonschema] trait UImplicits { this: UContext with UCommons with USignat
       // ```
       // if taken from schema - must be exposed as `ref`
       // if taken from predef - exposing as is
-      def lookupPredef: ImplicitSchema = inferPredef(pType) match {
+      def lookupPredef: ImplicitSchema = infer(pType) match {
         case EmptyTree              => NotFound
         case x if isOwnerSelfRef(x) => NotFound
-        case x                      => FromPredef(q"$x.schema")
+        case x                      => FromPredef(x)
       }
 
       // Schema is covariant, so a search for Schema[Base] also accepts an implicit Schema[Sub]. Only an implicit for exactly T counts (owner decision 2026-11-20): otherwise
@@ -192,22 +287,42 @@ private[jsonschema] trait UImplicits { this: UContext with UCommons with USignat
         }
       }
 
+      // `wrap(x)`: the emitted tree for the found `x`; with holes, `x` is untyped and holds an `Ident` per hole
+      def fromTree(x: Tree)(wrap: Tree => Tree): SchemaType =
+        if (!containsHole(x)) U.`-from-tree-`(tpe, wrap(x))
+        else {
+          val (body, holes) = withHoles(tpe, x)
+          U.`-from-tree-`(tpe, wrap(body), holes = holes)
+        }
+
       lookupSchema match {
-        case NotFound      => None
-        case FromPredef(x) => Some(U.`-from-tree-`(tpe, x))
+        case NotFound                                      => Missing
+        case FromPredef(x) if isRootHole(tpe, x)           => AutoAvailable
+        case FromPredef(x) if isCoreConstructorWithHole(x) => AutoAvailable
+        case FromPredef(x)                                 => Found(fromTree(x)(y => q"$y.schema"))
         // no compile-time name is right for every instantiation of an abstract type: a `def`/`ref` instance keeps its own name, anything else is inlined (#297; Scala 3: `FromImplicit` with no sig)
-        case FromSchema(x) if mentionsAbstractType(tpe) => Some(U.`-from-tree-`(tpe, x))
-        // a generic implicit named its definition for its own type parameters (`pkg.Tree[pkg.M.A]`): rename it and its refs to this type (#297; Scala 3: `FromImplicit.generic`)
+        case FromSchema(x) if mentionsAbstractType(tpe) => Found(fromTree(x)(identity))
+        // a generic implicit named its definition for its own type parameters (`pkg.Tree[pkg.M.A]`): rename it and its refs to this type (#297; Scala 3: `FromImplicit.generic`).
+        // Through `adaptOrLazy`, as below: the renamed definition, or a `lazy-ref` in a recursion cycle between instances
         case FromSchema(x) if isGenericImplicit(x) =>
-          val sig     = signature(tpe)
-          val renamed = q"""$x match {
-            case d: ${N.Schema}.`def`[_] => d.asInstanceOf[${N.Schema}.`def`[$tpe]].toDefinition[$tpe]($sig)
-            case o                       => ${N.Schema}.`def`.adapt[$tpe](o, $sig)
-          }"""
-          Some(U.`-from-tree-`(tpe, renamed))
+          val sig = signature(tpe)
+          Found(fromTree(x) { y =>
+            q"""${N.Schema}.`def`.adaptOrLazy[$tpe]($y match {
+              case d: ${N.Schema}.`def`[_] => d.asInstanceOf[${N.Schema}.`def`[$tpe]].toDefinition[$tpe]($sig)
+              case o                       => o
+            }, $sig)"""
+          })
+        // a definition + `$ref`; a `lazy-ref` if the instance isn't available yet (a recursion cycle between instances, a val read before it is initialized: issue #542)
         case FromSchema(x) =>
-          Some(U.`-from-tree-`(tpe, q"""${N.Schema}.`def`.adapt[$tpe]($x, ${signature(tpe)})"""))
+          val sig = signature(tpe)
+          Found(fromTree(x)(y => q"""${N.Schema}.`def`.adaptOrLazy[$tpe]($y, $sig)"""))
       }
+    }
+
+    /** An implicit instance of `tpe`; `None` also when only auto could make one (the caller derives it). */
+    def get(tpe: Type)(implicit ctx: ResolutionContext): Option[SchemaType] = lookup(tpe) match {
+      case Lookup.Found(st) => Some(st)
+      case _                => None
     }
 
     /** The found implicit is a method applied to type arguments (`jsonSchemaFoo[Bar](..)`). Scala 3: `Implicits.isGenericImplicit`. */
@@ -218,8 +333,6 @@ private[jsonschema] trait UImplicits { this: UContext with UCommons with USignat
       case TypeApply(_, _) => true
       case _               => false
     }
-
-    def getOrElse(tpe: Type, gen: => SchemaType): SchemaType = get(tpe) getOrElse gen
   }
   val Implicit = new Implicit
 }
