@@ -35,6 +35,9 @@ libraryDependencies += "io.github.andyglow" %%% "scala-jsonschema" % "0.9.0"
   [scala-java-time](https://github.com/cquiroz/scala-java-time), as in any Scala.js code. So does the schema of a
   Java enum from `java.time` (`DayOfWeek`, `Month`): a Java enum's schema lists its values at run time.
   `java.util.UUID` and `java.net.URI` are part of Scala.js; `java.sql` types don't exist there.
+  The schemas (and models with fields) of `Locale`, `Currency`, `InetAddress`, `Path` and `File` compile and link on
+  Scala.js; creating values of `Locale`/`Currency` needs [scala-java-locales](https://github.com/cquiroz/scala-java-locales),
+  the others have no Scala.js implementation.
 - Numbers render as on the JVM: a `Double` bound of `16.0` is `16.0` in the JSON, not `16`.
 
 ## Quick start

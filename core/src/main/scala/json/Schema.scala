@@ -203,6 +203,7 @@ object Schema extends SchemaCompanionPlatform {
       case object `ipv4`      extends Format // Internet host name, see RFC 1034, section 3.1.
       case object `ipv6`      extends Format // IPv6 address, as defined in RFC 2373, section 2.2.
       case object `uri`       extends Format // A universal resource identifier (URI), according to RFC3986.
+      case object `regex`     extends Format // A regular expression (ECMA 262), added in draft 07. Rendered on every draft, as `date`/`time` are.
 
       // added in 2019-09
       case object `duration`     extends Format // The duration format is from the ISO 8601 ABNF as given in Appendix A of RFC 3339

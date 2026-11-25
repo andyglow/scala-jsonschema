@@ -66,4 +66,8 @@ object Magnet extends SeqMagnet {
   implicit def yearMonthMagnet: Magnet[java.time.YearMonth, String]   = mk[java.time.YearMonth, String]
   implicit def monthDayMagnet: Magnet[java.time.MonthDay, String]     = mk[java.time.MonthDay, String]
   implicit def zoneOffsetMagnet: Magnet[java.time.ZoneOffset, String] = mk[java.time.ZoneOffset, String]
+
+  // string-likes (#475): only where a core Predef attaches a validation
+  implicit def currencyMagnet: Magnet[java.util.Currency, String]      = mk[java.util.Currency, String]
+  implicit def charsetMagnet: Magnet[java.nio.charset.Charset, String] = mk[java.nio.charset.Charset, String]
 }
