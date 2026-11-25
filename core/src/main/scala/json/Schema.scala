@@ -706,6 +706,17 @@ object Schema extends SchemaCompanionPlatform {
         case _ => `def`(sig, tpe)
       }
     }
+
+    /** INTERNAL API, the macros' output for an implicit `Schema` (issue #542): `adapt(x, sig)`, unless `x` isn't available yet. That is the case when a schema of `sig` is being built on this thread
+      * (a recursion cycle between instances: evaluating `x` would loop, deadlock or give `null`), or when `x` is `null` (a val read before it was initialized). Then a [[`lazy-ref`]], whose body is
+      * evaluated when the schema is rendered.
+      */
+    def adaptOrLazy[T](x: => Schema[_], sig: String): Schema[T] =
+      if (isBuilding(sig)) `lazy-ref`[T](sig, x)
+      else {
+        val v = x
+        if (v == null) `lazy-ref`[T](sig, x) else adapt[T](v, sig)
+      }
   }
 
   // +------------
@@ -751,6 +762,114 @@ object Schema extends SchemaCompanionPlatform {
       sb append sig
       sb append ")"
     }
+  }
+
+  // +------------
+  // | Lazy-Ref
+  // +---------------
+  // An implicit `Schema` the macros found that wasn't available yet when the schema holding it was built (issue #542): a recursion cycle between instances, or a val read
+  // before it was initialized. The body is evaluated when the schema is rendered (`JsonSchemaProfile.lower`, through `Schema.materialized`): the first `lazy-ref` of a
+  // signature becomes a `def`, every later and every recursive one a `ref`. Everything else sees a leaf: equality and hash code by signature, `toString` without the body.
+  //
+  final class `lazy-ref`[T] private (val sig: String, body: () => Schema[_]) extends Schema[T] {
+    type Self = `lazy-ref`[T]
+
+    /** The definition this reference stands for (the body, as `def.adapt` makes it), evaluated on first use. */
+    lazy val definition: `def`[T] = `def`.adapt[T](body(), sig)
+
+    protected def mkCopy(): `lazy-ref`[T]     = new `lazy-ref`[T](sig, body)
+    override def jsonType: String             = ??? // like `ref`: rendered as a reference
+    override def canEqual(that: Any): Boolean = that.isInstanceOf[`lazy-ref`[_]]
+    override def equals(obj: Any): Boolean    = obj match {
+      case x: `lazy-ref`[_] => sig == x.sig && super.equals(obj)
+      case _                => false
+    }
+    override def hashCode: Int    = sig.hashCode
+    override def toString: String = ToString { sb =>
+      sb append "lazy-ref("
+      sb append sig
+      sb append ")"
+    }
+  }
+
+  object `lazy-ref` {
+
+    /** INTERNAL API: made by `def.adaptOrLazy`. */
+    private[json] def apply[T](sig: String, body: => Schema[_]): `lazy-ref`[T] = new `lazy-ref`[T](sig, () => body)
+
+    def unapply(x: `lazy-ref`[_]): Some[String] = Some(x.sig)
+  }
+
+  // ---- recursion cycles between instances (issue #542)
+
+  private val buildingSigs = new ThreadLocal[Map[String, Int]] {
+    override def initialValue(): Map[String, Int] = Map.empty
+  }
+
+  /** INTERNAL API, used by the macros' output: evaluates `body`, the schema of the type with signature `sig`, with `sig` registered as being built on this thread. An instance of that type met
+    * meanwhile (a recursion cycle between implicit instances) is referenced lazily, see `def.adaptOrLazy`.
+    */
+  def building[T](sig: String)(body: => Schema[T]): Schema[T] = {
+    val before = buildingSigs.get
+    buildingSigs.set(before.updated(sig, before.getOrElse(sig, 0) + 1))
+    try body
+    finally {
+      val now = buildingSigs.get
+      now.get(sig) match {
+        case Some(n) if n > 1 => buildingSigs.set(now.updated(sig, n - 1))
+        case _                => buildingSigs.set(now - sig)
+      }
+    }
+  }
+
+  private[json] def isBuilding(sig: String): Boolean = buildingSigs.get.contains(sig)
+
+  /** `x` with every `lazy-ref` replaced: the first one of a signature by its definition, the later and the recursive ones by a `ref`. A tree without one is returned as is. Idempotent. */
+  def materialized[T](x: Schema[T]): Schema[T] = {
+    def hasLazy(s: Schema[_]): Boolean = s match {
+      case _: `lazy-ref`[_] => true
+      case o: `object`[_]   => o.fields.exists(f => hasLazy(f.tpe))
+      case `array`(c, _)    => hasLazy(c)
+      case `dictionary`(v)  => hasLazy(v)
+      case `oneof`(xs, _)   => xs.exists(hasLazy)
+      case `allof`(xs)      => xs.exists(hasLazy)
+      case `anyof`(xs)      => xs.exists(hasLazy)
+      case `not`(t)         => hasLazy(t)
+      case `def`(_, t)      => hasLazy(t)
+      case `value-class`(t) => hasLazy(t)
+      case `option`(t)      => hasLazy(t)
+      case f: `family`[_]   => f.members.exists(m => hasLazy(m.schema))
+      case _                => false
+    }
+
+    var placed                                         = Set.empty[String] // signatures whose definition is in the tree already
+    def go(s: Schema[_], path: Set[String]): Schema[_] = s match {
+      case l: `lazy-ref`[_] =>
+        val y: Schema[_] =
+          if (path.contains(l.sig) || placed.contains(l.sig)) `ref`[Any](l.sig)
+          else {
+            placed += l.sig
+            val d = l.definition
+            `def`[Any](d.sig, go(d.tpe, path + l.sig)).withExtraFrom(d)
+          }
+        y
+      case o: `object`[_]  => o.rebuild(o.fields.map { f => f.copy(tpe = go(f.tpe, path)) }).withExtraFrom(s)
+      case `array`(c, u)   => `array`[Any, List](go(c, path).asInstanceOf[Schema[Any]], u).withExtraFrom(s)
+      case `dictionary`(v) => `dictionary`[Any, Any, Map](go(v, path).asInstanceOf[Schema[Any]]).withExtraFrom(s)
+      case `oneof`(xs, df) => `oneof`[Any](ListSet(xs.toSeq.map(go(_, path)): _*), df).withExtraFrom(s)
+      case `allof`(xs)     => `allof`[Any](ListSet(xs.toSeq.map(go(_, path)): _*)).withExtraFrom(s)
+      case `anyof`(xs)     => `anyof`[Any](ListSet(xs.toSeq.map(go(_, path)): _*)).withExtraFrom(s)
+      case `not`(t)        => `not`[Any](go(t, path).asInstanceOf[Schema[Any]]).withExtraFrom(s)
+      case `def`(sig, t)   =>
+        placed += sig
+        `def`[Any](sig, go(t, path + sig)).withExtraFrom(s)
+      case `value-class`(t) => `value-class`[Any, Any](go(t, path).asInstanceOf[Schema[Any]]).withExtraFrom(s)
+      case `option`(t)      => `option`[Any](go(t, path).asInstanceOf[Schema[Any]]).withExtraFrom(s)
+      case f: `family`[_]   => f.withMemberSchemas(go(_, path))
+      case other            => other
+    }
+
+    if (hasLazy(x)) go(x, Set.empty).asInstanceOf[Schema[T]] else x
   }
 
   // +------------

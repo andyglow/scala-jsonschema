@@ -98,4 +98,4 @@ val schema: json.Schema[Person] = Json.schema[Person] // or summon[json.Schema[P
 | `Json.objectSchema[T]("field" -> "description", ...)` | the schema of a case class as `json.Schema.object[T]`, with field descriptions |
 | `Json.sig[T].signature`                | the type's name as used for definitions                        |
 | `Json.stringify(schema, version)`      | the rendered JSON as a `String`                                |
-| `import Json.auto._` (Scala 3: also `import Json.auto.given`) | an implicit `json.schema.Predef[T]` for every derivable `T` |
+| `import Json.auto._` (Scala 3: also `import Json.auto.given`) | automatic derivation: nested types without an instance are derived too (see @ref:[Definitions](definitions.md#semi-auto-and-auto-derivation)) |

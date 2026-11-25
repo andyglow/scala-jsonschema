@@ -77,29 +77,51 @@ trait Nodes { this: Derivation =>
     *   receives): no name known at compile time is right for every instantiation. Then the decision is made at RUNTIME (lead decision 2026-11-20, a deliberate Scala 3 deviation; Scala 2 names the
     *   definition after the type parameter, `pkg.Owner.T`, and its analogous case overflows the stack): an instance that is already a definition or a reference keeps its own name (`$ref`), anything
     *   else is inlined.
+    * @param holes
+    *   the types `Json.auto` was asked for inside the found implicit (issue #542, see [[Implicits]]), resolved in this expansion: IR children (so the recursion pass sees them), put in place of the
+    *   holes at emission
     * @param generic
     *   the implicit is generic (a given/def with type parameters, applied to this type's arguments: the given of a generic `derives`). A definition it returns was named inside it, for its type
     *   parameters (`pkg.GRec[pkg.GRec.T]` for a recursive generic `derives`), the same name for every instantiation. That name is provisional: the definition and its `$ref`s are renamed to `sig`, the
     *   concrete type's name, at runtime with `toDefinition` (lead decision on reviewer3 round 2, BACKLOG #9).
     */
-  final case class FromImplicit(tpe: TypeRepr, expr: Expr[Schema[?]], source: ImplicitSource, sig: Option[String], generic: Boolean = false, extra: Extra = Extra()) extends Node {
+  final case class FromImplicit(
+    tpe: TypeRepr,
+    expr: Expr[Schema[?]],
+    source: ImplicitSource,
+    sig: Option[String],
+    generic: Boolean = false,
+    extra: Extra = Extra(),
+    holes: List[(TypeRepr, Node)] = Nil
+  ) extends Node {
     def withExtra(x: Extra): Node          = copy(extra = x)
-    def children: List[Node]               = Nil
-    def mapChildren(f: Node => Node): Node = this
-    def emitRaw: Expr[Schema[?]]           = (source, sig) match {
-      case (ImplicitSource.Predef, _)              => expr
-      case (ImplicitSource.UserSchema, None)       => expr // a `def`/`ref` instance stays one, anything else is inlined as is
+    def children: List[Node]               = holes.map(_._2)
+    def mapChildren(f: Node => Node): Node = copy(holes = holes.map { case (x, n) => (x, f(n)) })
+
+    /** `expr` with its holes filled (see [[Implicits]]). */
+    private def filled: Expr[Schema[?]] =
+      if (holes.isEmpty) expr
+      else fillHoles(expr.asTerm, showType(tpe), x => holes.collectFirst { case (h, n) if h =:= x => emit(n) }).asExprOf[Schema[?]]
+
+    def emitRaw: Expr[Schema[?]] = (source, sig) match {
+      case (ImplicitSource.Predef, _)              => filled
+      case (ImplicitSource.UserSchema, None)       => filled // a `def`/`ref` instance stays one, anything else is inlined as is
       case (ImplicitSource.UserSchema, Some(name)) =>
+        val x = filled
         tpe.asType match {
           case '[t] =>
             val se = Expr(name)
+            // `adaptOrLazy`: the instance is evaluated lazily when it is part of a recursion cycle between instances (issue #542, `Schema.building`)
             if (generic) '{
-              $expr match {
-                case d: Schema.`def`[?] => d.asInstanceOf[Schema.`def`[t]].toDefinition[t]($se) // renames the definition and its $refs
-                case other              => Schema.`def`.adapt[t](other, $se)
-              }
+              Schema.`def`.adaptOrLazy[t](
+                $x match {
+                  case d: Schema.`def`[?] => d.asInstanceOf[Schema.`def`[t]].toDefinition[t]($se) // renames the definition and its $refs
+                  case other              => other
+                },
+                $se
+              )
             }
-            else '{ Schema.`def`.adapt[t]($expr, $se) }
+            else '{ Schema.`def`.adaptOrLazy[t]($x, $se) }
         }
     }
   }

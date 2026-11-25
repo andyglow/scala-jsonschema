@@ -236,8 +236,36 @@ private[jsonschema] trait SchemaTypes {
       type Self = Const; def prefix = q"${N.Schema}.`const`[$tpe]($value)";
       def withExtra(x: SchemaType.Extra) = copy(extra = x)
     }
-    case class `-from-tree-`(tpe: Type, prefix: Tree, extra: Extra = Extra()) extends SchemaType {
+
+    /** A tree the macro didn't build: an implicit instance it found, or a runtime value schema. `holes` (issue #542): the places in `body` where the instance takes a schema from `import
+      * json.Json.auto._` (`listS(importedPredef(auto.derived[X]))`). Each is an `Ident(name)` in `body` (untyped), and its schema of `X` is a child of this node (resolved in the same expansion, so
+      * the recursion passes see it), spliced in when the tree is emitted.
+      */
+    case class `-from-tree-`(tpe: Type, body: Tree, extra: Extra = Extra(), holes: List[Hole] = Nil) extends SchemaType {
       type Self = `-from-tree-`; def withExtra(x: SchemaType.Extra) = copy(extra = x)
+      def prefix: Tree = if (holes.isEmpty) body else Hole.fill(body, holes)
+    }
+
+    /** @param exported
+      *   the hole has type `Exported[Predef[X]]` (else `Predef[X]`)
+      */
+    case class Hole(name: TermName, tpe: Type, exported: Boolean, schema: SchemaType) {
+      def mapSchema(fn: SchemaType => SchemaType): Hole = copy(schema = fn(schema))
+      def tree: Tree                                    = {
+        val predef = q"${N.Predef}[$tpe](${schema.tree})"
+        if (exported) q"_root_.json.schema.Exported[${tq"_root_.json.schema.Predef[$tpe]"}]($predef)" else predef
+      }
+    }
+    object Hole {
+      def fill(body: Tree, holes: List[Hole]): Tree = {
+        val byName = holes.map(h => h.name -> h).toMap
+        new Transformer {
+          override def transform(t: Tree): Tree = t match {
+            case Ident(n: TermName) if byName.contains(n) => byName(n).tree
+            case other                                    => super.transform(other)
+          }
+        }.transform(body)
+      }
     }
     object Obj {
       sealed trait Field {
@@ -325,16 +353,17 @@ private[jsonschema] trait SchemaTypes {
     import SchemaType._
 
     val out = in match {
-      case s: Arr        => s.copy(elementSchema = transformSchema(s.elementSchema)(pf))
-      case s: Dict       => s.copy(valueSchema = transformSchema(s.valueSchema)(pf))
-      case s: OneOf      => s.copy(memberSchema = s.memberSchema map { transformSchema(_)(pf) })
-      case s: AllOf      => s.copy(memberSchema = s.memberSchema map { transformSchema(_)(pf) })
-      case s: Not        => s.copy(schema = transformSchema(s.schema)(pf))
-      case s: Def        => s.copy(schema = transformSchema(s.schema)(pf))
-      case s: ValueClass => s.copy(schema = transformSchema(s.schema)(pf))
-      case s: Opt        => s.copy(schema = transformSchema(s.schema)(pf))
-      case s: Family     => s.copy(members = s.members map { _.mapSchema(transformSchema(_)(pf)) })
-      case s: Obj        =>
+      case s: Arr                               => s.copy(elementSchema = transformSchema(s.elementSchema)(pf))
+      case s: Dict                              => s.copy(valueSchema = transformSchema(s.valueSchema)(pf))
+      case s: OneOf                             => s.copy(memberSchema = s.memberSchema map { transformSchema(_)(pf) })
+      case s: AllOf                             => s.copy(memberSchema = s.memberSchema map { transformSchema(_)(pf) })
+      case s: Not                               => s.copy(schema = transformSchema(s.schema)(pf))
+      case s: Def                               => s.copy(schema = transformSchema(s.schema)(pf))
+      case s: ValueClass                        => s.copy(schema = transformSchema(s.schema)(pf))
+      case s: Opt                               => s.copy(schema = transformSchema(s.schema)(pf))
+      case s: Family                            => s.copy(members = s.members map { _.mapSchema(transformSchema(_)(pf)) })
+      case s: `-from-tree-` if s.holes.nonEmpty => s.copy(holes = s.holes map { _.mapSchema(transformSchema(_)(pf)) })
+      case s: Obj                               =>
         s.copy(fields = s.fields map { f =>
           f.mapSchema(transformSchema(_)(pf))
         })

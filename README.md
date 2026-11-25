@@ -84,6 +84,7 @@ libraryDependencies += "io.github.andyglow" %%% "scala-jsonschema" % "0.9.0"
 ```scala
 import json._
 import json.schema.Version._
+import Json.auto._ // derive nested types too (Company); without it Company needs its own instance, see below
 
 case class Company(name: String)
 case class Person(name: String, nickname: Option[String], age: Int = 18, company: Company)
@@ -155,7 +156,44 @@ The entry points (`json.Json`):
 | `Json.objectSchema[T]("field" -> "description", ...)` | the schema of a case class as `json.Schema.object[T]`, with field descriptions |
 | `Json.sig[T].signature`                | the type's name as used for definitions (`scala.List[com.example.Company]`) |
 | `Json.stringify(schema, version)`      | the rendered JSON as a `String`                                |
-| `import Json.auto._` (Scala 3: also `import Json.auto.given`) | an implicit `json.schema.Predef[T]` for every derivable `T` |
+| `import Json.auto._` (Scala 3: also `import Json.auto.given`) | automatic derivation: nested types without an instance are derived too (see [Semi-auto and auto derivation](#semi-auto-and-auto-derivation)) |
+
+## Semi-auto and auto derivation
+
+Since 0.10 the model is the one circe and pureconfig use (issue #542):
+
+- **Semi-auto, the default.** `Json.schema[T]` (also `objectSchema`, `derives json.Schema`, `DerivedSchema[T]`)
+  derives `T` itself: its fields, the cases of a sealed family, an enum's values. Every other case class or
+  sealed family it meets must have an implicit `Schema` (a definition + `$ref`) or `Predef` (inlined).
+  Built-ins need nothing: primitives, `String`, java.time, `Option`, collections, maps, tuples, `Either`, Java
+  enums, `Enumeration`, value classes, case-object enums and Scala 3 enums.
+- **Auto, opt-in.** With `import Json.auto._` (Scala 3: also `import Json.auto.given`) every nested type
+  without an instance is derived too, inlined, in one expansion (recursion gives a `$ref`). Your own instances
+  always win over auto: auto gives an `Exported[Predef[T]]`, reached only through the lowest-priority implicit
+  `Predef.importedPredef`.
+
+```scala
+case class Company(name: String)
+case class Person(name: String, company: Company)
+
+// semi-auto: Company needs an instance
+implicit val companySchema: json.Schema[Company] = Json.schema[Company]   // Company is a definition, Person refers to it
+Json.schema[Person]
+
+// auto: Company is derived and inlined, as before 0.10
+import Json.auto._
+Json.schema[Person]
+```
+
+In 0.10 a nested case class or sealed family without an instance is still derived, with a warning that starts
+with `[json-schema-semi-auto]` and names the type and both fixes. It becomes an error in the next breaking
+release. To get the error now, put `Flag.SemiAuto` in scope (one flag value carries all flags:
+`implicit val flags: json.schema.Flag with json.schema.Flag.SemiAuto = null`). To keep 0.10 quiet without
+changing code, add `-Wconf:msg=json-schema-semi-auto:s` to `scalacOptions`, or import `Json.auto._`.
+
+A library type whose instance needs one for its element, such as cats' `NonEmptyList[P]`, follows the same rules:
+with no instance for `P` it gets the warning (an error later; not the silent `{head, tail}` object), with `Json.auto` the
+element is derived, with an instance for `P` that one is used.
 
 ## Definitions and `$ref`s
 
@@ -256,9 +294,9 @@ case class Price(amount: BigDecimal, currency: Currency)
 Json.schema[Price] // currency: {"type": "string"}, no definition
 ```
 
-`import Json.auto._` gives a `Predef` for every type the macro can derive, for APIs that ask for one
-(`def f[T](implicit p: Predef[T])`). These derived `Predef`s are inlined like any other, so the import doesn't
-change what `Json.schema` derives: an explicit implicit `Schema` still becomes a definition.
+`import Json.auto._` also gives a `Predef` for every type the macro can derive, for APIs that ask for one
+(`def f[T](implicit p: Predef[T])`). These derived `Predef`s are inlined like any other; an explicit implicit
+`Schema` still becomes a definition, and any instance you define wins over auto.
 
 ```scala
 import json.schema.Predef
@@ -973,6 +1011,29 @@ library's AST, and `com.github.andyglow.jsonschema.ParseJsonSchema(string)` pars
 subset, including `"type": [X, "null"]`) into a `Try[json.Schema[_]]`. `{}` (or an object of only annotations such as
 `title`) is `` Schema.`any` ``. The boolean schemas `true` and `false` (draft-06+, read in a draft-04 document too) are
 `any` and `not(any)` in `items` and `properties`.
+
+## Migrating to 0.10.0
+
+**Semi-auto by default** (issue #542, see [Semi-auto and auto derivation](#semi-auto-and-auto-derivation)):
+
+- Code compiles as before. A nested case class or sealed family that has no implicit `Schema` or `Predef` is
+  still derived, with a warning prefixed `[json-schema-semi-auto]`. In the next breaking release it is an error.
+  With `-Werror` / `-Xfatal-warnings` the warning fails the build now: add `-Wconf:msg=json-schema-semi-auto:s`
+  to keep 0.10 quiet, or migrate.
+- **Zero-change migration:** `import Json.auto._` where you derive. The output stays exactly the same.
+- **Migration with instances:** `implicit val xSchema: json.Schema[X] = Json.schema[X]` for the nested types.
+  Those types become definitions + `$ref`s (the core rule), so the output changes; a `Predef` keeps them inlined.
+  Mutually recursive instances work (they used to give a `null` inside the schema, or a deadlock with Scala 3
+  `derives`).
+- `Flag.SemiAuto` gives the error now. Combine flags in one value: `Flag with Flag.EnumsAsOneOf with Flag.SemiAuto`.
+- `DerivedSchema[X]` gives no warning (it always expands inside an implicit search); it fails in the next
+  breaking release when a nested type has no instance.
+- `Json.auto.derived[T]` is an `Exported[Predef[T]]` now (call `.instance`). Code that only imports `Json.auto`
+  is unaffected.
+- On Scala 3, `import Json.auto._` now derives the element of library containers too, as on Scala 2: cats
+  `NonEmptyList[P]` is an array, not the `{head, tail}` object.
+- A schema can hold the new node `` `lazy-ref` `` (a reference to an instance that wasn't built yet, in a recursion
+  cycle between instances). It is resolved when the schema is rendered; code that walks derived trees may meet it.
 
 ## Migrating to 0.9.0
 
