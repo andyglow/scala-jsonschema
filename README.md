@@ -1036,10 +1036,10 @@ Not supported (yet): union types, literal types, opaque types (beyond refined) a
   Two instantiations in one schema then get **one definition with one body: the schema is invalid**. A summoned
   `Schema[Tree[X]]` (`implicitly`, `summon`) keeps that name too (valid on its own). Workaround: one `implicit val`
   per instantiation (`implicit val companyTree: json.Schema[Tree[Company]] = Json.schema[Tree[Company]]`).
-- **Scala 2: an implicit declared on the line just before a `Json.schema` call may be ignored.** The Scala 2 macro
-  recognizes `implicit val x: Schema[X] = Json.schema[X]` (so that it doesn't refer to itself) by reading the
-  source text around the call, and a name on the previous line can match. Keep a blank line between such
-  implicits.
+- **Scala 2.13 before 2.13.17: `-Xlint` warns "Implicit resolves to enclosing value"** on
+  `implicit val s: Schema[X] = Json.schema[X]`. The derivation doesn't use `s` (it derives X), but these compilers can't
+  leave `s` out of the macro's implicit search, and the lint reports the search. Use Scala 2.13.17 or later (sbt
+  requires 2.13.18 with this library anyway), or add `-Wconf:cat=w-flag-self-implicit:s`.
 - Tuples are objects (`{"_1": ..., "_2": ...}`) and `Either[L, R]` is a `oneOf` of `{"value": L}` and `{"value": R}`.
 - On draft-04, `exclusiveMinimum`/`exclusiveMaximum` are rendered as numbers (draft-06 style).
 

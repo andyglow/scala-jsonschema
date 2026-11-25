@@ -112,6 +112,8 @@ Whether a type becomes a definition depends on which of the two implicits is in 
   - `scala-2` / `scala-3` (sbt built-ins): language differences, i.e. Scala 2 macros vs Scala 3 inline/quotes.
   - Don't use the exact-binary `scala-2.12` / `scala-2.13` / `scala-3.x` dirs for shims: a 2.13 shim would have to be
     copied for Scala 3 (that's how an old `core/src/main/scala-3` copy went stale).
+    Exception: `macros/src/main/scala-2.12` / `scala-2.13` (`ImplicitSearch`, a 2.13.17 macro API) are fine, since Scala 3
+    compiles no Scala 2 macro code, and `scala-2.13+` would be compiled there without scala-reflect.
 - `.github/workflows/*.yml` are **generated** by sbt-github-actions. Change `build.sbt` or `project/CustomGithubActions.scala`, then run `sbt githubWorkflowGenerate`. CI fails if they're out of sync (`githubWorkflowCheck`).
 - Renderer tests compare full JSON output per draft (`api/src/test/.../AsDraftXXSpec.scala`). When output changes on purpose, update the expected JSON. When it changes by accident, it's a bug.
 - Scala 2.12 decodes `\uXXXX` anywhere in source, including comments and triple-quoted strings. Write JSON unicode escapes in test inputs as `"\\u0041"`.
