@@ -66,7 +66,7 @@
           "validations": [
             {
               "name": "patternProperties",
-              "value": "^[0-9]+$"
+              "value": "^-?[0-9]+$"
             }
           ]
         }
@@ -93,7 +93,7 @@
           "validations": [
             {
               "name": "patternProperties",
-              "value": "^[0-9]+$"
+              "value": "^-?[0-9]+$"
             }
           ]
         }
@@ -120,7 +120,7 @@
           "validations": [
             {
               "name": "patternProperties",
-              "value": "^[0-9]+$"
+              "value": "^-?[0-9]+$"
             }
           ]
         }
@@ -147,7 +147,7 @@
           "validations": [
             {
               "name": "patternProperties",
-              "value": "^[0-9]+$"
+              "value": "^-?[0-9]+$"
             }
           ]
         }
@@ -174,7 +174,7 @@
           "validations": [
             {
               "name": "patternProperties",
-              "value": "^.{1}$"
+              "value": "^[\\s\\S]$"
             }
           ]
         }
@@ -222,7 +222,7 @@
           "validations": [
             {
               "name": "patternProperties",
-              "value": "^.*$"
+              "value": "^[\\s\\S]*$"
             }
           ]
         }
@@ -249,7 +249,7 @@
           "validations": [
             {
               "name": "patternProperties",
-              "value": "^[0-9]+$"
+              "value": "^-?[0-9]+$"
             }
           ]
         }
@@ -324,7 +324,7 @@
             "validations": [
               {
                 "name": "patternProperties",
-                "value": "^[0-9]+$"
+                "value": "^-?[0-9]+$"
               }
             ]
           }
@@ -337,8 +337,9 @@
     "additionalProperties": false,
     "properties": {
       "byte": {
+        "additionalProperties": false,
         "patternProperties": {
-          "^[0-9]+$": {
+          "^-?[0-9]+$": {
             "additionalProperties": false,
             "properties": {
               "custom": {
@@ -354,8 +355,9 @@
         "type": "object"
       },
       "char": {
+        "additionalProperties": false,
         "patternProperties": {
-          "^.{1}$": {
+          "^[\\s\\S]$": {
             "additionalProperties": false,
             "properties": {
               "custom": {
@@ -371,8 +373,9 @@
         "type": "object"
       },
       "int": {
+        "additionalProperties": false,
         "patternProperties": {
-          "^[0-9]+$": {
+          "^-?[0-9]+$": {
             "additionalProperties": false,
             "properties": {
               "custom": {
@@ -388,8 +391,9 @@
         "type": "object"
       },
       "intId": {
+        "additionalProperties": false,
         "patternProperties": {
-          "^[0-9]+$": {
+          "^-?[0-9]+$": {
             "additionalProperties": false,
             "properties": {
               "custom": {
@@ -406,7 +410,7 @@
       },
       "jStrId": {
         "patternProperties": {
-          "^.*$": {
+          "^[\\s\\S]*$": {
             "additionalProperties": false,
             "properties": {
               "custom": {
@@ -423,7 +427,7 @@
       },
       "javaStr": {
         "patternProperties": {
-          "^.*$": {
+          "^[\\s\\S]*$": {
             "additionalProperties": false,
             "properties": {
               "custom": {
@@ -440,7 +444,7 @@
       },
       "listMap": {
         "patternProperties": {
-          "^.*$": {
+          "^[\\s\\S]*$": {
             "additionalProperties": false,
             "properties": {
               "custom": {
@@ -456,8 +460,9 @@
         "type": "object"
       },
       "long": {
+        "additionalProperties": false,
         "patternProperties": {
-          "^[0-9]+$": {
+          "^-?[0-9]+$": {
             "additionalProperties": false,
             "properties": {
               "custom": {
@@ -474,9 +479,10 @@
       },
       "nested": {
         "patternProperties": {
-          "^.*$": {
+          "^[\\s\\S]*$": {
+            "additionalProperties": false,
             "patternProperties": {
-              "^[0-9]+$": {
+              "^-?[0-9]+$": {
                 "items": {
                   "additionalProperties": false,
                   "properties": {
@@ -498,8 +504,9 @@
         "type": "object"
       },
       "short": {
+        "additionalProperties": false,
         "patternProperties": {
-          "^[0-9]+$": {
+          "^-?[0-9]+$": {
             "additionalProperties": false,
             "properties": {
               "custom": {
@@ -516,7 +523,7 @@
       },
       "sorted": {
         "patternProperties": {
-          "^.*$": {
+          "^[\\s\\S]*$": {
             "additionalProperties": false,
             "properties": {
               "custom": {
@@ -533,7 +540,7 @@
       },
       "str": {
         "patternProperties": {
-          "^.*$": {
+          "^[\\s\\S]*$": {
             "additionalProperties": false,
             "properties": {
               "custom": {
@@ -550,7 +557,7 @@
       },
       "strId": {
         "patternProperties": {
-          "^.*$": {
+          "^[\\s\\S]*$": {
             "additionalProperties": false,
             "properties": {
               "custom": {
@@ -590,7 +597,7 @@
     "properties": {
       "byte": {
         "patternProperties": {
-          "^[0-9]+$": {
+          "^-?[0-9]+$": {
             "additionalProperties": false,
             "properties": {
               "custom": {
@@ -602,12 +609,15 @@
             ],
             "type": "object"
           }
+        },
+        "propertyNames": {
+          "pattern": "^-?[0-9]+$"
         },
         "type": "object"
       },
       "char": {
         "patternProperties": {
-          "^.{1}$": {
+          "^[\\s\\S]$": {
             "additionalProperties": false,
             "properties": {
               "custom": {
@@ -619,12 +629,15 @@
             ],
             "type": "object"
           }
+        },
+        "propertyNames": {
+          "pattern": "^[\\s\\S]$"
         },
         "type": "object"
       },
       "int": {
         "patternProperties": {
-          "^[0-9]+$": {
+          "^-?[0-9]+$": {
             "additionalProperties": false,
             "properties": {
               "custom": {
@@ -636,12 +649,15 @@
             ],
             "type": "object"
           }
+        },
+        "propertyNames": {
+          "pattern": "^-?[0-9]+$"
         },
         "type": "object"
       },
       "intId": {
         "patternProperties": {
-          "^[0-9]+$": {
+          "^-?[0-9]+$": {
             "additionalProperties": false,
             "properties": {
               "custom": {
@@ -654,11 +670,14 @@
             "type": "object"
           }
         },
+        "propertyNames": {
+          "pattern": "^-?[0-9]+$"
+        },
         "type": "object"
       },
       "jStrId": {
         "patternProperties": {
-          "^.*$": {
+          "^[\\s\\S]*$": {
             "additionalProperties": false,
             "properties": {
               "custom": {
@@ -675,7 +694,7 @@
       },
       "javaStr": {
         "patternProperties": {
-          "^.*$": {
+          "^[\\s\\S]*$": {
             "additionalProperties": false,
             "properties": {
               "custom": {
@@ -692,7 +711,7 @@
       },
       "listMap": {
         "patternProperties": {
-          "^.*$": {
+          "^[\\s\\S]*$": {
             "additionalProperties": false,
             "properties": {
               "custom": {
@@ -709,7 +728,7 @@
       },
       "long": {
         "patternProperties": {
-          "^[0-9]+$": {
+          "^-?[0-9]+$": {
             "additionalProperties": false,
             "properties": {
               "custom": {
@@ -722,13 +741,16 @@
             "type": "object"
           }
         },
+        "propertyNames": {
+          "pattern": "^-?[0-9]+$"
+        },
         "type": "object"
       },
       "nested": {
         "patternProperties": {
-          "^.*$": {
+          "^[\\s\\S]*$": {
             "patternProperties": {
-              "^[0-9]+$": {
+              "^-?[0-9]+$": {
                 "items": {
                   "additionalProperties": false,
                   "properties": {
@@ -744,6 +766,9 @@
                 "type": "array"
               }
             },
+            "propertyNames": {
+              "pattern": "^-?[0-9]+$"
+            },
             "type": "object"
           }
         },
@@ -751,7 +776,7 @@
       },
       "short": {
         "patternProperties": {
-          "^[0-9]+$": {
+          "^-?[0-9]+$": {
             "additionalProperties": false,
             "properties": {
               "custom": {
@@ -764,11 +789,14 @@
             "type": "object"
           }
         },
+        "propertyNames": {
+          "pattern": "^-?[0-9]+$"
+        },
         "type": "object"
       },
       "sorted": {
         "patternProperties": {
-          "^.*$": {
+          "^[\\s\\S]*$": {
             "additionalProperties": false,
             "properties": {
               "custom": {
@@ -785,7 +813,7 @@
       },
       "str": {
         "patternProperties": {
-          "^.*$": {
+          "^[\\s\\S]*$": {
             "additionalProperties": false,
             "properties": {
               "custom": {
@@ -802,7 +830,7 @@
       },
       "strId": {
         "patternProperties": {
-          "^.*$": {
+          "^[\\s\\S]*$": {
             "additionalProperties": false,
             "properties": {
               "custom": {
@@ -842,7 +870,7 @@
     "properties": {
       "byte": {
         "patternProperties": {
-          "^[0-9]+$": {
+          "^-?[0-9]+$": {
             "additionalProperties": false,
             "properties": {
               "custom": {
@@ -854,12 +882,15 @@
             ],
             "type": "object"
           }
+        },
+        "propertyNames": {
+          "pattern": "^-?[0-9]+$"
         },
         "type": "object"
       },
       "char": {
         "patternProperties": {
-          "^.{1}$": {
+          "^[\\s\\S]$": {
             "additionalProperties": false,
             "properties": {
               "custom": {
@@ -871,12 +902,15 @@
             ],
             "type": "object"
           }
+        },
+        "propertyNames": {
+          "pattern": "^[\\s\\S]$"
         },
         "type": "object"
       },
       "int": {
         "patternProperties": {
-          "^[0-9]+$": {
+          "^-?[0-9]+$": {
             "additionalProperties": false,
             "properties": {
               "custom": {
@@ -888,12 +922,15 @@
             ],
             "type": "object"
           }
+        },
+        "propertyNames": {
+          "pattern": "^-?[0-9]+$"
         },
         "type": "object"
       },
       "intId": {
         "patternProperties": {
-          "^[0-9]+$": {
+          "^-?[0-9]+$": {
             "additionalProperties": false,
             "properties": {
               "custom": {
@@ -906,11 +943,14 @@
             "type": "object"
           }
         },
+        "propertyNames": {
+          "pattern": "^-?[0-9]+$"
+        },
         "type": "object"
       },
       "jStrId": {
         "patternProperties": {
-          "^.*$": {
+          "^[\\s\\S]*$": {
             "additionalProperties": false,
             "properties": {
               "custom": {
@@ -927,7 +967,7 @@
       },
       "javaStr": {
         "patternProperties": {
-          "^.*$": {
+          "^[\\s\\S]*$": {
             "additionalProperties": false,
             "properties": {
               "custom": {
@@ -944,7 +984,7 @@
       },
       "listMap": {
         "patternProperties": {
-          "^.*$": {
+          "^[\\s\\S]*$": {
             "additionalProperties": false,
             "properties": {
               "custom": {
@@ -961,7 +1001,7 @@
       },
       "long": {
         "patternProperties": {
-          "^[0-9]+$": {
+          "^-?[0-9]+$": {
             "additionalProperties": false,
             "properties": {
               "custom": {
@@ -974,13 +1014,16 @@
             "type": "object"
           }
         },
+        "propertyNames": {
+          "pattern": "^-?[0-9]+$"
+        },
         "type": "object"
       },
       "nested": {
         "patternProperties": {
-          "^.*$": {
+          "^[\\s\\S]*$": {
             "patternProperties": {
-              "^[0-9]+$": {
+              "^-?[0-9]+$": {
                 "items": {
                   "additionalProperties": false,
                   "properties": {
@@ -996,6 +1039,9 @@
                 "type": "array"
               }
             },
+            "propertyNames": {
+              "pattern": "^-?[0-9]+$"
+            },
             "type": "object"
           }
         },
@@ -1003,7 +1049,7 @@
       },
       "short": {
         "patternProperties": {
-          "^[0-9]+$": {
+          "^-?[0-9]+$": {
             "additionalProperties": false,
             "properties": {
               "custom": {
@@ -1016,11 +1062,14 @@
             "type": "object"
           }
         },
+        "propertyNames": {
+          "pattern": "^-?[0-9]+$"
+        },
         "type": "object"
       },
       "sorted": {
         "patternProperties": {
-          "^.*$": {
+          "^[\\s\\S]*$": {
             "additionalProperties": false,
             "properties": {
               "custom": {
@@ -1037,7 +1086,7 @@
       },
       "str": {
         "patternProperties": {
-          "^.*$": {
+          "^[\\s\\S]*$": {
             "additionalProperties": false,
             "properties": {
               "custom": {
@@ -1054,7 +1103,7 @@
       },
       "strId": {
         "patternProperties": {
-          "^.*$": {
+          "^[\\s\\S]*$": {
             "additionalProperties": false,
             "properties": {
               "custom": {

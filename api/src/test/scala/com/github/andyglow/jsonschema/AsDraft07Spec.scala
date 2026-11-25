@@ -93,7 +93,7 @@ class AsDraft07Spec extends AnyWordSpec {
           "baz"       -> obj(f"$$ref" -> "#my-bool"),
           "mapObject" -> obj(
             "type"              -> "object",
-            "patternProperties" -> obj("^.*$" -> obj(f"$$ref" -> "#FooX"))
+            "patternProperties" -> obj("^[\\s\\S]*$" -> obj(f"$$ref" -> "#FooX"))
           ),
           "listObject" -> obj(
             "type"  -> "array",

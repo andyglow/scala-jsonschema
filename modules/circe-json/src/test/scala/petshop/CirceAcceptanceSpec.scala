@@ -35,6 +35,9 @@ object CirceSemiautoCodecs {
   implicit val kiteE: Encoder[Toy.Kite.type] = deriveEncoder
   implicit val toyE: Encoder[Toy]            = deriveEncoder
   implicit val boxE: Encoder[Box]            = deriveEncoder
+  // Map keys (#466): circe has KeyEncoders for Int, Long and UUID (toString), none for Boolean or Char
+  implicit val intStockE: Encoder[IntStock]   = deriveEncoder
+  implicit val uuidStockE: Encoder[UuidStock] = deriveEncoder
 }
 
 object CirceSchemas {
@@ -76,6 +79,12 @@ class CirceAcceptanceSpec extends AnyWordSpec {
     "Char and java.lang.Character fields (#463)" in assertValid(rendered(CirceSchemas.initials), written(CirceSchemas.someInitials))
     "ignore @discriminator, which circe's derivation never sees (R4B)" in assertValid(rendered(Schemas.shape), written(Samples.shapes))
     "wrap a member that has an implicit Schema of its own" in assertValid(rendered(Schemas.payment), written(Samples.payments))
+    "Map keys: negative Int and Long keys, UUID keys (#466)" in {
+      written(List(Samples.intStock)) shouldBe List("""{"byId":{"-1":1,"0":2,"42":3},"byLong":{"-4294967296":1}}""")
+      assertValid(rendered(Schemas.intStock), written(List(Samples.intStock)))
+      assertValid(rendered(Schemas.uuidStock), written(List(Samples.uuidStock)))
+      assertBadKeysRejected(rendered(_))
+    }
     "be the cross-check row of circe semiauto" in {
       crossCheckRow(rendered(Schemas.pet)) shouldBe List(
         "circe semiauto"   -> 2,

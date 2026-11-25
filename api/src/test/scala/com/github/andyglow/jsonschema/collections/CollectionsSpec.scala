@@ -77,7 +77,7 @@ object CollectionsSpec {
   case class HasPath(p: Path[Int])
   case class HasMutableMap(m: scala.collection.mutable.Map[String, User])
   case class HasCollectionMap(m: scala.collection.Map[String, User])
-  case class HasUuidKeys(m: Map[java.util.UUID, User])
+  case class HasDateKeys(m: Map[java.time.LocalDate, User]) // no built-in KeyPattern (UUID has one since #466)
   case class DoubleKeys(m: Map[Double, User])
   case class SortedDicts(sorted: SortedMap[Int, User], listMap: ListMap[Long, User], byChar: SortedMap[Char, User])
   // Map subtypes that don't take the key and value types as their only type parameters
@@ -107,18 +107,18 @@ class CollectionsSpec extends AnyFunSuite {
 
   test("dictionaries of derived values: key patterns") {
     Json.schema[Map[String, User]] shouldEqual `dictionary`[String, User, Map](user)
-    // quirk 13: java.lang.String isn't the alias scala.Predef.String, so its KeyPattern (^.*$) applies
-    Json.schema[Map[java.lang.String, User]] shouldEqual `dictionary`[String, User, Map](user).withValidation(`patternProperties` := "^.*$")
-    Json.schema[Map[Int, User]] shouldEqual `dictionary`[Int, User, Map](user).withValidation(`patternProperties` := "^[0-9]+$")
-    Json.schema[Map[Char, User]] shouldEqual `dictionary`[Char, User, Map](user).withValidation(`patternProperties` := "^.{1}$")
+    // quirk 13: java.lang.String isn't the alias scala.Predef.String, so its KeyPattern (any key, not enforced) applies
+    Json.schema[Map[java.lang.String, User]] shouldEqual `dictionary`[String, User, Map](user).withValidation(`patternProperties` := "^[\\s\\S]*$")
+    Json.schema[Map[Int, User]] shouldEqual `dictionary`[Int, User, Map](user).withValidation(`patternProperties` := "^-?[0-9]+$")
+    Json.schema[Map[Char, User]] shouldEqual `dictionary`[Char, User, Map](user).withValidation(`patternProperties` := "^[\\s\\S]$")
     Json.schema[Map[StrId, User]] shouldEqual `dictionary`[StrId, User, Map](user)
-    Json.schema[Map[IntId, User]] shouldEqual `dictionary`[IntId, User, Map](user).withValidation(`patternProperties` := "^[0-9]+$")
+    Json.schema[Map[IntId, User]] shouldEqual `dictionary`[IntId, User, Map](user).withValidation(`patternProperties` := "^-?[0-9]+$")
     check("collections/Dicts", Json.schema[Dicts])
   }
 
   test("a Map subtype other than Map itself with a key pattern (0.7: an error in the generated code, no validation.Magnet)") {
-    Json.schema[SortedMap[Int, User]] shouldEqual `dictionary`[Int, User, SortedMap](user).withValidation[Map[Int, User], Map[_, _]](`patternProperties` := "^[0-9]+$")
-    Json.schema[ListMap[Long, User]] shouldEqual `dictionary`[Long, User, ListMap](user).withValidation[Map[Long, User], Map[_, _]](`patternProperties` := "^[0-9]+$")
+    Json.schema[SortedMap[Int, User]] shouldEqual `dictionary`[Int, User, SortedMap](user).withValidation[Map[Int, User], Map[_, _]](`patternProperties` := "^-?[0-9]+$")
+    Json.schema[ListMap[Long, User]] shouldEqual `dictionary`[Long, User, ListMap](user).withValidation[Map[Long, User], Map[_, _]](`patternProperties` := "^-?[0-9]+$")
     check("collections/SortedDicts", Json.schema[SortedDicts])
   }
 
@@ -133,7 +133,7 @@ class CollectionsSpec extends AnyFunSuite {
       import UserSchema._
       val d = `def`[User]("com.github.andyglow.jsonschema.collections.CollectionsSpec.User", user)
       Json.schema[List[User]] shouldEqual `array`[User, List](d)
-      Json.schema[Map[Int, User]] shouldEqual `dictionary`[Int, User, Map](d).withValidation(`patternProperties` := "^[0-9]+$")
+      Json.schema[Map[Int, User]] shouldEqual `dictionary`[Int, User, Map](d).withValidation(`patternProperties` := "^-?[0-9]+$")
       check("collections/Arrays.implicitSchema", Json.schema[Arrays])
     }
     locally {
@@ -205,10 +205,10 @@ class CollectionsSpec extends AnyFunSuite {
     mutableMap should include(NotSupported)
     mutableMap should include("only immutable Maps")
     errorOf(assertCompiles("Json.schema[HasCollectionMap]")) should include("only immutable Maps")
-    val uuid = errorOf(assertCompiles("Json.schema[HasUuidKeys]"))
-    uuid should include(NotSupported)
-    uuid should include("UUID")
-    uuid should include("a Map key must be")
+    val date = errorOf(assertCompiles("Json.schema[HasDateKeys]"))
+    date should include(NotSupported)
+    date should include("LocalDate")
+    date should include("a Map key must be")
     val double = errorOf(assertCompiles("Json.schema[DoubleKeys]"))
     double should include("a Map key must be")
     double should include("Double")

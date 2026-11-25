@@ -41,6 +41,6 @@ class ValidationMagnetSpec extends AnyFunSuite {
     val props = Seq(`minProperties` := 1, `maxProperties` := 3)
     Json.schema[Map[String, Int]].withValidation(`minProperties` := 1, `maxProperties` := 3).validations shouldEqual props
     // an Int key already has its key pattern; withValidation appends
-    Json.schema[Map[Int, String]].withValidation(`minProperties` := 1, `maxProperties` := 3).validations shouldEqual (`patternProperties` := "^[0-9]+$") +: props
+    Json.schema[Map[Int, String]].withValidation(`minProperties` := 1, `maxProperties` := 3).validations shouldEqual (`patternProperties` := "^-?[0-9]+$") +: props
   }
 }

@@ -25,7 +25,7 @@ class CRLFSourceSpec extends AnyFunSuite {
       Field(
         "intMap",
         `dictionary`[Int, String, Map](`string`[String])
-          .withValidation(`patternProperties` := "^[0-9]+$"),
+          .withValidation(`patternProperties` := "^-?[0-9]+$"),
         required = false,
         default = Map(1 -> "1", 2 -> "2")
       )

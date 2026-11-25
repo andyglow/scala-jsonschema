@@ -18,4 +18,7 @@ class AsDraft04(val v: Draft04) extends AsValue with AsDraftSupport with Pre09 {
   }
 
   protected def sanitizeDefinitionName(sig: String): String = DefinitionNames.uriFragment(sig)
+
+  /** Draft 04 has no `propertyNames`: a key that matches no `patternProperties` pattern is rejected as an additional property (#466). */
+  override protected def keyRestriction(pattern: String): obj = obj("additionalProperties" -> false)
 }

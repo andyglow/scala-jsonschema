@@ -14,7 +14,7 @@
           "validations": [
             {
               "name": "patternProperties",
-              "value": "^.{1}$"
+              "value": "^[\\s\\S]$"
             }
           ]
         }
@@ -26,8 +26,9 @@
     "additionalProperties": false,
     "properties": {
       "m": {
+        "additionalProperties": false,
         "patternProperties": {
-          "^.{1}$": {
+          "^[\\s\\S]$": {
             "type": "integer"
           }
         },
@@ -46,9 +47,12 @@
     "properties": {
       "m": {
         "patternProperties": {
-          "^.{1}$": {
+          "^[\\s\\S]$": {
             "type": "integer"
           }
+        },
+        "propertyNames": {
+          "pattern": "^[\\s\\S]$"
         },
         "type": "object"
       }
@@ -65,9 +69,12 @@
     "properties": {
       "m": {
         "patternProperties": {
-          "^.{1}$": {
+          "^[\\s\\S]$": {
             "type": "integer"
           }
+        },
+        "propertyNames": {
+          "pattern": "^[\\s\\S]$"
         },
         "type": "object"
       }

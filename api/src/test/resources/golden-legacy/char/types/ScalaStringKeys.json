@@ -21,7 +21,7 @@
     "properties": {
       "m": {
         "patternProperties": {
-          "^.*$": {
+          "^[\\s\\S]*$": {
             "type": "integer"
           }
         },
@@ -40,7 +40,7 @@
     "properties": {
       "m": {
         "patternProperties": {
-          "^.*$": {
+          "^[\\s\\S]*$": {
             "type": "integer"
           }
         },
@@ -59,7 +59,7 @@
     "properties": {
       "m": {
         "patternProperties": {
-          "^.*$": {
+          "^[\\s\\S]*$": {
             "type": "integer"
           }
         },

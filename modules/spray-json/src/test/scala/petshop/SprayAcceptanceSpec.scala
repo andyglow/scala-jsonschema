@@ -67,6 +67,8 @@ class SprayAcceptanceSpec extends AnyWordSpec {
       Schemas.pet.asSpray(Version.Draft12("x")).compactPrint shouldBe rendered(Schemas.pet).apply(Version.Draft12("x"))
     }
     "follow @discriminator, which describes a hand-written format" in assertValid(rendered(Schemas.shape), written(Samples.shapes))
+    // spray's DefaultJsonProtocol writes only Map[String, V], so there is no output of the other key types to validate
+    "reject a Map key the key type can't have (#466)" in assertBadKeysRejected(rendered(_))
   }
 
   "SprayProfile.default with the shape stated" should {
