@@ -1,5 +1,5 @@
 # cats collections of an element without an implicit  (issue #482, item E1)
-Status: draft, rewritten 2026-11-24: depends on #542 (semi-auto derivation by default, `Exported` auto)
+Status: implemented on top of #542 (PR #543): the cats fixes, CatsElementResolutionSpec (the three rules), CatsAutoSpec (shared)
 
 ## Problem
 The cats instances (`CatsSupport._`) are Predef constructors: they build a `Predef[NonEmptyList[T]]` from an implicit `Predef[T]` or `Schema[T]` (since 0.2.5,

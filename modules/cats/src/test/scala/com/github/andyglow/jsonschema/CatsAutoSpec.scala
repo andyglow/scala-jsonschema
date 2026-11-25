@@ -26,7 +26,7 @@ object CatsAutoSpec {
   }
 }
 
-/** Issue #542 on Scala 3: with `Json.auto` imported, cats' `Predef` constructors get their element from auto (`nelSchemaFromPredef(importedPredef(auto.derived[P]))`), so `NonEmptyList[P]`,
+/** Issue #542 (Scala 2 and 3): with `Json.auto` imported, cats' `Predef` constructors get their element from auto (`nelSchemaFromPredef(importedPredef(auto.derived[P]))`), so `NonEmptyList[P]`,
   * `NonEmptyVector[P]` and `Chain[P]` are arrays (0.9: `NonEmptyList[P]` was derived as the case class `{head, tail}`).
   */
 class CatsAutoSpec extends AnyFunSuite {
@@ -36,12 +36,16 @@ class CatsAutoSpec extends AnyFunSuite {
     Auto.holder shouldEqual WithPredef.holder
     Auto.holder.toString shouldNot include("head")
     Auto.holder match {
-      case o: Schema.`object`[_] => o.fields.toList.map(_.tpe).foreach(t => t shouldBe a[Schema.`array`[_, _]])
-      case other                 => fail(s"not an object: $other")
+      case o: Schema.`object`[_] =>
+        o.fields.toList.map(_.tpe).foreach {
+          case Schema.`array`(_, _) => succeed
+          case other                => fail(s"not an array: $other")
+        }
+      case other => fail(s"not an object: $other")
     }
   }
 
-  test("recursion through NonEmptyList with Json.auto: a definition and a $ref") {
+  test("recursion through NonEmptyList with Json.auto: a definition and a ref") {
     val sig = Json.sig[Tree].signature
     Auto.tree match {
       case Schema.`def`(s, o: Schema.`object`[_]) =>
