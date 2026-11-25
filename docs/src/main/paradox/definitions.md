@@ -29,6 +29,31 @@ implicit `Schema` itself (e.g. `X` derives too):
 - `Box[Int]` has none (built-in types are `Predef`s), so it is derived inline where it is used.
   `summon[json.Schema[Box[Int]]]` doesn't compile; `Json.schema[Box[Int]]` always works.
 
+One implicit for every instantiation of a generic class works too:
+
+```scala mdoc:compile-only
+import json._
+
+case class Company(name: String)
+case class Team(name: String)
+case class Box[A](value: A)
+case class Org(company: Box[Company], team: Box[Team])
+
+implicit def boxSchema[A: json.Schema]: json.Schema[Box[A]] = Json.schema[Box[A]]
+implicit val companySchema: json.Schema[Company]             = Json.schema[Company]
+implicit val teamSchema: json.Schema[Team]                   = Json.schema[Team]
+
+val orgSchema: json.Schema[Org] = Json.schema[Org]
+```
+
+`Box[Company]` and `Box[Team]` are two definitions, named after the concrete types. Inside `boxSchema`, though, `A`
+is a type parameter, so no name for it is known at compile time: the `json.Schema[A]` it receives is used as it is.
+So **`Company` is inlined inside `Box[Company]`**, although it has an implicit `Schema` (a plain
+`case class X(c: Company)` gives `"$ref": "#com.example.Company"`). To keep it a definition there, give the instance
+a name: `Json.schema[Company].toDefinition("com.example.Company")` (on Scala 3, `derives json.Schema` does that).
+A recursive generic class has a known limitation, see the
+[README](https://github.com/andyglow/scala-jsonschema#known-issues).
+
 Recursive types (`case class Node(children: List[Node])`) become a definition automatically.
 
 ## Predefs

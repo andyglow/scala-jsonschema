@@ -35,4 +35,17 @@ private[jsonschema] trait USignatures { this: UContext with UCommons =>
 
     compute(tpe)
   }
+
+  /** `tpe` is, or has as a type argument, a type parameter or an abstract type member: its signature would name the parameter (`pkg.Owner.T`), the same for every instantiation (#297). Existentially
+    * bound types (`Foo[_]`) don't count. Scala 3: `Implicits.mentionsAbstractType`.
+    */
+  def mentionsAbstractType(tpe: Type): Boolean = tpe.dealias match {
+    // `isAbstract` is also true for a trait or an abstract class: only a type that isn't a class (a type parameter or an abstract type member) counts
+    case TypeRef(_, sym, args) => (sym.isType && !sym.isClass && sym.asType.isAbstract && !sym.asType.isExistential) || args.exists(mentionsAbstractType)
+    // `Two[A, _]`: look inside, where the guard above skips the existential's own `_$1`
+    case ExistentialType(_, u)   => mentionsAbstractType(u)
+    case RefinedType(parents, _) => parents.exists(mentionsAbstractType)
+    case AnnotatedType(_, u)     => mentionsAbstractType(u)
+    case _                       => false
+  }
 }
