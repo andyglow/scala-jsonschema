@@ -69,9 +69,10 @@ private[jsonschema] trait UProductTypes {
         }
 
     def toField(fieldSym: TermSymbol, i: Int): Field = {
-      val name       = NameTransformer.decode(fieldSym.name.toString)
-      val fieldTpe   = fieldSym.typeSignature.dealias // In(tpe).dealias
-      val isOption   = fieldTpe <:< T.option
+      val name     = NameTransformer.decode(fieldSym.name.toString)
+      val fieldTpe = fieldSym.typeSignature.dealias // In(tpe).dealias
+      // the bottom types conform to Option too, but have no type argument: `resolve` reports them
+      val isOption   = fieldTpe <:< T.option && !(fieldTpe <:< definitions.NullTpe)
       val hasDefault = fieldSym.isParamWithDefault
       if (hasDefault && isLocal)
         c.abort(

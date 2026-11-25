@@ -12,10 +12,10 @@ private[jsonschema] trait UArrays { this: UContext with UCommons =>
         // the generated `array[E, C]` needs a container C[_] whose only type parameter is the element type
         // (not so for e.g. BitSet, or a `class Path[A] extends Iterable[String]`)
         if (!tpe.typeArgs.headOption.exists(_ =:= elementTpe) || tpe.typeArgs.size != 1)
-          c.abort(
-            c.enclosingPosition,
-            s"schema for $tpe is not supported: a collection must take its element type as its only type parameter (like List[T] or Set[T]), and $tpe is a collection of $elementTpe. " +
-              s"Provide a json.schema.Predef or json.Schema for it"
+          notSupported(
+            tpe,
+            ctx.stack,
+            s"a collection must take its element type as its only type parameter (like List[T] or Set[T]), and ${showType(tpe)} is a collection of ${showType(elementTpe)}. $ProvideHint"
           )
         val elementSchema = resolve(elementTpe, ctx :+ tpe)
 

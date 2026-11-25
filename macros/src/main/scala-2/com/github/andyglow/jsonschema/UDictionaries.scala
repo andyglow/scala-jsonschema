@@ -8,19 +8,17 @@ private[jsonschema] trait UDictionaries {
 
   class DictionaryExtractor {
 
-    private def unsupportedKey(tpe: Type, keyTpe: Type, why: String): Nothing =
-      c.abort(
-        c.enclosingPosition,
-        s"schema for $tpe is not supported: a Map key must be a String, a value class of String, an enum or a type with an implicit " +
-          s"json.Schema.dictionary.KeyPattern; the key type $keyTpe $why. Provide an implicit KeyPattern[$keyTpe], or a json.schema.Predef or json.Schema for the Map"
+    private def unsupportedKey(tpe: Type, keyTpe: Type, why: String)(implicit ctx: ResolutionContext): Nothing =
+      notSupported(
+        tpe,
+        ctx.stack,
+        s"a Map key must be a String, a value class of String, an enum or a type with an implicit json.Schema.dictionary.KeyPattern; the key type ${showType(keyTpe)} $why. " +
+          s"Provide an implicit KeyPattern[${showType(keyTpe)}], or a json.schema.Predef or json.Schema for the Map"
       )
 
     def unapply(tpe: Type)(implicit ctx: ResolutionContext): Option[U.Dict] = {
       if (tpe <:< T.anyMap && !(tpe <:< T.map))
-        c.abort(
-          c.enclosingPosition,
-          s"schema for $tpe is not supported: only immutable Maps (scala.collection.immutable.Map) are derived as dictionaries. Provide a json.schema.Predef or json.Schema for it"
-        )
+        notSupported(tpe, ctx.stack, s"only immutable Maps (scala.collection.immutable.Map) are derived as dictionaries. $ProvideHint")
 
       Option.whenever(tpe <:< T.map) {
         val containerTpe = tpe.typeConstructor
@@ -28,10 +26,10 @@ private[jsonschema] trait UDictionaries {
         // the generated `dictionary[K, V, C]` needs a container C[_, _] that takes the key and value types as its only type parameters
         // (not so for e.g. IntMap[V], or a `class UserMap extends Map[String, User]`)
         if (tpe.typeArgs.size != 2 || !tpe.typeArgs.zip(mapArgs).forall { case (a, b) => a =:= b })
-          c.abort(
-            c.enclosingPosition,
-            s"schema for $tpe is not supported: a Map must take its key and value types as its only type parameters (like Map[K, V]), and $tpe is a Map[${mapArgs.mkString(", ")}]. " +
-              s"Provide a json.schema.Predef or json.Schema for it"
+          notSupported(
+            tpe,
+            ctx.stack,
+            s"a Map must take its key and value types as its only type parameters (like Map[K, V]), and ${showType(tpe)} is a Map[${mapArgs.map(showType).mkString(", ")}]. $ProvideHint"
           )
         val keyTpe               = tpe.typeArgs.head
         val valueTpe             = tpe.typeArgs.tail.head

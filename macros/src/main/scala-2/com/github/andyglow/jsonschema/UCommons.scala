@@ -4,11 +4,65 @@ import com.github.andyglow.json.ToValue
 import json.Schema.`dictionary`.KeyPattern
 
 import scala.language.implicitConversions
+import scala.reflect.NameTransformer
 import scala.util.control.NonFatal
 
 private[jsonschema] trait UCommons extends SchemaTypes with ULogging {
   this: UContext with UFieldDecorations with UTypeAnnotations with UFlags =>
   import c.universe._
+
+  // ---- compile errors. The same texts as the Scala 3 derivation (core/src/main/scala-3/.../derivation/Errors.scala), pinned by ErrorMessagesSpec:
+  // `schema for <T> is not supported[ (in <A> :: <B>)][: <reason>]. <hint>`
+
+  /** A symbol declared inside a block (a method, a val's right-hand side): Scala 3 shows only its name. */
+  def isBlockLocal(sym: Symbol): Boolean =
+    Iterator.iterate(sym.owner)(_.owner).takeWhile(o => o != NoSymbol && !o.isPackage).exists(o => o.isTerm && !o.isModule)
+
+  private def shownName(sym: Symbol): String = {
+    val name = NameTransformer.decode(sym.name.toString)
+    if (isBlockLocal(sym)) name else sym.fullName.split('.').map(NameTransformer.decode).mkString(".")
+  }
+
+  /** A type for error messages, printed as Scala 3's `show` prints it: fully qualified (`java.lang.Long`, not `Long`), aliases as written (`scala.Predef.String`), `, ` between type arguments, a
+    * singleton as `X.type`. Anything else (existentials, refinements) as the compiler prints it. Unlike `signature`, never aborts.
+    */
+  def showType(tpe: Type): String = tpe match {
+    case AnnotatedType(_, underlying)              => showType(underlying)
+    case SingleType(_, sym)                        => shownName(sym) + ".type"
+    case TypeRef(_, sym, Nil) if sym.isModuleClass => shownName(sym) + ".type"
+    case TypeRef(_, sym, Nil)                      => shownName(sym)
+    case TypeRef(_, sym, args)                     => shownName(sym) + args.map(showType).mkString("[", ", ", "]")
+    case ConstantType(x)                           => show(Literal(x))
+    case other                                     => other.toString
+  }
+
+  val ProvideHint = "Provide a json.schema.Predef or json.Schema for it"
+
+  /** ` (in A :: B)`, outermost first; empty at the root. */
+  def pathOf(stack: List[Type]): String = if (stack.isEmpty) "" else stack.map(showType).mkString(" (in ", " :: ", ")")
+
+  /** The "not supported" error: `reason` (which then carries its own advice) or the default hint. */
+  def notSupported(tpe: Type, stack: List[Type], reason: String = ""): Nothing =
+    c.abort(c.enclosingPosition, s"schema for ${showType(tpe)} is not supported${pathOf(stack)}" + (if (reason.isEmpty) s". $ProvideHint" else s": $reason"))
+
+  val NullReason = "Null has no schema of its own. For a JSON null, provide an implicit json.schema.Predef[Null], e.g. json.schema.Predef(json.Schema.`null`)"
+
+  /** The reason for a singleton type `X.type` of an object: use its sealed family, if it has one. */
+  def singletonReason(tpe: Type): Option[String] = {
+    val module = tpe match {
+      case SingleType(_, sym) if sym.isModule        => Some(sym.asModule.moduleClass)
+      case TypeRef(_, sym, Nil) if sym.isModuleClass => Some(sym)
+      case _                                         => None
+    }
+    module map { cls =>
+      val sealedBase = cls.asClass.baseClasses.drop(1).find(b => b.isClass && b.asClass.isSealed)
+      sealedBase match {
+        case Some(b) =>
+          s"a singleton type (the type of one object) has no schema of its own. Use the type of its sealed family ${showType(b.asClass.toTypeConstructor)} instead, or provide a json.schema.Predef or json.Schema for it"
+        case None => "a singleton type (the type of one object) has no schema of its own; objects are derived only as members of a sealed family. Provide a json.schema.Predef or json.Schema for it"
+      }
+    }
+  }
 
   // `find(x)`: the entry `x` closes a cycle with, in that entry's spelling (`R[scala.Predef.String]` vs `R[java.lang.String]`)
   class ResolutionContext(val stack: List[Type], val onCycle: Type => Unit) {

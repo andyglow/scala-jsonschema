@@ -183,7 +183,7 @@ trait Enums { this: Derivation =>
   private def singletonFamily(tpe: TypeRepr, ctx: Ctx): Option[Node] =
     if (!isSealed(tpe)) None
     else
-      singletonLeaves(tpe) map { leaves =>
+      singletonLeaves(tpe, ctx) map { leaves =>
         val source    = if (isScala3Enum(tpe)) EnumSource.Scala3Enum else EnumSource.SealedFamily
         val rootHint  = typeAnnotations(tpe).typeHint
         val toValue   = toValueOf(tpe)
@@ -204,10 +204,10 @@ trait Enums { this: Derivation =>
       }
 
   /** The leaves of a sealed family (nested sealed families flattened) if they are all singletons (objects, case or not, and Scala 3 enum cases), in declaration order. */
-  private def singletonLeaves(tpe: TypeRepr): Option[List[SealedChild]] = {
-    val perChild = sealedChildren(tpe) map { c =>
+  private def singletonLeaves(tpe: TypeRepr, ctx: Ctx): Option[List[SealedChild]] = {
+    val perChild = sealedChildren(tpe, ctx) map { c =>
       if (c.singleton) Some(List(c))
-      else if (isSealed(c.tpe)) singletonLeaves(c.tpe)
+      else if (isSealed(c.tpe)) singletonLeaves(c.tpe, ctx)
       else None
     }
     if (perChild.forall(_.isDefined)) Some(perChild.flatMap(_.get)) else None
@@ -283,12 +283,6 @@ trait Enums { this: Derivation =>
         }
         report.errorAndAbort(s"Error inferring schema for enum: ${tpe.show}. Some family members come with different schemas:\n${details.mkString("\n")}")
     }
-  }
-
-  /** A type in messages, as Scala 2 shows it: a singleton is `pkg.Obj.type`. */
-  def showType(t: TypeRepr): String = t match {
-    case _: TermRef => s"${t.show}.type"
-    case _          => t.show
   }
 
   /** A type as Scala 2's `show` prints it in messages (`Int`, not `scala.Int`). */

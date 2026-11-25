@@ -80,18 +80,13 @@ trait Collections { this: Derivation =>
   def deriveDictionary(tpe: TypeRepr, ctx: Ctx): Option[Node] =
     if (!(tpe <:< TypeRepr.of[scala.collection.Map[?, ?]])) None
     else if (!(tpe <:< TypeRepr.of[Map[?, ?]]))
-      report.errorAndAbort(
-        s"schema for ${tpe.show} is not supported: only immutable Maps (scala.collection.immutable.Map) are derived as dictionaries. Provide a json.schema.Predef or json.Schema for it"
-      )
+      notSupported(tpe, ctx, s"only immutable Maps (scala.collection.immutable.Map) are derived as dictionaries. $ProvideHint")
     else {
       val (container, keyTpe, valueTpe) = tpe match {
         case AppliedType(tc, List(k, v)) if sameArgs(tpe.baseType(MapSymbol), List(k, v)) => (tc, k, v)
         case _                                                                            =>
-          val kv = tpe.baseType(MapSymbol).typeArgs.map(_.show).mkString(", ")
-          report.errorAndAbort(
-            s"schema for ${tpe.show} is not supported: a Map must take its key and value types as its only type parameters (like Map[K, V]), and ${tpe.show} is a Map[$kv]. " +
-              "Provide a json.schema.Predef or json.Schema for it"
-          )
+          val kv = tpe.baseType(MapSymbol).typeArgs.map(showType).mkString(", ")
+          notSupported(tpe, ctx, s"a Map must take its key and value types as its only type parameters (like Map[K, V]), and ${showType(tpe)} is a Map[$kv]. $ProvideHint")
       }
       val value = resolve(valueTpe, ctx.descend(tpe))
       val key   = dictKey(tpe, keyTpe, ctx)
@@ -107,10 +102,13 @@ trait Collections { this: Derivation =>
       tpe match {
         case AppliedType(tc, List(e)) if e =:= element =>
           Some(Arr(tpe, tc, e, resolve(e, ctx.descend(tpe)), unique = tpe <:< TypeRepr.of[Set[?]]))
-        case _ =>
-          report.errorAndAbort(
-            s"schema for ${tpe.show} is not supported: a collection must take its element type as its only type parameter (like List[T] or Set[T]), and ${tpe.show} is a collection of ${element.show}. " +
-              "Provide a json.schema.Predef or json.Schema for it"
+        // `List[?]`: the element (`Any` through the base type) isn't the argument, but the reason is the wildcard
+        case AppliedType(_, List(_: TypeBounds)) => notSupported(tpe, ctx, WildcardReason)
+        case _                                   =>
+          notSupported(
+            tpe,
+            ctx,
+            s"a collection must take its element type as its only type parameter (like List[T] or Set[T]), and ${showType(tpe)} is a collection of ${showType(element)}. $ProvideHint"
           )
       }
     }
@@ -127,12 +125,17 @@ trait Collections { this: Derivation =>
   /** The key's kind and `KeyPattern`, or the TRIAGE-B compile error. */
   private def dictKey(mapTpe: TypeRepr, keyTpe: TypeRepr, ctx: Ctx): DictKey = {
     def unsupported(why: String): Nothing = {
-      val k = keyTpe.show
-      report.errorAndAbort(
-        s"schema for ${mapTpe.show} is not supported: a Map key must be a String, a value class of String, an enum or a type with an implicit json.Schema.dictionary.KeyPattern; " +
+      val k = showType(keyTpe)
+      notSupported(
+        mapTpe,
+        ctx,
+        s"a Map key must be a String, a value class of String, an enum or a type with an implicit json.Schema.dictionary.KeyPattern; " +
           s"the key type $k $why. Provide an implicit KeyPattern[$k], or a json.schema.Predef or json.Schema for the Map"
       )
     }
+
+    // `Map[?, V]`: a wildcard can't be searched for (`keyPattern`'s `asType` asserts)
+    if (isWildcard(keyTpe)) notSupported(mapTpe, ctx, WildcardReason)
 
     // a case value class over `inner`: (field name, inner type as declared)
     val valueClass = if (isValueClassSymbol(keyTpe) && classSymbol(keyTpe).flags.is(Flags.Case)) params(keyTpe) match {
