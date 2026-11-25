@@ -72,12 +72,13 @@ class SchemaCopySpec extends AnyFunSuite {
     ).withTitle("P")
   }
 
-  test("def.toDefinition follows refs inside oneOf, allOf, not and value-class") {
+  test("def.toDefinition follows refs inside oneOf, allOf, anyOf, not and value-class") {
     val d = `def`[Any](
       "A",
       `oneof`[Any](
         Set(
           `allof`[Any](Set(`ref`[Any]("A"), `string`)),
+          `anyof`[Any](Set(`ref`[Any]("A"), `integer`)),
           Schema.`not`[Any](`ref`[Any]("A")),
           `value-class`[Any, Any](`ref`[Any]("A"))
         ),
@@ -89,6 +90,7 @@ class SchemaCopySpec extends AnyFunSuite {
       `oneof`[Any](
         Set(
           `allof`[Any](Set(`ref`[Any]("B"), `string`)),
+          `anyof`[Any](Set(`ref`[Any]("B"), `integer`)),
           Schema.`not`[Any](`ref`[Any]("B")),
           `value-class`[Any, Any](`ref`[Any]("B"))
         ),

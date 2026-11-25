@@ -35,7 +35,8 @@ class FamilyLoweringSpec extends AnyWordSpec {
 
   private def members(s: Schema[_]): List[Schema[_]] = s match {
     case `oneof`(xs, _) => xs.toList
-    case other          => fail(s"not a oneof: $other")
+    case `anyof`(xs)    => xs.toList
+    case other          => fail(s"not a oneof or anyof: $other")
   }
   private def render(s: Schema[_], p: JsonSchemaProfile): Value = AsValue.schema(s, Version.Draft07("x"))(implicitly, p)
   private def json(s: Schema[_], p: JsonSchemaProfile): String  = com.github.andyglow.json.JsonFormatter.format(render(s, p))
@@ -185,6 +186,10 @@ class FamilyLoweringSpec extends AnyWordSpec {
       members(upickle.lower(`family`[Any](List(id, fish)))).head shouldEqual `object`[Any](Field("v", `string`[String](None))).withDiscriminationKey("Id")
       members(circe.lower(`family`[Any](List(id, fish)))).head shouldEqual `object`[Any](Field("Id", `object`[Any](Field("v", `string`[String](None))), required = true))
       members(Neutral.lower(`family`[Any](List(id, fish)))).head shouldEqual `value-class`[Any, String](`string`[String](None))
+      // untagged, "Fish" is a string too: a document can match both members (B3)
+      Neutral.lower(`family`[Any](List(id, fish))) shouldBe an[`anyof`[_]]
+      Legacy.lower(`family`[Any](List(id, fish))) shouldBe an[`anyof`[_]]
+      Legacy.withOverlappingMembers(OverlappingMembers.OneOf).lower(`family`[Any](List(id, fish))) shouldBe an[`oneof`[_]]
     }
     "state a oneOf of consts in a field by the values' type, never \"const\" (reviewer11 F7)" in {
       val consts = `family`[Any](List(single("X"), single("Y")), enumsAsOneOf = true)
@@ -320,5 +325,99 @@ class FamilyLoweringSpec extends AnyWordSpec {
       }
       Neutral.toString shouldBe "JsonSchemaProfile(neutral)"
     }
+    "set overlappingMembers: AnyOf by default, for Neutral and Legacy; kept by the other builders" in {
+      Neutral.overlappingMembers shouldBe OverlappingMembers.AnyOf
+      Legacy.overlappingMembers shouldBe OverlappingMembers.AnyOf
+      val oneOf = Legacy.withOverlappingMembers(OverlappingMembers.OneOf)
+      oneOf.overlappingMembers shouldBe OverlappingMembers.OneOf
+      oneOf.optionStyle shouldBe OptionStyle.Legacy
+      oneOf.withName("x").withSum(SumStyle.WrapperObject).overlappingMembers shouldBe OverlappingMembers.OneOf
+    }
   }
+
+  "A family's members (B3)" should {
+    def member(n: String, s: Schema[_], kind: Kind = Kind.Product) = Member(n, s"p.$n", s"p.$n", kind, s)
+    def obj(f: Field[_], fs: Field[_]*): `object`[Any]             = `object`[Any](f, fs: _*)
+    def req(n: String, s: Schema[_]): Field[_]                     = Field(n, s, required = true)
+    def opt(n: String, s: Schema[_]): Field[_]                     = Field(n, s, required = false)
+    def fam(ss: Schema[_]*): `family`[Any]                         = `family`[Any](ss.toList.zipWithIndex.map { case (s, i) => member(s"M$i", s) })
+    def isAnyOf(f: `family`[Any], p: JsonSchemaProfile = Neutral)  = p.lower(f).isInstanceOf[`anyof`[_]]
+
+    "keep declaration order, also with more than 4 members, under every profile" in {
+      val names = List("E", "D", "C", "B", "A", "F")
+      val f     = `family`[Any](names.map(n => member(n, obj(req(n.toLowerCase, `integer`)))))
+      for (p <- profiles) withClue(p.name) {
+        val keys = members(p.lower(f)) map {
+          case o: `object`[_] => o.fields.map(_.name).mkString
+          case other          => fail(s"not an object: $other")
+        }
+        p.sumStyle match {
+          case SumStyle.WrapperObject => keys shouldEqual names
+          case _                      => keys shouldEqual names.map(_.toLowerCase)
+        }
+      }
+      // hand-built
+      `oneof`.of[Any](`string`, `integer`, `boolean`, `number`[Double], Schema.`null`, dogObj).subTypes.toList shouldEqual List(`string`, `integer`, `boolean`, `number`[Double], Schema.`null`, dogObj)
+      `allof`.of[Any](`string`, `integer`, `boolean`, `number`[Double], Schema.`null`).subTypes.toList shouldEqual List(`string`, `integer`, `boolean`, `number`[Double], Schema.`null`)
+      `anyof`.of[Any](`string`, `integer`, `boolean`, `number`[Double], Schema.`null`).subTypes.toList shouldEqual List(`string`, `integer`, `boolean`, `number`[Double], Schema.`null`)
+    }
+    "keep the order through a lowering of hand-built oneOf/allOf/anyOf and a definition rename" in {
+      val xs = List[Schema[_]](`string`, `integer`, `boolean`, `number`[Double], Schema.`null`, dogObj)
+      Neutral.lower(`oneof`[Any](ListSetOf(xs))).asInstanceOf[`oneof`[_]].subTypes.toList shouldEqual xs
+      Neutral.lower(`anyof`[Any](ListSetOf(xs))).asInstanceOf[`anyof`[_]].subTypes.toList shouldEqual xs
+      Neutral.lower(`allof`[Any](ListSetOf(xs))).asInstanceOf[`allof`[_]].subTypes.toList shouldEqual xs
+      `def`[Any]("a", `oneof`[Any](ListSetOf(xs))).toDefinition("b").tpe.asInstanceOf[`oneof`[_]].subTypes.toList shouldEqual xs
+    }
+    "be a oneOf when members are disjoint" in {
+      isAnyOf(fam(obj(req("a", `integer`)), obj(req("b", `integer`)))) shouldBe false                                                                     // a required key the other lacks
+      isAnyOf(fam(obj(req("a", `integer`)), `string`)) shouldBe false                                                                                     // types
+      isAnyOf(fam(obj(req("a", `integer`)), obj(req("a", `string`[String](None))))) shouldBe false                                                        // a required field's types
+      isAnyOf(fam(obj(req("k", `enum`[Any](`string`, Set[Value](str("x"))))), obj(req("k", `enum`[Any](`string`, Set[Value](str("y"))))))) shouldBe false // field values
+      isAnyOf(fam(`const`[Any](str("x")), `const`[Any](str("y")))) shouldBe false                                                                         // values
+      isAnyOf(fam(`integer`, `boolean`, Schema.`null`, `array`[Any, List](`integer`))) shouldBe false
+      isAnyOf(fam(`def`[Any]("d1", obj(req("a", `integer`))), `def`[Any]("d2", obj(req("b", `integer`))))) shouldBe false // through definitions
+      isAnyOf(fam(`value-class`[Any, String](`string`[String](None)), `integer`)) shouldBe false                          // through value classes
+      isAnyOf(`family`[Any](List(dog))) shouldBe false                                                                    // one member
+      isAnyOf(animal) shouldBe false                                                                                      // an object and an enum of strings
+      isAnyOf(fam(dogObj, `const`[Any](Value.obj("_type" -> str("Fish"))))) shouldBe false // an object value that isn't a Dog (no name, a key Dog doesn't have)
+      isAnyOf(fam(dogObj, `const`[Any](Value.obj("name" -> str("Rex"))))) shouldBe true // one that is
+    }
+    "be an anyOf when a document can match two members" in {
+      isAnyOf(fam(obj(req("id", `string`)), obj(req("id", `string`), opt("name", `string`)))) shouldBe true                                    // overlapping
+      isAnyOf(fam(obj(req("id", `string`)).withDescription("a"), obj(req("id", `string`)).withDescription("b"))) shouldBe true                 // same shape, other texts
+      isAnyOf(fam(`def`[Any]("d1", obj(req("id", `string`))), `def`[Any]("d2", obj(req("id", `string`))))) shouldBe true                       // definitions of the same shape
+      isAnyOf(fam(`integer`, `number`[Double])) shouldBe true                                                                                  // an integer is a number
+      isAnyOf(fam(`enum`[Any](`number`[Double], Set[Value](num(1), num(2))), `integer`)) shouldBe true                                         // an enum's values' type, not "enum"
+      isAnyOf(fam(`enum`[Any](`string`, Set[Value](str("x"), str("y"))), `enum`[Any](`string`, Set[Value](str("y"), str("z"))))) shouldBe true // a common value
+      isAnyOf(fam(obj(req("a", `integer`)), obj(opt("b", `integer`)).free)) shouldBe true                                                      // {"a": 1}: a Free object accepts it
+      isAnyOf(fam(obj(req("a", `integer`)), obj(req("b", `integer`)).free)) shouldBe false                                                     // but not without its own required b
+      isAnyOf(fam(obj(req("a", `integer`)), `dictionary`[Any, Any, Map](`integer`))) shouldBe true                                             // a Map
+      isAnyOf(fam(obj(req("a", `integer`)), `ref`[Any]("r"))) shouldBe true                                                                    // a $ref: anything
+      isAnyOf(fam(obj(opt("a", `integer`)), obj(opt("b", `integer`)))) shouldBe true                                                           // {} is both
+    }
+    "drop members with equal schemas, and stay a oneOf then" in {
+      val out = Neutral.lower(fam(obj(req("id", `string`)), obj(req("id", `string`))))
+      out shouldEqual `oneof`[Any](Set(obj(req("id", `string`))), None)
+    }
+    "be a oneOf under OverlappingMembers.OneOf and when tagged, an anyOf under Legacy too" in {
+      val f = fam(obj(req("id", `string`)), obj(req("id", `string`), opt("name", `string`)))
+      isAnyOf(f, Legacy) shouldBe true
+      isAnyOf(f, Neutral.withOverlappingMembers(OverlappingMembers.OneOf)) shouldBe false
+      isAnyOf(f, Legacy.withOverlappingMembers(OverlappingMembers.OneOf)) shouldBe false
+      for (p <- List(play, circe, upickle)) withClue(p.name) { isAnyOf(f, p) shouldBe false }
+      isAnyOf(f, json4s) shouldBe true
+      // @discriminator, honored by Neutral
+      isAnyOf(f.copy(discriminator = Some(Discriminator("type", phantom = true)))) shouldBe false
+    }
+    "render an anyOf with its type stated, at the root too" in {
+      val f    = fam(obj(req("id", `string`)), obj(req("id", `string`), opt("name", `string`)))
+      val root = json(f, Neutral).replaceAll("\\s", "")
+      root should include(""""type":"object","anyOf":[""")
+      json(`object`[Any](Field("e", f)), Neutral).replaceAll("\\s", "") should include(""""e":{"type":"object","anyOf":[""")
+      // members of different types state their own
+      json(fam(`string`, `enum`[Any](`string`, Set[Value](str("x"))), obj(req("id", `string`))), Neutral).replaceAll("\\s", "") should include(""""anyOf":[{"type":"string"}""")
+    }
+  }
+
+  private def ListSetOf(xs: List[Schema[_]]): Set[Schema[_]] = scala.collection.immutable.ListSet(xs: _*)
 }

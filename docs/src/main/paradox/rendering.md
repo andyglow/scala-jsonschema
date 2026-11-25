@@ -190,6 +190,7 @@ knobs; each `with...` keeps the others:
 | `withOptionKeyRequired` | `true`, `false` | an `Option` field without a default is required (upickle) |
 | `withHonorsSchemaAnnotations` | `true`, `false` | whether `@discriminator`/`@discriminatorKey` apply |
 | `withOption` | `OptionStyle.Nullable`, `Legacy` | `Option` as "X or null", or the 0.7 shapes |
+| `withOverlappingMembers` | `OverlappingMembers.AnyOf`, `OneOf` | an untagged family where one document could match two members: `anyOf`, or `oneOf` anyway (it then rejects that document) |
 
 ```scala mdoc:compile-only
 import json._

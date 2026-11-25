@@ -16,7 +16,8 @@ class SumTypeWithConstantsSpec extends AnyWordSpec {
 
       implicit val flag: Flag with Flag.EnumsAsOneOf = null
 
-      as07(Json.schema[FooBarInsideCompanionWithAnnotations]) shouldEqual `oneof`(
+      // "M4" is a string too: an anyOf (B3, #461; a oneOf rejected "M4")
+      as07(Json.schema[FooBarInsideCompanionWithAnnotations]) shouldEqual `anyof`(
         Set(
           `object`(Field("val1", `number`[Double])).withTitle("t1").withDescription("d1"),
           `object`(Field("val2", `number`[Double])).withTitle("t2").withDescription("d2"),
