@@ -238,9 +238,10 @@ trait Sums { this: Derivation =>
   /** A direct child of a sealed type. A singleton (case object, Scala 3 enum singleton case) is its term symbol and `TermRef`; a class has its type arguments bound from the parent's. */
   final case class SealedChild(sym: Symbol, tpe: TypeRepr, singleton: Boolean)
 
+  /** Not for the library's sealed tuple classes (`Tuple`, `NonEmptyTuple`, `*:`): they have no subclasses to derive from (see [[Tuples]]). */
   def isSealed(tpe: TypeRepr): Boolean = {
     val s = classSymbol(tpe)
-    s.isClassDef && s.flags.is(Flags.Sealed)
+    s.isClassDef && s.flags.is(Flags.Sealed) && !isStdTuple(tpe)
   }
 
   /** The direct children of a sealed type, in declaration order.
