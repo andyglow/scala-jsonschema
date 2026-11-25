@@ -89,6 +89,27 @@ class CatsSupportSpec extends AnyWordSpec {
       }
     }
 
+    "Chain" should {
+
+      "be an array without minItems: a Chain can be empty (#482)" in {
+        Json.schema[Chain[String]] shouldBe `array`[String, Chain](`string`)
+        Json.schema[Chain[String]].validations shouldBe empty
+      }
+
+      "also with an element that has an implicit Schema (#482)" in {
+        implicit val ps: Schema[Point] = pointSchema
+        Json.schema[Chain[Point]].validations shouldBe empty
+      }
+    }
+
+    "NonEmptySet with an element that has an implicit Schema" should {
+
+      "have uniqueItems, as with a Predef element (#482)" in {
+        implicit val ps: Schema[Point] = pointSchema
+        Json.schema[NonEmptySet[Point]] shouldBe `array`[Point, NonEmptySet](pointSchema).withValidation(`minItems` := 1, `uniqueItems` := true)
+      }
+    }
+
     "NonEmptyMap[String, _]" should {
 
       "be exposed as object" in {

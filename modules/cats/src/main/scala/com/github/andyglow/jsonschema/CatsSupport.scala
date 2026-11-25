@@ -39,8 +39,9 @@ trait LowPriorityCatsSupport extends ScalaVersionSpecificLowPriorityCatsSupport 
     }
   }
 
+  // a Chain can be empty: an array, no minItems (#482)
   implicit def chainSchemaFromPredef[T](implicit p: Predef[T]): Predef[Chain[T]] =
-    mkNEx[T, Chain](p.schema)
+    Predef(`array`[T, Chain](p.schema))
 
   implicit def oneAndSchemaFromPredef[F[_], T](implicit
     p: Predef[T],
@@ -72,7 +73,7 @@ trait LowPriorityCatsSupport extends ScalaVersionSpecificLowPriorityCatsSupport 
 
 object CatsSupport extends LowPriorityCatsSupport with ScalaVersionSpecificCatsSupport {
 
-  implicit def chainSchema[T](implicit ss: Schema[T]): Predef[Chain[T]] = mkNEx[T, Chain](ss)
+  implicit def chainSchema[T](implicit ss: Schema[T]): Predef[Chain[T]] = Predef(`array`[T, Chain](ss)) // can be empty (#482)
 
   implicit def oneAndSchema[F[_], T](implicit
     ss: Schema[T],
@@ -88,7 +89,7 @@ object CatsSupport extends LowPriorityCatsSupport with ScalaVersionSpecificCatsS
     mkNEx[T, NonEmptyVector](ss)
 
   implicit def nesSchema[T](implicit ss: Schema[T]): Predef[NonEmptySet[T]] =
-    mkNEx[T, NonEmptySet](ss)
+    mkNEx[T, NonEmptySet](ss, unique = true) // a set: uniqueItems, as nesSchemaFromPredef (#482)
 
   implicit def necSchema[T](implicit ss: Schema[T]): Predef[NonEmptyChain[T]] =
     mkNEx[T, NonEmptyChain](ss)
