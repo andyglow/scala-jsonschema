@@ -9,6 +9,13 @@ import org.json4s.Writer
 
 object AsJson4s {
 
+  /** Schemas of json4s' own types, opt-in: `import AsJson4s.predef._` (an implicit here, in `AsJson4s`, would clash with a user's own Predef of the same type). */
+  object predef {
+
+    /** `JNull` (e.g. a field that is always `null`): `{"type": "null"}`. */
+    implicit val jNullPredef: _root_.json.schema.Predef[JNull.type] = _root_.json.schema.Predef(Schema.`null`.asInstanceOf[Schema[JNull.type]])
+  }
+
   def apply[T](value: T)(implicit a: Adapter[T]): a.P = a.adapt(value)
 
   implicit class Json4sSchemaOps[T](val x: Schema[T]) extends AnyVal {

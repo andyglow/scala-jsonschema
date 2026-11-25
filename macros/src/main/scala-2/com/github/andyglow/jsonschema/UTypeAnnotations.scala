@@ -64,7 +64,8 @@ private[jsonschema] trait UTypeAnnotations {
     definition: Option[DefinitionKey],
     discriminator: Option[Discriminator],
     discriminatorKey: Option[DiscriminatorKey],
-    typeHint: Type
+    typeHint: Type,
+    deprecated: Boolean
   ) {
 
     def wrapIntoDefIfRequired(tpe: Type, schema: SchemaType): SchemaType = {
@@ -87,7 +88,7 @@ private[jsonschema] trait UTypeAnnotations {
 
   object TypeAnnotations {
 
-    val Empty = TypeAnnotations(None, None, None, None, NoType)
+    val Empty = TypeAnnotations(None, None, None, None, NoType, deprecated = false)
 
     def fromAnnotations(tpe: Type): TypeAnnotations = {
       val annotations = if (tpe.typeSymbol.isClass) tpe.typeSymbol.asClass.annotations else Nil
@@ -154,7 +155,8 @@ private[jsonschema] trait UTypeAnnotations {
         definition,
         discriminator,
         discriminatorKey,
-        typeHint.getOrElse(NoType)
+        typeHint.getOrElse(NoType),
+        deprecated = annotations.exists(a => T.annotation.isDeprecation(a.tree.tpe))
       )
     }
 

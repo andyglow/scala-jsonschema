@@ -73,11 +73,33 @@ trait Collections { this: Derivation =>
       construct(TypeRepr.of[Schema.`array`[Any, List]], List(elementTpe, container), List(emit(element).asTerm, Literal(BooleanConstant(unique))))
   }
 
+  /** `inner` (built for another type: a java collection with a canonical container, `java.util.Optional` as an `option`) as a `Schema[tpe]`. The type parameter is phantom. */
+  final case class Cast(tpe: TypeRepr, inner: Node, extra: Extra = Extra()) extends Node {
+    def withExtra(x: Extra): Node          = copy(extra = x)
+    def children: List[Node]               = List(inner)
+    def mapChildren(f: Node => Node): Node = copy(inner = f(inner))
+    def emitRaw: Expr[Schema[?]]           = tpe.asType match {
+      case '[t] =>
+        val e = emit(inner)
+        '{ $e.asInstanceOf[Schema[t]] }
+    }
+  }
+
   /** `Companion.apply[targs](args)` of the case class behind `cls`. Built as a tree: the container is a type constructor (`C[_]`, `C[_, _]`), which a quote pattern can't bind. */
   private def construct(cls: TypeRepr, targs: List[TypeRepr], args: List[Term]): Expr[Schema[?]] =
     Select.overloaded(Ref(cls.typeSymbol.companionModule), "apply", targs, args).asExprOf[Schema[?]]
 
   def deriveDictionary(tpe: TypeRepr, ctx: Ctx): Option[Node] =
+    javaArgs(tpe, JMapSymbol) match {
+      case Some(List(k, v)) => Some(Cast(tpe, dictionary(tpe, JMapSymbol.typeRef, k, v, ctx)))
+      case _                => scalaDictionary(tpe, ctx)
+    }
+
+  // `tpe`'s type arguments as a `base` (java.util.Map, java.util.Collection), if it is one. `Null` conforms too, but has no base type: left to the Scala families, as before
+  private def javaArgs(tpe: TypeRepr, base: Symbol): Option[List[TypeRepr]] =
+    if (tpe.baseClasses.contains(base)) Option(tpe.baseType(base).typeArgs).filter(_.nonEmpty) else None
+
+  private def scalaDictionary(tpe: TypeRepr, ctx: Ctx): Option[Node] =
     if (!(tpe <:< TypeRepr.of[scala.collection.Map[?, ?]])) None
     else if (!(tpe <:< TypeRepr.of[Map[?, ?]]))
       notSupported(tpe, ctx, s"only immutable Maps (scala.collection.immutable.Map) are derived as dictionaries. $ProvideHint")
@@ -88,13 +110,30 @@ trait Collections { this: Derivation =>
           val kv = tpe.baseType(MapSymbol).typeArgs.map(showType).mkString(", ")
           notSupported(tpe, ctx, s"a Map must take its key and value types as its only type parameters (like Map[K, V]), and ${showType(tpe)} is a Map[$kv]. $ProvideHint")
       }
-      val value = resolve(valueTpe, ctx.descend(tpe))
-      val key   = dictKey(tpe, keyTpe, ctx)
-      val dict  = Dict(tpe, container, key, valueTpe, value)
-      Some(patternOf(key, valueTpe).fold(dict)(p => dict.withExtra(dict.extra.copy(validations = List(p)))))
+      Some(dictionary(tpe, container, keyTpe, valueTpe, ctx))
     }
 
-  def deriveArray(tpe: TypeRepr, ctx: Ctx): Option[Node] = {
+  /** `dictionary[keyTpe, valueTpe, container]` for the map type `tpe`, with the key's pattern. */
+  private def dictionary(tpe: TypeRepr, container: TypeRepr, keyTpe: TypeRepr, valueTpe: TypeRepr, ctx: Ctx): Node = {
+    val value  = resolve(valueTpe, ctx.descend(tpe))
+    val key    = dictKey(tpe, keyTpe, ctx)
+    val isJava = container.typeSymbol == JMapSymbol
+    val dict   = Dict(if (isJava) container.appliedTo(List(keyTpe, valueTpe)) else tpe, container, key, valueTpe, value)
+    patternOf(key, valueTpe, isJava).fold(dict)(p => dict.withExtra(dict.extra.copy(validations = List(p))))
+  }
+
+  def deriveArray(tpe: TypeRepr, ctx: Ctx): Option[Node] =
+    javaArgs(tpe, JCollectionSymbol) match {
+      // a `java.util.Collection[E]` (List, Set, ArrayList, EnumSet, ...): built with a canonical container, `java.util.Set` or `java.util.Collection`, as a `Schema[tpe]`. Its own
+      // constructor can't be the `C[_]` of `array[E, C]` (`EnumSet[E <: Enum[E]]` has a bounded parameter), and it may take no element parameter at all
+      case Some(List(e)) =>
+        val unique    = tpe.baseClasses.contains(JSetSymbol)
+        val container = if (unique) JSetSymbol.typeRef else JCollectionSymbol.typeRef
+        Some(Cast(tpe, Arr(container.appliedTo(e), container, e, resolve(e, ctx.descend(tpe)), unique)))
+      case _ => scalaArray(tpe, ctx)
+    }
+
+  private def scalaArray(tpe: TypeRepr, ctx: Ctx): Option[Node] = {
     val isArray = tpe <:< TypeRepr.of[Array[?]]
     if (!isArray && !(tpe <:< TypeRepr.of[Iterable[?]])) None
     else {
@@ -119,6 +158,10 @@ trait Collections { this: Derivation =>
 
   private def MapSymbol: Symbol      = TypeRepr.of[Map[Any, Any]].typeSymbol
   private def IterableSymbol: Symbol = TypeRepr.of[Iterable[Any]].typeSymbol
+
+  private def JMapSymbol: Symbol        = TypeRepr.of[java.util.Map[Any, Any]].typeSymbol
+  private def JCollectionSymbol: Symbol = TypeRepr.of[java.util.Collection[Any]].typeSymbol
+  private def JSetSymbol: Symbol        = TypeRepr.of[java.util.Set[Any]].typeSymbol
 
   // ---- keys
 
@@ -164,17 +207,20 @@ trait Collections { this: Derivation =>
   }
 
   /** The `patternProperties` validation for a key, if it has a pattern. */
-  private def patternOf(key: DictKey, valueTpe: TypeRepr): Option[Validation] = (key.kind, key.keyPattern) match {
+  private def patternOf(key: DictKey, valueTpe: TypeRepr, isJava: Boolean): Option[Validation] = (key.kind, key.keyPattern) match {
     case (_, Some(kp)) =>
       val kpe = kp.asExprOf[KeyPattern[?]]
-      Some(keyPatternValidation(key.tpe, valueTpe, '{ $kpe.pattern }))
-    case (KeyKind.StringEnum(names), None) => Some(keyPatternValidation(key.tpe, valueTpe, Expr(names.map(KeyPattern.escape).mkString("^(?:", "|", ")$"))))
+      Some(keyPatternValidation(key.tpe, valueTpe, '{ $kpe.pattern }, isJava))
+    case (KeyKind.StringEnum(names), None) => Some(keyPatternValidation(key.tpe, valueTpe, Expr(names.map(KeyPattern.escape).mkString("^(?:", "|", ")$")), isJava))
     case _                                 => None
   }
 
-  /** `.withValidation(patternProperties := pattern)` on a `dictionary[K, V, _]`. */
-  private def keyPatternValidation(keyTpe: TypeRepr, valueTpe: TypeRepr, pattern: Expr[String]): Validation = new Validation {
+  /** `.withValidation(patternProperties := pattern)` on a `dictionary[K, V, _]` (`isJava`: a `dictionary[K, V, java.util.Map]`). */
+  private def keyPatternValidation(keyTpe: TypeRepr, valueTpe: TypeRepr, pattern: Expr[String], isJava: Boolean): Validation = new Validation {
     def apply(schema: Expr[Schema[?]]): Expr[Schema[?]] = (keyTpe.asType, valueTpe.asType) match {
+      case ('[k], '[v]) if isJava =>
+        val s = schema.asExprOf[Schema[java.util.Map[k, v]]]
+        '{ $s.withValidation[java.util.Map[k, v], Map[?, ?]](`patternProperties` := $pattern)(using Magnet.javaMapMagnet[k, v]) }
       case ('[k], '[v]) =>
         val s = schema.asExprOf[Schema[Map[k, v]]]
         '{ $s.withValidation[Map[k, v], Map[?, ?]](`patternProperties` := $pattern)(using Magnet.mapMagnet[k, v]) }

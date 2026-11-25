@@ -71,8 +71,11 @@ private[jsonschema] trait UProductTypes {
     def toField(fieldSym: TermSymbol, i: Int): Field = {
       val name     = NameTransformer.decode(fieldSym.name.toString)
       val fieldTpe = fieldSym.typeSignature.dealias // In(tpe).dealias
-      // the bottom types conform to Option too, but have no type argument: `resolve` reports them
-      val isOption   = fieldTpe <:< T.option && !(fieldTpe <:< definitions.NullTpe)
+      // the bottom types conform to Option too, but have no type argument: `resolve` reports them.
+      // `java.util.Optional` too: not required, an `option` node; only a `scala.Option` default is checked for `None` (an `Optional` default needs a `ToValue`)
+      val isBottom   = fieldTpe <:< definitions.NullTpe
+      val isScalaOpt = fieldTpe <:< T.option && !isBottom
+      val isOption   = T.isOptionLike(fieldTpe) && !isBottom
       val hasDefault = fieldSym.isParamWithDefault
       if (hasDefault && isLocal)
         c.abort(
@@ -93,7 +96,7 @@ private[jsonschema] trait UProductTypes {
           subjectCompanion.typeSignature.member(TermName(s"apply$$default$$${i + 1}")).asTerm
         val hasSource = defaultGetterSym.pos.source != NoSourceFile
         // we don't want to infer default value for `scala.None`
-        val isNone = if (isOption) {
+        val isNone = if (isScalaOpt) {
           val effectiveDefaultGetterTree =
             c.untypecheck {
               c.typecheck {
@@ -224,7 +227,9 @@ private[jsonschema] trait UProductTypes {
           val optTpe      = appliedType(T.option.typeConstructor, List(f.effectiveTpe))
           val valueSchema = resolve(f.effectiveTpe, ctx :+ tpe)
           val typeSchema  = if (f.isOption) U.Opt(optTpe, f.effectiveTpe, valueSchema) else valueSchema
-          val fieldSchema = titles.get(name).fold[SchemaType](typeSchema)(t => typeSchema.withExtra(typeSchema.extra.copy(title = Some(t))))
+          val titled      = titles.get(name).fold[SchemaType](typeSchema)(t => typeSchema.withExtra(typeSchema.extra.copy(title = Some(t))))
+          // `@deprecated` on the field: marks the field's schema, outermost (a `$ref` field is marked, its definition isn't)
+          val fieldSchema = if (f.hasAnnotation.deprecated) titled.withExtra(titled.extra.copy(deprecated = true)) else titled
           val fieldTpe    = if (f.isOption) optTpe else f.effectiveTpe
 
           // description

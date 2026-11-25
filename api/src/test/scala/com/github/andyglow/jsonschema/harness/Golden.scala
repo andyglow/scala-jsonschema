@@ -15,9 +15,9 @@ import scala.util.control.NonFatal
 /** Golden-file parity harness.
   *
   * `Golden.check("group/name", schema)` compares a schema against `api/src/test/resources/golden/group/name.json`. The golden file holds:
-  *   - `"schema"`: a lossless dump of the `json.Schema` tree (every node, title/description/discriminationKey, validations, field name/required/default/description/rwMode, def/ref signatures, free
-  *     objects). Field order is kept as it is in the Schema value, so field (and therefore `required`) order is checked. Members of Sets (oneOf/allOf members, enum values, validations) are sorted,
-  *     because the Schema value has no order for them;
+  *   - `"schema"`: a lossless dump of the `json.Schema` tree (every node, title/description/discriminationKey/deprecated, validations, field name/required/default/description/rwMode, def/ref
+  *     signatures, free objects). Field order is kept as it is in the Schema value, so field (and therefore `required`) order is checked. Members of Sets (oneOf/allOf members, enum values,
+  *     validations) are sorted, because the Schema value has no order for them;
   *   - `"draft-04"`, `"draft-07"`, `"draft-2020-12"`: the rendered JSON, canonicalized (object keys sorted, arrays sorted by their canonical text), so the known renderer `toMap` order bug and Set
   *     iteration order can't make it flaky. A renderer crash is recorded as `{"renderError": "<exception>"}`.
   *
@@ -193,7 +193,8 @@ object Golden extends Assertions {
       val meta: List[(String, Value)] =
         s.title.toList.map(x => "title" -> (str(x): Value)) ++
           s.description.toList.map(x => "description" -> (str(x): Value)) ++
-          s.discriminationKey.toList.map(x => "discriminationKey" -> (str(x): Value)) ++ {
+          s.discriminationKey.toList.map(x => "discriminationKey" -> (str(x): Value)) ++
+          (if (s.deprecated) List("deprecated" -> (`true`: Value)) else Nil) ++ {
             if (s.validations.isEmpty) Nil
             else
               List("validations" -> (sorted(s.validations.toList.map { v =>

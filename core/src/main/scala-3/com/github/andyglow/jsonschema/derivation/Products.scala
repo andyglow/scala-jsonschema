@@ -123,7 +123,9 @@ trait Products { this: Derivation =>
     val fields = ps map { p =>
       val (typeNode, optional) = fieldNode(tpe, p.tpe, ctx)
       // `@title` on a field goes on the field's schema (`object.Field` has no title), over its type's
-      val node       = fieldTitle(p).fold(typeNode)(t => typeNode.withExtra(typeNode.extra.copy(title = Some(t))))
+      val titled = fieldTitle(p).fold(typeNode)(t => typeNode.withExtra(typeNode.extra.copy(title = Some(t))))
+      // `@deprecated` on the field: marks the field's schema, outermost (a `$ref` field is marked, its definition isn't)
+      val node       = if (isDeprecated(p.annotations)) titled.withExtra(titled.extra.copy(deprecated = true)) else titled
       val hasDefault = p.sym.flags.is(Flags.HasDefault)
       Field(
         name = p.name,
@@ -141,9 +143,10 @@ trait Products { this: Derivation =>
     Obj(tpe, kind, fields)
   }
 
-  /** The node of a field of type `ft` in `owner`, and whether it is an `Option` field: an [[Opt]] around `X` for an `Option[X]`, also for a `Some[X]` field. Shared with the long tuples of [[Tuples]].
+  /** The node of a field of type `ft` in `owner`, and whether it is an `Option` field: an [[Opt]] around `X` for an `Option[X]`, also for a `Some[X]` field and a `java.util.Optional[X]` (whose
+    * default goes the `ToValue` way). Shared with the long tuples of [[Tuples]].
     */
-  def fieldNode(owner: TypeRepr, ft: TypeRepr, ctx: Ctx): (Node, Boolean) = optionElement(ft) match {
+  def fieldNode(owner: TypeRepr, ft: TypeRepr, ctx: Ctx): (Node, Boolean) = (optionElement(ft) orElse javaOptionalElement(ft)) match {
     // the field's Option isn't on the stack, so `resolve` would name the owner as the wildcard's owner
     case Some(e) if isWildcard(e) => notSupported(ft, ctx.descend(owner), WildcardReason)
     case Some(e)                  => (Opt(optionOf(e), resolve(e, ctx.descend(owner))), true)

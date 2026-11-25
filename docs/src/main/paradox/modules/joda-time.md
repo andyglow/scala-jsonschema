@@ -26,6 +26,7 @@ Json.schema[Event]
 }
 ```
 
-Supported: `Instant`, `DateTime`, `LocalDateTime` (format `date-time`), `LocalDate` (`date`), `LocalTime` (`time`)
-and `Duration` (`duration`). They are implicit `Schema`s, so they appear as definitions. To inline them instead,
+Supported: `Instant`, `DateTime`, `LocalDateTime` (format `date-time`), `LocalDate` (`date`), `LocalTime` (`time`),
+`Duration` (`duration`), `Period` (`string` with a `pattern` for its `toString` form, e.g. `P1Y2W3DT-4H5.5S`),
+`DateTimeZone` and `Interval` (`string`). They are implicit `Schema`s, so they appear as definitions. To inline them instead,
 import the `Predef`s: `import com.github.andyglow.jsonschema.JodaTimeSupport.predef._`.

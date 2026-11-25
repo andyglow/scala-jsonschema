@@ -65,11 +65,14 @@ trait AsDraftSupport {
     // the node's own texts go before the specifics (where objects and consts always had them, so their output keeps its key order) and win over texts the specifics bring from an inner node (a value
     // class's underlying type, the X of a nullable X)
     val own = texts(x)
-    base ++ validationList.json ++ own ++ specifics ++ own
+    base ++ validationList.json ++ own ++ specifics ++ own ++ deprecation(x)
   }
 
   /** `description` and `title` of `x` itself; every kind of node has them. */
   protected def texts(x: json.Schema[_]): obj = obj(("description", x.description), ("title", x.title))
+
+  /** `"deprecated": true` for a schema marked deprecated, from draft 2019-09 on (the keyword doesn't exist before) and in Raw. */
+  private def deprecation(x: json.Schema[_]): obj = if (x.deprecated && this.isInstanceOf[Post09]) obj("deprecated" -> true) else obj.empty
 
   def mkStr(vl: ValidationList, x: `string`[_], par: ParentSchema): obj
 

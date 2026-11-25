@@ -66,6 +66,11 @@ trait JsonSchemaProfile extends JsonSchemaProfileDefault {
     */
   def overlappingMembers: OverlappingMembers = OverlappingMembers.AnyOf
 
+  /** Whether a schema marked deprecated (`@deprecated` on a field or a type, `.withDeprecated(true)`) keeps the mark, rendered as `"deprecated": true` from draft 2019-09 on. True for every profile
+    * but [[JsonSchemaProfile.Legacy]] (0.7 ignored the annotation).
+    */
+  def deprecatedKeyword: Boolean = true
+
   // builders: a profile with one knob changed and every other knob kept
 
   final def withName(x: String): JsonSchemaProfile                           = Knobs(this).copy(name = x).profile
@@ -76,6 +81,7 @@ trait JsonSchemaProfile extends JsonSchemaProfileDefault {
   final def withMemberName(x: MemberName): JsonSchemaProfile                 = Knobs(this).copy(memberName = x).profile
   final def withHonorsSchemaAnnotations(x: Boolean): JsonSchemaProfile       = Knobs(this).copy(honorsSchemaAnnotations = x).profile
   final def withOverlappingMembers(x: OverlappingMembers): JsonSchemaProfile = Knobs(this).copy(overlappingMembers = x).profile
+  final def withDeprecatedKeyword(x: Boolean): JsonSchemaProfile             = Knobs(this).copy(deprecatedKeyword = x).profile
 
   /** `schema` with every `option` and `family` node lowered to plain JSON Schema nodes. Idempotent: a schema without those nodes comes back equal. */
   final def lower[T](schema: Schema[T]): Schema[T] = new Lowering(this)(schema).asInstanceOf[Schema[T]]
@@ -171,8 +177,10 @@ object JsonSchemaProfile {
   /** The default: the 0.7 shapes, with every `Option[X]` as "X or null". */
   val Neutral: JsonSchemaProfile = Knobs("neutral", OptionStyle.Nullable).profile
 
-  /** The 0.7 output, byte for byte, except where 0.7's schema was wrong: a family's members in declaration order, an `anyOf` for overlapping members (see [[OverlappingMembers]]). */
-  val Legacy: JsonSchemaProfile = Knobs("legacy", OptionStyle.Legacy).profile
+  /** The 0.7 output, byte for byte, except where 0.7's schema was wrong: a family's members in declaration order, an `anyOf` for overlapping members (see [[OverlappingMembers]]). `@deprecated` is
+    * ignored, as in 0.7.
+    */
+  val Legacy: JsonSchemaProfile = Knobs("legacy", OptionStyle.Legacy, deprecatedKeyword = false).profile
 
   /** Every knob of a profile; `profile` builds one from them. */
   private final case class Knobs(
@@ -183,7 +191,8 @@ object JsonSchemaProfile {
     singletonStyle: SingletonStyle = SingletonStyle.AsString,
     memberName: MemberName = MemberName.FullName,
     honorsSchemaAnnotations: Boolean = true,
-    overlappingMembers: OverlappingMembers = OverlappingMembers.AnyOf
+    overlappingMembers: OverlappingMembers = OverlappingMembers.AnyOf,
+    deprecatedKeyword: Boolean = true
   ) { self =>
     def profile: JsonSchemaProfile = new JsonSchemaProfile {
       val name: String                                    = self.name
@@ -194,16 +203,32 @@ object JsonSchemaProfile {
       override val memberName: MemberName                 = self.memberName
       override val honorsSchemaAnnotations: Boolean       = self.honorsSchemaAnnotations
       override val overlappingMembers: OverlappingMembers = self.overlappingMembers
+      override val deprecatedKeyword: Boolean             = self.deprecatedKeyword
     }
   }
   private object Knobs {
     def apply(p: JsonSchemaProfile): Knobs =
-      Knobs(p.name, p.optionStyle, p.optionKeyRequired, p.sumStyle, p.singletonStyle, p.memberName, p.honorsSchemaAnnotations, p.overlappingMembers)
+      Knobs(
+        p.name,
+        p.optionStyle,
+        p.optionKeyRequired,
+        p.sumStyle,
+        p.singletonStyle,
+        p.memberName,
+        p.honorsSchemaAnnotations,
+        p.overlappingMembers,
+        p.deprecatedKeyword
+      )
   }
 
   private final class Lowering(p: JsonSchemaProfile) {
 
-    def apply(s: Schema[_]): Schema[_] = s match {
+    def apply(s: Schema[_]): Schema[_] = stripped(node(s))
+
+    // [[deprecatedKeyword]] off (Legacy): the flag goes, on every node (leaves included); an unflagged node is kept as it is
+    private def stripped(s: Schema[_]): Schema[_] = if (s.deprecated && !p.deprecatedKeyword) s.withDeprecated(false) else s
+
+    private def node(s: Schema[_]): Schema[_] = s match {
       case `option`(inner)  => optionAt(inner).withExtraFrom(s)
       case f: `family`[_]   => familyAt(f).withExtraFrom(s)
       case o: `object`[_]   => o.withFieldsUpdated { case f => field(f) }
@@ -227,10 +252,11 @@ object JsonSchemaProfile {
       case t                                                                                                => f.copy(tpe = apply(t))
     }
 
-    // the dropped `option` layer's texts (a field's `@title`, `.withTitle` on the Option) move to what stays, over its own
-    private def unwrapped(o: Schema[_], t: Schema[_]): Schema[_] =
-      if (o.title.isEmpty && o.description.isEmpty) t
-      else t.duplicate(title = o.title orElse t.title, description = o.description orElse t.description)
+    // the dropped `option` layer's texts (a field's `@title`, `.withTitle` on the Option) and deprecation (`@deprecated` on an `Option` field) move to what stays, over its own
+    private def unwrapped(o: Schema[_], t: Schema[_]): Schema[_] = {
+      val texted = if (o.title.isEmpty && o.description.isEmpty) t else t.duplicate(title = o.title orElse t.title, description = o.description orElse t.description)
+      stripped(if (o.deprecated && !texted.deprecated) texted.withDeprecated(true) else texted)
+    }
 
     /** An `option` node anywhere but in a Legacy `Option` field. */
     private def optionAt(inner: Schema[_]): Schema[_] = p.optionStyle match {

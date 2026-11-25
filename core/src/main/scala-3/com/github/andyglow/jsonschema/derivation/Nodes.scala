@@ -23,13 +23,15 @@ trait Nodes { this: Derivation =>
     validations: List[Validation] = Nil,
     title: Option[String] = None,
     description: Option[String] = None,
-    discriminationKey: Option[String] = None
+    discriminationKey: Option[String] = None,
+    deprecated: Boolean = false
   ) {
     def orElse(o: Extra): Extra = Extra(
       validations = if (validations.nonEmpty) validations else o.validations,
       title = title.orElse(o.title),
       description = description.orElse(o.description),
-      discriminationKey = discriminationKey.orElse(o.discriminationKey)
+      discriminationKey = discriminationKey.orElse(o.discriminationKey),
+      deprecated = deprecated || o.deprecated
     )
   }
 
