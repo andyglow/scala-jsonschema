@@ -104,7 +104,7 @@
       },
       "map": {
         "patternProperties": {
-          "^.*$": {
+          "^[\\s\\S]*$": {
             "additionalProperties": false,
             "properties": {
               "name": {
@@ -178,7 +178,7 @@
       },
       "map": {
         "patternProperties": {
-          "^.*$": {
+          "^[\\s\\S]*$": {
             "additionalProperties": false,
             "properties": {
               "name": {
@@ -252,7 +252,7 @@
       },
       "map": {
         "patternProperties": {
-          "^.*$": {
+          "^[\\s\\S]*$": {
             "additionalProperties": false,
             "properties": {
               "name": {

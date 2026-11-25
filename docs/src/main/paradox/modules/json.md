@@ -25,3 +25,7 @@ These libraries have their own `Json` object, so write `json.Json.schema` when y
 
 The bridges also provide a `ToValue` from the library's encoders (`Writes`, `Encoder`, ...). With it, default
 values of your own types are rendered (`"default": ["all"]` above), and enum values come from your codec.
+
+Schemas for the library's own AST types (`JsValue`, `io.circe.Json`, `ujson.Value`, ...) come from a separate import,
+`AsPlay.predef._`, `AsCirce.predef._`, `AsU.predef._`, `AsJson4s.predef._` or `AsSpray.predef._`: see
+@ref:[Any JSON value](../validation.md#any-json-value).

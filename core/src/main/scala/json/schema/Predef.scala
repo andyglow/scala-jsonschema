@@ -3,6 +3,7 @@ package json.schema
 import java.net.{URI, URL}
 import java.util.UUID
 
+import com.github.andyglow.json.Value
 import json._
 import json.Schema._
 import json.Schema.`dictionary`.KeyPattern
@@ -158,4 +159,13 @@ object Predef extends LowPriorityPredefs {
       schema.withValidation[Map[K, V], Map[_, _]](`patternProperties` := keyP.pattern)
     }
   }
+
+  // our own JSON AST: any value, and each kind of value (the JSON libraries' ASTs: `AsX.predef` in each bridge)
+  implicit val jsonValueS: Predef[Value]            = Predef(`any`[Value]())
+  implicit val jsonObjS: Predef[Value.obj]          = Predef(`object`.Free[Value.obj]())
+  implicit val jsonArrS: Predef[Value.arr]          = Predef(`array`[Value, Seq](`any`[Value]()).asInstanceOf[Schema[Value.arr]])
+  implicit val jsonStrS: Predef[Value.str]          = Predef(`string`[Value.str])
+  implicit val jsonNumS: Predef[Value.num]          = Predef(`number`[BigDecimal].asInstanceOf[Schema[Value.num]])
+  implicit val jsonBoolS: Predef[Value.bool]        = Predef(`boolean`.asInstanceOf[Schema[Value.bool]])
+  implicit val jsonNullS: Predef[Value.`null`.type] = Predef(`null`.asInstanceOf[Schema[Value.`null`.type]])
 }

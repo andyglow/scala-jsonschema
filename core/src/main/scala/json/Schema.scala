@@ -97,6 +97,17 @@ sealed trait Schema[+T] {
 
     copy
   }
+
+  /** A copy with `x`'s texts where `x` has them (else this schema's own) and this schema's validations followed by `x`'s: for a node that replaces `x` but keeps its own extras (an `Option` of an
+    * `any` lowered to the `any`).
+    */
+  private[json] def withExtraMergedFrom(x: Schema[_]): Self = {
+    val copy = duplicate(x._description orElse _description, x._title orElse _title, x._discriminationKey orElse _discriminationKey)
+    copy._validations = _validations ++ x._validations
+    copy._deprecated = _deprecated || x._deprecated
+
+    copy
+  }
   def withValidationsAddedFrom(x: Schema[_]): Self = {
     val copy = mkCopy()
     copy._validations = copy._validations ++ x._validations
@@ -779,6 +790,37 @@ object Schema extends SchemaCompanionPlatform {
     override def toString: String             = ToString(_ append "null")
   }
   object `null` extends `null`
+
+  // +------------
+  // | Any
+  // +---------------
+  // Any JSON value: `{}`, valid in every draft from 04 on (the boolean schema `true` only from 06), under every profile. For a field that holds
+  // arbitrary JSON (`JsValue`, `io.circe.Json`, a typesafe-config `ConfigValue`, ...): `Predef(Schema.`any`[JsValue]())`. Our own
+  // `com.github.andyglow.json.Value` has one built in; the bridges ship theirs in `AsX.predef`. `not(any)` is the schema nothing matches.
+  //
+  final case class `any`[T]() extends Schema[T] {
+    type Self = `any`[T]
+    def mkCopy()                              = `any`[T]()
+    override def canEqual(that: Any): Boolean = that.isInstanceOf[`any`[_]]
+    override def equals(obj: Any): Boolean    = obj match {
+      case `any`() => super.equals(obj)
+      case _       => false
+    }
+    override def hashCode: Int    = "any".hashCode
+    override def jsonType: String = "any" // never rendered: `{}` has no "type"
+    override def toString: String = ToString(_ append "any")
+  }
+
+  object `any` {
+
+    /** Whether `s` admits every JSON value: an `any`, or a value class or definition of one (a `ref`'s body is elsewhere: not known here). */
+    def admitsEverything(s: Schema[_]): Boolean = s match {
+      case `any`()          => true
+      case `value-class`(t) => admitsEverything(t)
+      case `def`(_, t)      => admitsEverything(t)
+      case _                => false
+    }
+  }
 
   // +------------
   // | Option

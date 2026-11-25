@@ -223,6 +223,7 @@ object Golden extends Assertions {
         case `value-class`(t) => List("kind" -> str("value-class"), "schema" -> apply(t))
         case `const`(v)       => List("kind" -> str("const"), "value" -> v)
         case _: `null`        => List("kind" -> str("null"))
+        case `any`()          => List("kind" -> str("any"))
         case `option`(t)      => List("kind" -> str("option"), "schema" -> apply(t))
         case f: `family`[_]   =>
           List("kind" -> str("family"), "members" -> sorted(f.members.map(member))) ++

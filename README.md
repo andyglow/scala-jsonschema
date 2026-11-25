@@ -20,7 +20,7 @@ instead of runtime reflection.
 Contents: [Install](#install) · [Quick start](#quick-start) · [Definitions and `$ref`s](#definitions-and-refs) ·
 [Supported types](#supported-types) · [Sum types and enums](#sum-types-and-enums) ·
 [Titles and descriptions](#titles-and-descriptions) · [Annotations](#annotations) · [Validation](#validation) ·
-[Free objects](#free-objects) · [Rendering](#rendering-drafts-and-json-libraries) · [Modules](#modules) ·
+[Free objects](#free-objects) · [Any JSON value](#any-json-value) · [Rendering](#rendering-drafts-and-json-libraries) · [Modules](#modules) ·
 [Migrating to 0.9.0](#migrating-to-090) · [Migrating to 0.8.0](#migrating-to-080) · [Scala 3 notes](#scala-3-notes) · [Known issues](#known-issues)
 
 ## Install
@@ -633,6 +633,50 @@ val strictPersonSchema = freePersonSchema.strict
 strictPersonSchema == personSchema // true
 ```
 
+## Any JSON value
+
+`` json.Schema.`any`[T]() `` accepts any JSON value: it renders `{}` in every draft. Use it for a field whose content
+you don't describe:
+
+```scala
+import com.typesafe.config.ConfigValue
+
+implicit val configValuePredef: json.schema.Predef[ConfigValue] = json.schema.Predef(json.Schema.`any`[ConfigValue]())
+```
+
+The JSON libraries' own AST types get theirs from an import, one per bridge. Our own
+`com.github.andyglow.json.Value` needs none.
+
+| AST        | `{}` (any)    | free object  | array of any     | string, number, boolean, null                                         | import                                             |
+|------------|---------------|--------------|------------------|-----------------------------------------------------------------------|----------------------------------------------------|
+| ours       | `Value`       | `Value.obj`  | `Value.arr`      | `Value.str`, `Value.num`, `Value.bool`, `` Value.`null` ``            | none                                               |
+| play-json  | `JsValue`     | `JsObject`   | `JsArray`        | `JsString`, `JsNumber`, `JsBoolean`                                   | `com.github.andyglow.jsonschema.AsPlay.predef._`   |
+| circe      | `Json`        | `JsonObject` |                  | `JsonNumber`                                                          | `com.github.andyglow.jsonschema.AsCirce.predef._`  |
+| ujson      | `ujson.Value` | `ujson.Obj`  | `ujson.Arr`      | `ujson.Str`, `ujson.Num`, `ujson.Bool`                                | `com.github.andyglow.jsonschema.AsU.predef._`      |
+| json4s     | `JValue`      | `JObject`    | `JArray`, `JSet` | `JString`, `JDouble`, `JDecimal`, `JLong`, `JInt`, `JNumber`, `JBool` | `com.github.andyglow.jsonschema.AsJson4s.predef._` |
+| spray-json | `JsValue`     | `JsObject`   | `JsArray`        | `JsString`, `JsNumber`, `JsBoolean`                                   | `com.github.andyglow.jsonschema.AsSpray.predef._`  |
+
+```scala
+import play.api.libs.json.{JsObject, JsValue}
+import com.github.andyglow.jsonschema.AsPlay.predef._
+
+case class Event(id: String, payload: JsValue, metadata: JsObject)
+
+json.Json.schema[Event] // "payload": {}, "metadata": {"type": "object", "additionalProperties": true}
+```
+
+- The import is separate from `AsPlay._` (and the other bridges' `AsX._`), so a `Predef` of your own for one of these
+  types doesn't become ambiguous. They are `Predef`s, so they are inlined. For a definition, declare
+  `` implicit val s: json.Schema[JsValue] = json.Schema.`any`[JsValue]() ``.
+- `Option[JsValue]` renders `{}` (it accepts `null` already), not `oneOf[{}, {"type": "null"}]`, which would reject `null`.
+- A default value (`payload: JsValue = Json.obj()`) needs the bridge's `ToValue`: import `AsPlay._` (or
+  `profiles.play._`) too, as for any other default.
+- Don't put an `any` into a `oneOf`: it overlaps every other member, so the `oneOf` rejects their values.
+- json4s leaves out a field whose value is `JNothing`, so a required `JValue` field then fails `required`. Make such a
+  field an `Option[JValue]` or give it a default.
+- Without the import, json4s' and spray's ASTs derive as families of their Scala classes (a JSON string would have to
+  be `{"s": "..."}`), and the other libraries' don't compile.
+
 ## Rendering: drafts and JSON libraries
 
 A `json.Schema` is independent of the JSON Schema draft and of any JSON library. You pick the draft when rendering:
@@ -667,6 +711,8 @@ import com.github.andyglow.jsonschema.AsU._       // json.Json.schema[Foo].asU(D
 
 These libraries have their own `Json` object, so write `json.Json.schema` when you import their package with `_`.
 The bridges also provide `ToValue` from the library's encoders, so default values of your own types get rendered.
+Schemas for the library's own AST types (`JsValue`, `io.circe.Json`, `ujson.Value`, ...) come from a separate import,
+`AsPlay.predef._`, `AsCirce.predef._`, `AsU.predef._`, `AsJson4s.predef._` or `AsSpray.predef._`: see [Any JSON value](#any-json-value).
 
 ### `Option`
 
@@ -924,7 +970,9 @@ applies instead.
 
 `scala-jsonschema-parser` goes the other way: `com.github.andyglow.json.ParseJson(string)` parses JSON into the
 library's AST, and `com.github.andyglow.jsonschema.ParseJsonSchema(string)` parses a JSON Schema (a draft-04
-subset, including `"type": [X, "null"]`) into a `Try[json.Schema[_]]`.
+subset, including `"type": [X, "null"]`) into a `Try[json.Schema[_]]`. `{}` (or an object of only annotations such as
+`title`) is `` Schema.`any` ``. The boolean schemas `true` and `false` (draft-06+, read in a draft-04 document too) are
+`any` and `not(any)` in `items` and `properties`.
 
 ## Migrating to 0.9.0
 

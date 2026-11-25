@@ -113,7 +113,8 @@ class MiscTypesSpec extends AnyFunSuite {
 
   test("java.util.Map keys follow the Scala Map rules: a KeyPattern'd key gets its pattern, an unsupported key is the key error") {
     AsValue.schema(Json.schema[java.util.Map[Int, User]], d12) shouldEqual AsValue.schema(Json.schema[Map[Int, User]], d12)
-    errorOf(assertCompiles("Json.schema[java.util.Map[java.util.UUID, Int]]")) should include("a Map key must be a String")
+    AsValue.schema(Json.schema[java.util.Map[java.util.UUID, Int]], d12) shouldEqual AsValue.schema(Json.schema[Map[java.util.UUID, Int]], d12)
+    errorOf(assertCompiles("Json.schema[java.util.Map[java.time.LocalDate, Int]]")) should include("a Map key must be a String")
   }
 
   test("an element with an implicit Schema is a definition + $ref") {

@@ -57,6 +57,8 @@ trait AsDraftSupport {
     val base           = x match {
       case _: `def`[_] | _: `allof`[_] | _: `oneof`[_] | _: `anyof`[_] | _: `ref`[_] => obj.empty
       case _: `const`[_]                                                             => obj.empty // its value implies the type ("type": "const" before, in a mixed oneOf)
+      case t if `any`.admitsEverything(t)                                            => obj.empty // `{}` (an `any`, or a value class of one): no type
+      case `enum`(t, _) if `any`.admitsEverything(t)                                 => obj.empty // values of any type (hand-built): no "type": "enum"
       case `value-class`(x) if includeType                                           => obj("type" -> x.jsonType)
       case _ if includeType                                                          => obj("type" -> x.jsonType)
       case _                                                                         => obj.empty
@@ -143,11 +145,19 @@ trait AsDraftSupport {
   }
 
   def mkEnum(vl: ValidationList, x: `enum`[_], par: ParentSchema): obj = {
-    obj("type" -> x.tpe.jsonType, "enum" -> arr(x.values.toSeq))
+    if (`any`.admitsEverything(x.tpe)) obj("enum" -> arr(x.values.toSeq)) // values of any type: no "type": "any"
+    else obj("type"                               -> x.tpe.jsonType, "enum" -> arr(x.values.toSeq))
   }
 
   def mkOneOf(vl: ValidationList, x: `oneof`[_], isRoot: Boolean, par: ParentSchema): obj =
     if (x.subTypes.exists(_.isInstanceOf[`null`])) mkNullable(x) else mkPlainOneOf(x, isRoot)
+
+  // a hand-built `oneof{X, null}` where X admits every value already (the profiles' lowering never makes one): X alone, as `oneOf[{}, null]` would reject `null`
+  private def anyOrNull(x: `oneof`[_]): Option[Schema[_]] = x.subTypes.toList match {
+    case List(a, _: `null`) if `any`.admitsEverything(a) => Some(a)
+    case List(_: `null`, a) if `any`.admitsEverything(a) => Some(a)
+    case _                                               => None
+  }
 
   /** `oneof{X, null}`, which is what a profile makes of `Option[X]`: X's keywords with `"type": [X, "null"]` when X has a single JSON type (type arrays are valid from draft-04 on), otherwise
     * `oneOf[X, {"type": "null"}]` with each member keeping its own type: an `enum` must not take `null` from a type array, and keywords next to a `$ref` are ignored before 2019-09.
@@ -160,6 +170,8 @@ trait AsDraftSupport {
     }
     val subTypesSeq = x.subTypes.toSeq.sortBy(_.isInstanceOf[`null`]) // `null` last
     subTypesSeq match {
+      case _ if anyOrNull(x).isDefined =>
+        apply(anyOrNull(x).get, Some(x), includeType = true, isRoot = false)
       case Seq(t, _: `null`) if singleType(t) =>
         obj("type" -> `arr`(`str`(t.jsonType), `str`("null"))) ++ apply(t, Some(x), includeType = false, isRoot = false)
       case _ =>
@@ -196,10 +208,12 @@ trait AsDraftSupport {
       case `ref`(_)    => None
       case t           => Some(memberType(t))
     }
-    // the type a same-typed oneOf states: the first member's that isn't a definition or a $ref, as in 0.7 (only definitions: none)
+    // the type a same-typed oneOf states: the first member's that isn't a definition or a $ref, as in 0.7 (only definitions: none). An `any` states none, but it stays in `known` as "any",
+    // a type equal to no other: `oneof{string, any}` isn't same-typed, so each member keeps its own type (else `{"type": "string", "oneOf": [{}, {}]}`)
     val tpe = subTypesSeq.find {
-      case `def`(_, _) | `ref`(_) => false
-      case _                      => true
+      case `def`(_, _) | `ref`(_)         => false
+      case t if `any`.admitsEverything(t) => false
+      case _                              => true
     }.map(memberType)
     val sameType = tpe.isDefined && known.forall(_ == tpe)
     def rootType = tpe filter { _ => !omitRootType } map { t => obj("type" -> `str`(t)) } getOrElse obj()
@@ -222,9 +236,9 @@ trait AsDraftSupport {
   def mkAllOf(vl: ValidationList, x: `allof`[_], isRoot: Boolean, par: ParentSchema): obj = {
     val subTypesSeq                  = x.subTypes.toSeq
     def isRef(s: Schema[_]): Boolean = s.isInstanceOf[`def`[_]] || s.isInstanceOf[`ref`[_]]
-    val typed                        = subTypesSeq.filterNot(isRef) // a `$ref` has no type of its own (asking it threw before)
-    val tpe                          = typed.headOption.fold("")(_.jsonType)
-    val sameType                     = typed.nonEmpty && typed.forall(_.jsonType == tpe)
+    val typed    = subTypesSeq.filterNot(s => isRef(s) || `any`.admitsEverything(s)) // a `$ref` has no type of its own (asking it threw before); an `any` adds none to an intersection
+    val tpe      = typed.headOption.fold("")(_.jsonType)
+    val sameType = typed.nonEmpty && typed.forall(_.jsonType == tpe)
     if (sameType) {
       obj(
         "type"  -> (if (!isRoot) Some(`str`(tpe)) else None),
