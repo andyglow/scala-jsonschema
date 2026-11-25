@@ -2,7 +2,7 @@ package com.github.andyglow.jsonschema
 
 import scala.reflect.NameTransformer
 
-private[jsonschema] trait USignatures { this: UContext =>
+private[jsonschema] trait USignatures { this: UContext with UCommons =>
   import c.universe._
 
   /** The full name with every segment decoded (`odd name`, `+`), as Scala 3's `fullName` gives it; Scala 2's is encoded (`odd$u0020name`, `$plus`). Encoding happens only when rendering (see
@@ -28,7 +28,7 @@ private[jsonschema] trait USignatures { this: UContext =>
         case other           =>
           c.abort(
             c.enclosingPosition,
-            s"schema for $other is not supported: a definition can't be named after this type (a structural or other unnamed type). Use a named type, e.g. a case class"
+            s"schema for ${showType(other)} is not supported: a definition can't be named after this type (a structural or other unnamed type). Use a named type, e.g. a case class"
           )
       }
     }

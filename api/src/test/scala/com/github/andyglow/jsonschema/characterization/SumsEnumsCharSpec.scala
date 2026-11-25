@@ -123,12 +123,10 @@ class SumsEnumsCharSpec extends AnyFunSuite {
   test("T5: an anonymous subclass of a sealed family doesn't compile") {
     // the Email case is the `sealed abstract case class X private (..)` + `new X(v) {}` smart-constructor idiom
     for ((err, name) <- List(errorOf(assertCompiles("Json.schema[AnonKid]")) -> "AnonKid", errorOf(assertCompiles("Json.schema[Email]")) -> "Email")) {
+      // the same text on both versions (B11, #471)
       err should include(name)
-      if (Scala.is2) err should include("Only Scala case classes/objects are supported for Sum Type leaves")
-      else {
-        err should include(NotSupported)
-        err should include("local to a block or anonymous")
-      }
+      err should include(NotSupported)
+      err should include("local to a block or anonymous")
     }
   }
 

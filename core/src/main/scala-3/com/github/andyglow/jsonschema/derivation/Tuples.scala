@@ -93,7 +93,6 @@ trait Tuples { this: Derivation =>
 
   /** What [[normalizeTuple]] leaves: a chain of more than 22 elements, or a tuple type of unknown arity / `EmptyTuple` (errors). */
   def deriveTuple(tpe: TypeRepr, ctx: Ctx): Option[Node] = {
-    def where = if (ctx.isRoot) "" else s", ${ctx.show}"
     tupleShape(tpe) match {
       case TupleShape.Known(elems) =>
         val names = elems.indices.toList.map(i => s"_${i + 1}")
@@ -110,9 +109,9 @@ trait Tuples { this: Derivation =>
         }
         Some(Obj(tpe, ProductKind.Tuple(fields.size), fields))
       case TupleShape.Unknown =>
-        report.errorAndAbort(s"schema for ${tpe.show} is not supported: a tuple type needs a known arity (a TupleN, or a *: chain ending in EmptyTuple)$where")
+        notSupported(tpe, ctx, "a tuple type needs a known arity (a TupleN, or a *: chain ending in EmptyTuple)")
       case TupleShape.Empty =>
-        report.errorAndAbort(s"schema for EmptyTuple is not supported: an empty tuple has no fields$where")
+        report.errorAndAbort(s"schema for EmptyTuple is not supported${pathOf(ctx)}: an empty tuple has no fields")
       case TupleShape.NotATuple => None
     }
   }

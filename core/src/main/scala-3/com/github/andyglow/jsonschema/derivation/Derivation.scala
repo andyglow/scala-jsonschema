@@ -28,7 +28,8 @@ final class Derivation(val mode: Mode, val objectSchemaDecorations: List[(String
     with Enums
     with FamilyEmit
     with Collections
-    with Tuples {
+    with Tuples
+    with Errors {
   import q.reflect.*
 
   /** The IR of `T`, after the IR -> IR passes. */

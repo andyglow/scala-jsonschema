@@ -144,8 +144,10 @@ trait Products { this: Derivation =>
   /** The node of a field of type `ft` in `owner`, and whether it is an `Option` field: an [[Opt]] around `X` for an `Option[X]`, also for a `Some[X]` field. Shared with the long tuples of [[Tuples]].
     */
   def fieldNode(owner: TypeRepr, ft: TypeRepr, ctx: Ctx): (Node, Boolean) = optionElement(ft) match {
-    case Some(e) => (Opt(optionOf(e), resolve(e, ctx.descend(owner))), true)
-    case None    => (resolve(ft, ctx.descend(owner)), false)
+    // the field's Option isn't on the stack, so `resolve` would name the owner as the wildcard's owner
+    case Some(e) if isWildcard(e) => notSupported(ft, ctx.descend(owner), WildcardReason)
+    case Some(e)                  => (Opt(optionOf(e), resolve(e, ctx.descend(owner))), true)
+    case None                     => (resolve(ft, ctx.descend(owner)), false)
   }
 
   /** `Some(X)` if `tpe` is an `Option[X]` (Scala 2: `<:< Option[_]`). */

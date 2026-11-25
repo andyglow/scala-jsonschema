@@ -99,16 +99,11 @@ private[jsonschema] trait UEnums {
     private lazy val items: Seq[Type] =
       resolveSumTypeRecursively(tpe, include = isCaseObject, otherwise = _ => NoType)
 
-    def allResolved(silent: Boolean = false): Option[Seq[EnumItem]] = {
+    /** `None` unless every member is a case object (then the family isn't an enum: the sum-type derivation reports the bad member). */
+    def allResolved: Option[Seq[EnumItem]] = {
       val invalid = items.contains(NoType)
-      if (invalid) {
-        if (!silent)
-          abort(
-            s"Only Scala case objects are supported for Sum Type leaves\nPlease consider using of " +
-              s"them for Sum Types with base '$tpe' or provide a custom implicitly accessible json.Schema for the Sum Type."
-          )
-        else None
-      } else {
+      if (invalid) None
+      else {
         val symbols = items.map(_.typeSymbol)
         someResolved(symbols)
       }
@@ -139,7 +134,7 @@ private[jsonschema] trait UEnums {
     private def fromSumType(tpe: Type)(implicit ctx: ResolutionContext): Option[SchemaType] = {
       Option.whenever(tpe.typeSymbol.isClass && tpe.typeSymbol.asClass.isSealed) {
         val extractor = new SumTypeEnumExtractor(tpe)
-        extractor.allResolved(silent = true) map { enumItems =>
+        extractor.allResolved map { enumItems =>
           val family                = EnumFamily(tpe, enumItems)
           var schema                = family.singleSchema
           val hasFromToValueMembers = enumItems collectFirst { case _: EnumItem.FromToValue =>

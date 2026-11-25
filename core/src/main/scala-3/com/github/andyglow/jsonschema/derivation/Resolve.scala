@@ -23,9 +23,6 @@ trait Resolve { this: Derivation =>
     def descend(owner: TypeRepr): Ctx = Ctx(stack :+ owner.dealias)
 
     def onStack(tpe: TypeRepr): Option[TypeRepr] = stack.find(_ =:= tpe)
-
-    /** "A :: B :: C", for error messages (Scala 2 format). */
-    def show: String = stack.map(_.show).mkString(" :: ")
   }
   object Ctx {
     val root: Ctx = Ctx(Nil)
@@ -53,7 +50,9 @@ trait Resolve { this: Derivation =>
     ctx.onStack(tpe) match {
       case Some(entry) => onCycle(tpe, entry)
       case None        =>
-        if (tpe =:= TypeRepr.of[Nothing]) report.errorAndAbort("No json.Schema[_] for Nothing")
+        // a wildcard can't be searched for (`asType` asserts) or derived: name the type that has it (the owner's own implicit search ran already)
+        if (isWildcard(tpe)) notSupported(ctx.stack.lastOption getOrElse tpe, outer(ctx), WildcardReason)
+        if (tpe =:= TypeRepr.of[Nothing]) report.errorAndAbort("No json.Schema[_] for Nothing" + pathOf(ctx))
         val searched = if (ctx.isRoot && skipRootSearch) None else lookupImplicit(tpe)
         searched getOrElse structural(tpe, ctx)
     }
@@ -61,11 +60,14 @@ trait Resolve { this: Derivation =>
 
   /** Step 4 only (no implicit search). */
   def structural(tpe: TypeRepr, ctx: Ctx): Node =
-    families.iterator.map(_(tpe, ctx)).collectFirst { case Some(n) => n } getOrElse {
-      // why an implicit for it failed, if it says more than "none found" (e.g. a refined macro's error: Scala 2 reports it instead)
-      val why = implicitFailures(tpe).map(e => s"\n  an implicit for it failed: $e").mkString
-      report.errorAndAbort(s"schema for ${tpe.show} is not supported, ${ctx.show}$why")
-    }
+    // `Null <: Map`, `Null <: Iterable`: before the families, which would claim it (after the implicit search: a user `Predef[Null]` wins)
+    if (tpe =:= TypeRepr.of[Null]) notSupported(tpe, ctx, NullReason)
+    else
+      families.iterator.map(_(tpe, ctx)).collectFirst { case Some(n) => n } getOrElse {
+        // why an implicit for it failed, if it says more than "none found" (e.g. a refined macro's error: Scala 2 reports it instead)
+        val why = implicitFailures(tpe).map(e => s"\n  an implicit for it failed: $e").mkString
+        notSupported(tpe, ctx, singletonReason(tpe) getOrElse "", why)
+      }
 
   /** `derives` would only find its own given (rejected anyway). `DerivedSchema` must not find the type's own implicit `Schema`: standing in for it is what the type class is for (e.g.
     * `implicit val s: Schema[X] = implicitly[DerivedSchema[X]].schema`). `objectSchema` does search, like Scala 2: a root with an implicit `Schema` is then a definition, which is an error there.
