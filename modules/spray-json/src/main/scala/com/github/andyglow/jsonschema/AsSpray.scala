@@ -9,13 +9,6 @@ import scala.collection.immutable.ListMap
 
 object AsSpray {
 
-  /** Schemas of spray-json's own types, opt-in: `import AsSpray.predef._` (an implicit here, in `AsSpray`, would clash with a user's own Predef of the same type). */
-  object predef {
-
-    /** `JsNull` (e.g. a field that is always `null`): `{"type": "null"}`. */
-    implicit val jsNullPredef: _root_.json.schema.Predef[JsNull.type] = _root_.json.schema.Predef(Schema.`null`.asInstanceOf[Schema[JsNull.type]])
-  }
-
   def apply[T](value: T)(implicit a: Adapter[T]): a.P = a.adapt(value)
 
   implicit class SpraySchemaOps[T](val x: Schema[T]) extends AnyVal {
@@ -91,5 +84,24 @@ object AsSpray {
       val js = w.write(x)
       Adapter.unadapt(js)
     }
+  }
+
+  /** `import com.github.andyglow.jsonschema.AsSpray.predef._` (Scala 3: `.*`): inlined schemas for spray-json's AST types. `JsValue` is any JSON value (`{}`), `JsObject` a free object, `JsArray` an
+    * array of any values. Without it, spray's AST derives as a family of its case classes, which no JSON spray writes matches. Opt-in: these next to a `Predef[JsObject]` of your own would be
+    * ambiguous.
+    */
+  object predef {
+    import _root_.json.schema.Predef
+    import _root_.json.{Schema => S}
+
+    implicit val sprayJsValuePredef: Predef[JsValue]     = Predef(S.`any`[JsValue]())
+    implicit val sprayJsObjectPredef: Predef[JsObject]   = Predef(S.`object`.Free[JsObject]())
+    implicit val sprayJsArrayPredef: Predef[JsArray]     = Predef(S.`array`[JsValue, Vector](S.`any`[JsValue]()).asInstanceOf[S[JsArray]])
+    implicit val sprayJsStringPredef: Predef[JsString]   = Predef(S.`string`[JsString])
+    implicit val sprayJsNumberPredef: Predef[JsNumber]   = Predef(S.`number`[BigDecimal].asInstanceOf[S[JsNumber]])
+    implicit val sprayJsBooleanPredef: Predef[JsBoolean] = Predef(S.`boolean`.asInstanceOf[S[JsBoolean]])
+
+    /** `JsNull` (e.g. a field that is always `null`): `{"type": "null"}`. */
+    implicit val jsNullPredef: Predef[JsNull.type] = Predef(S.`null`.asInstanceOf[S[JsNull.type]])
   }
 }

@@ -229,7 +229,11 @@ object JsonSchemaProfile {
     private def stripped(s: Schema[_]): Schema[_] = if (s.deprecated && !p.deprecatedKeyword) s.withDeprecated(false) else s
 
     private def node(s: Schema[_]): Schema[_] = s match {
-      case `option`(inner)  => optionAt(inner).withExtraFrom(s)
+      case `option`(inner) =>
+        optionAt(inner) match {
+          case x if Schema.`any`.admitsEverything(x) => x.withExtraMergedFrom(s) // the inner itself (Nullable, X admits null): it keeps its own texts and validations
+          case x                                     => x.withExtraFrom(s)
+        }
       case f: `family`[_]   => familyAt(f).withExtraFrom(s)
       case o: `object`[_]   => o.withFieldsUpdated { case f => field(f) }
       case `array`(c, u)    => `array`[Any, List](apply(c).asInstanceOf[Schema[Any]], u).withExtraFrom(s)
@@ -261,7 +265,9 @@ object JsonSchemaProfile {
     /** An `option` node anywhere but in a Legacy `Option` field. */
     private def optionAt(inner: Schema[_]): Schema[_] = p.optionStyle match {
       case OptionStyle.Nullable =>
-        `oneof`[Any](Set(apply(flatten(inner)), Schema.`null`))
+        val x = apply(flatten(inner))
+        // an `any` (or a definition / value class of one) admits `null` already, and `oneOf[{}, null]` would reject it: X alone
+        if (Schema.`any`.admitsEverything(x)) x else `oneof`[Any](Set(x, Schema.`null`))
       case OptionStyle.Legacy =>
         // exactly what the Scala 2 macro derived in 0.7, member order included (a 2-element Set iterates in insertion order, and the renderer keeps it)
         `oneof`[Any](

@@ -8,13 +8,6 @@ import upickle.default._
 
 object AsU {
 
-  /** Schemas of ujson's own types, opt-in: `import AsU.predef._` (an implicit here, in `AsU`, would clash with a user's own Predef of the same type). */
-  object predef {
-
-    /** `ujson.Null` (e.g. a field that is always `null`): `{"type": "null"}`. */
-    implicit val ujsonNullPredef: _root_.json.schema.Predef[ujson.Null.type] = _root_.json.schema.Predef(Schema.`null`.asInstanceOf[Schema[ujson.Null.type]])
-  }
-
   def apply[T](value: T)(implicit a: Adapter[T]): a.P = a.adapt(value)
 
   implicit class UJsonSchemaOps[T](val x: Schema[T]) extends AnyVal {
@@ -87,5 +80,23 @@ object AsU {
       val js = writeJs(x)
       Adapter.unadapt(js)
     }
+  }
+
+  /** `import com.github.andyglow.jsonschema.AsU.predef._` (Scala 3: `.*`): inlined schemas for ujson's AST types. `ujson.Value` is any JSON value (`{}`), `ujson.Obj` a free object, `ujson.Arr` an
+    * array of any values. Opt-in: these next to a `Predef[ujson.Obj]` of your own would be ambiguous.
+    */
+  object predef {
+    import _root_.json.schema.Predef
+    import _root_.json.{Schema => S}
+
+    implicit val ujsonValuePredef: Predef[ujson.Value] = Predef(S.`any`[ujson.Value]())
+    implicit val ujsonObjPredef: Predef[ujson.Obj]     = Predef(S.`object`.Free[ujson.Obj]())
+    implicit val ujsonArrPredef: Predef[ujson.Arr]     = Predef(S.`array`[ujson.Value, Seq](S.`any`[ujson.Value]()).asInstanceOf[S[ujson.Arr]])
+    implicit val ujsonStrPredef: Predef[ujson.Str]     = Predef(S.`string`[ujson.Str])
+    implicit val ujsonNumPredef: Predef[ujson.Num]     = Predef(S.`number`[Double].asInstanceOf[S[ujson.Num]])
+    implicit val ujsonBoolPredef: Predef[ujson.Bool]   = Predef(S.`boolean`.asInstanceOf[S[ujson.Bool]])
+
+    /** `ujson.Null` (e.g. a field that is always `null`): `{"type": "null"}`. */
+    implicit val ujsonNullPredef: Predef[ujson.Null.type] = Predef(S.`null`.asInstanceOf[S[ujson.Null.type]])
   }
 }

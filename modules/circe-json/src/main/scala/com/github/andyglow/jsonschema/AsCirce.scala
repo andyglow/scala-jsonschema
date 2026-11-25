@@ -42,4 +42,16 @@ object AsCirce {
       translate(js)
     }
   }
+
+  /** `import com.github.andyglow.jsonschema.AsCirce.predef._` (Scala 3: `.*`): inlined schemas for circe's AST types. `Json` is any JSON value (`{}`), `JsonObject` a free object, `JsonNumber` a
+    * number. Opt-in: these next to a `Predef[JsonObject]` of your own would be ambiguous.
+    */
+  object predef {
+    import _root_.json.schema.Predef
+    import _root_.json.{Schema => S}
+
+    implicit val circeJsonPredef: Predef[Json]             = Predef(S.`any`[Json]())
+    implicit val circeJsonObjectPredef: Predef[JsonObject] = Predef(S.`object`.Free[JsonObject]())
+    implicit val circeJsonNumberPredef: Predef[JsonNumber] = Predef(S.`number`[BigDecimal].asInstanceOf[S[JsonNumber]])
+  }
 }

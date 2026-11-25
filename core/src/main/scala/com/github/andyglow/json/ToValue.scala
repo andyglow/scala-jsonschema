@@ -5,7 +5,14 @@ trait ToValue[T] {
   def apply(x: T): Value
 }
 
-trait LowPriorityPrimitiveImplicits {
+/** Below every other `ToValue`: `Null` conforms to `T <: Value` too, and `NullV` must win for it. */
+trait LowestPriorityValueImplicits {
+
+  /** A default of our own JSON AST type (`data: Value = Value.obj(...)`) is that value itself. */
+  implicit def ValueV[T <: Value]: ToValue[T] = ToValue.mk[T](x => x)
+}
+
+trait LowPriorityPrimitiveImplicits extends LowestPriorityValueImplicits {
   import Value._
   import ToValue._
 
