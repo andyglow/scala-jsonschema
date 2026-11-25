@@ -26,11 +26,12 @@ trait LowPriorityPredefs {
 }
 object Predef extends LowPriorityPredefs {
   implicit val strS: Predef[String] = Predef(`string`[String])
-  implicit val chrS: Predef[Char]   = Predef(
-    `string`[Char].withValidation(`minLength` := 1, `maxLength` := 1, `pattern` := "^[.\\s]$")
+  // exactly one character: the lengths say it, no pattern (#463). JSON Schema counts code points, so a non-BMP character, which no Char holds, is accepted too
+  implicit val chrS: Predef[Char] = Predef(
+    `string`[Char].withValidation(`minLength` := 1, `maxLength` := 1)
   )
   implicit val jchrS: Predef[Character] = Predef(
-    `string`[Character].withValidation(`minLength` := 1, `maxLength` := 1, `pattern` := "^[.\\s]$")
+    `string`[Character].withValidation(`minLength` := 1, `maxLength` := 1)
   )
   implicit val boolS: Predef[Boolean]          = Predef(`boolean`)
   implicit val byteS: Predef[Byte]             = Predef(`number`[Byte])
