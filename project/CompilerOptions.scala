@@ -10,7 +10,8 @@ object CompilerOptions {
 
   private val opts212 = base2 ++ Seq("-Ywarn-unused:imports,-patvars,-privates,-locals,-implicits", "-Xlint:-unused,_")
 
-  private val opts213 = base2 ++ Seq("-Ywarn-unused:imports,-patvars,-privates,-locals,-implicits", "-Xsource:2.13")
+  // -Xlint:implicit-recursion (2.13 only) as an error: `implicit val s: Schema[X] = Json.schema[X]` must not make the derivation resolve `s` (#320)
+  private val opts213 = base2 ++ Seq("-Ywarn-unused:imports,-patvars,-privates,-locals,-implicits", "-Xsource:2.13", "-Xlint:implicit-recursion", "-Wconf:cat=w-flag-self-implicit:e")
 
   private val opts3 = base ++ release3 ++ Seq("-Wunused:imports") // same checks as -Ywarn-unused above (only imports are on)
 

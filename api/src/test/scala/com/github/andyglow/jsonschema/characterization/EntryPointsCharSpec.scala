@@ -1,6 +1,6 @@
 package com.github.andyglow.jsonschema.characterization
 
-import com.github.andyglow.jsonschema.harness.{ErrorPhrases, Golden, Scala, TriageA}
+import com.github.andyglow.jsonschema.harness.{ErrorPhrases, Golden}
 import com.github.andyglow.jsonschema.harness.CompileErrors.errorOf
 import json._
 import json.Schema._
@@ -36,8 +36,8 @@ object EntryPointsCharSpec {
 
   case class Bar(a: Int)
   case class HasBar(b: Bar)
-  // Scala 2 detects "self references" by reading the previous and the current source line (isSelfRef). The KEEP THESE
-  // TWO LINES ADJACENT: the second derivation then mistakes `barSchema` for a self reference and inlines Bar.
+  // KEEP THESE TWO LINES ADJACENT: until #320, Scala 2 detected "self references" by reading the previous and the current source
+  // line, so the second derivation mistook `barSchema` for a self reference and inlined Bar.
   object AdjacentImplicits {
     implicit val barSchema: Schema[Bar]       = Json.schema[Bar]
     implicit val hasBarSchema: Schema[HasBar] = Json.schema[HasBar]
@@ -96,14 +96,12 @@ class EntryPointsCharSpec extends AnyFunSuite {
     check("char/entry/implicit.String", Json.schema[String])
   }
 
-  test("R4: a typed implicit val derives its own type structurally; other implicits become defs", TriageA) {
+  test("R4: a typed implicit val derives its own type structurally; other implicits become defs, also on the next line") {
     val barDef = `def`[Bar]("com.github.andyglow.jsonschema.characterization.EntryPointsCharSpec.Bar", `object`[Bar](`object`.Field("a", `integer`)))
     SeparatedImplicits.barSchema shouldBe `object`[Bar](`object`.Field("a", `integer`))
     SeparatedImplicits.hasBarSchema shouldBe `object`[HasBar](`object`.Field("b", barDef))
     AdjacentImplicits.barSchema shouldBe SeparatedImplicits.barSchema
-    // Scala 2: false positive of the source-text self-reference check on adjacent lines, Bar is inlined
-    if (Scala.is3) AdjacentImplicits.hasBarSchema shouldBe SeparatedImplicits.hasBarSchema
-    else AdjacentImplicits.hasBarSchema shouldBe `object`[HasBar](`object`.Field("b", `object`[Bar](`object`.Field("a", `integer`))))
+    AdjacentImplicits.hasBarSchema shouldBe SeparatedImplicits.hasBarSchema
   }
 
   test("R8: a nested case class reached via a field gets no title/description") {
