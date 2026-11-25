@@ -4,7 +4,8 @@ import scala.quoted.*
 
 import com.github.andyglow.jsonschema.TypeSignature
 import json.Schema
-import json.schema.Predef
+import com.github.andyglow.jsonschema.internal.{AutoEnabled, AutoHole}
+import json.schema.{Exported, Predef}
 
 /** One macro expansion. A cake: every trait is one concern in its own file, and they all share `q` (`import q.reflect.*` in each). See `notes/reports/skeleton-ir.md`.
   *
@@ -63,12 +64,49 @@ final class Derivation(val mode: Mode, val objectSchemaDecorations: List[(String
   }
 
   def run[T: Type]: Expr[Schema[T]] = {
-    val out = emit(build[T])
-    Derivation.debug(out)
-    out match {
+    val node = build[T]
+    finish[T](emit(node), node)
+  }
+
+  /** The expansion's output (issue #542): checked for leftover `Json.auto` holes, registered with `Schema.building` under the root's signature (recursion cycles between implicit instances, see
+    * `Schema.def.adaptOrLazy`; not when the root is an implicit instance, which isn't built here), and with a use of `Json.auto`'s marker when it is in scope (so the import counts as used, also when
+    * every tree found through it was replaced).
+    */
+  def finish[T: Type](out: Expr[Schema[?]], root: Node): Expr[Schema[T]] = {
+    checkNoHoles(out)
+    reportSemiAutoWarnings()
+    val typed: Expr[Schema[T]] = out match {
       case '{ $s: Schema[T] } => s
       case _                  => '{ $out.asInstanceOf[Schema[T]] }
     }
+    val sig = root match {
+      case _: FromImplicit => None
+      case _               => rootSignature(TypeRepr.of[T])
+    }
+    val built = sig.fold(typed) { sig =>
+      val se = Expr(sig)
+      '{ Schema.building[T]($se)($typed) }
+    }
+    val res = autoMarker.fold(built) { m =>
+      '{
+        val _ = $m
+        $built
+      }
+    }
+    Derivation.debug(res)
+    res
+  }
+
+  /** The signature a root registers with `Schema.building`: computed like [[Nodes.FromImplicit]]'s `sig` (the dealiased type); none for a type that mentions an abstract type or has no name. */
+  private def rootSignature(t: TypeRepr): Option[String] = {
+    val tpe = normalizeTuple(t.dealias)
+    if (mentionsAbstractType(tpe) || !hasSignature(tpe)) None else Some(signature(tpe, dealiased = true))
+  }
+
+  /** `Json.auto`'s marker (`auto.jsonSchemaAutoEnabled`), if it is in scope: a call-site use of it (see `Implicits.searchAccepted` for the `Inlined`). */
+  private def autoMarker: Option[Expr[AutoEnabled]] = Implicits.search(TypeRepr.of[AutoEnabled]) match {
+    case s: ImplicitSearchSuccess => Some(Inlined(None, Nil, s.tree).asExprOf[AutoEnabled])
+    case _                        => None
   }
 
   def signatureOf[T: Type]: String = signature(TypeRepr.of[T])
@@ -79,11 +117,11 @@ object Derivation {
   def derive[T: Type](mode: Mode)(using Quotes): Expr[Schema[T]] =
     new Derivation(mode, Nil).run[T]
 
-  def deriveAuto[T: Type](using Quotes): Expr[Predef[T]] =
-    if (AutoGuard.isSearching) AutoGuard.decline // a derivation is searching: see AutoGuard
+  def deriveAuto[T: Type](using Quotes): Expr[Exported[Predef[T]]] =
+    if (AutoGuard.isSearching) '{ Exported[Predef[T]](AutoHole.hole[T]) } // a derivation is searching: a placeholder it replaces, see AutoGuard
     else {
       val s = derive[T](Mode.Auto)
-      '{ Predef[T]($s) }
+      '{ Exported[Predef[T]](Predef[T]($s)) }
     }
 
   def signature[T: Type](using Quotes): Expr[TypeSignature[T]] = {
@@ -110,12 +148,8 @@ object Derivation {
         val t = Type.show[T]
         report.errorAndAbort(s"$ObjectSchema[$t]: $t is a definition, not an object schema (an implicit json.Schema[$t] is in scope, or $t is recursive). Use Json.schema[$t]")
     }
-    val out = d.emit(node)
-    debug(out)
-    out match {
-      case '{ $s: Schema.`object`[T] } => s
-      case _                           => '{ $out.asInstanceOf[Schema.`object`[T]] }
-    }
+    val out = d.finish[T](d.emit(node), node)
+    '{ $out.asInstanceOf[Schema.`object`[T]] }
   }
 
   private val ConstantStrings = "only constant Strings are allowed in Description specification"
@@ -136,6 +170,6 @@ object Derivation {
   }
 
   /** `sbt -Djsonschema.print-code=true` prints every generated tree (Scala 2: `-Xmacro-settings:print-jsonschema-code`). */
-  private def debug(out: Expr[?])(using Quotes): Unit =
+  def debug(out: Expr[?])(using Quotes): Unit =
     if (sys.props.get("jsonschema.print-code").contains("true")) quotes.reflect.report.info(out.show)
 }
