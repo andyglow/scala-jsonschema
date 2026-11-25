@@ -297,6 +297,11 @@ object Schema extends SchemaCompanionPlatform {
       implicit object LongKeyPattern    extends KeyPattern[Long]("^-?[0-9]+$")
       implicit object UUIDKeyPattern    extends KeyPattern[java.util.UUID]("^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$")
       implicit object BooleanKeyPattern extends KeyPattern[Boolean]("^(?:true|false)$")
+      // Java's boxed integrals: the Scala type's pattern
+      implicit object JIntegerKeyPattern extends KeyPattern[java.lang.Integer](IntKeyPattern.pattern)
+      implicit object JLongKeyPattern    extends KeyPattern[java.lang.Long](LongKeyPattern.pattern)
+      implicit object JShortKeyPattern   extends KeyPattern[java.lang.Short](ShortKeyPattern.pattern)
+      implicit object JByteKeyPattern    extends KeyPattern[java.lang.Byte](ByteKeyPattern.pattern)
     }
   }
 

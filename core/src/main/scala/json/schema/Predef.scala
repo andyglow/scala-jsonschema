@@ -42,6 +42,19 @@ object Predef extends LowPriorityPredefs {
   implicit val longS: Predef[Long]             = Predef(`number`[Long])
   implicit val bigIntS: Predef[BigInt]         = Predef(`number`[BigInt])
   implicit val bigDecimalS: Predef[BigDecimal] = Predef(`number`[BigDecimal])
+
+  // Java's boxed types and java.math: the Scala type's own node, so they always render the same (the type parameter is
+  // phantom for these nodes; `BoxedBigMathSpec` checks they stay equal)
+  implicit val jIntegerS: Predef[java.lang.Integer]       = Predef(intS.schema.asInstanceOf[Schema[java.lang.Integer]])
+  implicit val jLongS: Predef[java.lang.Long]             = Predef(longS.schema.asInstanceOf[Schema[java.lang.Long]])
+  implicit val jShortS: Predef[java.lang.Short]           = Predef(shortS.schema.asInstanceOf[Schema[java.lang.Short]])
+  implicit val jByteS: Predef[java.lang.Byte]             = Predef(byteS.schema.asInstanceOf[Schema[java.lang.Byte]])
+  implicit val jDoubleS: Predef[java.lang.Double]         = Predef(doubleS.schema.asInstanceOf[Schema[java.lang.Double]])
+  implicit val jFloatS: Predef[java.lang.Float]           = Predef(floatS.schema.asInstanceOf[Schema[java.lang.Float]])
+  implicit val jBooleanS: Predef[java.lang.Boolean]       = Predef(boolS.schema.asInstanceOf[Schema[java.lang.Boolean]])
+  implicit val jBigDecimalS: Predef[java.math.BigDecimal] = Predef(bigDecimalS.schema.asInstanceOf[Schema[java.math.BigDecimal]])
+  implicit val jBigIntegerS: Predef[java.math.BigInteger] = Predef(bigIntS.schema.asInstanceOf[Schema[java.math.BigInteger]])
+
   implicit val uuidS: Predef[UUID]             = Predef(`string`[UUID](Format.`uuid`))
   implicit val uriS: Predef[URI]               = Predef(`string`[URI](Format.`uri`))
   implicit val urlS: Predef[URL]               = Predef(`string`[URL](Format.`uri`))
