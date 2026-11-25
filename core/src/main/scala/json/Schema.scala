@@ -260,19 +260,43 @@ object Schema extends SchemaCompanionPlatform {
     }
   }
   object `dictionary` {
+
+    /** The keys a `Map[T, _]` can have, as a JSON Schema (ECMA-262) regex. It is rendered as the `patternProperties` key, and, unless it matches any string, enforced: `propertyNames` from draft 06
+      * on, `additionalProperties: false` on draft 04 (#466).
+      *
+      * Built-ins: `String` (any key), `Char` (one character), `Byte`/`Short`/`Int`/`Long` (an optional `-` and digits), `java.util.UUID`, `Boolean` (`true`/`false`). A `KeyPattern` in lexical scope
+      * takes priority over these.
+      */
     abstract class KeyPattern[T](val pattern: String)
     object KeyPattern {
-      def mk[T](pattern: String): KeyPattern[T]             = new KeyPattern[T](pattern) {}
+      def mk[T](pattern: String): KeyPattern[T] = new KeyPattern[T](pattern) {}
+
+      /** The names (sorted, regex-escaped) as alternatives: `^(?:A|B)$`. */
       def forEnum[T](vals: Iterable[String]): KeyPattern[T] = {
         require(vals.nonEmpty)
-        mk[T](vals.toList.distinct.sorted.mkString("^(?:", "|", ")$"))
+        mk[T](vals.toList.distinct.sorted.map(escape).mkString("^(?:", "|", ")$"))
       }
-      implicit object StringKeyPattern extends KeyPattern[String]("^.*$")
-      implicit object CharKeyPattern   extends KeyPattern[Char]("^.{1}$")
-      implicit object ByteKeyPattern   extends KeyPattern[Byte]("^[0-9]+$")
-      implicit object ShortKeyPattern  extends KeyPattern[Short]("^[0-9]+$")
-      implicit object IntKeyPattern    extends KeyPattern[Int]("^[0-9]+$")
-      implicit object LongKeyPattern   extends KeyPattern[Long]("^[0-9]+$")
+
+      /** `name` with the ECMA-262 regex syntax characters (`\ ^ $ . | ? * + ( ) [ ] { }`) backslash-escaped, so that it matches itself literally. */
+      def escape(name: String): String = {
+        val sb = new StringBuilder(name.length)
+        name foreach { c =>
+          if (RegexSyntaxChars.indexOf(c.toInt) >= 0) sb.append('\\')
+          sb.append(c)
+        }
+        sb.toString
+      }
+      private final val RegexSyntaxChars = "\\^$.|?*+()[]{}"
+
+      /** Any key (`[\s\S]`: `.` misses line terminators), so not enforced. */
+      implicit object StringKeyPattern  extends KeyPattern[String]("^[\\s\\S]*$")
+      implicit object CharKeyPattern    extends KeyPattern[Char]("^[\\s\\S]$")
+      implicit object ByteKeyPattern    extends KeyPattern[Byte]("^-?[0-9]+$")
+      implicit object ShortKeyPattern   extends KeyPattern[Short]("^-?[0-9]+$")
+      implicit object IntKeyPattern     extends KeyPattern[Int]("^-?[0-9]+$")
+      implicit object LongKeyPattern    extends KeyPattern[Long]("^-?[0-9]+$")
+      implicit object UUIDKeyPattern    extends KeyPattern[java.util.UUID]("^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$")
+      implicit object BooleanKeyPattern extends KeyPattern[Boolean]("^(?:true|false)$")
     }
   }
 

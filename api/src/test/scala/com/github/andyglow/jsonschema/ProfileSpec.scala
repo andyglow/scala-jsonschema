@@ -82,7 +82,7 @@ class ProfileSpec extends AnyFunSuite {
       prop(o, "nested") shouldEqual obj("type" -> nullableTypes("integer"))
       prop(o, "d2") shouldEqual obj("type" -> nullableTypes("integer")) // `= None`: no default, as in 0.7
       prop(o, "tags") shouldEqual obj("type" -> "array", "items" -> obj("type" -> nullableTypes("string")))
-      prop(o, "meta") shouldEqual obj("type" -> "object", "patternProperties" -> obj("^.*$" -> obj("type" -> nullableTypes("integer"))))
+      prop(o, "meta") shouldEqual obj("type" -> "object", "patternProperties" -> obj("^[\\s\\S]*$" -> obj("type" -> nullableTypes("integer"))))
       prop(o, "bar").asInstanceOf[obj].value("type") shouldEqual nullableTypes("object")
       // an enum keeps the oneOf form (a type array would let null through `type` but `enum` still rejects it)
       prop(o, "kind") shouldEqual obj("oneOf" -> arr(obj("type" -> "string", "enum" -> arr("A", "B")), obj("type" -> "null")))

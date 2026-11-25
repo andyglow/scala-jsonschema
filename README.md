@@ -282,19 +282,25 @@ Recursive types (`case class Node(children: List[Node])`) become a definition au
 | `java.net.URI`, `java.net.URL`                                              | `string`, format `uri`                          |
 | `Option[T]`                                                                 | `T` or `null`; a field is not required ([more](#option)) |
 | `Iterable[T]` (`List`, `Seq`, `Vector`, `Set`, `Array`, ...)                | `array` (`Set`: `uniqueItems`)                  |
-| `Map[String, V]`, `Map[Int, V]`, ...                                        | `object` with `patternProperties`               |
+| `Map[String, V]`, `Map[Int, V]`, ...                                        | `object` with `patternProperties` (keys enforced) |
 | case class, tuple                                                           | `object`, `properties` in declaration order     |
 | value class                                                                 | its underlying type                             |
 | sealed family, `enum`, `Enumeration`, Java enum                             | see [below](#sum-types-and-enums)               |
 
-A `Map` key needs a known pattern: `String`, `Char`, `Byte`, `Short`, `Int`, `Long` and enums have one. For another
-key type, provide one:
+A `Map` key needs a known pattern (a `KeyPattern`): `String`, `Char`, `Byte`, `Short`, `Int`, `Long` (negative keys
+included), `java.util.UUID`, `Boolean`, value classes of these and enums have one. For another key type, provide one
+(one in scope also replaces a built-in one):
 
 ```scala
 import json.Schema.dictionary.KeyPattern
 
-implicit val uuidKey: KeyPattern[java.util.UUID] = KeyPattern.mk[java.util.UUID]("^[0-9a-f-]{36}$")
+implicit val dateKey: KeyPattern[java.time.LocalDate] = KeyPattern.mk[java.time.LocalDate]("^[0-9]{4}-[0-9]{2}-[0-9]{2}$")
 ```
+
+The pattern is the `patternProperties` key, and it is enforced: a key that doesn't match it is rejected
+(`propertyNames` from draft 06 on, `additionalProperties: false` on draft 04). `Map[String, V]` accepts any key.
+play-json writes a `Map[UUID, V]` as an array of pairs (it has no `KeyWrites[UUID]`), which this object schema doesn't
+describe: give play a `KeyWrites`/`KeyReads` for the key, or give the map type a `Predef`.
 
 ## Sum types and enums
 
@@ -717,7 +723,9 @@ schema whatever is in scope where it is rendered.
 What the profiles can't see: the libraries' own annotations (upickle `@key`, circe-generic-extras `@JsonKey`, play's
 `@JsonKey`) and hand-written codecs (give such a type an implicit `Schema`). Renamed fields (play `naming`, circe
 `transformMemberNames`, upickle `objectAttributeKeyWriteMap`) are an error (tried on sample names). json4s 4 fails
-to encode case classes on Scala 3 itself, so its profile is for Scala 2 users.
+to encode case classes on Scala 3 itself, so its profile is for Scala 2 users. A `Map` whose key play-json has no
+`KeyWrites` for (e.g. `Map[UUID, V]`) is written by play as an array of pairs, which `PlayProfile` doesn't describe
+(see [Supported types](#supported-types)).
 
 What a profile describes (the same rules for every library):
 - what the library writes, widened only by what its reader also accepts (play reads a missing `Option` field and

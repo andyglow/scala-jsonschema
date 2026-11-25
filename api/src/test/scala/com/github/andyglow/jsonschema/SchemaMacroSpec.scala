@@ -65,7 +65,7 @@ class SchemaMacroSpec extends AnyWordSpec {
           Field(
             "intMap",
             `dictionary`[Int, String, Map](`string`)
-              .withValidation(`patternProperties` := "^[0-9]+$"),
+              .withValidation(`patternProperties` := "^-?[0-9]+$"),
             required = false,
             default = Map(1 -> "1", 2 -> "2")
           )
@@ -329,7 +329,7 @@ class SchemaMacroSpec extends AnyWordSpec {
       AsValue.schema(Json.schema[Map[Bar8, Int]], Raw) shouldEqual obj(
         "type"              -> "object",
         "patternProperties" -> obj(
-          "^.*$" -> obj("type" -> "integer")
+          "^[\\s\\S]*$" -> obj("type" -> "integer")
         )
       )
     }
@@ -339,29 +339,29 @@ class SchemaMacroSpec extends AnyWordSpec {
 
       Json.schema[Map[Long, Long]] should matchSchema(
         `dictionary`[Long, Long, Map](`number`[Long])
-          .withValidation(`patternProperties` := "^[0-9]+$")
+          .withValidation(`patternProperties` := "^-?[0-9]+$")
       )
 
       Json.schema[Map[Char, Long]] should matchSchema(
         `dictionary`[Char, Long, Map](`number`[Long])
-          .withValidation(`patternProperties` := "^.{1}$")
+          .withValidation(`patternProperties` := "^[\\s\\S]$")
       )
 
       Json.schema[Map[Int, String]] should matchSchema(
         `dictionary`[Int, String, Map](`string`)
-          .withValidation(`patternProperties` := "^[0-9]+$")
+          .withValidation(`patternProperties` := "^-?[0-9]+$")
       )
 
       Json.schema[Map[Int, Int]] should matchSchema(
         `dictionary`[Int, Int, Map](`integer`).withValidation(
-          `patternProperties` := "^[0-9]+$"
+          `patternProperties` := "^-?[0-9]+$"
         )
       )
 
       Json.schema[Map[Int, Foo9]] should matchSchema(
         `dictionary`[Int, Foo9, Map](
           `object`(Field("name", `string`))
-        ).withValidation(`patternProperties` := "^[0-9]+$")
+        ).withValidation(`patternProperties` := "^-?[0-9]+$")
       )
     }
   }

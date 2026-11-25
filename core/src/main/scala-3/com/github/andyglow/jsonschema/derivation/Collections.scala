@@ -14,10 +14,10 @@ import json.schema.validation.Magnet
   * definition + `$ref`.
   *
   *   - [[deriveDictionary]]: an `immutable.Map[K, V]` (or a subtype) -> `dictionary[K, V, C]`. Key handling (inventory T10, quirk 13), in Scala 2's order:
-  *     1. `K` is the alias `scala.Predef.String` (as written, not dealiased: `java.lang.String` keys get `^.*$`, quirk 13), or a case value class over it: no pattern;
-  *     1. an implicit `KeyPattern[K]` (`KeyPattern[Inner]` for a case value class `K(v: Inner)`): `patternProperties` with its pattern, read at runtime (built-ins: Byte/Short/Int/Long `^[0-9]+$`,
-  *        Char `^.{1}$`, java.lang.String `^.*$`; enumeratum's are sorted);
-  *     1. an enum of strings: `^(?:A|B)$` with the names in declaration order (not sorted, unlike `KeyPattern.forEnum`);
+  *     1. `K` is the alias `scala.Predef.String` (as written, not dealiased: `java.lang.String` keys get `^[\s\S]*$`, quirk 13), or a case value class over it: no pattern;
+  *     1. an implicit `KeyPattern[K]` (`KeyPattern[Inner]` for a case value class `K(v: Inner)`): `patternProperties` with its pattern, read at runtime (built-ins: Byte/Short/Int/Long `^-?[0-9]+$`,
+  *        Char `^[\s\S]$`, java.lang.String `^[\s\S]*$`, UUID, Boolean; enumeratum's are sorted);
+  *     1. an enum of strings: `^(?:A|B)$` with the names (regex-escaped, `KeyPattern.escape`) in declaration order (not sorted, unlike `KeyPattern.forEnum`);
   *     1. otherwise a compile error naming the key type (TRIAGE-B, s2fix's text). A `collection.Map` that isn't immutable (`mutable.Map`) is an error too.
   *   - [[deriveArray]]: an `Array[E]` or an `Iterable[E]` -> `array[E, C]`, unique iff `<: immutable.Set` (a `mutable.Set` isn't unique). The collection must take its element type as its only type
   *     parameter (`C[E]`); otherwise (`BitSet`, `class Path[A] extends Iterable[String]`) a compile error (TRIAGE-B, s2fix's text). A parameterless alias (`type Users = List[User]`) is dealiased by
@@ -34,7 +34,7 @@ trait Collections { this: Derivation =>
     /** `scala.Predef.String` as written: no pattern. */
     case Str
 
-    /** `java.lang.String` (spelled so), with the `^.*$` pattern of its `KeyPattern` (quirk 13). */
+    /** `java.lang.String` (spelled so), with the `^[\s\S]*$` pattern of its `KeyPattern` (quirk 13). */
     case JavaStr
 
     /** `Byte`, `Short`, `Int`, `Long`. */
@@ -165,7 +165,7 @@ trait Collections { this: Derivation =>
     case (_, Some(kp)) =>
       val kpe = kp.asExprOf[KeyPattern[?]]
       Some(keyPatternValidation(key.tpe, valueTpe, '{ $kpe.pattern }))
-    case (KeyKind.StringEnum(names), None) => Some(keyPatternValidation(key.tpe, valueTpe, Expr(names.mkString("^(?:", "|", ")$"))))
+    case (KeyKind.StringEnum(names), None) => Some(keyPatternValidation(key.tpe, valueTpe, Expr(names.map(KeyPattern.escape).mkString("^(?:", "|", ")$"))))
     case _                                 => None
   }
 

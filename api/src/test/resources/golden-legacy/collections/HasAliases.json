@@ -53,7 +53,7 @@
     "properties": {
       "byName": {
         "patternProperties": {
-          "^.*$": {
+          "^[\\s\\S]*$": {
             "additionalProperties": false,
             "properties": {
               "name": {
@@ -97,7 +97,7 @@
     "properties": {
       "byName": {
         "patternProperties": {
-          "^.*$": {
+          "^[\\s\\S]*$": {
             "additionalProperties": false,
             "properties": {
               "name": {
@@ -141,7 +141,7 @@
     "properties": {
       "byName": {
         "patternProperties": {
-          "^.*$": {
+          "^[\\s\\S]*$": {
             "additionalProperties": false,
             "properties": {
               "name": {

@@ -5,6 +5,7 @@ import json.Schema._
 import json.schema.{validation => V}
 import com.github.andyglow.json.Value._
 import json.Schema.`object`.Field.RWMode
+import json.Schema.`dictionary`.KeyPattern.StringKeyPattern
 
 import scala.collection.mutable.ListBuffer
 
@@ -113,16 +114,23 @@ trait AsDraftSupport {
     )
   }
 
+  /** A dictionary's key pattern: the given one, else `StringKeyPattern`'s (any key). A pattern that matches any key (that one, or `^.*$` from before #466: schemas parsed back, user `KeyPattern`s) is
+    * not enforced; any other is, with [[keyRestriction]].
+    */
   def mkDict(vl: ValidationList, comp: Schema[_], par: ParentSchema): obj = {
     val pattern = vl.extract(_.validation == V.Instance.`patternProperties`) map {
       _.json.asInstanceOf[str].value
-    } getOrElse "^.*$"
-    obj(
+    } getOrElse StringKeyPattern.pattern
+    val props = obj(
       "patternProperties" -> obj(
         pattern -> apply(comp, Some(comp), includeType = true, isRoot = false)
       )
     )
+    if (pattern == StringKeyPattern.pattern || pattern == "^.*$") props else props ++ keyRestriction(pattern)
   }
+
+  /** Every key of a dictionary must match `pattern` (#466): `propertyNames`, from draft 06 on. */
+  protected def keyRestriction(pattern: String): obj = obj("propertyNames" -> obj("pattern" -> pattern))
 
   def mkArr(vl: ValidationList, comp: Schema[_], unique: Boolean, par: ParentSchema): obj = {
     obj(

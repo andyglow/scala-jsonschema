@@ -36,6 +36,11 @@ object UPickleDefaultCodecs {
   implicit val kiteRW: RW[Toy.Kite.type] = macroRW
   implicit val toyRW: RW[Toy]            = macroRW
   implicit val boxRW: RW[Box]            = macroRW
+  // Map keys (#466): upickle writes Int, Long, UUID, Boolean and Char keys as object keys
+  implicit val intStockRW: RW[IntStock]   = macroRW
+  implicit val uuidStockRW: RW[UuidStock] = macroRW
+  implicit val flagStockRW: RW[FlagStock] = macroRW
+  implicit val charStockRW: RW[CharStock] = macroRW
 }
 
 // ---- user code: upickle API objects of your own
@@ -114,6 +119,14 @@ class UPickleAcceptanceSpec extends AnyWordSpec {
     }
     "ignore @discriminator, which upickle's derivation never sees (R4B)" in assertValid(rendered(Schemas.shape), written(Samples.shapes))
     "tag a member that has an implicit Schema of its own" in assertValid(rendered(Schemas.payment), written(Samples.payments))
+    "Map keys: negative Int and Long, UUID, Boolean and Char (a line break included) keys (#466)" in {
+      written(List(Samples.uuidStock)) shouldBe List("""{"byUuid":{"123e4567-e89b-12d3-a456-426614174000":1}}""")
+      assertValid(rendered(Schemas.intStock), written(List(Samples.intStock)))
+      assertValid(rendered(Schemas.uuidStock), written(List(Samples.uuidStock)))
+      assertValid(rendered(Schemas.flagStock), written(List(Samples.flagStock)))
+      assertValid(rendered(Schemas.charStock), written(List(Samples.charStock)))
+      assertBadKeysRejected(rendered(_))
+    }
     "be the cross-check row of upickle" in {
       crossCheckRow(rendered(Schemas.pet)) shouldBe List(
         "circe semiauto"   -> 0,

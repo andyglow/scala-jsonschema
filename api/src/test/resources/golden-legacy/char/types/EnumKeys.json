@@ -26,6 +26,7 @@
     "additionalProperties": false,
     "properties": {
       "m": {
+        "additionalProperties": false,
         "patternProperties": {
           "^(?:B|A)$": {
             "type": "integer"
@@ -50,6 +51,9 @@
             "type": "integer"
           }
         },
+        "propertyNames": {
+          "pattern": "^(?:B|A)$"
+        },
         "type": "object"
       }
     },
@@ -68,6 +72,9 @@
           "^(?:B|A)$": {
             "type": "integer"
           }
+        },
+        "propertyNames": {
+          "pattern": "^(?:B|A)$"
         },
         "type": "object"
       }

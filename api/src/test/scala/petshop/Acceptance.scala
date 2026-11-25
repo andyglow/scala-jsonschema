@@ -50,6 +50,10 @@ object Acceptance {
     }
   }
 
+  /** Fails unless each of [[Samples.badStocks]] (a Map key the key type can't have) is invalid under its schema as `render` renders it: Map keys are enforced under every profile (#466). */
+  def assertBadKeysRejected(render: json.Schema[_] => Version => String): Unit =
+    Samples.badStocks foreach { case (s, doc) => assertInvalid(render(s), List(doc)) }
+
   /** Fails unless every one of `docs` is invalid under `render(draft)` on every draft. */
   def assertInvalid(render: Version => String, docs: List[String]): Unit = drafts foreach { d =>
     val schema = render(d)
