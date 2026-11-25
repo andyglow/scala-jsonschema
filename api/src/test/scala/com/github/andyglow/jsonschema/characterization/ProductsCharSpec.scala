@@ -22,6 +22,13 @@ object ProductsCharSpec {
     */
   @title("Id")
   case class Id(v: String) extends AnyVal
+
+  // non-public constructor vals (B4): Scala 2 adds a `<name>$access$<i>` case accessor for each
+  case class PrivateVal(private val a: Int, b: String)
+  case class PrivatePkgVal(private[characterization] val a: Int, b: String)
+  case class ProtectedVal(protected val a: Int, b: String)
+  case class PrivateValDefaults(private val d: Int = 5, protected val o: Option[Int] = None)
+  case class PrivateValAnnotated(@(description @field)("from the field") private val a: Int, @description("from the param") private val b: Int, @(readOnly @field) protected val c: Int)
 }
 
 /** Characterization of product details on Scala 2 (stream 1): field-targeted annotations, value-class texts, annotations on generic fields. */
@@ -36,6 +43,20 @@ class ProductsCharSpec extends AnyFunSuite {
   test("T9: a value class as the root gets its type texts; as a field it doesn't (R8)") {
     check("char/products/Id", Json.schema[Id])
     check("char/products/HasId", Json.schema[HasId])
+  }
+
+  test("B4: non-public constructor vals (private, private[pkg], protected) are fields") {
+    check("char/products/PrivateVal", Json.schema[PrivateVal])
+    check("char/products/PrivatePkgVal", Json.schema[PrivatePkgVal])
+    check("char/products/ProtectedVal", Json.schema[ProtectedVal])
+  }
+
+  test("B4: defaults of non-public constructor vals") {
+    check("char/products/PrivateValDefaults", Json.schema[PrivateValDefaults])
+  }
+
+  test("B4: annotations on non-public constructor vals") {
+    check("char/products/PrivateValAnnotated", Json.schema[PrivateValAnnotated])
   }
 
   test("F7/F11: field annotations of a generic case class") {
