@@ -22,6 +22,6 @@ addSbtPlugin("com.lightbend.paradox" % "sbt-paradox"                % "0.11.1")
 addSbtPlugin("com.github.sbt"        % "sbt-paradox-material-theme" % "0.8.0")
 addSbtPlugin("com.github.sbt"        % "sbt-site-paradox"           % "1.8.0")
 addSbtPlugin("com.github.sbt"        % "sbt-ghpages"                % "0.10.0")
-addSbtPlugin("org.scalameta"         % "sbt-mdoc"                   % "2.9.2")
+addSbtPlugin("org.scalameta"         % "sbt-mdoc"                   % "2.9.3")
 
 ThisBuild / libraryDependencySchemes += "org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always
